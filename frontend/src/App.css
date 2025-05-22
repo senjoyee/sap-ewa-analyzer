@@ -1,0 +1,79 @@
+.App {
+  /* text-align: center; */ /* Globally centering might not be desired anymore */
+  font-family: sans-serif;
+}
+
+.App-header {
+  background-color: #282c34;
+  padding: 20px;
+  color: white;
+  margin-bottom: 20px;
+}
+
+.App-body {
+  display: flex;
+  min-height: calc(100vh - 70px); /* Adjust 70px based on actual header height */
+}
+
+.sidebar {
+  width: 250px;
+  background-color: #f0f0f0;
+  padding: 20px;
+  border-right: 1px solid #ddd;
+}
+
+.main-content {
+  flex-grow: 1; /* Takes remaining width */
+  padding: 20px;
+  text-align: left; /* Align content to the left in main area */
+}
+
+/* Adjustments for components within new layout */
+.file-upload-container {
+  margin: 0; /* Remove auto margin */
+  padding: 20px;
+  border: 1px solid #ccc;
+  border-radius: 8px;
+  background-color: #f9f9f9;
+  /* max-width: 600px; /* Optional: keep if you want to constrain width within main-content */
+}
+
+.file-list-container {
+  margin: 0; /* Remove auto margin */
+  padding: 0; /* Padding is now on .sidebar */
+  /* border: 1px solid #ccc; /* Optional: border might be on .sidebar now */
+  /* border-radius: 8px; */
+  /* background-color: #f9f9f9; /* Sidebar has its own background */
+  text-align: left;
+}
+
+.file-list-container ul {
+  list-style-type: none;
+  padding: 0;
+}
+
+.file-list-container li {
+  padding: 8px;
+  border-bottom: 1px solid #eee;
+}
+
+.file-list-container li:last-child {
+  border-bottom: none;
+}
+
+.file-preview-container {
+  border: 1px solid #ddd; /* A slightly softer border */
+  border-radius: 8px;
+  padding: 20px;
+  background-color: #ffffff; /* Explicit white background */
+  height: 100%; /* Aim to fill the parent's height */
+  box-sizing: border-box; /* Include padding and border in the element's total width and height */
+  overflow-y: auto; /* Add scrollbar if content overflows */
+}
+
+.file-preview-container h2 {
+  margin-top: 0; /* Remove default top margin from h2 if present */
+  padding-bottom: 10px;
+  border-bottom: 1px solid #eee;
+  margin-bottom: 15px;
+}
