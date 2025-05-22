@@ -32,7 +32,7 @@ import InsertDriveFileIcon from '@mui/icons-material/InsertDriveFile';
 
 // Action and status icons
 import PlayArrowIcon from '@mui/icons-material/PlayArrow';
-import SearchIcon from '@mui/icons-material/Search';
+import AiAnalysisIcon from './AiAnalysisIcon';
 import AutorenewIcon from '@mui/icons-material/Autorenew';
 import CheckCircleIcon from '@mui/icons-material/CheckCircle';
 import PendingIcon from '@mui/icons-material/Pending';
@@ -508,7 +508,7 @@ const FileList = ({ onFileSelect, refreshTrigger, selectedFile }) => {
                                     }} 
                                   />
                                 } 
-                                label={`Analyzing ${analysisProgress[file.name] || 0}%`} 
+                                label={`Processing ${analysisProgress[file.name] || 0}%`} 
                                 size="small" 
                                 color="warning" 
                                 variant="outlined"
@@ -576,7 +576,7 @@ const FileList = ({ onFileSelect, refreshTrigger, selectedFile }) => {
                         }
                       }}
                     >
-                      <SearchIcon fontSize="small" />
+                      <AiAnalysisIcon fontSize="small" />
                     </IconButton>
                   </Tooltip>
                 ) : (
