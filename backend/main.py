@@ -3,6 +3,8 @@ from fastapi import FastAPI, UploadFile, File, HTTPException, Form, Depends
 from fastapi.middleware.cors import CORSMiddleware
 from azure.storage.blob import BlobServiceClient, BlobClient, ContainerClient
 from dotenv import load_dotenv
+from pydantic import BaseModel
+from azure_document_intelligence_service import analyze_document_from_blob, get_analysis_status
 import uvicorn # For running the app
 
 # Load environment variables from .env file
@@ -114,6 +116,54 @@ async def list_files():
     except Exception as e:
         print(f"Error listing files: {e}")
         raise HTTPException(status_code=500, detail=f"Could not list files: {str(e)}")
+
+
+# Model for analyze request
+class AnalyzeDocumentRequest(BaseModel):
+    blob_name: str
+
+
+@app.post("/api/analyze")
+async def analyze_document(request: AnalyzeDocumentRequest):
+    """
+    Analyze a document stored in Azure Blob Storage using Azure Document Intelligence.
+    The analysis result will be saved back to the same container with a .json extension.
+    
+    Args:
+        request: A request object containing the blob_name to analyze
+    """
+    try:
+        # Call the analyze_document_from_blob function from the azure_document_intelligence_service module
+        result = analyze_document_from_blob(request.blob_name)
+        
+        if result.get("error"):
+            print(f"Error analyzing document: {result.get('message')}")
+            raise HTTPException(status_code=500, detail=result.get('message'))
+        
+        return result
+    except Exception as e:
+        print(f"Error in analyze_document endpoint: {str(e)}")
+        raise HTTPException(status_code=500, detail=f"Error analyzing document: {str(e)}")
+
+
+@app.get("/api/analysis-status/{blob_name}")
+async def get_document_analysis_status(blob_name: str):
+    """
+    Get the status of a document analysis job.
+    
+    Args:
+        blob_name: The name of the blob being analyzed
+    """
+    try:
+        status = get_analysis_status(blob_name)
+        
+        if status.get("error"):
+            raise HTTPException(status_code=404, detail=status.get("message"))
+        
+        return status
+    except Exception as e:
+        print(f"Error in get_document_analysis_status endpoint: {str(e)}")
+        raise HTTPException(status_code=500, detail=f"Error getting analysis status: {str(e)}")
 
 
 # To run the app (for development): uvicorn main:app --reload --port 8000

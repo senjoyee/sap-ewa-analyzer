@@ -2,9 +2,12 @@ import os
 import json
 import re
 import unicodedata
+import time
+from datetime import datetime
 from azure.core.credentials import AzureKeyCredential
 from azure.ai.documentintelligence import DocumentIntelligenceClient
 from azure.core.exceptions import HttpResponseError
+from azure.storage.blob import BlobServiceClient, BlobClient, ContainerClient, ContentSettings
 from dotenv import load_dotenv
 
 # Load environment variables from .env file
@@ -12,6 +15,8 @@ load_dotenv()
 
 AZURE_DOCUMENT_INTELLIGENCE_ENDPOINT = os.getenv("AZURE_DOCUMENT_INTELLIGENCE_ENDPOINT")
 AZURE_DOCUMENT_INTELLIGENCE_KEY = os.getenv("AZURE_DOCUMENT_INTELLIGENCE_KEY")
+AZURE_STORAGE_CONNECTION_STRING = os.getenv("AZURE_STORAGE_CONNECTION_STRING")
+AZURE_STORAGE_CONTAINER_NAME = os.getenv("AZURE_STORAGE_CONTAINER_NAME")
 
 if not AZURE_DOCUMENT_INTELLIGENCE_ENDPOINT or not AZURE_DOCUMENT_INTELLIGENCE_KEY:
     raise ValueError(
@@ -19,9 +24,26 @@ if not AZURE_DOCUMENT_INTELLIGENCE_ENDPOINT or not AZURE_DOCUMENT_INTELLIGENCE_K
         "(AZURE_DOCUMENT_INTELLIGENCE_ENDPOINT, AZURE_DOCUMENT_INTELLIGENCE_KEY)"
     )
 
+if not AZURE_STORAGE_CONNECTION_STRING or not AZURE_STORAGE_CONTAINER_NAME:
+    raise ValueError(
+        "Azure Storage connection string and container name must be set in .env file "
+        "(AZURE_STORAGE_CONNECTION_STRING, AZURE_STORAGE_CONTAINER_NAME)"
+    )
+
 document_intelligence_client = DocumentIntelligenceClient(
     endpoint=AZURE_DOCUMENT_INTELLIGENCE_ENDPOINT, credential=AzureKeyCredential(AZURE_DOCUMENT_INTELLIGENCE_KEY)
 )
+
+# Initialize BlobServiceClient
+try:
+    blob_service_client = BlobServiceClient.from_connection_string(AZURE_STORAGE_CONNECTION_STRING)
+except Exception as e:
+    print(f"Error initializing BlobServiceClient: {e}")
+    blob_service_client = None
+
+# Dictionary to track the status of document analysis jobs
+# Structure: {blob_name: {"status": "pending|processing|completed|failed", "start_time": timestamp, "end_time": timestamp, "message": "message", "result": result_dict}}
+analysis_status_tracker = {}
 
 def analyze_document_layout(file_bytes: bytes, content_type: str = "application/octet-stream"):
     """
@@ -260,6 +282,197 @@ def clean(text: str) -> str:
     return text.strip()
 # --- End of user-provided helper functions ---
 
+
+def analyze_document_from_blob(blob_name: str) -> dict:
+    """
+    Analyzes a document stored in Azure Blob Storage and saves the analysis result 
+    to the same container with a .json extension.
+    
+    Args:
+        blob_name: The name of the blob to analyze.
+        
+    Returns:
+        A dictionary containing information about the analysis process, including status and result location.
+    """
+    # Initialize status tracking for this job
+    current_time = datetime.now().isoformat()
+    analysis_status_tracker[blob_name] = {
+        "status": "pending",
+        "start_time": current_time,
+        "message": "Analysis pending",
+        "progress": 0
+    }
+    
+    if not blob_service_client:
+        analysis_status_tracker[blob_name] = {
+            "status": "failed", 
+            "end_time": datetime.now().isoformat(),
+            "message": "Azure Blob Service client not initialized",
+            "progress": 0
+        }
+        return {"error": True, "message": "Azure Blob Service client not initialized"}
+    
+    try:
+        # Update status to processing
+        analysis_status_tracker[blob_name].update({
+            "status": "processing",
+            "message": "Downloading document from storage",
+            "progress": 10
+        })
+        
+        # Get the blob client to download the file
+        container_client = blob_service_client.get_container_client(AZURE_STORAGE_CONTAINER_NAME)
+        blob_client = container_client.get_blob_client(blob_name)
+        
+        # Get file properties to determine content type
+        properties = blob_client.get_blob_properties()
+        content_type = properties.content_settings.content_type or "application/octet-stream"
+        
+        # Download the blob content
+        print(f"Downloading {blob_name} from Azure Blob Storage...")
+        blob_data = blob_client.download_blob().readall()
+        
+        # Update status
+        analysis_status_tracker[blob_name].update({
+            "message": "Document downloaded, starting analysis",
+            "progress": 25
+        })
+        
+        # Analyze the document
+        print(f"Analyzing {blob_name} with content type: {content_type}...")
+        analysis_status_tracker[blob_name].update({
+            "message": "Document intelligence analysis in progress",
+            "progress": 40
+        })
+        
+        analysis_result = analyze_document_layout(blob_data, content_type=content_type)
+        
+        if analysis_result.get("error"):
+            error_message = f"Error analyzing document: {analysis_result.get('message')}"
+            analysis_status_tracker[blob_name].update({
+                "status": "failed",
+                "end_time": datetime.now().isoformat(),
+                "message": error_message,
+                "progress": 0
+            })
+            return {
+                "error": True, 
+                "message": error_message,
+                "details": analysis_result.get('details', '')
+            }
+        
+        # Update status    
+        analysis_status_tracker[blob_name].update({
+            "message": "Analysis complete, processing results",
+            "progress": 70
+        })
+            
+        # Process the result to create a cleaner output
+        # We'll use the preprocess_analysis_for_llm function to create a slimmer version
+        processed_result = preprocess_analysis_for_llm(analysis_result)
+        
+        # Generate output file name with .json extension
+        base_name = os.path.splitext(blob_name)[0]
+        output_blob_name = f"{base_name}.json"
+        
+        # Update status
+        analysis_status_tracker[blob_name].update({
+            "message": "Saving results to storage",
+            "progress": 85
+        })
+        
+        # Save the result back to blob storage
+        output_blob_client = container_client.get_blob_client(output_blob_name)
+        
+        # Convert the result to JSON string
+        result_json = json.dumps(processed_result, ensure_ascii=False, separators=(',',':'))
+        
+        # Upload the result back to blob storage
+        print(f"Uploading analysis result to {output_blob_name}...")
+        content_settings = ContentSettings(content_type="application/json")
+        output_blob_client.upload_blob(result_json, overwrite=True, content_settings=content_settings)
+        
+        # Copy metadata from original blob to ensure we maintain customer information
+        if properties.metadata:
+            output_blob_client.set_blob_metadata(metadata=properties.metadata)
+        
+        # Final result
+        result = {
+            "success": True,
+            "message": "Document analyzed successfully",
+            "original_document": blob_name,
+            "result_document": output_blob_name,
+            "page_count": len(analysis_result.get('pages', [])),
+            "paragraph_count": len(processed_result.get('paragraphs', [])),
+            "table_count": len(processed_result.get('tables', []))
+        }
+        
+        # Update status to completed
+        analysis_status_tracker[blob_name].update({
+            "status": "completed",
+            "end_time": datetime.now().isoformat(),
+            "message": "Analysis completed successfully",
+            "progress": 100,
+            "result": result
+        })
+        
+        return result
+        
+    except Exception as e:
+        import traceback
+        error_message = f"An error occurred during blob analysis: {str(e)}"
+        
+        # Update status to failed
+        analysis_status_tracker[blob_name].update({
+            "status": "failed",
+            "end_time": datetime.now().isoformat(),
+            "message": error_message,
+            "progress": 0
+        })
+        
+        return {
+            "error": True,
+            "message": error_message,
+            "traceback": traceback.format_exc()
+        }
+
+def get_analysis_status(blob_name: str) -> dict:
+    """
+    Gets the current status of a document analysis job.
+    
+    Args:
+        blob_name: The name of the blob being analyzed.
+        
+    Returns:
+        A dictionary containing the current status information.
+    """
+    if blob_name not in analysis_status_tracker:
+        return {
+            "error": True,
+            "message": f"No analysis job found for {blob_name}"
+        }
+    
+    # Return a copy of the status to avoid modification issues
+    status = dict(analysis_status_tracker[blob_name])
+    
+    # Add estimated time remaining if job is still processing
+    if status.get("status") == "processing":
+        # Calculate elapsed time
+        start_time = datetime.fromisoformat(status.get("start_time"))
+        elapsed_seconds = (datetime.now() - start_time).total_seconds()
+        
+        # Calculate estimated time remaining based on progress
+        progress = status.get("progress", 0)
+        if progress > 0:
+            # Simple estimation: if X% took Y seconds, 100% will take (Y/X)*100 seconds
+            estimated_total_seconds = (elapsed_seconds / progress) * 100
+            remaining_seconds = estimated_total_seconds - elapsed_seconds
+            
+            # Add to status
+            status["elapsed_seconds"] = int(elapsed_seconds)
+            status["estimated_remaining_seconds"] = max(0, int(remaining_seconds))
+    
+    return status
 
 # Example usage (for testing this module directly):
 if __name__ == "__main__":

@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import Paper from '@mui/material/Paper';
 import Typography from '@mui/material/Typography';
 import List from '@mui/material/List';
@@ -84,6 +84,8 @@ const FileList = ({ onFileSelect, refreshTrigger, selectedFile }) => {
   const [error, setError] = useState(null);
   const [analyzingFiles, setAnalyzingFiles] = useState({});  // Track files being analyzed
   const [expandedCustomers, setExpandedCustomers] = useState({});  // Track which customer accordions are expanded
+  const [analysisProgress, setAnalysisProgress] = useState({});  // Track progress percentage for each file
+  const pollingIntervalsRef = useRef({});  // Store polling interval IDs for cleanup
   const { theme } = useTheme();
   const isDark = theme === 'dark';
   
@@ -101,24 +103,42 @@ const FileList = ({ onFileSelect, refreshTrigger, selectedFile }) => {
   };
 
   // Function to handle analyze button click
-  const handleAnalyze = (file) => {
-    // This is a placeholder function - actual implementation will be added later
+  const handleAnalyze = async (file) => {
     console.log(`Analyzing file: ${file.name}`);
     
-    // Demo function to show status transition
-    // First set to 'analyzing'
+    // Set initial status to analyzing
     setAnalyzingFiles(prev => ({
       ...prev,
       [file.id || file.name]: 'analyzing'
     }));
     
-    // After 2 seconds, simulate completion and change to 'analyzed'
-    setTimeout(() => {
+    try {
+      // Make API call to start analysis
+      const response = await fetch('http://localhost:8001/api/analyze', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ blob_name: file.name }),
+      });
+      
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.detail || `Analysis failed: ${response.status}`);
+      }
+      
+      // Start polling for status updates
+      startStatusPolling(file.name);
+      
+    } catch (error) {
+      console.error(`Error analyzing file ${file.name}:`, error);
+      // Set status back to pending on error
       setAnalyzingFiles(prev => ({
         ...prev,
-        [file.id || file.name]: 'analyzed'
+        [file.id || file.name]: 'error'
       }));
-    }, 2000);
+      alert(`Error analyzing file: ${error.message}`);
+    }
   };
 
   // Handle expanding/collapsing a single customer accordion
@@ -144,6 +164,82 @@ const FileList = ({ onFileSelect, refreshTrigger, selectedFile }) => {
     setExpandedCustomers({});
   };
 
+  // Start polling for status updates
+  const startStatusPolling = (fileName) => {
+    // Clear any existing polling interval for this file
+    if (pollingIntervalsRef.current[fileName]) {
+      clearInterval(pollingIntervalsRef.current[fileName]);
+    }
+    
+    // Set initial progress
+    setAnalysisProgress(prev => ({
+      ...prev,
+      [fileName]: 0
+    }));
+    
+    // Create a new polling interval
+    pollingIntervalsRef.current[fileName] = setInterval(async () => {
+      try {
+        // Make API call to check status
+        const response = await fetch(`http://localhost:8001/api/analysis-status/${encodeURIComponent(fileName)}`);
+        
+        if (!response.ok) {
+          if (response.status === 404) {
+            // No status found, keep showing as analyzing
+            console.log(`No status found for ${fileName}, continuing to poll...`);
+            return;
+          }
+          const errorData = await response.json();
+          throw new Error(errorData.detail || `Status check failed: ${response.status}`);
+        }
+        
+        const statusData = await response.json();
+        console.log(`Status update for ${fileName}:`, statusData);
+        
+        // Update progress percentage
+        setAnalysisProgress(prev => ({
+          ...prev,
+          [fileName]: statusData.progress || 0
+        }));
+        
+        // Update status based on the response
+        if (statusData.status === 'completed') {
+          // Analysis completed successfully
+          setAnalyzingFiles(prev => ({
+            ...prev,
+            [fileName]: 'analyzed'
+          }));
+          
+          // Stop polling
+          clearInterval(pollingIntervalsRef.current[fileName]);
+          delete pollingIntervalsRef.current[fileName];
+          
+          console.log(`Analysis completed for ${fileName}:`, statusData.result);
+          
+          // Refresh the file list to show updated processed status
+          fetchFiles();
+        } else if (statusData.status === 'failed') {
+          // Analysis failed
+          setAnalyzingFiles(prev => ({
+            ...prev,
+            [fileName]: 'error'
+          }));
+          
+          // Stop polling
+          clearInterval(pollingIntervalsRef.current[fileName]);
+          delete pollingIntervalsRef.current[fileName];
+          
+          console.error(`Analysis failed for ${fileName}:`, statusData.message);
+          alert(`Analysis failed: ${statusData.message}`);
+        }
+        // If status is 'pending' or 'processing', we continue polling
+        
+      } catch (error) {
+        console.error(`Error checking status for ${fileName}:`, error);
+      }
+    }, 2000); // Poll every 2 seconds
+  };
+
   const fetchFiles = async () => {
     setIsLoading(true);
     setError(null);
@@ -154,13 +250,39 @@ const FileList = ({ onFileSelect, refreshTrigger, selectedFile }) => {
         throw new Error(errData.detail || `Failed to fetch files: ${response.status}`);
       }
       const data = await response.json();
-      const filesWithIds = data.map(file => ({ ...file, id: file.name })); 
+      
+      // Create a map of processed files
+      const processedFileMap = {};
+      const jsonFiles = data.filter(file => file.name.toLowerCase().endsWith('.json'));
+      
+      // Map JSON files to their corresponding source files
+      jsonFiles.forEach(jsonFile => {
+        // Get base name without extension (assuming format is originalname.json)
+        const baseName = jsonFile.name.substring(0, jsonFile.name.lastIndexOf('.'));
+        processedFileMap[baseName] = true;
+      });
+      
+      // Filter out JSON result files - we only want to show the source files
+      const sourceFiles = data.filter(file => !file.name.toLowerCase().endsWith('.json'));
+      const filesWithIds = sourceFiles.map(file => {
+        // Check if this file has been processed
+        const baseName = file.name.substring(0, file.name.lastIndexOf('.')) || file.name;
+        const isProcessed = processedFileMap[file.name] || processedFileMap[baseName];
+        
+        return { 
+          ...file, 
+          id: file.name,
+          processed: isProcessed
+        };
+      });
+      
       setFiles(filesWithIds);
       
-      // Initialize analysis status for each file as pending
+      // Initialize analysis status for each file
       const statusMap = {};
       filesWithIds.forEach(file => {
-        statusMap[file.id || file.name] = 'pending';
+        // If file is already processed, set status to 'analyzed'
+        statusMap[file.id || file.name] = file.processed ? 'analyzed' : 'pending';
       });
       setAnalyzingFiles(statusMap);
       
@@ -186,6 +308,17 @@ const FileList = ({ onFileSelect, refreshTrigger, selectedFile }) => {
   useEffect(() => {
     fetchFiles();
   }, [refreshTrigger]);
+  
+  // Cleanup function to clear all polling intervals when component unmounts
+  useEffect(() => {
+    return () => {
+      // Clear all polling intervals
+      Object.values(pollingIntervalsRef.current).forEach(intervalId => {
+        clearInterval(intervalId);
+      });
+      pollingIntervalsRef.current = {};
+    };
+  }, []);
 
   let content;
 
@@ -361,29 +494,46 @@ const FileList = ({ onFileSelect, refreshTrigger, selectedFile }) => {
                             />
                           )}
                           {analyzingFiles[file.id || file.name] === 'analyzing' && (
-                            <Chip 
-                              icon={
-                                <AutorenewIcon 
-                                  sx={{ 
-                                    animation: 'spin 2s linear infinite',
-                                    '@keyframes spin': {
-                                      '0%': { transform: 'rotate(0deg)' },
-                                      '100%': { transform: 'rotate(360deg)' }
-                                    }
-                                  }} 
-                                />
-                              } 
-                              label="Analyzing" 
-                              size="small" 
-                              color="warning" 
-                              variant="outlined"
-                              sx={{ height: 20, fontSize: '0.6rem' }}
-                            />
+                            <Box sx={{ display: 'flex', alignItems: 'center' }}>
+                              <Chip 
+                                icon={
+                                  <AutorenewIcon 
+                                    sx={{ 
+                                      animation: 'spin 2s linear infinite',
+                                      '@keyframes spin': {
+                                        '0%': { transform: 'rotate(0deg)' },
+                                        '100%': { transform: 'rotate(360deg)' }
+                                      }
+                                    }} 
+                                  />
+                                } 
+                                label={`Analyzing ${analysisProgress[file.name] || 0}%`} 
+                                size="small" 
+                                color="warning" 
+                                variant="outlined"
+                                sx={{ height: 20, fontSize: '0.6rem', mr: 1 }}
+                              />
+                              {analysisProgress[file.name] > 0 && (
+                                <Box sx={{ position: 'relative', width: 40, height: 4, borderRadius: 2, bgcolor: 'background.paper', overflow: 'hidden' }}>
+                                  <Box 
+                                    sx={{ 
+                                      position: 'absolute',
+                                      left: 0,
+                                      top: 0,
+                                      height: '100%',
+                                      width: `${analysisProgress[file.name]}%`,
+                                      bgcolor: 'warning.main',
+                                      transition: 'width 0.3s ease'
+                                    }}
+                                  />
+                                </Box>
+                              )}
+                            </Box>
                           )}
                           {analyzingFiles[file.id || file.name] === 'analyzed' && (
                             <Chip 
                               icon={<CheckCircleIcon />} 
-                              label="Analyzed" 
+                              label="Processed" 
                               size="small" 
                               color="success" 
                               variant="outlined"
