@@ -32,6 +32,7 @@ import InsertDriveFileIcon from '@mui/icons-material/InsertDriveFile';
 
 // Action and status icons
 import PlayArrowIcon from '@mui/icons-material/PlayArrow';
+import SearchIcon from '@mui/icons-material/Search';
 import AutorenewIcon from '@mui/icons-material/Autorenew';
 import CheckCircleIcon from '@mui/icons-material/CheckCircle';
 import PendingIcon from '@mui/icons-material/Pending';
@@ -557,25 +558,48 @@ const FileList = ({ onFileSelect, refreshTrigger, selectedFile }) => {
                 </Tooltip>
               </ListItemButton>
               <ListItemSecondaryAction>
-                <Tooltip title="Analyze file">
-                  <IconButton 
-                    edge="end" 
-                    size="small" 
-                    color="primary"
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      handleAnalyze(file);
-                    }}
-                    sx={{ 
-                      bgcolor: 'rgba(144, 202, 249, 0.08)',
-                      '&:hover': {
-                        bgcolor: 'rgba(144, 202, 249, 0.2)',
-                      }
-                    }}
-                  >
-                    <PlayArrowIcon fontSize="small" />
-                  </IconButton>
-                </Tooltip>
+                {analyzingFiles[file.id || file.name] === 'analyzed' ? (
+                  <Tooltip title="Analyze with AI">
+                    <IconButton 
+                      edge="end" 
+                      size="small" 
+                      color="secondary"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        console.log('AI Analysis requested for:', file.name);
+                        // Future implementation will go here
+                      }}
+                      sx={{ 
+                        bgcolor: 'rgba(156, 39, 176, 0.08)',
+                        '&:hover': {
+                          bgcolor: 'rgba(156, 39, 176, 0.2)',
+                        }
+                      }}
+                    >
+                      <SearchIcon fontSize="small" />
+                    </IconButton>
+                  </Tooltip>
+                ) : (
+                  <Tooltip title="Process file">
+                    <IconButton 
+                      edge="end" 
+                      size="small" 
+                      color="primary"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        handleAnalyze(file);
+                      }}
+                      sx={{ 
+                        bgcolor: 'rgba(144, 202, 249, 0.08)',
+                        '&:hover': {
+                          bgcolor: 'rgba(144, 202, 249, 0.2)',
+                        }
+                      }}
+                    >
+                      <PlayArrowIcon fontSize="small" />
+                    </IconButton>
+                  </Tooltip>
+                )}
               </ListItemSecondaryAction>
             </ListItem>
           );
