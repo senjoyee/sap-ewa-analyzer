@@ -64,3 +64,6 @@ ENV/
 
 # Local development
 .env.local
+uv.lock
+pyproject.toml
+.python-version
