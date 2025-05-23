@@ -252,37 +252,23 @@ const FileList = ({ onFileSelect, refreshTrigger, selectedFile }) => {
       }
       const data = await response.json();
       
-      // Create a map of processed files
-      const processedFileMap = {};
-      const jsonFiles = data.filter(file => file.name.toLowerCase().endsWith('.json'));
+      // Log the raw data to check what the backend is sending
+      console.log('Raw data from backend:', data);
       
-      // Map JSON files to their corresponding source files
-      jsonFiles.forEach(jsonFile => {
-        // Get base name without extension (assuming format is originalname.json)
-        const baseName = jsonFile.name.substring(0, jsonFile.name.lastIndexOf('.'));
-        processedFileMap[baseName] = true;
-      });
-      
-      // Filter out JSON result files - we only want to show the source files
-      const sourceFiles = data.filter(file => !file.name.toLowerCase().endsWith('.json'));
-      const filesWithIds = sourceFiles.map(file => {
-        // Check if this file has been processed
-        const baseName = file.name.substring(0, file.name.lastIndexOf('.')) || file.name;
-        const isProcessed = processedFileMap[file.name] || processedFileMap[baseName];
-        
-        return { 
-          ...file, 
-          id: file.name,
-          processed: isProcessed
-        };
-      });
+      // Files should already be filtered by the backend
+      const filesWithIds = data.map(file => ({
+        ...file,
+        id: file.name
+      }));
       
       setFiles(filesWithIds);
       
       // Initialize analysis status for each file
       const statusMap = {};
       filesWithIds.forEach(file => {
-        // If file is already processed, set status to 'analyzed'
+        // Use the 'processed' flag directly from the backend
+        // Set status to 'analyzed' if processed is true, otherwise 'pending'
+        console.log(`File ${file.name} processed status:`, file.processed);
         statusMap[file.id || file.name] = file.processed ? 'analyzed' : 'pending';
       });
       setAnalyzingFiles(statusMap);

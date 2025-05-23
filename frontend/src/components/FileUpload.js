@@ -16,17 +16,62 @@ import CheckCircleIcon from '@mui/icons-material/CheckCircle';
 import ErrorIcon from '@mui/icons-material/Error';
 import CloseIcon from '@mui/icons-material/Close';
 import BusinessIcon from '@mui/icons-material/Business';
+import Divider from '@mui/material/Divider';
+import Badge from '@mui/material/Badge';
+// File type icons for getFileIcon function
+import PictureAsPdfIcon from '@mui/icons-material/PictureAsPdf';
+import ImageIcon from '@mui/icons-material/Image';
+import DescriptionIcon from '@mui/icons-material/Description';
+import TextSnippetIcon from '@mui/icons-material/TextSnippet';
+import InsertDriveFileIcon from '@mui/icons-material/InsertDriveFile';
 import { useTheme } from '../contexts/ThemeContext';
+
+// Helper function to get appropriate icon for file type
+const getFileIcon = (filename) => {
+  // Extract extension from filename
+  const fileExtension = filename && typeof filename === 'string' 
+    ? filename.split('.').pop().toLowerCase() 
+    : '';
+  
+  switch(fileExtension) {
+    case 'pdf':
+      return <PictureAsPdfIcon color="error" fontSize="small" />;
+    case 'jpg':
+    case 'jpeg':
+    case 'png':
+    case 'gif':
+    case 'bmp':
+      return <ImageIcon color="info" fontSize="small" />;
+    case 'doc':
+    case 'docx':
+      return <DescriptionIcon color="primary" fontSize="small" />;
+    case 'txt':
+      return <TextSnippetIcon color="secondary" fontSize="small" />;
+    default:
+      return <InsertDriveFileIcon color="disabled" fontSize="small" />;
+  }
+};
+
+// Helper function to format file size
+const formatFileSize = (sizeInBytes) => {
+  if (sizeInBytes === undefined) return '';
+  
+  if (sizeInBytes < 1024) {
+    return `${sizeInBytes} B`;
+  } else if (sizeInBytes < 1024 * 1024) {
+    return `${(sizeInBytes / 1024).toFixed(1)} KB`;
+  } else {
+    return `${(sizeInBytes / (1024 * 1024)).toFixed(1)} MB`;
+  }
+};
 
 const FileUpload = ({ onUploadSuccess }) => {
   const [uploadingFilesInfo, setUploadingFilesInfo] = useState([]); // To track multiple uploads
   const { theme } = useTheme();
   const isDark = theme === 'dark';
   const [overallStatus, setOverallStatus] = useState({ message: '', error: '' });
-  const [customerName, setCustomerName] = useState(''); // State for customer name
-  const [customerNameError, setCustomerNameError] = useState(''); // State for customer name validation error
-  const [selectedFiles, setSelectedFiles] = useState(null); // Store selected files before upload
-  const [showCustomerField, setShowCustomerField] = useState(false); // Control visibility of customer field
+  const [filesWithCustomers, setFilesWithCustomers] = useState([]); // Array of {file, customerName, error} objects
+  const [showCustomerFields, setShowCustomerFields] = useState(false); // Control visibility of customer fields
   const fileInputRef = useRef(null);
   
   // Function to dismiss overall status message
@@ -41,24 +86,38 @@ const FileUpload = ({ onUploadSuccess }) => {
     );
   };
 
-  // Handle customer name input change
-  const handleCustomerNameChange = (event) => {
-    const value = event.target.value;
-    setCustomerName(value);
-    
-    // Clear error when user starts typing
-    if (customerNameError && value.trim()) {
-      setCustomerNameError('');
-    }
+  // Handle customer name input change for a specific file
+  const handleCustomerNameChange = (index, value) => {
+    setFilesWithCustomers(prev => {
+      const updated = [...prev];
+      updated[index] = {
+        ...updated[index],
+        customerName: value,
+        error: value.trim() ? '' : updated[index].error
+      };
+      return updated;
+    });
   };
 
-  // Validate customer name before proceeding with upload
-  const validateCustomerName = () => {
-    if (!customerName.trim()) {
-      setCustomerNameError('Customer name is required');
-      return false;
-    }
-    return true;
+  // Validate all customer names before proceeding with upload
+  const validateCustomerNames = () => {
+    let isValid = true;
+    
+    setFilesWithCustomers(prev => {
+      const updated = [...prev];
+      updated.forEach((item, index) => {
+        if (!item.customerName.trim()) {
+          updated[index] = {
+            ...item,
+            error: 'Customer name is required'
+          };
+          isValid = false;
+        }
+      });
+      return updated;
+    });
+    
+    return isValid;
   };
 
   // Handle the initial file selection
@@ -66,19 +125,17 @@ const FileUpload = ({ onUploadSuccess }) => {
     fileInputRef.current.click();
   };
   
-  // Handle proceeding with upload after customer name is entered
+  // Handle proceeding with upload after customer names are entered
   const handleProceedWithUpload = () => {
-    if (validateCustomerName() && selectedFiles) {
-      processFileUpload(selectedFiles);
+    if (validateCustomerNames()) {
+      processFileUpload();
     }
   };
   
   // Handle canceling the upload and resetting the form
   const handleCancelUpload = () => {
-    setSelectedFiles(null);
-    setShowCustomerField(false);
-    setCustomerName('');
-    setCustomerNameError('');
+    setFilesWithCustomers([]);
+    setShowCustomerFields(false);
   };
 
   // Handle when files are selected from the file dialog
@@ -88,31 +145,42 @@ const FileUpload = ({ onUploadSuccess }) => {
       return;
     }
     
-    // Store the selected files and show the customer name field
-    setSelectedFiles(files);
-    setShowCustomerField(true);
+    // Create a file+customer object for each selected file
+    const filesWithCustomerData = Array.from(files).map(file => ({
+      file,
+      customerName: '',
+      error: ''
+    }));
+    
+    // Store the selected files with empty customer names and show the customer name fields
+    setFilesWithCustomers(filesWithCustomerData);
+    setShowCustomerFields(true);
   };
   
-  // Process the actual file upload after customer name is provided
-  const processFileUpload = async (files) => {
-    if (!files || files.length === 0) {
+  // Process the actual file upload after customer names are provided
+  const processFileUpload = async () => {
+    const filesToUpload = filesWithCustomers;
+    if (!filesToUpload || filesToUpload.length === 0) {
       return;
     }
 
-    setOverallStatus({ message: `Starting upload of ${files.length} file(s) for customer: ${customerName}...`, error: '' });
+    setOverallStatus({ message: `Starting upload of ${filesToUpload.length} file(s)...`, error: '' });
     
     // Reset individual file tracking for this batch
-    const initialFilesInfo = Array.from(files).map(file => ({
-      name: file.name,
+    const initialFilesInfo = filesToUpload.map(fileData => ({
+      name: fileData.file.name,
       progress: 0,
       status: 'pending', // 'pending', 'uploading', 'success', 'error'
       error: null,
-      customer: customerName, // Add customer name to file info
+      customer: fileData.customerName, // Add individual customer name to file info
     }));
     setUploadingFilesInfo(initialFilesInfo);
 
-    for (let i = 0; i < files.length; i++) {
-      const file = files[i];
+    for (let i = 0; i < filesToUpload.length; i++) {
+      const fileData = filesToUpload[i];
+      const file = fileData.file;
+      const customerName = fileData.customerName;
+      
       setUploadingFilesInfo(prev => prev.map((f, index) => 
         index === i ? { ...f, status: 'uploading', progress: 0 } : f
       ));
@@ -120,7 +188,7 @@ const FileUpload = ({ onUploadSuccess }) => {
       try {
         const formData = new FormData();
         formData.append('file', file);
-        formData.append('customer_name', customerName); // Add customer name to form data
+        formData.append('customer_name', customerName); // Add individual customer name to form data
 
         // Simple progress simulation (actual XHR progress is more complex with fetch)
         // For real progress, XMLHttpRequest or a library like Axios is better.
@@ -134,9 +202,7 @@ const FileUpload = ({ onUploadSuccess }) => {
           body: formData,
         });
         
-        // After successful upload, reset the form for next upload
-        setSelectedFiles(null);
-        setShowCustomerField(false);
+        // Successfully uploaded this file
 
         setUploadingFilesInfo(prev => prev.map((f, index) => 
           index === i ? { ...f, progress: 100 } : f
@@ -166,12 +232,16 @@ const FileUpload = ({ onUploadSuccess }) => {
     // Re-read state directly here to ensure we have the latest updates before setting overallStatus
     setUploadingFilesInfo(currentUploadingFilesInfo => {
       const finalStatusMsg = currentUploadingFilesInfo.every(f => f.status === 'success') 
-          ? `Successfully uploaded all ${files.length} file(s).`
-          : `Finished processing ${files.length} file(s) with some errors.`;
+          ? `Successfully uploaded all ${filesToUpload.length} file(s).`
+          : `Finished processing ${filesToUpload.length} file(s) with some errors.`;
       const hasErrors = currentUploadingFilesInfo.some(f => f.status === 'error');
       setOverallStatus({ message: finalStatusMsg, error: hasErrors ? 'One or more files failed to upload.' : '' });
       return currentUploadingFilesInfo; // Important for the setter to work correctly
     });
+    
+    // Reset the form for next upload
+    setFilesWithCustomers([]);
+    setShowCustomerFields(false);
     
     // Clear the file input value to allow selecting the same file(s) again
     if (fileInputRef.current) {
@@ -190,8 +260,8 @@ const FileUpload = ({ onUploadSuccess }) => {
         accept="*" // Or specify types like ".pdf,.txt,.jpg"
       />
       
-      {/* Customer name input field - shown only after file selection */}
-      {showCustomerField && selectedFiles && (
+      {/* Customer name input fields - shown only after file selection */}
+      {showCustomerFields && filesWithCustomers.length > 0 && (
         <Paper 
           elevation={0} 
           sx={{ 
@@ -202,36 +272,63 @@ const FileUpload = ({ onUploadSuccess }) => {
             border: isDark ? '1px solid rgba(255, 255, 255, 0.05)' : '1px solid rgba(0, 0, 0, 0.05)',
           }}
         >
-          <Typography variant="subtitle2" gutterBottom>
-            Enter Customer Information
-          </Typography>
+          <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 2 }}>
+            <Typography variant="subtitle2">
+              Enter Customer Information
+            </Typography>
+            <Badge badgeContent={filesWithCustomers.length} color="primary" sx={{ mr: 1 }}>
+              <CloudUploadIcon color="action" fontSize="small" />
+            </Badge>
+          </Box>
           
-          <FormControl fullWidth error={!!customerNameError} sx={{ mb: 2 }}>
-            <TextField
-              label="Customer Name"
-              value={customerName}
-              onChange={handleCustomerNameChange}
-              variant="outlined"
-              size="small"
-              required
-              autoFocus
-              error={!!customerNameError}
-              InputProps={{
-                startAdornment: <BusinessIcon sx={{ mr: 1, color: 'text.secondary' }} />,
-              }}
-              sx={{
-                '& .MuiOutlinedInput-root': {
-                  borderRadius: 1.5,
-                  bgcolor: isDark ? 'rgba(255, 255, 255, 0.03)' : 'rgba(0, 0, 0, 0.02)',
-                }
-              }}
-            />
-            {customerNameError && (
-              <FormHelperText>{customerNameError}</FormHelperText>
-            )}
-          </FormControl>
+          <Divider sx={{ mb: 2 }} />
           
-          <Box sx={{ display: 'flex', justifyContent: 'space-between', mt: 1 }}>
+          {/* Individual file entries with customer name fields */}
+          {filesWithCustomers.map((fileData, index) => (
+            <Box key={index} sx={{ mb: index < filesWithCustomers.length - 1 ? 2 : 0 }}>
+              <Box sx={{ display: 'flex', alignItems: 'center', mb: 1 }}>
+                {getFileIcon(fileData.file.name)}
+                <Typography variant="body2" sx={{ ml: 1, fontWeight: 500 }} noWrap>
+                  {fileData.file.name}
+                </Typography>
+                <Typography variant="caption" sx={{ ml: 1, color: 'text.secondary' }}>
+                  ({formatFileSize(fileData.file.size)})
+                </Typography>
+              </Box>
+              
+              <FormControl fullWidth error={!!fileData.error} sx={{ mb: 1 }}>
+                <TextField
+                  label={`Customer Name for ${fileData.file.name}`}
+                  value={fileData.customerName}
+                  onChange={(e) => handleCustomerNameChange(index, e.target.value)}
+                  variant="outlined"
+                  size="small"
+                  required
+                  autoFocus={index === 0}
+                  error={!!fileData.error}
+                  placeholder="Enter customer name"
+                  InputProps={{
+                    startAdornment: <BusinessIcon sx={{ mr: 1, color: 'text.secondary' }} />,
+                  }}
+                  sx={{
+                    '& .MuiOutlinedInput-root': {
+                      borderRadius: 1.5,
+                      bgcolor: isDark ? 'rgba(255, 255, 255, 0.03)' : 'rgba(0, 0, 0, 0.02)',
+                    }
+                  }}
+                />
+                {fileData.error && (
+                  <FormHelperText>{fileData.error}</FormHelperText>
+                )}
+              </FormControl>
+              
+              {index < filesWithCustomers.length - 1 && (
+                <Divider sx={{ my: 2 }} />
+              )}
+            </Box>
+          ))}
+          
+          <Box sx={{ display: 'flex', justifyContent: 'space-between', mt: 3 }}>
             <Button
               variant="outlined"
               size="small"
@@ -245,33 +342,17 @@ const FileUpload = ({ onUploadSuccess }) => {
               size="small"
               color="primary"
               onClick={handleProceedWithUpload}
-              disabled={!customerName.trim()}
+              disabled={filesWithCustomers.every(f => !f.customerName.trim())}
               startIcon={<CloudUploadIcon />}
             >
-              Upload Files ({selectedFiles?.length || 0})
+              Upload Files ({filesWithCustomers.length})
             </Button>
-          </Box>
-          
-          <Box sx={{ mt: 2 }}>
-            <Typography variant="caption" color="text.secondary">
-              Selected {selectedFiles?.length || 0} file(s) ready to upload
-            </Typography>
-            {Array.from(selectedFiles || []).slice(0, 3).map((file, idx) => (
-              <Typography key={idx} variant="caption" display="block" color="text.secondary" noWrap>
-                • {file.name}
-              </Typography>
-            ))}
-            {selectedFiles && selectedFiles.length > 3 && (
-              <Typography variant="caption" display="block" color="text.secondary">
-                • ...and {selectedFiles.length - 3} more
-              </Typography>
-            )}
           </Box>
         </Paper>
       )}
 
-      {/* File upload area - hidden when customer field is shown */}
-      {!showCustomerField && (
+      {/* File upload area - hidden when customer fields are shown */}
+      {!showCustomerFields && (
         <Paper 
           elevation={0} 
           sx={{ 
