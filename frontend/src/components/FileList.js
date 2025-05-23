@@ -36,6 +36,7 @@ import AiAnalysisIcon from './AiAnalysisIcon';
 import AutorenewIcon from '@mui/icons-material/Autorenew';
 import CheckCircleIcon from '@mui/icons-material/CheckCircle';
 import PendingIcon from '@mui/icons-material/Pending';
+import VisibilityIcon from '@mui/icons-material/Visibility';
 
 // Helper function to get appropriate icon for file type
 const getFileIcon = (filename) => {
@@ -188,6 +189,39 @@ const FileList = ({ onFileSelect, refreshTrigger, selectedFile }) => {
         [file.id || file.name]: 'error'
       }));
       alert(`Error in AI analysis: ${error.message}`);
+    }
+  };
+
+  // Function to handle displaying AI analysis
+  const handleDisplayAnalysis = async (file) => {
+    console.log(`Displaying AI analysis for file: ${file.name}`);
+    
+    try {
+      // Construct the AI analysis file name
+      const baseName = file.name.split('.').slice(0, -1).join('.');
+      const aiFileName = `${baseName}_AI.md`;
+      
+      // Make API call to fetch the AI analysis content
+      const response = await fetch(`http://localhost:8001/api/download/${aiFileName}`, {
+        method: 'GET',
+      });
+      
+      if (!response.ok) {
+        throw new Error(`Failed to fetch AI analysis: ${response.status}`);
+      }
+      
+      const analysisContent = await response.text();
+      
+      // Call onFileSelect with the analysis content and type
+      onFileSelect({
+        ...file,
+        analysisContent,
+        displayType: 'analysis'
+      });
+      
+    } catch (error) {
+      console.error(`Error fetching AI analysis for file ${file.name}:`, error);
+      alert(`Error fetching AI analysis: ${error.message}`);
     }
   };
 
@@ -624,44 +658,64 @@ const FileList = ({ onFileSelect, refreshTrigger, selectedFile }) => {
               </ListItemButton>
               <ListItemSecondaryAction>
                 {analyzingFiles[file.id || file.name] === 'analyzed' ? (
-                  <Tooltip title={aiAnalyzing[file.id || file.name] === 'analyzing' ? "AI Analysis in progress..." : aiAnalyzing[file.id || file.name] === 'completed' ? "AI Analysis completed" : "Analyze with AI"}>
-                    <IconButton 
-                      edge="end" 
-                      size="small" 
-                      color="secondary"
-                      disabled={aiAnalyzing[file.id || file.name] === 'analyzing'}
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        handleAnalyzeAI(file);
-                      }}
-                      sx={{ 
-                        bgcolor: aiAnalyzing[file.id || file.name] === 'completed' ? 'rgba(76, 175, 80, 0.08)' : 'rgba(156, 39, 176, 0.08)',
-                        '&:hover': {
-                          bgcolor: aiAnalyzing[file.id || file.name] === 'completed' ? 'rgba(76, 175, 80, 0.2)' : 'rgba(156, 39, 176, 0.2)',
-                        },
-                        '&:disabled': {
-                          bgcolor: 'rgba(156, 39, 176, 0.04)',
-                        }
-                      }}
-                    >
-                      {aiAnalyzing[file.id || file.name] === 'analyzing' ? (
-                        <AutorenewIcon 
-                          fontSize="small" 
-                          sx={{ 
-                            animation: 'spin 2s linear infinite',
-                            '@keyframes spin': {
-                              '0%': { transform: 'rotate(0deg)' },
-                              '100%': { transform: 'rotate(360deg)' }
-                            }
-                          }} 
-                        />
-                      ) : aiAnalyzing[file.id || file.name] === 'completed' ? (
-                        <CheckCircleIcon fontSize="small" />
-                      ) : (
-                        <AiAnalysisIcon fontSize="small" />
-                      )}
-                    </IconButton>
-                  </Tooltip>
+                  aiAnalyzing[file.id || file.name] === 'completed' ? (
+                    <Tooltip title="View AI Analysis">
+                      <IconButton 
+                        edge="end" 
+                        size="small" 
+                        color="success"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          handleDisplayAnalysis(file);
+                        }}
+                        sx={{ 
+                          bgcolor: 'rgba(76, 175, 80, 0.08)',
+                          '&:hover': {
+                            bgcolor: 'rgba(76, 175, 80, 0.2)',
+                          }
+                        }}
+                      >
+                        <VisibilityIcon fontSize="small" />
+                      </IconButton>
+                    </Tooltip>
+                  ) : (
+                    <Tooltip title={aiAnalyzing[file.id || file.name] === 'analyzing' ? "AI Analysis in progress..." : "Analyze with AI"}>
+                      <IconButton 
+                        edge="end" 
+                        size="small" 
+                        color="secondary"
+                        disabled={aiAnalyzing[file.id || file.name] === 'analyzing'}
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          handleAnalyzeAI(file);
+                        }}
+                        sx={{ 
+                          bgcolor: 'rgba(156, 39, 176, 0.08)',
+                          '&:hover': {
+                            bgcolor: 'rgba(156, 39, 176, 0.2)',
+                          },
+                          '&:disabled': {
+                            bgcolor: 'rgba(156, 39, 176, 0.04)',
+                          }
+                        }}
+                      >
+                        {aiAnalyzing[file.id || file.name] === 'analyzing' ? (
+                          <AutorenewIcon 
+                            fontSize="small" 
+                            sx={{ 
+                              animation: 'spin 2s linear infinite',
+                              '@keyframes spin': {
+                                '0%': { transform: 'rotate(0deg)' },
+                                '100%': { transform: 'rotate(360deg)' }
+                              }
+                            }} 
+                          />
+                        ) : (
+                          <AiAnalysisIcon fontSize="small" />
+                        )}
+                      </IconButton>
+                    </Tooltip>
+                  )
                 ) : (
                   <Tooltip title="Process file">
                     <IconButton 
@@ -714,7 +768,7 @@ const FileList = ({ onFileSelect, refreshTrigger, selectedFile }) => {
           <Chip 
             label={files.length} 
             size="small" 
-            color="primary" 
+            color="primary"
             sx={{ ml: 1, height: 20, minWidth: 20, fontSize: '0.7rem' }}
           />
         )}

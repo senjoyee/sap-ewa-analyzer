@@ -1,5 +1,5 @@
 import os
-from fastapi import FastAPI, UploadFile, File, HTTPException, Form, Depends
+from fastapi import FastAPI, UploadFile, File, HTTPException, Form, Depends, Response
 from fastapi.middleware.cors import CORSMiddleware
 from azure.storage.blob import BlobServiceClient, BlobClient, ContainerClient
 from dotenv import load_dotenv
@@ -239,6 +239,56 @@ async def analyze_document_with_ai_endpoint(request: AIAnalyzeRequest):
         
     except Exception as e:
         error_message = f"Error in AI analysis endpoint: {str(e)}"
+        print(error_message)
+        raise HTTPException(status_code=500, detail=error_message)
+
+
+@app.get("/api/download/{blob_name}")
+async def download_file(blob_name: str):
+    """
+    Download a file from Azure Blob Storage.
+    
+    Args:
+        blob_name: The name of the blob to download
+    """
+    try:
+        if not blob_service_client:
+            raise HTTPException(status_code=500, detail="Azure Blob Service client not initialized")
+        
+        # Get blob client
+        blob_client = blob_service_client.get_blob_client(
+            container=AZURE_STORAGE_CONTAINER_NAME, 
+            blob=blob_name
+        )
+        
+        # Check if blob exists
+        if not blob_client.exists():
+            raise HTTPException(status_code=404, detail=f"File {blob_name} not found")
+        
+        # Download blob content
+        blob_data = blob_client.download_blob()
+        content = blob_data.readall()
+        
+        # Determine content type based on file extension
+        if blob_name.endswith('.md'):
+            content_type = "text/markdown"
+        elif blob_name.endswith('.json'):
+            content_type = "application/json"
+        elif blob_name.endswith('.pdf'):
+            content_type = "application/pdf"
+        else:
+            content_type = "application/octet-stream"
+        
+        return Response(
+            content=content,
+            media_type=content_type,
+            headers={"Content-Disposition": f"inline; filename={blob_name}"}
+        )
+        
+    except HTTPException:
+        raise
+    except Exception as e:
+        error_message = f"Error downloading file {blob_name}: {str(e)}"
         print(error_message)
         raise HTTPException(status_code=500, detail=error_message)
 
