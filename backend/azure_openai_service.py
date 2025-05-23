@@ -98,7 +98,7 @@ Now, follow these steps to provide your analysis:
 
 ## 📈 Summary of Key Metrics
 
-**IMPORTANT: Include BOTH a structured JSON metrics object AND a standard markdown table**
+**IMPORTANT: Extract ALL key metrics from the EWA report and present them in BOTH a structured JSON metrics object AND a standard markdown table**
 
 ### JSON Metrics Data (Do not modify this format)
 
@@ -106,32 +106,11 @@ Now, follow these steps to provide your analysis:
 {
   "metrics": [
     {
-      "name": "Avg. Availability per Week",
-      "current": "100%",
-      "target": "100%",
-      "status": "success",
-      "category": "Availability"
-    },
-    {
-      "name": "Avg. Response Time in Dialog Task",
-      "current": "663 ms",
-      "target": "<1200 ms",
-      "status": "success",
-      "category": "Performance" 
-    },
-    {
-      "name": "Max CPU Utilization on DB Server",
-      "current": "75%",
-      "target": "<90%",
-      "status": "warning",
-      "category": "Resource Usage"
-    },
-    {
-      "name": "ABAP Dumps (weekly)",
-      "current": "384",
-      "target": "<30",
-      "status": "critical",
-      "category": "Errors"
+      "name": "METRIC_NAME",
+      "current": "CURRENT_VALUE",
+      "target": "TARGET_VALUE",
+      "status": "STATUS",
+      "category": "CATEGORY"
     }
   ]
 }
@@ -139,6 +118,46 @@ Now, follow these steps to provide your analysis:
 
 **Status values must be one of: "success", "warning", or "critical"**
 **Category values should group related metrics (e.g., "Performance", "Security", "Availability", etc.)**
+
+**INSTRUCTIONS FOR METRIC EXTRACTION:**
+- Thoroughly analyze the EWA report to identify ALL important metrics and KPIs
+- Do not limit yourself to a predefined set of metrics
+- For each metric, extract the current value and target/threshold value
+- Assess the status based on how the current value compares to the target value
+- Group related metrics into appropriate categories
+
+---
+
+## 🔧 Recommended Parameters
+
+**IMPORTANT: Extract ALL parameter recommendations from the EWA report and present them in BOTH a structured JSON parameters object AND a standard markdown table**
+
+### JSON Parameters Data (Do not modify this format)
+
+```json
+{
+  "parameters": [
+    {
+      "name": "PARAMETER_NAME",
+      "current": "CURRENT_VALUE",
+      "recommended": "RECOMMENDED_VALUE",
+      "impact": "IMPACT_LEVEL",
+      "category": "CATEGORY",
+      "description": "DESCRIPTION_OF_PARAMETER"
+    }
+  ]
+}
+```
+
+**Impact values must be one of: "high", "medium", or "low"**
+**Category values should group related parameters (e.g., "Performance", "Memory Management", "Security", etc.)**
+
+**INSTRUCTIONS FOR PARAMETER EXTRACTION:**
+- Thoroughly analyze the EWA report to identify ALL parameters that need adjustment
+- Do not limit yourself to a predefined set of parameters
+- For each parameter recommendation in the report, extract the current value and recommended value
+- Assess the impact level based on the criticality described in the report
+- Add a clear description of what the parameter does and why changing it is recommended
 
 Additional guidelines:
 - Focus on technical aspects related to SAP system performance, security, and stability.
@@ -276,7 +295,10 @@ class AzureOpenAIService:
             json_patterns = [
                 r'```json\s*({[\s\S]*?})\s*```',  # Standard markdown code block
                 r'```\s*({\s*"metrics"[\s\S]*?})\s*```',  # Code block without language
-                r'({\s*"metrics"\s*:\s*\[[\s\S]*?\]\s*})' # Raw JSON without code block
+                r'({\s*"metrics"\s*:\s*\[[\s\S]*?\]\s*})',  # Raw JSON without code block
+                r'```json\s*({\s*"parameters"[\s\S]*?})\s*```',  # Parameters JSON block
+                r'```\s*({\s*"parameters"[\s\S]*?})\s*```',  # Parameters code block without language
+                r'({\s*"parameters"\s*:\s*\[[\s\S]*?\]\s*})'  # Parameters JSON without code block
             ]
             
             # Patterns to match entire sections to remove
@@ -284,10 +306,17 @@ class AzureOpenAIService:
                 r'### JSON Metrics Data[\s\S]*?(?=###|$)',  # Match JSON section with heading
                 r'## Summary of Key Metrics[\s\S]*?```json[\s\S]*?```[\s\S]*?(?=##|$)',  # Match entire metrics section
                 r'### Markdown Table View[\s\S]*?(?=###|##|$)',  # Match markdown table view section
-                r'\| Metric \| Current Value \| Target \| Status \|[\s\S]*?(?=\n\n|##|$)'  # Match markdown table directly
+                r'\| Metric \| Current Value \| Target \| Status \|[\s\S]*?(?=\n\n|##|$)',  # Match markdown table directly
+                r'### JSON Parameters Data[\s\S]*?(?=###|$)',  # Match JSON parameters section with heading
+                r'## Recommended Parameters[\s\S]*?```json[\s\S]*?```[\s\S]*?(?=##|$)',  # Match entire parameters section
+                r'\| Parameter \| Current Value \| Recommended \| Impact \|[\s\S]*?(?=\n\n|##|$)'  # Match parameters table directly
             ]
             
-            # First extract the JSON data
+            # Extract metrics and parameters data separately
+            metrics_data = {"metrics": []}
+            parameters_data = {"parameters": []}
+            
+            # First look for metrics data
             for pattern in json_patterns:
                 json_match = re.search(pattern, analysis_result)
                 if json_match:
@@ -295,16 +324,35 @@ class AzureOpenAIService:
                         json_str = json_match.group(1).strip()
                         # Clean up the JSON string before parsing
                         json_str = re.sub(r'[\n\r\t]', '', json_str)
-                        metrics_data = json.loads(json_str)
-                        if 'metrics' in metrics_data and isinstance(metrics_data['metrics'], list):
-                            print(f"Successfully extracted metrics data: {len(metrics_data.get('metrics', []))} metrics found")
+                        data = json.loads(json_str)
+                        
+                        # Check if we found metrics data
+                        if 'metrics' in data and isinstance(data['metrics'], list):
+                            metrics_data = data
+                            print(f"Successfully extracted metrics data: {len(data.get('metrics', []))} metrics found")
                             break
-                        else:
-                            print("Found JSON but missing 'metrics' array, trying next pattern")
-                            metrics_data = None
                     except json.JSONDecodeError as e:
-                        print(f"Error parsing JSON metrics with pattern {pattern}: {str(e)}")
-                        metrics_data = None
+                        print(f"Error parsing metrics JSON with pattern {pattern}: {str(e)}")
+                        continue
+            
+            # Then look for parameters data
+            for pattern in json_patterns:
+                json_match = re.search(pattern, analysis_result)
+                if json_match:
+                    try:
+                        json_str = json_match.group(1).strip()
+                        # Clean up the JSON string before parsing
+                        json_str = re.sub(r'[\n\r\t]', '', json_str)
+                        data = json.loads(json_str)
+                        
+                        # Check if we found parameters data
+                        if 'parameters' in data and isinstance(data['parameters'], list):
+                            parameters_data = data
+                            print(f"Successfully extracted parameters data: {len(data.get('parameters', []))} parameters found")
+                            break
+                    except json.JSONDecodeError as e:
+                        print(f"Error parsing parameters JSON with pattern {pattern}: {str(e)}")
+                        continue
             
             # Then remove the JSON section and markdown tables from markdown content
             cleaned_markdown = analysis_result
@@ -345,16 +393,20 @@ class AzureOpenAIService:
             # Clean up any duplicate newlines
             cleaned_markdown = re.sub(r'\n{3,}', '\n\n', cleaned_markdown)
             
-            if metrics_data is None:
-                print("No valid metrics JSON data found in the response")
-                # Create a default metrics structure if none found
-                metrics_data = {
-                    "metrics": []
-                }
+            if not metrics_data["metrics"]:
+                print("No valid metrics data found in the response")
+                # Create a default metrics structure
+                metrics_data = {"metrics": []}
+                
+            if not parameters_data["parameters"]:
+                print("No valid parameters data found in the response")
+                # Create a default parameters structure
+                parameters_data = {"parameters": []}
             
             return {
                 "markdown": cleaned_markdown,
-                "metrics_data": metrics_data
+                "metrics_data": metrics_data,
+                "parameters_data": parameters_data
             }
             
         except Exception as e:
@@ -383,9 +435,10 @@ class AzureOpenAIService:
             # Step 2: Analyze with GPT-4 - now returns a dict with markdown and metrics_data
             analysis_result = await self.analyze_with_gpt4(markdown_content)
             
-            # Extract markdown content and metrics data
+            # Extract markdown content, metrics data, and parameters data
             markdown_analysis = analysis_result.get("markdown")
             metrics_data = analysis_result.get("metrics_data")
+            parameters_data = analysis_result.get("parameters_data")
             
             if not markdown_analysis or not markdown_analysis.strip():
                 raise ValueError("AI analysis result is empty")
@@ -395,7 +448,7 @@ class AzureOpenAIService:
             
             # Step 4: Store metrics data separately in JSON format if available
             metrics_blob_name = None
-            if metrics_data:
+            if metrics_data and metrics_data.get("metrics"):
                 # Create metrics file name with _metrics.json suffix
                 base_name = os.path.splitext(blob_name)[0]
                 metrics_blob_name = f"{base_name}_metrics.json"
@@ -414,13 +467,36 @@ class AzureOpenAIService:
                 )
                 print(f"Successfully uploaded metrics data to {metrics_blob_name}")
             
+            # Step 5: Store parameters data separately in JSON format if available
+            parameters_blob_name = None
+            if parameters_data and parameters_data.get("parameters"):
+                # Create parameters file name with _parameters.json suffix
+                base_name = os.path.splitext(blob_name)[0]
+                parameters_blob_name = f"{base_name}_parameters.json"
+                
+                # Upload parameters as JSON
+                import json
+                blob_client = self.blob_service_client.get_blob_client(
+                    container=AZURE_STORAGE_CONTAINER_NAME, 
+                    blob=parameters_blob_name
+                )
+                
+                blob_client.upload_blob(
+                    json.dumps(parameters_data, indent=2).encode('utf-8'), 
+                    overwrite=True,
+                    content_type='application/json'
+                )
+                print(f"Successfully uploaded parameters data to {parameters_blob_name}")
+            
             return {
                 "success": True,
                 "message": "AI analysis completed successfully",
                 "original_file": blob_name,
                 "analysis_file": ai_blob_name,
                 "metrics_file": metrics_blob_name,
+                "parameters_file": parameters_blob_name,
                 "metrics_data": metrics_data,  # Include metrics data directly in response
+                "parameters_data": parameters_data,  # Include parameters data directly in response
                 "analysis_preview": markdown_analysis[:500] + "..." if len(markdown_analysis) > 500 else markdown_analysis
             }
             

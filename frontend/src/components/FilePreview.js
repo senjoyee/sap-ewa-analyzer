@@ -18,10 +18,12 @@ import TextSnippetIcon from '@mui/icons-material/TextSnippet';
 import SmartToyIcon from '@mui/icons-material/SmartToy';
 import EqualizerIcon from '@mui/icons-material/Equalizer';
 import AssessmentIcon from '@mui/icons-material/Assessment';
+import TuneIcon from '@mui/icons-material/Tune';
 import { useTheme } from '../contexts/ThemeContext';
 
-// Import our custom MetricsTable component
+// Import our custom table components
 import MetricsTable from './MetricsTable';
+import ParametersTable from './ParametersTable';
 
 // Helper function to get appropriate file type label and icon
 const getFileTypeInfo = (fileName) => {
@@ -34,9 +36,6 @@ const getFileTypeInfo = (fileName) => {
   if (fileName.includes('.')) {
     extension = fileName.split('.').pop().toLowerCase();
   }
-  
-  // Debug the extension extraction
-  console.log(`Preview - File: ${fileName}, Extension detected: ${extension}`);
   
   switch(extension) {
     case 'pdf':
@@ -86,20 +85,52 @@ const FilePreview = ({ selectedFile }) => {
   // Check if we're displaying AI analysis
   const isAnalysisView = selectedFile?.displayType === 'analysis' && selectedFile?.analysisContent;
   
-  // Use metrics data passed directly from parent component
+  // Use metrics and parameters data passed directly from parent component
   const metricsData = selectedFile?.metricsData;
-  const hasMetrics = metricsData && metricsData.metrics && metricsData.metrics.length > 0;
+  const parametersData = selectedFile?.parametersData;
   
-  // Log metrics data for debugging
+  // Debug the actual structure
+  console.log('DEBUG - Full metricsData:', JSON.stringify(metricsData, null, 2));
+  console.log('DEBUG - metricsData type:', typeof metricsData);
+  console.log('DEBUG - metricsData is array:', Array.isArray(metricsData));
+  if (metricsData && typeof metricsData === 'object') {
+    console.log('DEBUG - metricsData keys:', Object.keys(metricsData));
+    console.log('DEBUG - metricsData.metrics exists:', 'metrics' in metricsData);
+    console.log('DEBUG - metricsData.metrics type:', typeof metricsData.metrics);
+  }
+  
+  // Enhanced metrics detection logic to handle all possible data structures
+  const hasMetrics = metricsData && (
+    // Check if it's an object with metrics property that is an array
+    (metricsData.metrics && Array.isArray(metricsData.metrics) && metricsData.metrics.length > 0) ||
+    // Check if it's a direct array
+    (Array.isArray(metricsData) && metricsData.length > 0) ||
+    // Check if it has a length property (for array-like objects)
+    (typeof metricsData === 'object' && 'length' in metricsData && metricsData.length > 0) ||
+    // Check if it's an object with any keys (that isn't empty)
+    (typeof metricsData === 'object' && Object.keys(metricsData).length > 0)
+  );
+  const hasParameters = parametersData && parametersData.parameters && parametersData.parameters.length > 0;
+  
+  // Log metrics and parameters data for debugging
   useEffect(() => {
     if (isAnalysisView) {
       if (hasMetrics) {
         console.log('Displaying metrics data in FilePreview:', metricsData);
+        // Log the actual metrics array we'll pass to the table
+        const metricsArray = metricsData.metrics || metricsData;
+        console.log('Metrics array for table:', metricsArray);
       } else {
         console.log('No metrics data available for this analysis');
       }
+      
+      if (hasParameters) {
+        console.log('Displaying parameters data in FilePreview:', parametersData.parameters);
+      } else {
+        console.log('No parameters data available for this analysis');
+      }
     }
-  }, [isAnalysisView, hasMetrics, metricsData]);
+  }, [isAnalysisView, hasMetrics, hasParameters, metricsData, parametersData]);
   
   return (
     <Paper
@@ -344,6 +375,45 @@ const FilePreview = ({ selectedFile }) => {
                     <AccordionDetails sx={{ p: 0 }}>
                       <Box sx={{ p: 3 }}>
                         <MetricsTable metricsData={metricsData} />
+                      </Box>
+                    </AccordionDetails>
+                  </Accordion>
+                </Box>
+              )}
+              
+              {/* Collapsible Parameters Section after metrics */}
+              {hasParameters && (
+                <Box sx={{ mt: 2, mb: 4 }}>
+                  <Accordion 
+                    defaultExpanded={false}
+                    sx={{
+                      boxShadow: isDark ? '0 2px 8px rgba(0, 0, 0, 0.5)' : '0 1px 4px rgba(0, 0, 0, 0.1)',
+                      borderRadius: '8px !important',
+                      overflow: 'hidden',
+                      '&:before': { display: 'none' }, // Remove the default MUI expansion panel line
+                      border: isDark ? '1px solid rgba(255, 255, 255, 0.1)' : '1px solid rgba(0, 0, 0, 0.1)',
+                      mb: 3,
+                    }}
+                  >
+                    <AccordionSummary
+                      expandIcon={<ExpandMoreIcon />}
+                      sx={{
+                        backgroundColor: isDark ? 'rgba(76, 175, 80, 0.15)' : 'rgba(76, 175, 80, 0.08)',
+                        '&:hover': {
+                          backgroundColor: isDark ? 'rgba(76, 175, 80, 0.25)' : 'rgba(76, 175, 80, 0.12)',
+                        }
+                      }}
+                    >
+                      <Box sx={{ display: 'flex', alignItems: 'center' }}>
+                        <TuneIcon sx={{ mr: 1.5, color: 'success.main' }} />
+                        <Typography variant="h6" sx={{ fontWeight: 500, color: 'success.main' }}>
+                          Recommended Parameters
+                        </Typography>
+                      </Box>
+                    </AccordionSummary>
+                    <AccordionDetails sx={{ p: 0 }}>
+                      <Box sx={{ p: 3 }}>
+                        <ParametersTable parametersData={parametersData} />
                       </Box>
                     </AccordionDetails>
                   </Accordion>

@@ -62,17 +62,66 @@ const MetricsTable = ({ metricsData }) => {
   // Validate metrics data structure
   useEffect(() => {
     try {
+      // Log the raw metrics data for debugging
+      console.log('DEBUG - Raw metrics data in MetricsTable:', metricsData);
+      console.log('DEBUG - Type of metrics data:', typeof metricsData);
+      if (metricsData) {
+        console.log('DEBUG - Keys in metrics data:', Object.keys(metricsData));
+      }
+      
       if (!metricsData) {
         return;
       }
       
-      if (!metricsData.metrics || !Array.isArray(metricsData.metrics)) {
-        throw new Error('Invalid metrics data format: "metrics" property missing or not an array');
+      // Handle different data structures
+      let metricsArray;
+      if (Array.isArray(metricsData)) {
+        // Direct array format
+        console.log('DEBUG - Metrics is an array');
+        metricsArray = metricsData;
+      } else if (metricsData.metrics && Array.isArray(metricsData.metrics)) {
+        // Object with metrics property
+        console.log('DEBUG - Metrics is an object with metrics array property');
+        metricsArray = metricsData.metrics;
+      } else if (typeof metricsData === 'object') {
+        // Try to extract metrics from the object structure
+        console.log('DEBUG - Metrics is an object, attempting to extract metrics');
+        
+        // If it's an object with a data property that contains metrics
+        if (metricsData.data && (Array.isArray(metricsData.data) || metricsData.data.metrics)) {
+          metricsArray = Array.isArray(metricsData.data) ? metricsData.data : metricsData.data.metrics;
+          console.log('DEBUG - Found metrics in data property:', metricsArray);
+        }
+        // If it has any property that looks like an array of metrics
+        else {
+          // Find the first property that's an array and might contain metrics
+          const potentialMetricsProps = Object.keys(metricsData).filter(key => 
+            Array.isArray(metricsData[key]) || 
+            (typeof metricsData[key] === 'object' && metricsData[key]?.metrics)
+          );
+          
+          if (potentialMetricsProps.length > 0) {
+            const firstProp = potentialMetricsProps[0];
+            metricsArray = Array.isArray(metricsData[firstProp]) ? 
+              metricsData[firstProp] : 
+              metricsData[firstProp].metrics;
+            console.log(`DEBUG - Found metrics in ${firstProp} property:`, metricsArray);
+          } else {
+            // Last resort: treat the entire object as a single metrics entry
+            // This is for backward compatibility with older data formats
+            console.log('DEBUG - No array found, treating object as metrics');
+            metricsArray = [metricsData];
+          }
+        }
+      } else {
+        throw new Error('Invalid metrics data format: expected array or object with "metrics" property');
       }
+      
+      console.log('DEBUG - Final metrics array to be displayed:', metricsArray);
       
       // Check if all metrics have the required properties
       const requiredProps = ['name', 'current', 'target', 'status'];
-      const invalidMetrics = metricsData.metrics.filter(metric => 
+      const invalidMetrics = metricsArray.filter(metric => 
         !metric || typeof metric !== 'object' || requiredProps.some(prop => !(prop in metric))
       );
       
@@ -97,7 +146,7 @@ const MetricsTable = ({ metricsData }) => {
     );
   }
   
-  if (!metricsData || !metricsData.metrics || metricsData.metrics.length === 0) {
+  if (!metricsData) {
     return (
       <Box sx={{ my: 2, p: 2, borderRadius: 2, bgcolor: 'background.paper' }}>
         <Typography variant="subtitle1" color="text.secondary">
@@ -108,8 +157,65 @@ const MetricsTable = ({ metricsData }) => {
   }
 
   // Group metrics by category
+  let metricsArray;
+  
+  // Determine the metrics array based on the structure
+  if (Array.isArray(metricsData)) {
+    // Direct array format
+    metricsArray = metricsData;
+  } else if (metricsData.metrics && Array.isArray(metricsData.metrics)) {
+    // Object with metrics property
+    metricsArray = metricsData.metrics;
+  } else if (typeof metricsData === 'object') {
+    // Handle potential nested structures
+    if (metricsData.data && Array.isArray(metricsData.data)) {
+      metricsArray = metricsData.data;
+    } else if (metricsData.data && metricsData.data.metrics && Array.isArray(metricsData.data.metrics)) {
+      metricsArray = metricsData.data.metrics;
+    } else {
+      // As a fallback, try to convert the object to an array if it has required properties
+      const requiredProps = ['name', 'current', 'target', 'status'];
+      if (requiredProps.every(prop => prop in metricsData)) {
+        // If the object itself looks like a metric, wrap it in an array
+        metricsArray = [metricsData];
+      } else {
+        // Last resort - empty array with error
+        metricsArray = [];
+        console.error('Could not extract metrics array from data:', metricsData);
+      }
+    }
+  } else {
+    // Fallback to empty array if no valid structure found
+    metricsArray = [];
+    console.error('Invalid metrics data format:', metricsData);
+  }
+  
+  // Log the extracted metrics array
+  console.log('Final metrics array for display:', metricsArray);
+  
+  // If we have no metrics after all this processing, show a message
+  if (!metricsArray || metricsArray.length === 0) {
+    return (
+      <Box sx={{ my: 2, p: 2, borderRadius: 2, bgcolor: isDark ? 'rgba(244, 67, 54, 0.1)' : 'rgba(244, 67, 54, 0.05)', border: '1px solid rgba(244, 67, 54, 0.3)' }}>
+        <Typography variant="subtitle1" color="error">
+          No valid metrics found in the provided data
+        </Typography>
+      </Box>
+    );
+  }
+  
+  // Organize metrics by category
   const metricsByCategory = {};
-  metricsData.metrics.forEach(metric => {
+  metricsArray.forEach(metric => {
+    if (!metric || typeof metric !== 'object') return;
+    
+    // Skip any metrics that don't have the required properties
+    const requiredProps = ['name', 'current', 'target', 'status'];
+    if (!requiredProps.every(prop => prop in metric)) {
+      console.warn('Skipping invalid metric:', metric);
+      return;
+    }
+    
     const category = metric.category || 'Uncategorized';
     if (!metricsByCategory[category]) {
       metricsByCategory[category] = [];

@@ -5,7 +5,7 @@ from azure.storage.blob import BlobServiceClient, BlobClient, ContainerClient
 from dotenv import load_dotenv
 from pydantic import BaseModel
 from pdf_markdown_converter import convert_pdf_to_markdown, get_conversion_status
-from azure_openai_service import analyze_document_with_ai
+from langgraph_workflows import execute_ewa_analysis
 import uvicorn # For running the app
 
 # Load environment variables from .env file
@@ -103,6 +103,8 @@ async def list_files():
         json_files = {}
         md_files = {}
         ai_analyzed_files = {}  # Track files that have been AI-analyzed
+        metrics_files = {}  # Track files that have metrics
+        parameters_files = {}  # Track files that have parameters
         
         for blob in blob_list:
             name = blob.name.lower()
@@ -111,6 +113,17 @@ async def list_files():
                 base_name = os.path.splitext(blob.name)[0]
                 json_files[base_name] = True
                 print(f"Found JSON file: {blob.name}, base name: {base_name}")
+                
+                # Check if this is a metrics or parameters file
+                if base_name.endswith('_metrics'):
+                    original_base_name = base_name[:-8]  # Remove _metrics
+                    metrics_files[original_base_name] = True
+                    print(f"Found metrics file for: {original_base_name}")
+                elif base_name.endswith('_parameters'):
+                    original_base_name = base_name[:-11]  # Remove _parameters
+                    parameters_files[original_base_name] = True
+                    print(f"Found parameters file for: {original_base_name}")
+                    
             elif name.endswith('.md'):
                 # Store the base name (without extension) as key
                 base_name = os.path.splitext(blob.name)[0]
@@ -156,7 +169,11 @@ async def list_files():
             is_processed = base_name in json_files or base_name in md_files
             # Check if this file has been AI-analyzed
             is_ai_analyzed = base_name in ai_analyzed_files
-            print(f"File {blob.name} processed status: {is_processed}, AI analyzed: {is_ai_analyzed}")
+            # Check if this file has metrics
+            has_metrics = base_name in metrics_files
+            # Check if this file has parameters
+            has_parameters = base_name in parameters_files
+            print(f"File {blob.name} processed status: {is_processed}, AI analyzed: {is_ai_analyzed}, has metrics: {has_metrics}, has parameters: {has_parameters}")
             
             files.append({
                 "name": blob.name, 
@@ -164,7 +181,9 @@ async def list_files():
                 "size": blob.size,
                 "customer_name": customer_name,
                 "processed": is_processed,
-                "ai_analyzed": is_ai_analyzed
+                "ai_analyzed": is_ai_analyzed,
+                "has_metrics": has_metrics,
+                "has_parameters": has_parameters
             })
         
         print(f"Returning {len(files)} files in the list")
@@ -240,7 +259,7 @@ async def analyze_document_with_ai_endpoint(request: AIAnalyzeRequest):
         print(f"Starting AI analysis for document: {request.blob_name}")
         
         # Call the AI analysis service
-        result = await analyze_document_with_ai(request.blob_name)
+        result = await execute_ewa_analysis(request.blob_name)
         
         if result.get("error"):
             print(f"Error in AI analysis: {result.get('message')}")
@@ -304,6 +323,98 @@ async def download_file(blob_name: str):
         raise
     except Exception as e:
         error_message = f"Error downloading file {blob_name}: {str(e)}"
+        print(error_message)
+        raise HTTPException(status_code=500, detail=error_message)
+
+
+@app.get("/api/metrics/{blob_name}")
+async def get_metrics_data(blob_name: str):
+    """
+    Get metrics data for a specific file.
+    
+    Args:
+        blob_name: The base name of the file (without extension)
+    
+    Returns:
+        JSON response with metrics data
+    """
+    try:
+        if not blob_service_client:
+            raise HTTPException(status_code=500, detail="Azure Blob Service client not initialized")
+        
+        # Construct metrics file name
+        base_name = os.path.splitext(blob_name)[0]
+        metrics_blob_name = f"{base_name}_metrics.json"
+        
+        # Get blob client
+        blob_client = blob_service_client.get_blob_client(
+            container=AZURE_STORAGE_CONTAINER_NAME, 
+            blob=metrics_blob_name
+        )
+        
+        # Check if blob exists
+        if not blob_client.exists():
+            raise HTTPException(status_code=404, detail=f"Metrics file not found for {blob_name}")
+        
+        # Download and parse JSON content
+        blob_data = blob_client.download_blob()
+        content = blob_data.readall().decode('utf-8')
+        
+        import json
+        metrics_data = json.loads(content)
+        
+        return metrics_data
+        
+    except HTTPException:
+        raise
+    except Exception as e:
+        error_message = f"Error getting metrics data for {blob_name}: {str(e)}"
+        print(error_message)
+        raise HTTPException(status_code=500, detail=error_message)
+
+
+@app.get("/api/parameters/{blob_name}")
+async def get_parameters_data(blob_name: str):
+    """
+    Get parameters data for a specific file.
+    
+    Args:
+        blob_name: The base name of the file (without extension)
+    
+    Returns:
+        JSON response with parameters data
+    """
+    try:
+        if not blob_service_client:
+            raise HTTPException(status_code=500, detail="Azure Blob Service client not initialized")
+        
+        # Construct parameters file name
+        base_name = os.path.splitext(blob_name)[0]
+        parameters_blob_name = f"{base_name}_parameters.json"
+        
+        # Get blob client
+        blob_client = blob_service_client.get_blob_client(
+            container=AZURE_STORAGE_CONTAINER_NAME, 
+            blob=parameters_blob_name
+        )
+        
+        # Check if blob exists
+        if not blob_client.exists():
+            raise HTTPException(status_code=404, detail=f"Parameters file not found for {blob_name}")
+        
+        # Download and parse JSON content
+        blob_data = blob_client.download_blob()
+        content = blob_data.readall().decode('utf-8')
+        
+        import json
+        parameters_data = json.loads(content)
+        
+        return parameters_data
+        
+    except HTTPException:
+        raise
+    except Exception as e:
+        error_message = f"Error getting parameters data for {blob_name}: {str(e)}"
         print(error_message)
         raise HTTPException(status_code=500, detail=error_message)
 
