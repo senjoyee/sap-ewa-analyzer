@@ -4,7 +4,7 @@ from fastapi.middleware.cors import CORSMiddleware
 from azure.storage.blob import BlobServiceClient, BlobClient, ContainerClient
 from dotenv import load_dotenv
 from pydantic import BaseModel
-from pdf_markdown_converter import convert_pdf_to_markdown, get_conversion_status
+from document_converter import convert_document_to_markdown, get_conversion_status
 from langgraph_workflows import execute_ewa_analysis
 import uvicorn # For running the app
 
@@ -204,7 +204,7 @@ class AIAnalyzeRequest(BaseModel):
 @app.post("/api/analyze")
 async def analyze_document(request: AnalyzeDocumentRequest):
     """
-    Convert a PDF document stored in Azure Blob Storage to markdown using pymupdf4llm.
+    Convert a document (PDF, DOCX, DOC) stored in Azure Blob Storage to markdown.
     The markdown result will be saved back to the same container with a .md extension,
     and a .json file will be created to maintain compatibility with existing system.
     
@@ -212,8 +212,8 @@ async def analyze_document(request: AnalyzeDocumentRequest):
         request: A request object containing the blob_name to convert
     """
     try:
-        # Call the convert_pdf_to_markdown function from the pdf_markdown_converter module
-        result = convert_pdf_to_markdown(request.blob_name)
+        # Call the unified document converter function
+        result = convert_document_to_markdown(request.blob_name)
         
         if result.get("error"):
             print(f"Error converting document: {result.get('message')}")
