@@ -348,13 +348,25 @@ const FileList = ({ onFileSelect, refreshTrigger, selectedFile }) => {
       
       // Initialize analysis status for each file
       const statusMap = {};
+      const aiStatusMap = {};
+      
       filesWithIds.forEach(file => {
         // Use the 'processed' flag directly from the backend
         // Set status to 'analyzed' if processed is true, otherwise 'pending'
-        console.log(`File ${file.name} processed status:`, file.processed);
+        console.log(`File ${file.name} processed status:`, file.processed, "AI analyzed:", file.ai_analyzed);
         statusMap[file.id || file.name] = file.processed ? 'analyzed' : 'pending';
+        
+        // Set AI analysis status based on backend data
+        if (file.ai_analyzed) {
+          aiStatusMap[file.id || file.name] = 'completed';
+        }
       });
+      
       setAnalyzingFiles(statusMap);
+      setAiAnalyzing(prev => ({
+        ...prev,
+        ...aiStatusMap
+      }));
       
       // Auto-expand any customer with only one file or if few total customers
       const grouped = groupByCustomer(filesWithIds);
@@ -657,85 +669,96 @@ const FileList = ({ onFileSelect, refreshTrigger, selectedFile }) => {
                 </Tooltip>
               </ListItemButton>
               <ListItemSecondaryAction>
-                {analyzingFiles[file.id || file.name] === 'analyzed' ? (
-                  aiAnalyzing[file.id || file.name] === 'completed' ? (
-                    <Tooltip title="View AI Analysis">
-                      <IconButton 
-                        edge="end" 
-                        size="small" 
-                        color="success"
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          handleDisplayAnalysis(file);
-                        }}
-                        sx={{ 
-                          bgcolor: 'rgba(76, 175, 80, 0.08)',
-                          '&:hover': {
-                            bgcolor: 'rgba(76, 175, 80, 0.2)',
-                          }
-                        }}
-                      >
-                        <VisibilityIcon fontSize="small" />
-                      </IconButton>
-                    </Tooltip>
-                  ) : (
-                    <Tooltip title={aiAnalyzing[file.id || file.name] === 'analyzing' ? "AI Analysis in progress..." : "Analyze with AI"}>
+                {/* If file has been AI-analyzed, only show Display Analysis button */}
+                {aiAnalyzing[file.id || file.name] === 'completed' ? (
+                  <Tooltip title="View AI Analysis">
+                    <IconButton 
+                      edge="end" 
+                      size="small" 
+                      color="success"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        handleDisplayAnalysis(file);
+                      }}
+                      sx={{ 
+                        bgcolor: 'rgba(76, 175, 80, 0.08)',
+                        '&:hover': {
+                          bgcolor: 'rgba(76, 175, 80, 0.2)',
+                        }
+                      }}
+                    >
+                      <VisibilityIcon fontSize="small" />
+                    </IconButton>
+                  </Tooltip>
+                ) : (
+                  /* If file is being AI-analyzed, show the analyzing state */
+                  aiAnalyzing[file.id || file.name] === 'analyzing' ? (
+                    <Tooltip title="AI Analysis in progress...">
                       <IconButton 
                         edge="end" 
                         size="small" 
                         color="secondary"
-                        disabled={aiAnalyzing[file.id || file.name] === 'analyzing'}
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          handleAnalyzeAI(file);
-                        }}
+                        disabled={true}
                         sx={{ 
-                          bgcolor: 'rgba(156, 39, 176, 0.08)',
-                          '&:hover': {
-                            bgcolor: 'rgba(156, 39, 176, 0.2)',
-                          },
-                          '&:disabled': {
-                            bgcolor: 'rgba(156, 39, 176, 0.04)',
-                          }
+                          bgcolor: 'rgba(156, 39, 176, 0.04)',
                         }}
                       >
-                        {aiAnalyzing[file.id || file.name] === 'analyzing' ? (
-                          <AutorenewIcon 
-                            fontSize="small" 
-                            sx={{ 
-                              animation: 'spin 2s linear infinite',
-                              '@keyframes spin': {
-                                '0%': { transform: 'rotate(0deg)' },
-                                '100%': { transform: 'rotate(360deg)' }
-                              }
-                            }} 
-                          />
-                        ) : (
-                          <AiAnalysisIcon fontSize="small" />
-                        )}
+                        <AutorenewIcon 
+                          fontSize="small" 
+                          sx={{ 
+                            animation: 'spin 2s linear infinite',
+                            '@keyframes spin': {
+                              '0%': { transform: 'rotate(0deg)' },
+                              '100%': { transform: 'rotate(360deg)' }
+                            }
+                          }} 
+                        />
                       </IconButton>
                     </Tooltip>
+                  ) : (
+                    /* Otherwise show the regular process or analyze buttons based on processed state */
+                    analyzingFiles[file.id || file.name] === 'analyzed' ? (
+                      <Tooltip title="Analyze with AI">
+                        <IconButton 
+                          edge="end" 
+                          size="small" 
+                          color="secondary"
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            handleAnalyzeAI(file);
+                          }}
+                          sx={{ 
+                            bgcolor: 'rgba(156, 39, 176, 0.08)',
+                            '&:hover': {
+                              bgcolor: 'rgba(156, 39, 176, 0.2)',
+                            }
+                          }}
+                        >
+                          <AiAnalysisIcon fontSize="small" />
+                        </IconButton>
+                      </Tooltip>
+                    ) : (
+                      <Tooltip title="Process file">
+                        <IconButton 
+                          edge="end" 
+                          size="small" 
+                          color="primary"
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            handleAnalyze(file);
+                          }}
+                          sx={{ 
+                            bgcolor: 'rgba(144, 202, 249, 0.08)',
+                            '&:hover': {
+                              bgcolor: 'rgba(144, 202, 249, 0.2)',
+                            }
+                          }}
+                        >
+                          <PlayArrowIcon fontSize="small" />
+                        </IconButton>
+                      </Tooltip>
+                    )
                   )
-                ) : (
-                  <Tooltip title="Process file">
-                    <IconButton 
-                      edge="end" 
-                      size="small" 
-                      color="primary"
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        handleAnalyze(file);
-                      }}
-                      sx={{ 
-                        bgcolor: 'rgba(144, 202, 249, 0.08)',
-                        '&:hover': {
-                          bgcolor: 'rgba(144, 202, 249, 0.2)',
-                        }
-                      }}
-                    >
-                      <PlayArrowIcon fontSize="small" />
-                    </IconButton>
-                  </Tooltip>
                 )}
               </ListItemSecondaryAction>
             </ListItem>

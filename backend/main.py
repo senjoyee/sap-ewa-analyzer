@@ -102,6 +102,8 @@ async def list_files():
         # First, identify all .json and .md files to detect processed files
         json_files = {}
         md_files = {}
+        ai_analyzed_files = {}  # Track files that have been AI-analyzed
+        
         for blob in blob_list:
             name = blob.name.lower()
             if name.endswith('.json'):
@@ -114,6 +116,13 @@ async def list_files():
                 base_name = os.path.splitext(blob.name)[0]
                 md_files[base_name] = True
                 print(f"Found MD file: {blob.name}, base name: {base_name}")
+                
+                # Check if this is an AI analysis file
+                if base_name.endswith('_AI'):
+                    # Get the original file name by removing _AI suffix
+                    original_base_name = base_name[:-3]  # Remove _AI
+                    ai_analyzed_files[original_base_name] = True
+                    print(f"Found AI analysis file for: {original_base_name}")
         
         # Now process all files, marking those that have been processed
         # but excluding .json and .md files from the final list
@@ -145,14 +154,17 @@ async def list_files():
             
             # A file is processed if there's a .json or .md file with the same base name
             is_processed = base_name in json_files or base_name in md_files
-            print(f"File {blob.name} processed status: {is_processed}")
+            # Check if this file has been AI-analyzed
+            is_ai_analyzed = base_name in ai_analyzed_files
+            print(f"File {blob.name} processed status: {is_processed}, AI analyzed: {is_ai_analyzed}")
             
             files.append({
                 "name": blob.name, 
                 "last_modified": blob.last_modified, 
                 "size": blob.size,
                 "customer_name": customer_name,
-                "processed": is_processed
+                "processed": is_processed,
+                "ai_analyzed": is_ai_analyzed
             })
         
         print(f"Returning {len(files)} files in the list")
