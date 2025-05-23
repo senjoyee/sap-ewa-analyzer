@@ -197,9 +197,10 @@ const FileList = ({ onFileSelect, refreshTrigger, selectedFile }) => {
     console.log(`Displaying AI analysis for file: ${file.name}`);
     
     try {
-      // Construct the AI analysis file name
+      // Construct the AI analysis file name and metrics file name
       const baseName = file.name.split('.').slice(0, -1).join('.');
       const aiFileName = `${baseName}_AI.md`;
+      const metricsFileName = `${baseName}_metrics.json`;
       
       // Make API call to fetch the AI analysis content
       const response = await fetch(`http://localhost:8001/api/download/${aiFileName}`, {
@@ -212,10 +213,32 @@ const FileList = ({ onFileSelect, refreshTrigger, selectedFile }) => {
       
       const analysisContent = await response.text();
       
-      // Call onFileSelect with the analysis content and type
+      // Try to fetch metrics data as well
+      let metricsData = null;
+      try {
+        const metricsResponse = await fetch(`http://localhost:8001/api/download/${metricsFileName}`, {
+          method: 'GET',
+        });
+        
+        if (metricsResponse.ok) {
+          const contentType = metricsResponse.headers.get('content-type');
+          if (contentType && contentType.includes('application/json')) {
+            metricsData = await metricsResponse.json();
+            console.log('Successfully loaded metrics data:', metricsData);
+          }
+        } else {
+          console.log(`Metrics data not found for ${file.name}, will display markdown only`);
+        }
+      } catch (metricsError) {
+        // Just log metrics error but continue with analysis display
+        console.error('Error fetching metrics data:', metricsError);
+      }
+      
+      // Call onFileSelect with the analysis content, metrics, and type
       onFileSelect({
         ...file,
         analysisContent,
+        metricsData,
         displayType: 'analysis'
       });
       

@@ -262,6 +262,9 @@ async def download_file(blob_name: str):
     
     Args:
         blob_name: The name of the blob to download
+    
+    Returns:
+        Response with the file content and appropriate content type
     """
     try:
         if not blob_service_client:

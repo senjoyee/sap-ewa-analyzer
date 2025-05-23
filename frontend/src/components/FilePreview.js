@@ -1,16 +1,27 @@
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import ReactMarkdown from 'react-markdown';
 import Paper from '@mui/material/Paper';
 import Typography from '@mui/material/Typography';
 import Box from '@mui/material/Box';
 import Chip from '@mui/material/Chip';
+import Divider from '@mui/material/Divider';
+import CircularProgress from '@mui/material/CircularProgress';
+import Accordion from '@mui/material/Accordion';
+import AccordionSummary from '@mui/material/AccordionSummary';
+import AccordionDetails from '@mui/material/AccordionDetails';
+import ExpandMoreIcon from '@mui/icons-material/ExpandMore';
 import InsertDriveFileOutlinedIcon from '@mui/icons-material/InsertDriveFileOutlined';
 import PictureAsPdfIcon from '@mui/icons-material/PictureAsPdf';
 import ImageIcon from '@mui/icons-material/Image';
 import DescriptionIcon from '@mui/icons-material/Description';
 import TextSnippetIcon from '@mui/icons-material/TextSnippet';
 import SmartToyIcon from '@mui/icons-material/SmartToy';
+import EqualizerIcon from '@mui/icons-material/Equalizer';
+import AssessmentIcon from '@mui/icons-material/Assessment';
 import { useTheme } from '../contexts/ThemeContext';
+
+// Import our custom MetricsTable component
+import MetricsTable from './MetricsTable';
 
 // Helper function to get appropriate file type label and icon
 const getFileTypeInfo = (fileName) => {
@@ -70,9 +81,25 @@ const FilePreview = ({ selectedFile }) => {
   const fileTypeInfo = selectedFile ? getFileTypeInfo(selectedFile.name) : null;
   const { theme } = useTheme();
   const isDark = theme === 'dark';
+  const [error, setError] = useState(null);
   
   // Check if we're displaying AI analysis
   const isAnalysisView = selectedFile?.displayType === 'analysis' && selectedFile?.analysisContent;
+  
+  // Use metrics data passed directly from parent component
+  const metricsData = selectedFile?.metricsData;
+  const hasMetrics = metricsData && metricsData.metrics && metricsData.metrics.length > 0;
+  
+  // Log metrics data for debugging
+  useEffect(() => {
+    if (isAnalysisView) {
+      if (hasMetrics) {
+        console.log('Displaying metrics data in FilePreview:', metricsData);
+      } else {
+        console.log('No metrics data available for this analysis');
+      }
+    }
+  }, [isAnalysisView, hasMetrics, metricsData]);
   
   return (
     <Paper
@@ -134,6 +161,9 @@ const FilePreview = ({ selectedFile }) => {
               p: 3,
               overflow: 'auto'
             }}>
+              {/* Main Analysis Content - We'll add metrics at the end */}
+              
+              {/* Analysis Content Section */}
               <ReactMarkdown
                 components={{
                   h1: ({ children }) => (
@@ -171,6 +201,96 @@ const FilePreview = ({ selectedFile }) => {
                       {children}
                     </Typography>
                   ),
+                  table: ({ children }) => (
+                    <Box sx={{ 
+                      overflowX: 'auto', 
+                      mb: 3,
+                      mt: 2,
+                      '& table': {
+                        width: '100%',
+                        borderCollapse: 'separate',
+                        borderSpacing: 0,
+                        borderRadius: 1,
+                        overflow: 'hidden',
+                        border: isDark ? '1px solid rgba(255, 255, 255, 0.1)' : '1px solid rgba(0, 0, 0, 0.1)',
+                        boxShadow: isDark ? '0 4px 8px rgba(0, 0, 0, 0.5)' : '0 2px 8px rgba(0, 0, 0, 0.1)',
+                      }
+                    }}>
+                      <table>{children}</table>
+                    </Box>
+                  ),
+                  thead: ({ children }) => (
+                    <thead style={{ 
+                      backgroundColor: isDark ? 'rgba(97, 97, 255, 0.15)' : 'rgba(63, 81, 181, 0.08)', 
+                      borderBottom: isDark ? '1px solid rgba(255, 255, 255, 0.2)' : '1px solid rgba(0, 0, 0, 0.2)', 
+                    }}>
+                      {children}
+                    </thead>
+                  ),
+                  tbody: ({ children }) => (
+                    <tbody>{children}</tbody>
+                  ),
+                  tr: ({ children, index }) => {
+                    // Determine if this is an odd or even row
+                    const isEven = index % 2 === 0;
+                    return (
+                      <tr style={{ 
+                        borderBottom: isDark ? '1px solid rgba(255, 255, 255, 0.05)' : '1px solid rgba(0, 0, 0, 0.05)',
+                        backgroundColor: isEven ? 
+                          (isDark ? 'rgba(255, 255, 255, 0.02)' : 'rgba(0, 0, 0, 0.01)') : 
+                          'transparent'
+                      }}>
+                        {children}
+                      </tr>
+                    );
+                  },
+                  th: ({ children }) => (
+                    <th style={{ 
+                      padding: '12px 16px', 
+                      textAlign: 'left', 
+                      fontWeight: 600,
+                      fontSize: '0.875rem',
+                      color: isDark ? 'rgba(255, 255, 255, 0.95)' : 'rgba(0, 0, 0, 0.95)',
+                      whiteSpace: 'nowrap'
+                    }}>
+                      {children}
+                    </th>
+                  ),
+                  td: ({ children }) => {
+                    // Detect if cell contains status icons and apply appropriate styling
+                    const content = children?.toString() || '';
+                    const hasStatusIcon = content.includes('✅') || content.includes('❌') || content.includes('⚠️');
+                    
+                    let textColor = isDark ? 'rgba(255, 255, 255, 0.85)' : 'rgba(0, 0, 0, 0.85)';
+                    let fontWeight = '400';
+                    let fontSize = '0.875rem';
+                    
+                    if (hasStatusIcon) {
+                      fontWeight = '600';
+                      fontSize = '1rem';
+                      
+                      if (content.includes('✅')) {
+                        textColor = '#4CAF50'; // Green for success
+                      } else if (content.includes('❌')) {
+                        textColor = '#F44336'; // Red for error/critical
+                      } else if (content.includes('⚠️')) {
+                        textColor = '#FF9800'; // Orange for warning
+                      }
+                    }
+                    
+                    return (
+                      <td style={{ 
+                        padding: '10px 16px',
+                        fontSize: fontSize,
+                        fontWeight: fontWeight,
+                        color: textColor,
+                        verticalAlign: 'middle',
+                        textAlign: hasStatusIcon ? 'center' : 'left'
+                      }}>
+                        {children}
+                      </td>
+                    );
+                  },
                   code: ({ children }) => (
                     <Typography 
                       component="code" 
@@ -190,6 +310,61 @@ const FilePreview = ({ selectedFile }) => {
               >
                 {selectedFile.analysisContent}
               </ReactMarkdown>
+              
+              {/* Collapsible Metrics Section at the end */}
+              {hasMetrics && (
+                <Box sx={{ mt: 4 }}>
+                  <Accordion 
+                    defaultExpanded={false}
+                    sx={{
+                      boxShadow: isDark ? '0 2px 8px rgba(0, 0, 0, 0.5)' : '0 1px 4px rgba(0, 0, 0, 0.1)',
+                      borderRadius: '8px !important',
+                      overflow: 'hidden',
+                      '&:before': { display: 'none' }, // Remove the default MUI expansion panel line
+                      border: isDark ? '1px solid rgba(255, 255, 255, 0.1)' : '1px solid rgba(0, 0, 0, 0.1)',
+                      mb: 3,
+                    }}
+                  >
+                    <AccordionSummary
+                      expandIcon={<ExpandMoreIcon />}
+                      sx={{
+                        backgroundColor: isDark ? 'rgba(25, 118, 210, 0.15)' : 'rgba(25, 118, 210, 0.08)',
+                        '&:hover': {
+                          backgroundColor: isDark ? 'rgba(25, 118, 210, 0.25)' : 'rgba(25, 118, 210, 0.12)',
+                        }
+                      }}
+                    >
+                      <Box sx={{ display: 'flex', alignItems: 'center' }}>
+                        <AssessmentIcon sx={{ mr: 1.5, color: 'primary.main' }} />
+                        <Typography variant="h6" sx={{ fontWeight: 500, color: 'primary.main' }}>
+                          Key Metrics Summary
+                        </Typography>
+                      </Box>
+                    </AccordionSummary>
+                    <AccordionDetails sx={{ p: 0 }}>
+                      <Box sx={{ p: 3 }}>
+                        <MetricsTable metricsData={metricsData} />
+                      </Box>
+                    </AccordionDetails>
+                  </Accordion>
+                </Box>
+              )}
+              
+              {/* Error display if metrics failed to load */}
+              {error && (
+                <Box sx={{ 
+                  p: 2, 
+                  mt: 3,
+                  mb: 3, 
+                  borderRadius: 1, 
+                  bgcolor: isDark ? 'rgba(244, 67, 54, 0.1)' : 'rgba(244, 67, 54, 0.05)', 
+                  border: '1px solid rgba(244, 67, 54, 0.3)'
+                }}>
+                  <Typography variant="subtitle2" color="error" gutterBottom>
+                    Error loading metrics: {error}
+                  </Typography>
+                </Box>
+              )}
             </Box>
           ) : (
             <Box sx={{ 
