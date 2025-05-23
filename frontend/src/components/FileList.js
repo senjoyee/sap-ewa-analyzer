@@ -81,12 +81,13 @@ const formatFileSize = (sizeInBytes) => {
 
 const FileList = ({ onFileSelect, refreshTrigger, selectedFile }) => {
   const [files, setFiles] = useState([]);
-  const [isLoading, setIsLoading] = useState(false);
+  const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState(null);
-  const [analyzingFiles, setAnalyzingFiles] = useState({});  // Track files being analyzed
-  const [expandedCustomers, setExpandedCustomers] = useState({});  // Track which customer accordions are expanded
-  const [analysisProgress, setAnalysisProgress] = useState({});  // Track progress percentage for each file
-  const pollingIntervalsRef = useRef({});  // Store polling interval IDs for cleanup
+  const [analyzingFiles, setAnalyzingFiles] = useState({}); // Track analysis status for each file
+  const [analysisProgress, setAnalysisProgress] = useState({}); // Track progress for each file
+  const [expandedCustomers, setExpandedCustomers] = useState({});
+  const [aiAnalyzing, setAiAnalyzing] = useState({}); // Track AI analysis status for each file
+  const pollingIntervalsRef = useRef({});
   const { theme } = useTheme();
   const isDark = theme === 'dark';
   
@@ -139,6 +140,54 @@ const FileList = ({ onFileSelect, refreshTrigger, selectedFile }) => {
         [file.id || file.name]: 'error'
       }));
       alert(`Error analyzing file: ${error.message}`);
+    }
+  };
+
+  // Function to handle AI analysis button click
+  const handleAnalyzeAI = async (file) => {
+    console.log(`Starting AI analysis for file: ${file.name}`);
+    
+    // Set initial status to analyzing
+    setAiAnalyzing(prev => ({
+      ...prev,
+      [file.id || file.name]: 'analyzing'
+    }));
+    
+    try {
+      // Make API call to start AI analysis
+      const response = await fetch('http://localhost:8001/api/analyze-ai', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ blob_name: file.name }),
+      });
+      
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.detail || `AI Analysis failed: ${response.status}`);
+      }
+      
+      const result = await response.json();
+      console.log('AI Analysis result:', result);
+      
+      // Set status to completed
+      setAiAnalyzing(prev => ({
+        ...prev,
+        [file.id || file.name]: 'completed'
+      }));
+      
+      // Show success message
+      alert(`AI Analysis completed successfully! Analysis saved as: ${result.analysis_file}`);
+      
+    } catch (error) {
+      console.error(`Error in AI analysis for file ${file.name}:`, error);
+      // Set status back to ready on error
+      setAiAnalyzing(prev => ({
+        ...prev,
+        [file.id || file.name]: 'error'
+      }));
+      alert(`Error in AI analysis: ${error.message}`);
     }
   };
 
@@ -527,6 +576,36 @@ const FileList = ({ onFileSelect, refreshTrigger, selectedFile }) => {
                               sx={{ height: 20, fontSize: '0.6rem' }}
                             />
                           )}
+                          {aiAnalyzing[file.id || file.name] === 'analyzing' && (
+                            <Chip 
+                              icon={
+                                <AutorenewIcon 
+                                  sx={{ 
+                                    animation: 'spin 2s linear infinite',
+                                    '@keyframes spin': {
+                                      '0%': { transform: 'rotate(0deg)' },
+                                      '100%': { transform: 'rotate(360deg)' }
+                                    }
+                                  }} 
+                                />
+                              } 
+                              label="AI Analyzing" 
+                              size="small" 
+                              color="warning" 
+                              variant="outlined"
+                              sx={{ height: 20, fontSize: '0.6rem', mr: 1 }}
+                            />
+                          )}
+                          {aiAnalyzing[file.id || file.name] === 'completed' && (
+                            <Chip 
+                              icon={<CheckCircleIcon />} 
+                              label="AI Analyzed" 
+                              size="small" 
+                              color="success" 
+                              variant="outlined"
+                              sx={{ height: 20, fontSize: '0.6rem' }}
+                            />
+                          )}
                         </Box>
                       </Box>
                     }
@@ -545,24 +624,42 @@ const FileList = ({ onFileSelect, refreshTrigger, selectedFile }) => {
               </ListItemButton>
               <ListItemSecondaryAction>
                 {analyzingFiles[file.id || file.name] === 'analyzed' ? (
-                  <Tooltip title="Analyze with AI">
+                  <Tooltip title={aiAnalyzing[file.id || file.name] === 'analyzing' ? "AI Analysis in progress..." : aiAnalyzing[file.id || file.name] === 'completed' ? "AI Analysis completed" : "Analyze with AI"}>
                     <IconButton 
                       edge="end" 
                       size="small" 
                       color="secondary"
+                      disabled={aiAnalyzing[file.id || file.name] === 'analyzing'}
                       onClick={(e) => {
                         e.stopPropagation();
-                        console.log('AI Analysis requested for:', file.name);
-                        // Future implementation will go here
+                        handleAnalyzeAI(file);
                       }}
                       sx={{ 
-                        bgcolor: 'rgba(156, 39, 176, 0.08)',
+                        bgcolor: aiAnalyzing[file.id || file.name] === 'completed' ? 'rgba(76, 175, 80, 0.08)' : 'rgba(156, 39, 176, 0.08)',
                         '&:hover': {
-                          bgcolor: 'rgba(156, 39, 176, 0.2)',
+                          bgcolor: aiAnalyzing[file.id || file.name] === 'completed' ? 'rgba(76, 175, 80, 0.2)' : 'rgba(156, 39, 176, 0.2)',
+                        },
+                        '&:disabled': {
+                          bgcolor: 'rgba(156, 39, 176, 0.04)',
                         }
                       }}
                     >
-                      <AiAnalysisIcon fontSize="small" />
+                      {aiAnalyzing[file.id || file.name] === 'analyzing' ? (
+                        <AutorenewIcon 
+                          fontSize="small" 
+                          sx={{ 
+                            animation: 'spin 2s linear infinite',
+                            '@keyframes spin': {
+                              '0%': { transform: 'rotate(0deg)' },
+                              '100%': { transform: 'rotate(360deg)' }
+                            }
+                          }} 
+                        />
+                      ) : aiAnalyzing[file.id || file.name] === 'completed' ? (
+                        <CheckCircleIcon fontSize="small" />
+                      ) : (
+                        <AiAnalysisIcon fontSize="small" />
+                      )}
                     </IconButton>
                   </Tooltip>
                 ) : (

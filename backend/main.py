@@ -5,6 +5,7 @@ from azure.storage.blob import BlobServiceClient, BlobClient, ContainerClient
 from dotenv import load_dotenv
 from pydantic import BaseModel
 from pdf_markdown_converter import convert_pdf_to_markdown, get_conversion_status
+from azure_openai_service import analyze_document_with_ai
 import uvicorn # For running the app
 
 # Load environment variables from .env file
@@ -165,6 +166,9 @@ async def list_files():
 class AnalyzeDocumentRequest(BaseModel):
     blob_name: str
 
+# Model for AI analyze request  
+class AIAnalyzeRequest(BaseModel):
+    blob_name: str
 
 @app.post("/api/analyze")
 async def analyze_document(request: AnalyzeDocumentRequest):
@@ -208,6 +212,35 @@ async def get_document_analysis_status(blob_name: str):
     except Exception as e:
         print(f"Error in get_document_analysis_status endpoint: {str(e)}")
         raise HTTPException(status_code=500, detail=f"Error getting conversion status: {str(e)}")
+
+
+@app.post("/api/analyze-ai")
+async def analyze_document_with_ai_endpoint(request: AIAnalyzeRequest):
+    """
+    Analyze a processed document using Azure OpenAI GPT-4.
+    Downloads the .md file from blob storage, sends it to GPT-4 for analysis,
+    and saves the result back to blob storage with _AI suffix.
+    
+    Args:
+        request: A request object containing the blob_name to analyze
+    """
+    try:
+        print(f"Starting AI analysis for document: {request.blob_name}")
+        
+        # Call the AI analysis service
+        result = await analyze_document_with_ai(request.blob_name)
+        
+        if result.get("error"):
+            print(f"Error in AI analysis: {result.get('message')}")
+            raise HTTPException(status_code=500, detail=result.get('message'))
+        
+        print(f"AI analysis completed successfully for {request.blob_name}")
+        return result
+        
+    except Exception as e:
+        error_message = f"Error in AI analysis endpoint: {str(e)}"
+        print(error_message)
+        raise HTTPException(status_code=500, detail=error_message)
 
 
 # To run the app (for development): uvicorn main:app --reload --port 8000
