@@ -23,7 +23,11 @@ load_dotenv()
 AZURE_OPENAI_ENDPOINT = os.getenv("AZURE_OPENAI_ENDPOINT")
 AZURE_OPENAI_API_KEY = os.getenv("AZURE_OPENAI_API_KEY")
 AZURE_OPENAI_API_VERSION = os.getenv("AZURE_OPENAI_API_VERSION", "2024-02-01")
-AZURE_OPENAI_DEPLOYMENT_NAME = os.getenv("AZURE_OPENAI_DEPLOYMENT_NAME", "gpt-4o-mini")
+
+# Model deployment names
+AZURE_OPENAI_SUMMARY_MODEL = os.getenv("AZURE_OPENAI_SUMMARY_MODEL", "gpt-4.1-mini")
+AZURE_OPENAI_METRICS_MODEL = os.getenv("AZURE_OPENAI_METRICS_MODEL", "gpt-4.1-nano")
+AZURE_OPENAI_PARAMETERS_MODEL = os.getenv("AZURE_OPENAI_PARAMETERS_MODEL", "gpt-4.1-nano")
 
 # Azure Storage configuration
 AZURE_STORAGE_CONNECTION_STRING = os.getenv("AZURE_STORAGE_CONNECTION_STRING")
@@ -47,10 +51,10 @@ Now, follow these steps to provide your analysis:
    - Low
 
 4. For each finding, provide:
-   a) A clear description of the issue
-   b) The potential impact if not addressed
-   c) Recommended actions to resolve or mitigate the issue
-   d) The importance category (Very High, High, Medium, or Low)
+   a) A clear description of the issue.
+   b) The potential impact if not addressed.
+   c) Recommended actions to resolve or mitigate the issue. Consider using bullet points, where applicable.
+   d) The importance category (Very High, High, Medium, or Low).
 
 5. Organize your findings in order of importance, starting with Very High and ending with Low.
 
@@ -72,8 +76,13 @@ Now, follow these steps to provide your analysis:
 
 ### 🚨 Finding: [Brief Title of Issue]
 **Description:** [Provide a clear description of the issue]  
-**Impact:** [Explain the potential impact if not addressed]  
-**Recommendation:** [Provide recommended actions to resolve or mitigate the issue]
+**Impact:**  
+- [First impact point]  
+- [Second impact point]  
+
+**Recommendation:**  
+- [First recommendation point]  
+- [Second recommendation point]
 
 ---
 
@@ -81,8 +90,13 @@ Now, follow these steps to provide your analysis:
 
 ### ⚠️ Finding: [Brief Title of Issue]
 **Description:** [Provide a clear description of the issue]  
-**Impact:** [Explain the potential impact if not addressed]  
-**Recommendation:** [Provide recommended actions to resolve or mitigate the issue]
+**Impact:**  
+- [First impact point]  
+- [Second impact point]  
+
+**Recommendation:**  
+- [First recommendation point]  
+- [Second recommendation point]
 
 ---
 
@@ -90,8 +104,13 @@ Now, follow these steps to provide your analysis:
 
 ### ⚙️ Finding: [Brief Title of Issue]
 **Description:** [Provide a clear description of the issue]  
-**Impact:** [Explain the potential impact if not addressed]  
-**Recommendation:** [Provide recommended actions to resolve or mitigate the issue]
+**Impact:**  
+- [First impact point]  
+- [Second impact point]  
+
+**Recommendation:**  
+- [First recommendation point]  
+- [Second recommendation point]
 
 ---
 
@@ -99,8 +118,20 @@ Now, follow these steps to provide your analysis:
 
 ### 📝 Finding: [Brief Title of Issue]
 **Description:** [Provide a clear description of the issue]  
-**Impact:** [Explain the potential impact if not addressed]  
-**Recommendation:** [Provide recommended actions to resolve or mitigate the issue]
+**Impact:**  
+- [First impact point]  
+- [Second impact point]  
+
+**Recommendation:**  
+- [First recommendation point]  
+- [Second recommendation point]
+
+IMPORTANT FORMATTING INSTRUCTIONS:
+- Always format both Impact and Recommendation sections with bullet points
+- Ensure consistent indentation for all bullet points
+- Leave a blank line after the 'Impact:' and 'Recommendation:' headers before starting bullet points
+- Each bullet point should start with a hyphen followed by a space ('- ')
+- Maintain consistent spacing throughout the document
 
 Do NOT include any sections about metrics or parameters. End the report after the findings sections.
 """
@@ -355,11 +386,11 @@ class EWALangGraphOrchestrator:
             print(error_message)
             raise Exception(error_message)
     
-    async def call_openai(self, prompt: str, content: str, max_tokens: int = 8000) -> str:
-        """Make a call to Azure OpenAI"""
+    async def call_openai(self, prompt: str, content: str, model: str, max_tokens: int = 8000) -> str:
+        """Make a call to Azure OpenAI with specified model"""
         try:
             response = self.client.chat.completions.create(
-                model=AZURE_OPENAI_DEPLOYMENT_NAME,
+                model=model,
                 messages=[
                     {"role": "system", "content": prompt},
                     {"role": "user", "content": f"Please analyze this EWA document:\n\n{content}"}
@@ -391,10 +422,11 @@ class EWALangGraphOrchestrator:
     async def generate_summary_step(self, state: WorkflowState) -> WorkflowState:
         """Step 2: Generate executive summary (no metrics/parameters)"""
         try:
-            print(f"[STEP 2] Generating summary for {state.blob_name}")
+            print(f"[STEP 2] Generating summary for {state.blob_name} using {AZURE_OPENAI_SUMMARY_MODEL}")
             state.summary_result = await self.call_openai(
                 SUMMARY_PROMPT, 
-                state.markdown_content, 
+                state.markdown_content,
+                model=AZURE_OPENAI_SUMMARY_MODEL,
                 max_tokens=6000
             )
             return state
@@ -405,10 +437,11 @@ class EWALangGraphOrchestrator:
     async def extract_metrics_step(self, state: WorkflowState) -> WorkflowState:
         """Step 3: Extract metrics as JSON"""
         try:
-            print(f"[STEP 3] Extracting metrics for {state.blob_name}")
+            print(f"[STEP 3] Extracting metrics for {state.blob_name} using {AZURE_OPENAI_METRICS_MODEL}")
             metrics_response = await self.call_openai(
                 METRICS_EXTRACTION_PROMPT, 
-                state.markdown_content, 
+                state.markdown_content,
+                model=AZURE_OPENAI_METRICS_MODEL,
                 max_tokens=8000
             )
             
@@ -473,10 +506,11 @@ class EWALangGraphOrchestrator:
     async def extract_parameters_step(self, state: WorkflowState) -> WorkflowState:
         """Step 4: Extract parameters as JSON"""
         try:
-            print(f"[STEP 4] Extracting parameters for {state.blob_name}")
+            print(f"[STEP 4] Extracting parameters for {state.blob_name} using {AZURE_OPENAI_PARAMETERS_MODEL}")
             parameters_response = await self.call_openai(
                 PARAMETERS_EXTRACTION_PROMPT, 
-                state.markdown_content, 
+                state.markdown_content,
+                model=AZURE_OPENAI_PARAMETERS_MODEL,
                 max_tokens=8000
             )
             
