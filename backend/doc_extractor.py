@@ -1,3 +1,21 @@
+"""
+Document Text Extraction Module
+
+This module provides utilities for extracting text from legacy Microsoft Word (.doc) files
+using various command-line tools with fallback mechanisms. It supports multiple extraction
+methods including antiword, catdoc, and textutil (on macOS), ensuring maximum compatibility
+across different environments.
+
+Key Functionality:
+- Extracting text content from .doc files using multiple methods
+- Cross-platform support (Windows, macOS, Linux)
+- Graceful fallbacks when primary extraction tools are unavailable
+- Temporary file handling for extraction processes
+
+This module is particularly useful for processing legacy documents in the EWA Analyzer
+workflow before they can be analyzed by more sophisticated services.
+"""
+
 import os
 import tempfile
 import subprocess

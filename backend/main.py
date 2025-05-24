@@ -1,3 +1,22 @@
+"""
+SAP EWA Analyzer API Server
+
+This is the main FastAPI application that serves as the backend for the SAP Early Watch Alert (EWA)
+Analyzer system. It provides a comprehensive set of REST APIs for document processing,
+AI analysis, and interactive chat functionality.
+
+Key Functionality:
+- File upload and management with Azure Blob Storage
+- Document processing (converting various formats to markdown)
+- AI analysis of SAP EWA reports using Azure OpenAI
+- Extraction of structured metrics and parameters
+- Document chat capabilities with context-aware responses
+- Status tracking for all asynchronous operations
+
+The API is designed to be consumed by a React frontend, with endpoints organized by function
+(file management, document processing, AI analysis, and chat).
+"""
+
 import os
 from fastapi import FastAPI, UploadFile, File, HTTPException, Form, Depends, Response
 from fastapi.middleware.cors import CORSMiddleware
@@ -5,7 +24,7 @@ from azure.storage.blob import BlobServiceClient, BlobClient, ContainerClient
 from dotenv import load_dotenv
 from pydantic import BaseModel
 from document_converter import convert_document_to_markdown, get_conversion_status
-from langgraph_workflows import execute_ewa_analysis
+from workflow_orchestrator import execute_ewa_analysis
 import uvicorn # For running the app
 import os
 import json
@@ -50,6 +69,24 @@ except Exception as e:
 
 @app.post("/api/upload")
 async def upload_file(file: UploadFile = File(...), customer_name: str = Form(...)):
+    """
+    Upload a document file to Azure Blob Storage.
+    
+    This endpoint accepts file uploads (PDF, DOCX, DOC) and stores them in Azure Blob Storage
+    with customer metadata. The uploaded file is later processed by the document analysis pipeline.
+    
+    Parameters:
+    - file: The document file to upload (multipart/form-data)
+    - customer_name: Customer identifier associated with this document
+    
+    Returns:
+    - JSON response with file details and upload confirmation
+    
+    Raises:
+    - 400 Bad Request: If no file is provided
+    - 500 Internal Server Error: If Azure Blob Storage is not properly configured
+    """
+    
     if not blob_service_client:
         raise HTTPException(status_code=500, detail="Azure Blob Service client not initialized. Check server logs and .env configuration.")
     if not file:
@@ -93,6 +130,32 @@ async def upload_file(file: UploadFile = File(...), customer_name: str = Form(..
 
 @app.get("/api/files")
 async def list_files():
+    """
+    List all files stored in Azure Blob Storage with their processing status.
+    
+    This endpoint retrieves a list of all files in the storage container along with metadata
+    about their processing status. It detects whether files have been processed by Document Intelligence
+    or analyzed by AI, and includes this information in the response.
+    
+    Returns:
+    - JSON array of file objects, each containing:
+      * id: Unique identifier for the file
+      * name: Original filename
+      * uploadDate: When the file was uploaded
+      * size: File size in bytes
+      * type: File type/extension
+      * customerName: Associated customer name from metadata
+      * processed: Boolean indicating if the file has been processed
+      * processing: Boolean indicating if processing is in progress
+      * processingProgress: Percentage of processing completed
+      * ai_analyzed: Boolean indicating if AI analysis has been performed
+      * has_metrics: Boolean indicating if metrics data is available
+      * has_parameters: Boolean indicating if parameters data is available
+    
+    Raises:
+    - 500 Internal Server Error: If Azure Blob Storage is not properly configured
+    """
+    
     if not blob_service_client:
         raise HTTPException(status_code=500, detail="Azure Blob Service client not initialized.")
     
@@ -207,12 +270,22 @@ class AIAnalyzeRequest(BaseModel):
 @app.post("/api/analyze")
 async def analyze_document(request: AnalyzeDocumentRequest):
     """
-    Convert a document (PDF, DOCX, DOC) stored in Azure Blob Storage to markdown.
-    The markdown result will be saved back to the same container with a .md extension,
-    and a .json file will be created to maintain compatibility with existing system.
+    Process a document using Azure Document Intelligence.
     
-    Args:
-        request: A request object containing the blob_name to convert
+    This endpoint triggers the document processing pipeline which converts the document
+    (PDF, DOCX, DOC) to markdown format for further analysis. The processing is performed
+    asynchronously, and the status can be checked using the /api/status/{blob_name} endpoint.
+    
+    Parameters:
+    - request: An AnalyzeDocumentRequest object containing:
+      * blob_name: The name of the file in Azure Blob Storage to process
+    
+    Returns:
+    - JSON response with processing status and job information
+    
+    Raises:
+    - 404 Not Found: If the specified file doesn't exist
+    - 500 Internal Server Error: If processing fails for any reason
     """
     try:
         # Call the unified document converter function
@@ -233,8 +306,24 @@ async def get_document_analysis_status(blob_name: str):
     """
     Get the status of a document conversion job.
     
-    Args:
-        blob_name: The name of the blob being converted
+    This endpoint retrieves the current status of an asynchronous document processing job.
+    It provides information about the progress of converting a document to markdown format.
+    
+    Parameters:
+    - blob_name: The name of the file in Azure Blob Storage being processed
+    
+    Returns:
+    - JSON object with status information including:
+      * status: Current status ("pending", "processing", "completed", "error")
+      * progress: Percentage of completion (0-100)
+      * message: Human-readable status message
+      * output_file: Name of the output file when processing is complete
+      * start_time: When processing started
+      * end_time: When processing completed (if finished)
+    
+    Raises:
+    - 404 Not Found: If the specified file or job doesn't exist
+    - 500 Internal Server Error: If retrieving status fails
     """
     try:
         status = get_conversion_status(blob_name)
@@ -251,12 +340,27 @@ async def get_document_analysis_status(blob_name: str):
 @app.post("/api/analyze-ai")
 async def analyze_document_with_ai_endpoint(request: AIAnalyzeRequest):
     """
-    Analyze a processed document using Azure OpenAI GPT-4.
-    Downloads the .md file from blob storage, sends it to GPT-4 for analysis,
-    and saves the result back to blob storage with _AI suffix.
+    Analyze a processed document using Azure OpenAI GPT-4.1 models.
     
-    Args:
-        request: A request object containing the blob_name to analyze
+    This endpoint takes a previously processed document (in markdown format) and performs
+    AI analysis using Azure OpenAI GPT models. The analysis includes generating executive summaries,
+    extracting metrics, and identifying parameter recommendations from SAP EWA reports.
+    
+    The analysis is performed asynchronously and creates three output files:
+    - {filename}_AI.md: Executive summary and analysis in markdown format
+    - {filename}_metrics.json: Structured metrics data extracted from the document
+    - {filename}_parameters.json: Parameter recommendations extracted from the document
+    
+    Parameters:
+    - request: An AIAnalyzeRequest object containing:
+      * blob_name: The name of the processed markdown file in Azure Blob Storage to analyze
+    
+    Returns:
+    - JSON response with analysis status and information about the generated files
+    
+    Raises:
+    - 404 Not Found: If the specified markdown file doesn't exist
+    - 500 Internal Server Error: If analysis fails for any reason
     """
     try:
         print(f"Starting AI analysis for document: {request.blob_name}")
@@ -282,11 +386,22 @@ async def download_file(blob_name: str):
     """
     Download a file from Azure Blob Storage.
     
-    Args:
-        blob_name: The name of the blob to download
+    This endpoint retrieves a file from Azure Blob Storage and returns it as a downloadable response
+    with the appropriate content type. It supports various file types including PDF, DOCX, markdown, 
+    and JSON files.
+    
+    Parameters:
+    - blob_name: The name of the file in Azure Blob Storage to download
     
     Returns:
-        Response with the file content and appropriate content type
+    - File response with appropriate content type and filename
+    - For markdown files: text/markdown content type
+    - For JSON files: application/json content type
+    - For other files: application/octet-stream or the detected MIME type
+    
+    Raises:
+    - 404 Not Found: If the specified file doesn't exist
+    - 500 Internal Server Error: If file retrieval fails
     """
     try:
         if not blob_service_client:
@@ -333,13 +448,28 @@ async def download_file(blob_name: str):
 @app.get("/api/metrics/{blob_name}")
 async def get_metrics_data(blob_name: str):
     """
-    Get metrics data for a specific file.
+    Get structured metrics data extracted from an SAP EWA report.
     
-    Args:
-        blob_name: The base name of the file (without extension)
+    This endpoint retrieves the metrics data that was extracted during AI analysis of an SAP EWA report.
+    The metrics data contains quantitative information about system performance, resource utilization,
+    and other key performance indicators (KPIs) from the report.
+    
+    Parameters:
+    - blob_name: The base name of the file (without extension) for which to retrieve metrics
     
     Returns:
-        JSON response with metrics data
+    - JSON response containing structured metrics data with the following format:
+      * metrics: Array of metric objects, each containing:
+        - name: Name of the metric
+        - current: Current value
+        - target: Target or threshold value
+        - status: Status indicator ("success", "warning", or "critical")
+        - category: Category of the metric (e.g., "Performance", "Memory")
+        - description: Description of what the metric measures
+    
+    Raises:
+    - 404 Not Found: If the specified file or metrics data doesn't exist
+    - 500 Internal Server Error: If metrics data retrieval fails
     """
     try:
         if not blob_service_client:
@@ -379,13 +509,29 @@ async def get_metrics_data(blob_name: str):
 @app.get("/api/parameters/{blob_name}")
 async def get_parameters_data(blob_name: str):
     """
-    Get parameters data for a specific file.
+    Get structured parameters data and recommendations extracted from an SAP EWA report.
     
-    Args:
-        blob_name: The base name of the file (without extension)
+    This endpoint retrieves parameter recommendations that were extracted during AI analysis
+    of an SAP EWA report. The data contains configuration suggestions for optimizing system
+    performance, including database parameters, memory settings, and other system configurations.
+    
+    Parameters:
+    - blob_name: The base name of the file (without extension) for which to retrieve parameter data
     
     Returns:
-        JSON response with parameters data
+    - JSON response containing structured parameters data with the following format:
+      * parameters: Array of parameter objects, each containing:
+        - name: Name of the parameter
+        - current: Current parameter value
+        - recommended: Recommended parameter value
+        - impact: Impact level of the change ("high", "medium", or "low")
+        - category: Category of the parameter (e.g., "Memory Management", "Performance")
+        - system_type: Type of system the parameter applies to ("HANA", "Application Server", "Both", or "System")
+        - description: Description of what the parameter controls and why it should be changed
+    
+    Raises:
+    - 404 Not Found: If the specified file or parameters data doesn't exist
+    - 500 Internal Server Error: If parameters data retrieval fails
     """
     try:
         if not blob_service_client:
@@ -436,13 +582,33 @@ class ChatRequest(BaseModel):
 async def chat_with_document(request: ChatRequest):
     """
     Chat with a document using Azure OpenAI GPT-4.
-    Uses the original document content as context for answering questions.
     
-    Args:
-        request: A request object containing the chat message and document context
+    This endpoint enables interactive Q&A with SAP EWA reports by using the document content
+    as context for answering user questions. It leverages Azure OpenAI's GPT-4o models
+    to provide contextually relevant responses based on the specific document content.
+    
+    The endpoint maintains conversation history to enable follow-up questions and
+    references to previous parts of the conversation.
+    
+    Parameters:
+    - request: A ChatRequest object containing:
+      * message: The user's question or message
+      * fileName: Name of the document being queried
+      * documentContent: The full text content of the document (original .md file preferred)
+      * fileOrigin: Source of the document content (optional)
+      * contentLength: Length of the document content (optional)
+      * chatHistory: Previous conversation messages (optional)
     
     Returns:
-        JSON response with the AI's response
+    - JSON response containing:
+      * response: The AI's answer to the question
+      * document_reference: References to specific parts of the document (if applicable)
+      * message_id: Unique identifier for this message
+      * updated_history: Updated conversation history including this exchange
+    
+    Raises:
+    - 400 Bad Request: If required parameters are missing or invalid
+    - 500 Internal Server Error: If chat processing fails
     """
     try:
         # Validate environment variables
@@ -581,6 +747,16 @@ Keep your responses informative and technically precise, as you're assisting an 
 # Simple test endpoint to check server availability
 @app.get("/api/ping")
 async def ping():
+    """
+    Health check endpoint to verify the server is running.
+    
+    This simple endpoint provides a way to check if the API server is operational
+    without testing any specific functionality. It's useful for monitoring systems,
+    health checks, and verifying basic connectivity to the backend service.
+    
+    Returns:
+    - JSON response with status "ok" and a message indicating the server is running
+    """
     return {"status": "ok", "message": "Server is running"}
 
 

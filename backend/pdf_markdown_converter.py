@@ -1,3 +1,21 @@
+"""
+PDF to Markdown Conversion Module
+
+This module specializes in converting PDF documents to markdown format using the pymupdf4llm
+library. It handles the complete conversion workflow from downloading PDFs from Azure Blob Storage,
+processing them with PyMuPDF, and uploading the resulting markdown files.
+
+Key Functionality:
+- Converting PDF files to structured markdown format
+- Preserving document structure including headings, lists, and tables
+- Managing conversion status tracking
+- Handling Azure Blob Storage operations for document retrieval and storage
+- Optimizing PDF content for downstream LLM processing
+
+The module works directly with Azure Blob Storage and preserves the semantic structure
+of documents during conversion for better analysis by AI systems.
+"""
+
 import os
 import time
 from datetime import datetime

@@ -1,3 +1,20 @@
+"""
+Azure Document Intelligence Service Module
+
+This module provides a set of functions to interact with Azure Document Intelligence service
+for analyzing, processing, and extracting structured data from documents like PDFs and images.
+
+Key Functionality:
+- Analyzing document layout with Azure Document Intelligence
+- Processing and extracting text, tables, and paragraphs from documents
+- Converting document analysis to markdown format
+- Managing document analysis jobs and status tracking
+- Integration with Azure Blob Storage for document persistence
+
+The module uses Azure Document Intelligence to process documents and extract their contents,
+then formats the results for downstream processing by LLM services.
+"""
+
 import os
 import json
 import re

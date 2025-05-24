@@ -1,3 +1,20 @@
+"""
+Document Conversion Orchestrator Module
+
+This module serves as a unified entry point for converting various document formats 
+(PDF, DOCX, DOC) to markdown format. It orchestrates the conversion process by 
+delegating to specialized converters based on file type.
+
+Key Functionality:
+- Unified document conversion interface for multiple file formats
+- Conversion status tracking across multiple file formats
+- Delegating to specialized converters (PDF, DOCX)
+- Error handling and status reporting
+
+The module maintains a global status tracker to monitor all conversion jobs,
+making it easy to check the progress of any document conversion process.
+"""
+
 import os
 from datetime import datetime
 import pdf_markdown_converter

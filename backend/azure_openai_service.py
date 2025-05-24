@@ -1,3 +1,21 @@
+"""
+Azure OpenAI Service Module
+
+This module provides services for analyzing SAP Early Watch Alert (EWA) reports
+using Azure OpenAI's GPT models. It handles the complete workflow from retrieving
+processed documents to generating AI-enhanced analysis.
+
+Key Functionality:
+- Connecting to Azure OpenAI service with proper authentication
+- Sending processed EWA documents to GPT models for in-depth analysis
+- Generating structured insights, recommendations, and metrics
+- Managing the analysis workflow (download → analyze → upload results)
+- Integration with Azure Blob Storage for document persistence
+
+The analysis uses specialized system prompts designed for SAP EWA reports
+to extract actionable insights organized by priority levels.
+"""
+
 import os
 import asyncio
 from azure.storage.blob import BlobServiceClient

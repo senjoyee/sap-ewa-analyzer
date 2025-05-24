@@ -1,3 +1,21 @@
+"""
+DOCX to Markdown Conversion Module
+
+This module specializes in converting Microsoft Word documents (.docx/.doc) to markdown format.
+It handles the complete conversion workflow from downloading Word documents from Azure Blob Storage,
+processing them with appropriate libraries, and uploading the resulting markdown files.
+
+Key Functionality:
+- Converting DOCX files to markdown format using docx2txt
+- Supporting legacy DOC files through the doc_extractor module
+- Managing conversion status tracking
+- Handling Azure Blob Storage operations for document retrieval and storage
+- Preserving document structure during conversion
+
+The module works directly with Azure Blob Storage and doesn't require saving files
+to the local filesystem except for temporary processing.
+"""
+
 import os
 import time
 from datetime import datetime
