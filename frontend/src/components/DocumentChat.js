@@ -28,8 +28,8 @@ const ChatContainer = styled(Paper)(({ theme, expanded }) => ({
   position: 'fixed',
   bottom: 20,
   right: 20,
-  width: expanded ? 420 : 'auto',
-  height: expanded ? 540 : 'auto',
+  width: expanded ? 550 : 'auto',
+  height: expanded ? 600 : 'auto',
   zIndex: 1300,
   transition: 'all 0.3s cubic-bezier(0.4, 0, 0.2, 1)',
   display: 'flex',
@@ -54,7 +54,7 @@ const ChatContainer = styled(Paper)(({ theme, expanded }) => ({
 }));
 
 const ChatHeader = styled(Box)(({ theme }) => ({
-  padding: theme.spacing(1.5, 2),
+  padding: theme.spacing(1.25, 2),
   borderBottom: `1px solid ${theme.palette.divider}`,
   display: 'flex',
   alignItems: 'center',
@@ -64,15 +64,20 @@ const ChatHeader = styled(Box)(({ theme }) => ({
   boxShadow: '0 1px 3px rgba(0, 0, 0, 0.05)',
   position: 'relative',
   zIndex: 2,
+  '& .MuiTypography-root': {
+    fontSize: '0.9rem',
+    fontWeight: 500,
+  },
 }));
 
-const MessagesContainer = styled(Box)({
+const MessagesContainer = styled(Box)(({ theme }) => ({
   flexGrow: 1,
   overflowY: 'auto',
-  padding: '6px 12px',
+  padding: '8px 16px',
   display: 'flex',
   flexDirection: 'column',
-  gap: '2px',
+  gap: '4px',
+  backgroundColor: theme.palette.mode === 'dark' ? 'rgba(0, 0, 0, 0.1)' : 'rgba(0, 0, 0, 0.02)',
   '&::-webkit-scrollbar': {
     width: '6px',
     height: '6px',
@@ -91,13 +96,13 @@ const MessagesContainer = styled(Box)({
   // Force scrollbar to always be visible in modern browsers
   scrollbarWidth: 'thin',
   msOverflowStyle: 'auto',
-});
+}));
 
 const InputContainer = styled(Box)(({ theme }) => ({
-  padding: theme.spacing(1.5),
+  padding: theme.spacing(1.25),
   borderTop: `1px solid ${theme.palette.divider}`,
   display: 'flex',
-  gap: theme.spacing(1),
+  gap: theme.spacing(0.75),
   backgroundColor: theme.palette.mode === 'dark' 
     ? 'rgba(0, 0, 0, 0.2)' 
     : theme.palette.grey[50],
@@ -107,16 +112,16 @@ const InputContainer = styled(Box)(({ theme }) => ({
 
 const MessageBubble = styled(Box)(({ theme, isUser }) => ({
   display: 'flex',
-  padding: theme.spacing(0.3, 0.75),
+  padding: theme.spacing(0.2, 0.5),
   alignItems: 'flex-start',
-  gap: theme.spacing(0.75),
+  gap: theme.spacing(0.5),
   flexDirection: isUser ? 'row-reverse' : 'row',
-  marginBottom: theme.spacing(0.5),
+  marginBottom: theme.spacing(0.4),
 }));
 
 const BubbleContent = styled(Paper)(({ theme, isUser, isError }) => ({
   padding: theme.spacing(1, 1.5),
-  maxWidth: '85%',
+  maxWidth: '90%',
   backgroundColor: isError
     ? theme.palette.error.light
     : isUser
@@ -137,41 +142,45 @@ const BubbleContent = styled(Paper)(({ theme, isUser, isError }) => ({
       : theme.palette.mode === 'dark' 
         ? '1px solid rgba(255, 255, 255, 0.1)' 
         : `1px solid ${theme.palette.divider}`,
-  fontSize: '0.85rem',  // Smaller base font size
-  lineHeight: 1.4,      // Tighter line height
+  fontSize: '0.82rem',  // Smaller base font size
+  lineHeight: 1.35,     // Tighter line height
+  fontFamily: '"Roboto", "Segoe UI", "Helvetica", "Arial", sans-serif',
   '& pre': {
     backgroundColor: theme.palette.mode === 'dark' ? 'rgba(0, 0, 0, 0.3)' : 'rgba(0, 0, 0, 0.05)',
     padding: theme.spacing(0.75),
     borderRadius: 4,
     overflowX: 'auto',
-    fontFamily: 'monospace',
-    fontSize: '0.8rem',
+    fontFamily: '"Consolas", "Monaco", "Andale Mono", monospace',
+    fontSize: '0.75rem',
     margin: theme.spacing(0.75, 0),
+    maxHeight: '300px',
+    overflowY: 'auto',
   },
   '& code': {
     backgroundColor: theme.palette.mode === 'dark' ? 'rgba(0, 0, 0, 0.3)' : 'rgba(0, 0, 0, 0.05)',
     padding: '2px 4px',
     borderRadius: 3,
-    fontFamily: 'monospace',
-    fontSize: '0.8rem',
+    fontFamily: '"Consolas", "Monaco", "Andale Mono", monospace',
+    fontSize: '0.75rem',
   },
   '& p': {
     margin: theme.spacing(0.25, 0),
   },
   '& h1, & h2, & h3, & h4, & h5, & h6': {
     margin: theme.spacing(1, 0, 0.5),
-    fontSize: '0.95rem',
+    fontSize: '0.9rem',
     fontWeight: 600,
   },
-  '& h1': { fontSize: '1.1rem' },
-  '& h2': { fontSize: '1rem' },
-  '& h3': { fontSize: '0.95rem' },
+  '& h1': { fontSize: '1rem' },
+  '& h2': { fontSize: '0.95rem' },
+  '& h3': { fontSize: '0.9rem' },
   '& ul, & ol': {
-    paddingLeft: theme.spacing(2),
+    paddingLeft: theme.spacing(1.75),
     margin: theme.spacing(0.25, 0),
   },
   '& li': {
     margin: theme.spacing(0.1, 0),
+    fontSize: '0.8rem',
   },
   '& table': {
     borderCollapse: 'collapse',
