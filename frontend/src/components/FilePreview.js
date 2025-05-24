@@ -268,37 +268,112 @@ const FilePreview = ({ selectedFile }) => {
               <ReactMarkdown
                 components={{
                   h1: ({ children }) => (
-                    <Typography variant="h4" component="h1" gutterBottom sx={{ fontWeight: 600, color: 'primary.main' }}>
+                    <Typography 
+                      variant="h4" 
+                      component="h1" 
+                      gutterBottom 
+                      sx={{ 
+                        fontWeight: 700, 
+                        color: 'primary.main',
+                        fontSize: '2rem',
+                        letterSpacing: '-0.01em',
+                        mt: 2,
+                        mb: 3,
+                        pb: 2,
+                        borderBottom: isDark ? '1px solid rgba(255, 255, 255, 0.1)' : '1px solid rgba(0, 0, 0, 0.1)'
+                      }}
+                    >
                       {children}
                     </Typography>
                   ),
                   h2: ({ children }) => (
-                    <Typography variant="h5" component="h2" gutterBottom sx={{ fontWeight: 500, mt: 3, mb: 2 }}>
+                    <Typography 
+                      variant="h5" 
+                      component="h2" 
+                      gutterBottom 
+                      sx={{ 
+                        fontWeight: 600, 
+                        mt: 4, 
+                        mb: 2,
+                        fontSize: '1.5rem',
+                        color: isDark ? 'rgba(246, 130, 61, 0.95)' : '#FF6B3D',
+                        paddingBottom: 1,
+                        borderBottom: isDark ? '1px solid rgba(246, 130, 61, 0.3)' : '1px solid rgba(255, 107, 61, 0.2)'
+                      }}
+                    >
                       {children}
                     </Typography>
                   ),
                   h3: ({ children }) => (
-                    <Typography variant="h6" component="h3" gutterBottom sx={{ fontWeight: 500, mt: 2, mb: 1 }}>
+                    <Typography 
+                      variant="h6" 
+                      component="h3" 
+                      gutterBottom 
+                      sx={{ 
+                        fontWeight: 600, 
+                        mt: 3, 
+                        mb: 1.5,
+                        fontSize: '1.2rem',
+                        color: isDark ? 'rgba(246, 184, 61, 0.95)' : '#D96B00'
+                      }}
+                    >
                       {children}
                     </Typography>
                   ),
                   p: ({ children }) => (
-                    <Typography variant="body1" paragraph sx={{ lineHeight: 1.7 }}>
+                    <Typography 
+                      variant="body1" 
+                      paragraph 
+                      sx={{ 
+                        lineHeight: 1.8,
+                        mb: 2.5,
+                        fontSize: '1rem',
+                        letterSpacing: '0.01em'
+                      }}
+                    >
                       {children}
                     </Typography>
                   ),
                   ul: ({ children }) => (
-                    <Box component="ul" sx={{ pl: 3, mb: 2 }}>
+                    <Box 
+                      component="ul" 
+                      sx={{ 
+                        pl: 4, 
+                        mb: 3,
+                        mt: 1.5
+                      }}
+                    >
                       {children}
                     </Box>
                   ),
                   li: ({ children }) => (
-                    <Typography component="li" variant="body1" sx={{ mb: 0.5, lineHeight: 1.6 }}>
+                    <Typography 
+                      component="li" 
+                      variant="body1" 
+                      sx={{ 
+                        mb: 1.2, 
+                        lineHeight: 1.7,
+                        position: 'relative',
+                        '&::before': {
+                          content: '"•"',
+                          position: 'absolute',
+                          left: -20,
+                          color: 'primary.main',
+                          fontWeight: 'bold'
+                        }
+                      }}
+                    >
                       {children}
                     </Typography>
                   ),
                   strong: ({ children }) => (
-                    <Typography component="strong" sx={{ fontWeight: 600 }}>
+                    <Typography 
+                      component="strong" 
+                      sx={{ 
+                        fontWeight: 700,
+                        color: isDark ? 'primary.light' : 'primary.dark'
+                      }}
+                    >
                       {children}
                     </Typography>
                   ),
