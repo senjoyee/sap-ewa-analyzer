@@ -377,6 +377,158 @@ const FilePreview = ({ selectedFile }) => {
                       {children}
                     </Typography>
                   ),
+                  // Custom component to style and wrap findings sections
+                  blockquote: ({ children }) => {
+                    // Try to determine if this is a finding block
+                    const childText = children?.toString().toLowerCase() || '';
+                    
+                    // Detect severity level based on content
+                    let severityColor = 'rgba(25, 118, 210, 0.15)';
+                    let borderColor = 'rgba(25, 118, 210, 0.5)';
+                    let icon = null;
+                    let severityText = '';
+                    
+                    if (childText.includes('critical') || childText.includes('error') || childText.includes('high priority')) {
+                      severityColor = isDark ? 'rgba(244, 67, 54, 0.15)' : 'rgba(244, 67, 54, 0.08)';
+                      borderColor = 'rgba(244, 67, 54, 0.5)';
+                      severityText = 'CRITICAL';
+                      icon = '🔴';
+                    } else if (childText.includes('warning') || childText.includes('moderate') || childText.includes('medium priority')) {
+                      severityColor = isDark ? 'rgba(255, 152, 0, 0.15)' : 'rgba(255, 152, 0, 0.08)';
+                      borderColor = 'rgba(255, 152, 0, 0.5)';
+                      severityText = 'WARNING';
+                      icon = '🟠';
+                    } else if (childText.includes('info') || childText.includes('note') || childText.includes('low priority')) {
+                      severityColor = isDark ? 'rgba(3, 169, 244, 0.15)' : 'rgba(3, 169, 244, 0.08)';
+                      borderColor = 'rgba(3, 169, 244, 0.5)';
+                      severityText = 'INFO';
+                      icon = 'ℹ️';
+                    }
+                    
+                    return (
+                      <Box sx={{
+                        backgroundColor: severityColor,
+                        borderLeft: `4px solid ${borderColor}`,
+                        borderRadius: 1,
+                        p: 2,
+                        mb: 3,
+                        mt: 3,
+                        boxShadow: isDark ? '0 4px 8px rgba(0, 0, 0, 0.3)' : '0 2px 6px rgba(0, 0, 0, 0.1)',
+                      }}>
+                        {severityText && (
+                          <Box sx={{ 
+                            display: 'flex', 
+                            alignItems: 'center', 
+                            mb: 1,
+                            pb: 1,
+                            borderBottom: `1px solid ${borderColor}`
+                          }}>
+                            {icon && (
+                              <Typography sx={{ mr: 1, fontSize: '1.2rem' }}>
+                                {icon}
+                              </Typography>
+                            )}
+                            <Typography 
+                              variant="subtitle1" 
+                              sx={{ 
+                                fontWeight: 600,
+                                letterSpacing: '0.05em',
+                                fontSize: '0.875rem'
+                              }}
+                            >
+                              {severityText}
+                            </Typography>
+                          </Box>
+                        )}
+                        {children}
+                      </Box>
+                    );
+                  },
+                  
+                  // Style for findings/recommendations
+                  h4: ({ children }) => {
+                    const headingText = children?.toString() || '';
+                    let iconSymbol = null;
+                    let headingColor = 'text.primary';
+                    
+                    // Apply custom styling based on heading content
+                    if (headingText.toLowerCase().includes('finding')) {
+                      iconSymbol = '🔍';
+                      headingColor = isDark ? '#FF5722' : '#D84315';
+                    } else if (headingText.toLowerCase().includes('recommendation')) {
+                      iconSymbol = '💡';
+                      headingColor = isDark ? '#4CAF50' : '#2E7D32';
+                    } else if (headingText.toLowerCase().includes('impact')) {
+                      iconSymbol = '⚠️';
+                      headingColor = isDark ? '#FF9800' : '#ED6C02';
+                    } else if (headingText.toLowerCase().includes('description')) {
+                      iconSymbol = '📝';
+                      headingColor = isDark ? '#03A9F4' : '#0277BD';
+                    }
+                    
+                    return (
+                      <Typography 
+                        variant="subtitle1" 
+                        component="h4" 
+                        sx={{ 
+                          fontWeight: 600, 
+                          color: headingColor,
+                          display: 'flex',
+                          alignItems: 'center',
+                          mb: 1.5,
+                          mt: 2
+                        }}
+                      >
+                        {iconSymbol && (
+                          <Typography component="span" sx={{ mr: 1 }}>
+                            {iconSymbol}
+                          </Typography>
+                        )}
+                        {children}
+                      </Typography>
+                    );
+                  },
+                  
+                  // Highlighted description lists for key-value pairs
+                  dl: ({ children }) => (
+                    <Box sx={{
+                      backgroundColor: isDark ? 'rgba(255, 255, 255, 0.05)' : 'rgba(0, 0, 0, 0.02)',
+                      borderRadius: 1,
+                      p: 2,
+                      mb: 3,
+                      border: isDark ? '1px solid rgba(255, 255, 255, 0.1)' : '1px solid rgba(0, 0, 0, 0.05)',
+                    }}>
+                      {children}
+                    </Box>
+                  ),
+                  
+                  dt: ({ children }) => (
+                    <Typography 
+                      component="dt" 
+                      sx={{ 
+                        fontWeight: 600, 
+                        color: isDark ? 'primary.light' : 'primary.dark',
+                        mb: 0.5
+                      }}
+                    >
+                      {children}
+                    </Typography>
+                  ),
+                  
+                  dd: ({ children }) => (
+                    <Typography 
+                      component="dd" 
+                      sx={{ 
+                        ml: 2, 
+                        mb: 1.5,
+                        color: 'text.secondary'
+                      }}
+                    >
+                      {children}
+                    </Typography>
+                  ),
+                  
+                  // Enhanced table styling
                   table: ({ children }) => (
                     <Box sx={{ 
                       overflowX: 'auto', 
