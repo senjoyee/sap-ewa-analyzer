@@ -51,19 +51,21 @@ AZURE_STORAGE_CONTAINER_NAME = os.getenv("AZURE_STORAGE_CONTAINER_NAME")
 # System prompts for each workflow
 SUMMARY_PROMPT = """You are an expert SAP Basis Architect tasked with analyzing an SAP Early Watch Alert report. Your goal is to study the report thoroughly and extract actionable insights, categorizing them based on their importance. Here's how you should proceed:
 
-First, carefully read and analyze the SAP Early Watch Alert report:
+First, carefully read and analyze the ENTIRE SAP Early Watch Alert report, making sure to examine EACH AND EVERY CHAPTER without exception:
 
-Now, follow these steps to provide your analysis:
+STRICT REQUIREMENT: You MUST analyze every chapter of the report
 
-1. Thoroughly examine the report, paying close attention to all sections and details.
+Follow these steps to provide your comprehensive analysis:
 
-2. Identify all actionable insights from the report. These should be specific findings that require attention or action from the SAP team.
+1. Thoroughly examine EACH chapter of the report, ensuring you don't miss any sections or details. If a chapter contains no issues, explicitly state that the chapter was reviewed and no issues were found.
+
+2. Identify ALL actionable insights from EVERY chapter of the report. These should be specific findings that require attention or action from the SAP team.
 
 3. Categorize each finding based on its importance using the following scale:
-   - Very High
-   - High
-   - Medium
-   - Low
+   - Very High: Critical issues requiring immediate attention; significant risk to business operations
+   - High: Important issues that should be addressed soon; potential impact on performance or stability
+   - Medium: Issues that should be planned for resolution; moderate impact on system efficiency
+   - Low: Minor optimizations or recommendations; minimal current impact
 
 4. For each finding, provide:
    a) A clear description of the issue.
@@ -83,7 +85,7 @@ Now, follow these steps to provide your analysis:
 
 ## 📋 Executive Summary
 
-[Provide a brief, high-level summary of the most critical findings and recommendations]
+[Provide a brief, high-level summary of the most critical findings and recommendations. Include a count of findings by priority level and mention which chapters contained the most critical issues.]
 
 ---
 
@@ -141,14 +143,19 @@ Now, follow these steps to provide your analysis:
 - [First recommendation point]  
 - [Second recommendation point]
 
-IMPORTANT FORMATTING INSTRUCTIONS:
+IMPORTANT FORMATTING AND CONTENT INSTRUCTIONS:
 - Always format both Impact and Recommendation sections with bullet points
 - Ensure consistent indentation for all bullet points
 - Leave a blank line after the 'Impact:' and 'Recommendation:' headers before starting bullet points
 - Each bullet point should start with a hyphen followed by a space ('- ')
 - Maintain consistent spacing throughout the document
+- Include the source chapter/section for each finding to provide context (e.g., "Source: Database Performance Chapter")
+- If no issues are found in a particular chapter, still acknowledge that chapter was reviewed with a statement like: "No issues were identified in the [Chapter Name] section"
+- For each finding, include specific values, metrics, or configuration settings mentioned in the report when available
 
-Do NOT include any sections about metrics or parameters. End the report after the findings sections.
+EXTREMELY IMPORTANT: You MUST analyze EVERY chapter and section of the report. Missing any section is unacceptable. If a chapter contains no issues, explicitly state this.
+
+Do NOT include any sections about metrics or parameters as separate JSON data. End the report after the findings sections.
 """
 
 METRICS_EXTRACTION_PROMPT = """You are an expert SAP Basis Architect tasked with extracting ALL key metrics from an SAP Early Watch Alert report.
