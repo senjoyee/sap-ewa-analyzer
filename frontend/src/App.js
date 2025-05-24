@@ -19,9 +19,9 @@ import ChevronRightIcon from '@mui/icons-material/ChevronRight';
 import FileUpload from './components/FileUpload';
 import FileList from './components/FileList';
 import FilePreview from './components/FilePreview';
-import ThemeToggle from './components/ThemeToggle';
+// ThemeToggle removed as we're using only light theme
 import { ThemeProvider, useTheme } from './contexts/ThemeContext';
-import { lightTheme, darkTheme } from './theme/themeConfig';
+import { appTheme } from './theme/themeConfig';
 
 // Add a keyframe animation for the spinning loader
 const spinAnimation = {
@@ -44,39 +44,22 @@ const AppContent = () => {
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
   const { theme: themeMode } = useTheme(); // Renamed to avoid conflicts with MUI theme parameter
   
-  // Dynamically select theme based on theme context
+  // Using only light theme with spinner animation
   const currentTheme = useMemo(() => {
-    // Add the spinner animation to whichever theme is active
-    if (themeMode === 'dark') {
-      return {
-        ...darkTheme,
-        components: {
-          ...darkTheme.components,
-          MuiCssBaseline: {
-            styleOverrides: {
-              '@global': {
-                ...spinAnimation
-              },
+    return {
+      ...appTheme,
+      components: {
+        ...appTheme.components,
+        MuiCssBaseline: {
+          styleOverrides: {
+            '@global': {
+              ...spinAnimation
             },
           },
-        }
-      };
-    } else {
-      return {
-        ...lightTheme,
-        components: {
-          ...lightTheme.components,
-          MuiCssBaseline: {
-            styleOverrides: {
-              '@global': {
-                ...spinAnimation
-              },
-            },
-          },
-        }
-      };
-    }
-  }, [themeMode]);
+        },
+      }
+    };
+  }, []);
 
   const handleUploadSuccess = () => {
     setFileListRefreshTrigger(prev => prev + 1);
@@ -91,12 +74,8 @@ const AppContent = () => {
           elevation={0}
           sx={{ 
             zIndex: (muiTheme) => muiTheme.zIndex.drawer + 1,
-            background: themeMode === 'dark' 
-              ? 'linear-gradient(to right, #1A1A1A, #2C2C2C)'
-              : 'linear-gradient(to right, #2193b0, #6dd5ed)',
-            borderBottom: themeMode === 'dark'
-              ? '1px solid rgba(255, 255, 255, 0.05)'
-              : '1px solid rgba(0, 0, 0, 0.05)'
+            background: 'linear-gradient(to right, #2193b0, #6dd5ed)',
+            borderBottom: '1px solid rgba(0, 0, 0, 0.05)'
           }}
         >
           <Toolbar>
@@ -107,7 +86,7 @@ const AppContent = () => {
               </Typography>
             </Box>
             <Box sx={{ flexGrow: 1 }} />
-            <ThemeToggle />
+            {/* Theme toggle removed as we're using only light theme */}
             <Tooltip title="Settings">
               <IconButton color="inherit">
                 <SettingsIcon />
@@ -130,12 +109,8 @@ const AppContent = () => {
             [`& .MuiDrawer-paper`]: {
               width: sidebarCollapsed ? collapsedDrawerWidth : drawerWidth,
               boxSizing: 'border-box',
-              background: themeMode === 'dark'
-                ? 'linear-gradient(180deg, #1A1A1A 0%, #222222 100%)'
-                : 'linear-gradient(180deg, #f5f5f5 0%, #e0e0e0 100%)',
-              borderRight: themeMode === 'dark'
-                ? '1px solid rgba(255, 255, 255, 0.05)'
-                : '1px solid rgba(0, 0, 0, 0.05)',
+              background: 'linear-gradient(180deg, #f5f5f5 0%, #e0e0e0 100%)',
+              borderRight: '1px solid rgba(0, 0, 0, 0.05)',
               transition: 'width 225ms cubic-bezier(0.4, 0, 0.6, 1) 0ms',
               overflow: 'hidden',
             },
@@ -148,9 +123,9 @@ const AppContent = () => {
               onClick={() => setSidebarCollapsed(true)}
               size="small"
               sx={{
-                backgroundColor: themeMode === 'dark' ? 'rgba(255,255,255,0.05)' : 'rgba(0,0,0,0.05)',
+                backgroundColor: 'rgba(0,0,0,0.05)',
                 '&:hover': {
-                  backgroundColor: themeMode === 'dark' ? 'rgba(255,255,255,0.1)' : 'rgba(0,0,0,0.1)',
+                  backgroundColor: 'rgba(0,0,0,0.1)',
                 }
               }}
             >
@@ -176,7 +151,7 @@ const AppContent = () => {
               left: 0,
               zIndex: 1200,
               transform: 'translateY(-50%)',
-              backgroundColor: themeMode === 'dark' ? '#2C2C2C' : '#e0e0e0',
+              backgroundColor: '#e0e0e0',
               borderRadius: '0 4px 4px 0',
               boxShadow: '2px 0 8px rgba(0,0,0,0.15)',
               transition: 'left 225ms cubic-bezier(0.4, 0, 0.6, 1) 0ms',
@@ -200,9 +175,7 @@ const AppContent = () => {
             width: `calc(100% - ${sidebarCollapsed ? collapsedDrawerWidth : drawerWidth}px)`,
             display: 'flex',
             flexDirection: 'column',
-            background: themeMode === 'dark'
-              ? 'linear-gradient(135deg, #121212 0%, #1A1A1A 100%)'
-              : 'linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%)',
+            background: 'linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%)',
             transition: 'width 225ms cubic-bezier(0.4, 0, 0.6, 1) 0ms, margin 225ms cubic-bezier(0.4, 0, 0.6, 1) 0ms',
           }}
         >

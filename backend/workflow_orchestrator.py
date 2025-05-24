@@ -41,8 +41,8 @@ AZURE_OPENAI_API_VERSION = os.getenv("AZURE_OPENAI_API_VERSION", "2024-02-01")
 
 # Model deployment names
 AZURE_OPENAI_SUMMARY_MODEL = os.getenv("AZURE_OPENAI_SUMMARY_MODEL", "gpt-4.1-mini")
-AZURE_OPENAI_METRICS_MODEL = os.getenv("AZURE_OPENAI_METRICS_MODEL", "gpt-4.1-nano")
-AZURE_OPENAI_PARAMETERS_MODEL = os.getenv("AZURE_OPENAI_PARAMETERS_MODEL", "gpt-4.1-nano")
+AZURE_OPENAI_METRICS_MODEL = os.getenv("AZURE_OPENAI_METRICS_MODEL", "gpt-4.1-mini")
+AZURE_OPENAI_PARAMETERS_MODEL = os.getenv("AZURE_OPENAI_PARAMETERS_MODEL", "gpt-4.1-mini")
 
 # Azure Storage configuration
 AZURE_STORAGE_CONNECTION_STRING = os.getenv("AZURE_STORAGE_CONNECTION_STRING")
@@ -177,6 +177,7 @@ CRITICAL JSON FORMATTING REQUIREMENTS:
 - Do not include any special characters or escape sequences that would make the JSON invalid
 - No trailing commas
 - No comments within the JSON
+- No HTML tags (<br>, <p>, etc.) in any values, especially metric names
 
 **Status values must be EXACTLY one of: "success", "warning", or "critical"**
 **Category values should group related metrics (e.g., "Performance", "Availability", "Database", "Memory", etc.)**
@@ -188,6 +189,8 @@ INSTRUCTIONS:
 - Group metrics into logical categories
 - Provide a brief description of what each metric measures
 - Pay special attention to performance metrics, availability metrics, and resource utilization metrics
+- Metric names must be plain text without any HTML formatting or tags
+- If a metric name appears to be split with HTML tags (like "availability<br>rate"), combine it into a single clean name ("availabilityrate")
 
 IMPORTANT: Your response MUST be a syntactically valid JSON object only. No preamble, no explanations, no additional text or markdown. Just the JSON.
 - Do NOT use ellipsis ('...') or placeholders; provide the complete JSON without omissions.
@@ -208,7 +211,6 @@ You MUST return ONLY valid, parseable JSON with no additional text, comments, or
       "current": "CURRENT_VALUE",
       "recommended": "RECOMMENDED_VALUE",
       "impact": "IMPACT_LEVEL",
-      "category": "CATEGORY",
       "system_type": "SYSTEM_TYPE",
       "description": "Description of what this parameter controls and why it should be changed"
     }
@@ -222,25 +224,27 @@ CRITICAL JSON FORMATTING REQUIREMENTS:
 - Do not include any special characters or escape sequences that would make the JSON invalid
 - No trailing commas
 - No comments within the JSON
+- No HTML tags (<br>, <p>, etc.) in any values, especially parameter names
 
-**Impact values must be EXACTLY one of: "high", "medium", or "low"**
-**Category values should group related parameters (e.g., "Performance", "Memory Management", "Security", "Database Tuning", etc.)**
-**System_type values must be EXACTLY one of: "HANA", "Application Server", "Both", or "System"**
+**IMPACT_LEVEL must be EXACTLY one of: "high", "medium", or "low"**
+**SYSTEM_TYPE must be EXACTLY one of: "Database", "Application Server", "Both", or "System"**
 
 CRITICAL REQUIREMENTS:
-- Clearly distinguish between HANA database parameters and SAP Application Server parameters using the system_type field
-- For HANA parameters: use system_type = "HANA"
-- For SAP Application Server parameters: use system_type = "Application Server"  
-- For parameters that affect both: use system_type = "Both"
-- For general system parameters: use system_type = "System"
+- Clearly distinguish between database parameters and SAP Application Server parameters using the system_type field
+- For database parameters: use SYSTEM_TYPE = "Database"
+- For SAP Application Server parameters: use SYSTEM_TYPE = "Application Server"  
+- For parameters that affect both: use SYSTEM_TYPE = "Both"
+- For general system parameters: use SYSTEM_TYPE = "System"
+- Parameter names must be plain text without any HTML formatting or tags
 
 INSTRUCTIONS:
 - Extract ALL parameter recommendations mentioned in the report
 - Include current values and recommended values where available
 - Assess impact level based on the criticality described in the report
 - Provide clear descriptions of what each parameter does
-- Look for memory parameters, performance tuning parameters, security parameters, etc.
+- Look for ALL parameter recommendations
 - Pay special attention to database-specific vs application server-specific parameters
+- If a parameter name appears to be split with HTML tags (like "sslsessioncach<br>emode"), combine it into a single clean name ("sslsessioncachemode")
 
 IMPORTANT: Your response MUST be a syntactically valid JSON object only. No preamble, no explanations, no additional text or markdown. Just the JSON.
 - Do NOT use ellipsis ('...') or placeholders; provide the complete JSON without omissions.
@@ -442,7 +446,7 @@ class EWAWorkflowOrchestrator:
                 SUMMARY_PROMPT, 
                 state.markdown_content,
                 model=AZURE_OPENAI_SUMMARY_MODEL,
-                max_tokens=6000
+                max_tokens=16000
             )
             return state
         except Exception as e:
@@ -457,7 +461,7 @@ class EWAWorkflowOrchestrator:
                 METRICS_EXTRACTION_PROMPT, 
                 state.markdown_content,
                 model=AZURE_OPENAI_METRICS_MODEL,
-                max_tokens=8000
+                max_tokens=16000
             )
             
             # Parse JSON response with improved error handling
@@ -526,7 +530,7 @@ class EWAWorkflowOrchestrator:
                 PARAMETERS_EXTRACTION_PROMPT, 
                 state.markdown_content,
                 model=AZURE_OPENAI_PARAMETERS_MODEL,
-                max_tokens=8000
+                max_tokens=16000
             )
             
             # Parse JSON response with improved error handling
@@ -587,6 +591,38 @@ class EWAWorkflowOrchestrator:
             state.error = str(e)
             return state
     
+    def clean_html_from_json_object(self, json_obj):
+        """Remove HTML tags from all string values in a JSON object recursively"""
+        if isinstance(json_obj, dict):
+            result = {}
+            for key, value in json_obj.items():
+                # Clean the key if it's a string
+                if isinstance(key, str):
+                    # Remove all HTML tags completely
+                    key = re.sub(r'<[^>]*>|</[^>]*>', '', key)
+                # Clean the value recursively
+                result[key] = self.clean_html_from_json_object(value)
+            return result
+        elif isinstance(json_obj, list):
+            return [self.clean_html_from_json_object(item) for item in json_obj]
+        elif isinstance(json_obj, str):
+            # More thorough HTML tag removal that handles nested tags
+            # First, try with a proper HTML parser if the string is complex
+            if '<' in json_obj and '>' in json_obj and len(json_obj) > 20:
+                # Use regex to handle complex cases with nested tags
+                # This approach removes all HTML tags while preserving the text content
+                clean_str = re.sub(r'<[^>]*>|</[^>]*>', '', json_obj)
+                
+                # Remove any duplicate whitespace created by tag removal
+                clean_str = re.sub(r'\s+', ' ', clean_str).strip()
+                
+                return clean_str
+            else:
+                # Simple HTML tag removal for less complex strings
+                return re.sub(r'<[^>]+>', '', json_obj)
+        else:
+            return json_obj
+    
     async def save_results_step(self, state: WorkflowState) -> WorkflowState:
         """Step 5: Save all results to blob storage"""
         try:
@@ -599,21 +635,59 @@ class EWAWorkflowOrchestrator:
             
             # Save metrics as JSON
             if state.metrics_result:
+                # Clean any HTML tags from metrics data
+                cleaned_metrics = self.clean_html_from_json_object(state.metrics_result)
+                
+                # Special handling for metric names - ensure they're clean
+                if 'metrics' in cleaned_metrics and isinstance(cleaned_metrics['metrics'], list):
+                    for metric in cleaned_metrics['metrics']:
+                        if 'name' in metric and isinstance(metric['name'], str):
+                            # Remove any HTML tags and normalize spacing
+                            metric['name'] = re.sub(r'\s+', ' ', re.sub(r'<[^>]*>|</[^>]*>', '', metric['name'])).strip()
+                            
+                        # Also clean current and target values which might contain HTML
+                        for field in ['current', 'target', 'description']:
+                            if field in metric and isinstance(metric[field], str):
+                                # Process complex HTML content in values
+                                metric[field] = re.sub(r'\s+', ' ', re.sub(r'<[^>]*>|</[^>]*>', '', metric[field])).strip()
+                
                 metrics_blob_name = f"{base_name}_metrics.json"
-                await self.upload_to_blob(
-                    metrics_blob_name, 
-                    json.dumps(state.metrics_result, indent=2), 
-                    "application/json"
-                )
+                metrics_json = json.dumps(cleaned_metrics, indent=2)
+                await self.upload_to_blob(metrics_blob_name, metrics_json, "application/json")
             
             # Save parameters as JSON
             if state.parameters_result:
+                # Clean any HTML tags from parameters data
+                cleaned_parameters = self.clean_html_from_json_object(state.parameters_result)
+                
+                # Special handling for parameter names - ensure they're clean
+                if 'parameters' in cleaned_parameters and isinstance(cleaned_parameters['parameters'], list):
+                    for param in cleaned_parameters['parameters']:
+                        if 'name' in param and isinstance(param['name'], str):
+                            # Remove any HTML tags and normalize spacing
+                            param['name'] = re.sub(r'\s+', ' ', re.sub(r'<[^>]*>|</[^>]*>', '', param['name'])).strip()
+                            
+                            # Handle special cases where HTML might break parameter names
+                            # For example: "sslsessioncach<br>emode" -> "sslsessioncachemode"
+                            param['name'] = param['name'].replace('|', '_').replace('=', '_')
+                            
+                        # Also clean current and recommended values which might contain HTML
+                        for field in ['current', 'recommended', 'description']:
+                            if field in param and isinstance(param[field], str):
+                                # Process complex HTML content in values
+                                raw_value = param[field]
+                                
+                                # Handle potential pipe and bracket syntax seen in screenshot
+                                if '|' in raw_value or '[' in raw_value:
+                                    # Preserve important parts of the parameter value syntax
+                                    clean_value = re.sub(r'<[^>]*>|</[^>]*>', '', raw_value)
+                                    param[field] = re.sub(r'\s+', ' ', clean_value).strip()
+                                else:
+                                    param[field] = re.sub(r'\s+', ' ', re.sub(r'<[^>]*>|</[^>]*>', '', raw_value)).strip()
+                
                 parameters_blob_name = f"{base_name}_parameters.json"
-                await self.upload_to_blob(
-                    parameters_blob_name, 
-                    json.dumps(state.parameters_result, indent=2), 
-                    "application/json"
-                )
+                parameters_json = json.dumps(cleaned_parameters, indent=2)
+                await self.upload_to_blob(parameters_blob_name, parameters_json, "application/json")
             
             return state
         except Exception as e:

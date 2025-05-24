@@ -616,7 +616,7 @@ async def chat_with_document(request: ChatRequest):
         api_key = os.getenv("AZURE_OPENAI_API_KEY")
         api_version = os.getenv("AZURE_OPENAI_API_VERSION", "2024-12-01-preview")
         azure_endpoint = os.getenv("AZURE_OPENAI_ENDPOINT")
-        model_name = os.getenv("AZURE_OPENAI_DEPLOYMENT_NAME", "gpt-4.1-nano")  # Using nano for faster responses
+        model_name = os.getenv("AZURE_OPENAI_DEPLOYMENT_NAME", "gpt-4.1-mini")
         
         if not api_key or not azure_endpoint:
             raise ValueError("Missing required environment variables: AZURE_OPENAI_API_KEY or AZURE_OPENAI_ENDPOINT")
@@ -681,6 +681,12 @@ IMPORTANT INSTRUCTIONS:
 5. Be especially attentive to technical metrics, parameter recommendations, and critical warnings in the report.
 6. Quote specific sections and values from the report whenever possible.
 7. If you truly cannot find ANY mention of a topic, only then state that it's not in the document.
+
+DIRECTING USERS TO SPECIALIZED SECTIONS:
+1. This application has DEDICATED SECTIONS for Key Metrics and Parameters that provide more detailed and structured information.
+2. When users ask about specific metrics (KPIs, performance indicators, thresholds), give a brief summary, excluding any specific values, explain that the information is available in the "Key Metrics" section, and then EXPLICITLY direct them to the "Key Metrics" section with text like: "For more detailed metrics information with current values and status indicators, please refer to the Key Metrics section."
+3. When users ask about parameters or configuration recommendations, provide a brief overview, excluding any specific values, explain that the information is available in the "Parameters" section, and then EXPLICITLY direct them to the "Parameters" section with text like: "For complete parameter recommendations with current and suggested values, please refer to the Parameters section."
+4. These specialized sections provide interactive, structured data that's easier to navigate than the text summary.
 
 Keep your responses informative and technically precise, as you're assisting an SAP administrator. Use markdown formatting for better readability."""
         
