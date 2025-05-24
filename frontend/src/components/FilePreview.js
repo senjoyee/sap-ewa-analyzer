@@ -275,11 +275,11 @@ const FilePreview = ({ selectedFile }) => {
                       sx={{ 
                         fontWeight: 700, 
                         color: 'primary.main',
-                        fontSize: '2rem',
+                        fontSize: '1.6rem',
                         letterSpacing: '-0.01em',
                         mt: 2,
-                        mb: 3,
-                        pb: 2,
+                        mb: 2,
+                        pb: 1.5,
                         borderBottom: isDark ? '1px solid rgba(255, 255, 255, 0.1)' : '1px solid rgba(0, 0, 0, 0.1)'
                       }}
                     >
@@ -293,11 +293,11 @@ const FilePreview = ({ selectedFile }) => {
                       gutterBottom 
                       sx={{ 
                         fontWeight: 600, 
-                        mt: 4, 
-                        mb: 2,
-                        fontSize: '1.5rem',
+                        mt: 3, 
+                        mb: 1.5,
+                        fontSize: '1.25rem',
                         color: isDark ? 'rgba(246, 130, 61, 0.95)' : '#FF6B3D',
-                        paddingBottom: 1,
+                        paddingBottom: 0.75,
                         borderBottom: isDark ? '1px solid rgba(246, 130, 61, 0.3)' : '1px solid rgba(255, 107, 61, 0.2)'
                       }}
                     >
@@ -311,9 +311,9 @@ const FilePreview = ({ selectedFile }) => {
                       gutterBottom 
                       sx={{ 
                         fontWeight: 600, 
-                        mt: 3, 
-                        mb: 1.5,
-                        fontSize: '1.2rem',
+                        mt: 2.5, 
+                        mb: 1,
+                        fontSize: '1.05rem',
                         color: isDark ? 'rgba(246, 184, 61, 0.95)' : '#D96B00'
                       }}
                     >
@@ -325,9 +325,9 @@ const FilePreview = ({ selectedFile }) => {
                       variant="body1" 
                       paragraph 
                       sx={{ 
-                        lineHeight: 1.8,
-                        mb: 2.5,
-                        fontSize: '1rem',
+                        lineHeight: 1.6,
+                        mb: 1.75,
+                        fontSize: '0.925rem',
                         letterSpacing: '0.01em'
                       }}
                     >
@@ -351,13 +351,14 @@ const FilePreview = ({ selectedFile }) => {
                       component="li" 
                       variant="body1" 
                       sx={{ 
-                        mb: 1.2, 
-                        lineHeight: 1.7,
+                        mb: 0.9, 
+                        lineHeight: 1.5,
+                        fontSize: '0.925rem',
                         position: 'relative',
                         '&::before': {
-                          content: '"•"',
+                          content: '"\u2022"',
                           position: 'absolute',
-                          left: -20,
+                          left: -18,
                           color: 'primary.main',
                           fontWeight: 'bold'
                         }
@@ -410,17 +411,17 @@ const FilePreview = ({ selectedFile }) => {
                         backgroundColor: severityColor,
                         borderLeft: `4px solid ${borderColor}`,
                         borderRadius: 1,
-                        p: 2,
-                        mb: 3,
-                        mt: 3,
-                        boxShadow: isDark ? '0 4px 8px rgba(0, 0, 0, 0.3)' : '0 2px 6px rgba(0, 0, 0, 0.1)',
+                        p: 1.5,
+                        mb: 2,
+                        mt: 2,
+                        boxShadow: isDark ? '0 3px 6px rgba(0, 0, 0, 0.3)' : '0 1px 4px rgba(0, 0, 0, 0.1)',
                       }}>
                         {severityText && (
                           <Box sx={{ 
                             display: 'flex', 
                             alignItems: 'center', 
-                            mb: 1,
-                            pb: 1,
+                            mb: 0.75,
+                            pb: 0.75,
                             borderBottom: `1px solid ${borderColor}`
                           }}>
                             {icon && (
@@ -475,8 +476,9 @@ const FilePreview = ({ selectedFile }) => {
                           color: headingColor,
                           display: 'flex',
                           alignItems: 'center',
-                          mb: 1.5,
-                          mt: 2
+                          mb: 1,
+                          mt: 1.5,
+                          fontSize: '0.95rem'
                         }}
                       >
                         {iconSymbol && (
