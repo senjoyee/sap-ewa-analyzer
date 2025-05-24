@@ -7,6 +7,8 @@ from pydantic import BaseModel
 from document_converter import convert_document_to_markdown, get_conversion_status
 from langgraph_workflows import execute_ewa_analysis
 import uvicorn # For running the app
+import os
+import json
 
 # Load environment variables from .env file
 load_dotenv()
@@ -24,15 +26,16 @@ app = FastAPI()
 # CORS Configuration
 origins = [
     "http://localhost:3000",  # Allow your React frontend
-    # Add any other origins if necessary
+    "http://127.0.0.1:3000",  # Alternative localhost
+    "*",                      # Allow all origins for testing
 ]
 
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=origins,
+    allow_origins=["*"],      # Allow all origins for troubleshooting
     allow_credentials=True,
-    allow_methods=["*"],  # Allows all methods
-    allow_headers=["*"],  # Allows all headers
+    allow_methods=["*"],      # Allows all methods
+    allow_headers=["*"],      # Allows all headers
 )
 
 # Initialize BlobServiceClient
@@ -417,6 +420,168 @@ async def get_parameters_data(blob_name: str):
         error_message = f"Error getting parameters data for {blob_name}: {str(e)}"
         print(error_message)
         raise HTTPException(status_code=500, detail=error_message)
+
+
+# Model for chat request
+class ChatRequest(BaseModel):
+    message: str
+    fileName: str
+    documentContent: str
+    fileOrigin: str = ''
+    contentLength: int = 0
+    chatHistory: list = []
+
+
+@app.post("/api/chat")
+async def chat_with_document(request: ChatRequest):
+    """
+    Chat with a document using Azure OpenAI GPT-4.
+    Uses the original document content as context for answering questions.
+    
+    Args:
+        request: A request object containing the chat message and document context
+    
+    Returns:
+        JSON response with the AI's response
+    """
+    try:
+        # Validate environment variables
+        api_key = os.getenv("AZURE_OPENAI_API_KEY")
+        api_version = os.getenv("AZURE_OPENAI_API_VERSION", "2024-12-01-preview")
+        azure_endpoint = os.getenv("AZURE_OPENAI_ENDPOINT")
+        model_name = os.getenv("AZURE_OPENAI_DEPLOYMENT_NAME", "gpt-4.1-nano")  # Using nano for faster responses
+        
+        if not api_key or not azure_endpoint:
+            raise ValueError("Missing required environment variables: AZURE_OPENAI_API_KEY or AZURE_OPENAI_ENDPOINT")
+        
+        print(f"Using Azure OpenAI model: {model_name}")
+        print(f"API version: {api_version}")
+        print(f"Endpoint: {azure_endpoint[:20]}...")
+        
+        from openai import AzureOpenAI
+        
+        # Get Azure OpenAI client
+        client = AzureOpenAI(
+            api_key=api_key,
+            api_version=api_version,
+            azure_endpoint=azure_endpoint
+        )
+        
+        # Limit document content length to avoid token limits
+        doc_content = request.documentContent
+        
+        # Debug document content in detail
+        print(f"Document content length: {len(doc_content)} characters")
+        if len(doc_content) < 100:
+            print(f"WARNING: Very short document content: '{doc_content}'")
+            # Try to add a default placeholder for debugging
+            doc_content = f"The document appears to be too short or empty. Original content: '{doc_content}'"
+        elif not doc_content or doc_content.strip() == '':
+            print("WARNING: Empty document content!")
+            doc_content = "No document content was provided. Please ensure the document was properly processed."
+        else:
+            # Print first and last 100 characters to see content structure
+            print(f"Content STARTS with: '{doc_content[:100].replace('\n', '\\n')}'")
+            print(f"Content ENDS with: '{doc_content[-100:].replace('\n', '\\n')}'")
+            
+            # Check for HTML content
+            if '<html' in doc_content.lower() or '</html>' in doc_content.lower():
+                print("WARNING: Document appears to be HTML rather than processed markdown!")
+            
+            # Check for meaningful content markers
+            if 'SAP' in doc_content or 'EWA' in doc_content or 'Early Watch' in doc_content:
+                print("GOOD: Document contains SAP-related content markers")
+            else:
+                print("WARNING: Document doesn't contain expected SAP content markers!")
+        
+        # We'll avoid truncating the document content to preserve all information
+        print(f"Using full document content of {len(doc_content)} characters")
+        
+        # Build conversation context with document content
+        system_prompt = f"""You are an expert SAP Basis Architect specialized in analyzing SAP Early Watch Alert (EWA) reports. 
+        
+You have access to the following SAP EWA report document:
+
+DOCUMENT: {request.fileName}
+CONTENT:
+{doc_content}
+
+IMPORTANT INSTRUCTIONS:
+1. This is an SAP Early Watch Alert (EWA) report which contains system performance metrics, issues, warnings, and recommendations.
+2. The report typically covers areas like database statistics, memory usage, backup frequency, system availability, and performance parameters.
+3. When answering questions, focus on extracting SPECIFIC INFORMATION from the document, even if it's just a brief mention.
+4. If information is present but brief, explain it and note that limited details are available.
+5. Be especially attentive to technical metrics, parameter recommendations, and critical warnings in the report.
+6. Quote specific sections and values from the report whenever possible.
+7. If you truly cannot find ANY mention of a topic, only then state that it's not in the document.
+
+Keep your responses informative and technically precise, as you're assisting an SAP administrator. Use markdown formatting for better readability."""
+
+        # Build message history
+        messages = [{"role": "system", "content": system_prompt}]
+        
+        # Add chat history (limited to last 10 messages to avoid token limits)
+        recent_history = request.chatHistory[-10:] if len(request.chatHistory) > 10 else request.chatHistory
+        for msg in recent_history:
+            role = "user" if msg.get("isUser") else "assistant"
+            messages.append({"role": role, "content": msg.get("text", "")})
+        
+        # Add current message
+        messages.append({"role": "user", "content": request.message})
+        
+        # Print request information for debugging
+        print(f"Chat request for document: {request.fileName}")
+        print(f"Message: {request.message[:50]}...")
+        print(f"History length: {len(request.chatHistory)}")
+        
+        try:
+            # Get response from Azure OpenAI
+            response = client.chat.completions.create(
+                model=model_name,
+                messages=messages,
+                max_tokens=2000,       # Increased token limit for more detailed responses
+                temperature=0.2,       # Lower temperature for more focused answers
+                top_p=0.95,           # Slightly constrained sampling for more accurate responses
+                presence_penalty=0.0,  # No penalty for repeating topics
+                frequency_penalty=0.0  # No penalty for repeating specific tokens
+            )
+            
+            ai_response = response.choices[0].message.content
+            print(f"Got response of length: {len(ai_response)}")
+            return {"response": ai_response}
+            
+        except Exception as api_error:
+            print(f"API ERROR: {repr(api_error)}")
+            # Check for common OpenAI errors
+            error_str = str(api_error).lower()
+            error_msg = f"API ERROR: {str(api_error)}"
+            
+            if "model" in error_str and ("not found" in error_str or "does not exist" in error_str):
+                error_msg = f"Model '{model_name}' not found. Please check your AZURE_OPENAI_DEPLOYMENT_NAME setting in the .env file."
+            elif "authenticate" in error_str or "key" in error_str or "cred" in error_str:
+                error_msg = "Authentication error. Please check your Azure OpenAI API key and endpoint."
+            elif "rate limit" in error_str or "too many" in error_str:
+                error_msg = "Rate limit exceeded. Please try again in a moment."
+                
+            print(f"Returning error message to client: {error_msg}")
+            return {"response": f"Error: {error_msg}", "error": True}
+        
+    except Exception as e:
+        error_message = f"Error in chat endpoint: {str(e)}"
+        print(f"DETAILED ERROR: {repr(e)}")
+        import traceback
+        traceback_str = traceback.format_exc()
+        print(f"TRACEBACK: {traceback_str}")
+        
+        # Return the error message for debugging
+        return {"response": f"Error: {error_message}", "error": True}
+
+
+
+# Simple test endpoint to check server availability
+@app.get("/api/ping")
+async def ping():
+    return {"status": "ok", "message": "Server is running"}
 
 
 # To run the app (for development): uvicorn main:app --reload --port 8000

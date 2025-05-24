@@ -17,6 +17,14 @@ AZURE_OPENAI_DEPLOYMENT_NAME = os.getenv("AZURE_OPENAI_DEPLOYMENT_NAME", "gpt-4o
 AZURE_STORAGE_CONNECTION_STRING = os.getenv("AZURE_STORAGE_CONNECTION_STRING")
 AZURE_STORAGE_CONTAINER_NAME = os.getenv("AZURE_STORAGE_CONTAINER_NAME")
 
+def get_azure_openai_client():
+    """Get Azure OpenAI client instance"""
+    return AzureOpenAI(
+        api_key=AZURE_OPENAI_API_KEY,
+        api_version=AZURE_OPENAI_API_VERSION,
+        azure_endpoint=AZURE_OPENAI_ENDPOINT
+    )
+
 # System prompt for deep dive analysis
 SYSTEM_PROMPT = """You are an expert SAP Basis Architect tasked with analyzing an SAP Early Watch Alert report. Your goal is to study the report thoroughly and extract actionable insights, categorizing them based on their importance. Here's how you should proceed:
 
@@ -48,55 +56,55 @@ Now, follow these steps to provide your analysis:
 
 6. Present your analysis in the following enhanced Markdown format:
 
-# 📊 SAP Early Watch Alert Analysis Summary
+# SAP Early Watch Alert Analysis Summary
 
 > *Analysis Date: [Current Date]*  
 > *System: [System Identifier from Report]*  
 > *Report Period: [Period Covered]*
 
-## 📋 Executive Summary
+## Executive Summary
 
 [Provide a brief, high-level summary of the most critical findings and recommendations]
 
 ---
 
-## 🔴 Critical Priority Findings
+## Critical Priority Findings
 
-### 🚨 Finding: [Brief Title of Issue]
+### Finding: [Brief Title of Issue]
 **Description:** [Provide a clear description of the issue]  
 **Impact:** [Explain the potential impact if not addressed]  
 **Recommendation:** [Provide recommended actions to resolve or mitigate the issue]
 
 ---
 
-## 🟠 High Priority Findings
+## High Priority Findings
 
-### ⚠️ Finding: [Brief Title of Issue]
+### Finding: [Brief Title of Issue]
 **Description:** [Provide a clear description of the issue]  
 **Impact:** [Explain the potential impact if not addressed]  
 **Recommendation:** [Provide recommended actions to resolve or mitigate the issue]
 
 ---
 
-## 🟡 Medium Priority Findings
+## Medium Priority Findings
 
-### ⚙️ Finding: [Brief Title of Issue]
+### Finding: [Brief Title of Issue]
 **Description:** [Provide a clear description of the issue]  
 **Impact:** [Explain the potential impact if not addressed]  
 **Recommendation:** [Provide recommended actions to resolve or mitigate the issue]
 
 ---
 
-## 🟢 Low Priority Findings
+## Low Priority Findings
 
-### 📝 Finding: [Brief Title of Issue]
+### Finding: [Brief Title of Issue]
 **Description:** [Provide a clear description of the issue]  
 **Impact:** [Explain the potential impact if not addressed]  
 **Recommendation:** [Provide recommended actions to resolve or mitigate the issue]
 
 ---
 
-## 📈 Summary of Key Metrics
+## Summary of Key Metrics
 
 **IMPORTANT: Extract ALL key metrics from the EWA report and present them in BOTH a structured JSON metrics object AND a standard markdown table**
 
@@ -128,7 +136,7 @@ Now, follow these steps to provide your analysis:
 
 ---
 
-## 🔧 Recommended Parameters
+## Recommended Parameters
 
 **IMPORTANT: Extract ALL parameter recommendations from the EWA report and present them in BOTH a structured JSON parameters object AND a standard markdown table**
 

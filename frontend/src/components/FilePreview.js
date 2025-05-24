@@ -24,6 +24,7 @@ import { useTheme } from '../contexts/ThemeContext';
 // Import our custom table components
 import MetricsTable from './MetricsTable';
 import ParametersTable from './ParametersTable';
+import DocumentChat from './DocumentChat';
 
 // Helper function to get appropriate file type label and icon
 const getFileTypeInfo = (fileName) => {
@@ -81,6 +82,7 @@ const FilePreview = ({ selectedFile }) => {
   const { theme } = useTheme();
   const isDark = theme === 'dark';
   const [error, setError] = useState(null);
+  const [originalContent, setOriginalContent] = useState('');
   
   // Check if we're displaying AI analysis
   const isAnalysisView = selectedFile?.displayType === 'analysis' && selectedFile?.analysisContent;
@@ -88,6 +90,74 @@ const FilePreview = ({ selectedFile }) => {
   // Use metrics and parameters data passed directly from parent component
   const metricsData = selectedFile?.metricsData;
   const parametersData = selectedFile?.parametersData;
+  
+  // Fetch original document content for chat context
+  useEffect(() => {
+    const fetchOriginalContent = async () => {
+      if (!selectedFile?.name) {
+        console.log('No file selected');
+        setOriginalContent('');
+        return;
+      }
+      
+      try {
+        console.log(`Fetching content for file: ${selectedFile.name}`);
+        
+        // IMPORTANT: Try different file formats in a specific order to ensure we get the best content
+        // 1. ALWAYS use the original markdown file as primary source for chat context
+        const baseName = selectedFile.name.replace(/\.[^/.]+$/, "");
+        const mdFileName = `${baseName}.md`;
+        console.log(`Loading original markdown file for context: ${mdFileName}`);
+        
+        let response = await fetch(`/api/download/${mdFileName}`);
+        
+        // 2. Only if original markdown not found, try others as fallback
+        if (!response.ok) {
+          console.log(`Original markdown file not found, this is unusual`);
+          // Try AI file as fallback (not ideal but better than nothing)
+          const aiFileName = `${baseName}_AI.md`;
+          console.log(`Trying AI file as fallback: ${aiFileName}`);
+          response = await fetch(`/api/download/${aiFileName}`);
+        }
+        
+        // 3. If markdown not found, try the original file as last resort
+        if (!response.ok) {
+          console.log(`Markdown file not found, trying original file: ${selectedFile.name}`);
+          response = await fetch(`/api/download/${selectedFile.name}`);
+        }
+        
+        if (response.ok) {
+          const content = await response.text();
+          console.log(`Successfully loaded content: ${content.length} characters`);
+          
+          // Log content snippets to verify what we're getting
+          console.log(`Content starts with: ${content.substring(0, 100)}...`);
+          console.log(`Content ends with: ...${content.substring(content.length - 100)}`);
+          
+          // Check if content is HTML or has proper text
+          if (content.includes('<html') || content.includes('</html>')) {
+            console.warn('Warning: Content appears to be HTML, may not be ideal for chat');
+          }
+          
+          if (content.includes('SAP') || content.includes('EWA') || content.includes('Early Watch')) {
+            console.log('Content contains expected SAP keywords - good!');
+          } else {
+            console.warn('Warning: Content does not contain expected SAP keywords');
+          }
+          
+          setOriginalContent(content);
+        } else {
+          console.error(`Could not load any content for ${selectedFile.name}`);
+          setOriginalContent(`Could not load content for ${selectedFile.name}. Please make sure the file has been processed.`);
+        }
+      } catch (error) {
+        console.error('Error fetching original content:', error);
+        setOriginalContent(`Error loading document content: ${error.message}`);
+      }
+    };
+
+    fetchOriginalContent();
+  }, [selectedFile?.name]);
   
   // Debug the actual structure
   console.log('DEBUG - Full metricsData:', JSON.stringify(metricsData, null, 2));
@@ -486,6 +556,14 @@ const FilePreview = ({ selectedFile }) => {
           </Box>
         )}
       </Box>
+      
+      {/* Document Chat Component */}
+      {selectedFile && (
+        <DocumentChat 
+          fileName={selectedFile.name}
+          documentContent={originalContent}
+        />
+      )}
     </Paper>
   );
 };
