@@ -19,6 +19,12 @@ import SmartToyIcon from '@mui/icons-material/SmartToy';
 import EqualizerIcon from '@mui/icons-material/Equalizer';
 import AssessmentIcon from '@mui/icons-material/Assessment';
 import TuneIcon from '@mui/icons-material/Tune';
+import Table from '@mui/material/Table';
+import TableBody from '@mui/material/TableBody';
+import TableCell from '@mui/material/TableCell';
+import TableContainer from '@mui/material/TableContainer';
+import TableHead from '@mui/material/TableHead';
+import TableRow from '@mui/material/TableRow';
 import { useTheme } from '../contexts/ThemeContext';
 
 // Import our custom table components
@@ -75,6 +81,63 @@ const getFileTypeInfo = (fileName) => {
         color: 'default' 
       };
   }
+};
+
+const JsonCodeBlockRenderer = ({ node, inline, className, children, ...props }) => {
+  const match = /language-(\w+)/.exec(className || '');
+  const lang = match && match[1];
+
+  if (lang === 'json' && !inline) {
+    try {
+      const jsonString = String(children).replace(/\n$/, ''); // Remove trailing newline
+      const jsonData = JSON.parse(jsonString);
+
+      // Check if it's our specific table structure
+      if (jsonData && jsonData.tableTitle && Array.isArray(jsonData.headers) && Array.isArray(jsonData.rows)) {
+        return (
+          <Box sx={{ my: 2, border: '1px solid', borderColor: 'divider', borderRadius: 1, overflow: 'hidden' }}>
+            <Typography variant="h6" sx={{ p: 2, bgcolor: 'action.hover' }}>
+              {jsonData.tableTitle}
+            </Typography>
+            <TableContainer component={Paper} elevation={0} square>
+              <Table size="small">
+                <TableHead>
+                  <TableRow>
+                    {jsonData.headers.map((header, index) => (
+                      <TableCell key={index} sx={{ fontWeight: 'bold' }}>{header}</TableCell>
+                    ))}
+                  </TableRow>
+                </TableHead>
+                <TableBody>
+                  {jsonData.rows.map((row, rowIndex) => (
+                    <TableRow key={rowIndex}>
+                      {jsonData.headers.map((header, cellIndex) => (
+                        <TableCell key={cellIndex}>{String(row[header] === undefined || row[header] === null ? '' : row[header])}</TableCell>
+                      ))}
+                    </TableRow>
+                  ))}
+                </TableBody>
+              </Table>
+            </TableContainer>
+          </Box>
+        );
+      }
+    } catch (error) {
+      // Not a valid JSON or not our table structure, render as normal code block
+      console.warn('Failed to parse JSON for table or invalid table structure:', error);
+    }
+  }
+
+  // Fallback to default code rendering or use a syntax highlighter if available
+  // For simplicity, rendering as a preformatted code block here.
+  // You might want to integrate react-syntax-highlighter for better code display.
+  return (
+    <Box component="pre" sx={{ p: 1, my: 1, backgroundColor: 'action.selected', borderRadius: 1, overflowX: 'auto', fontSize: '0.875rem' }}>
+      <Box component="code" className={className} {...props}>
+        {children}
+      </Box>
+    </Box>
+  );
 };
 
 const FilePreview = ({ selectedFile }) => {
@@ -158,6 +221,19 @@ const FilePreview = ({ selectedFile }) => {
 
     fetchOriginalContent();
   }, [selectedFile?.name]);
+
+  // Debug: Log the beginning of analysisContent
+  useEffect(() => {
+    if (isAnalysisView && selectedFile?.analysisContent) {
+      const contentStart = selectedFile.analysisContent.substring(0, 20);
+      const charCodes = [];
+      for (let i = 0; i < contentStart.length; i++) {
+        charCodes.push(contentStart.charCodeAt(i));
+      }
+      console.log('Analysis Content Start:', contentStart);
+      console.log('Analysis Content Char Codes:', JSON.stringify(charCodes));
+    }
+  }, [selectedFile, isAnalysisView]);
   
   // Debug the actual structure
   console.log('DEBUG - Full metricsData:', JSON.stringify(metricsData, null, 2));
@@ -266,6 +342,7 @@ const FilePreview = ({ selectedFile }) => {
               
               {/* Analysis Content Section */}
               <ReactMarkdown
+                key={selectedFile ? selectedFile.name : 'default-key'}
                 components={{
                   h1: ({ children }) => (
                     <Typography 
@@ -315,6 +392,49 @@ const FilePreview = ({ selectedFile }) => {
                         mb: 1,
                         fontSize: '1.05rem',
                         color: isDark ? 'rgba(246, 184, 61, 0.95)' : '#D96B00'
+                      }}
+                    >
+                      {children}
+                    </Typography>
+                  ),
+                  h1: ({ children }) => (
+                    <Typography 
+                      variant="h4" 
+                      component="h1" 
+                      gutterBottom 
+                      sx={{ 
+                        fontWeight: 700, 
+                        mt: 4, 
+                        mb: 2,
+                        fontSize: '1.75rem',
+                        color: isDark ? 'primary.light' : 'primary.dark'
+                      }}
+                    >
+                      {children}
+                    </Typography>
+                  ),
+                  h2: ({ children }) => (
+                    <Typography 
+                      variant="h5" 
+                      component="h2" 
+                      gutterBottom 
+                      sx={{ 
+                        fontWeight: 600, 
+                        mt: 3, 
+                        mb: 1.5,
+                        fontSize: '1.4rem',
+                        color: isDark ? 'secondary.light' : 'secondary.dark'
+                      }}
+                    >
+                      {children}
+                    </Typography>
+                  ),
+                  em: ({ children }) => (
+                    <Typography 
+                      component="em" 
+                      sx={{ 
+                        fontStyle: 'italic',
+                        color: isDark ? 'info.light' : 'info.dark'
                       }}
                     >
                       {children}
@@ -621,21 +741,8 @@ const FilePreview = ({ selectedFile }) => {
                       </td>
                     );
                   },
-                  code: ({ children }) => (
-                    <Typography 
-                      component="code" 
-                      sx={{ 
-                        bgcolor: isDark ? 'rgba(255, 255, 255, 0.1)' : 'rgba(0, 0, 0, 0.1)',
-                        px: 0.5,
-                        py: 0.25,
-                        borderRadius: 0.5,
-                        fontFamily: 'monospace',
-                        fontSize: '0.875em'
-                      }}
-                    >
-                      {children}
-                    </Typography>
-                  )
+                  code: JsonCodeBlockRenderer,
+                  // ... other custom components like h1, p, table etc. should remain here
                 }}
               >
                 {selectedFile.analysisContent}

@@ -59,6 +59,8 @@ The input will be **Markdown text derived from an SAP EarlyWatch Alert report.**
 **# Output Structure:**
 Your output MUST be in Markdown format and follow this structure strictly:
 
+**Important:** Do NOT wrap the entire response in a markdown fenced code block (i.e., do not start with ```markdown and end with ```). The response should be raw markdown content, starting directly with the first heading.
+
 **SAP EarlyWatch Alert - Deep Dive Summary Report**
 
 **## 1. Executive Summary & High-Priority Actions**
@@ -68,7 +70,7 @@ Your output MUST be in Markdown format and follow this structure strictly:
    - Clearly indicate the EWA's own rating if an icon (Red/Yellow) or explicit rating text is present for an alert in the input Markdown.
 
 **## 2. Key System Information**
-   - Present this information in a table. Extract values directly from the input Markdown, which should clearly delineate these fields:
+   - Present this information **using standard Markdown table syntax**. Extract values directly from the input Markdown. The table should look like this:
      | Parameter             | Value                                      |
      |-----------------------|--------------------------------------------|
      | SAP System ID         | [Extract from EWA]                         |
@@ -80,6 +82,7 @@ Your output MUST be in Markdown format and follow this structure strictly:
      | SolMan Release        | [Release of SAP Solution Manager]          |
      | SolMan Service Tool   | [Service Tool version, e.g., 720 SPXX]     |
      | SolMan Service Content| [Service Content date]                     |
+   - **Ensure each 'Parameter' and its 'Value' are on separate rows in the final Markdown table output, as shown in the example.**
 
 **## 3. Detailed Findings and Recommendations (Chapter-wise Analysis)**
    - Iterate through the chapters present in the EWA report, identified by Markdown headers (e.g., `## Chapter Title`).
@@ -95,40 +98,23 @@ Your output MUST be in Markdown format and follow this structure strictly:
      - **Key Metrics/Parameters (if applicable):** If the EWA Markdown presents data in tables (e.g., Performance Indicators, Hardware Config, Transport Landscape, HANA parameters), replicate or summarize this tabular structure.
 
 **## 4. Key Metrics and Parameters Summary**
+   - **Instructions for this section:** Present all data for sub-sections 4.1 through 4.5 using the JSON table format described in "Core Instructions and Guidelines #6". Each sub-section should contain one such JSON block if data is available.
+
    - **4.1 Performance Indicators:** (If available, usually in Service Summary)
-     - *If the input Markdown contains a table for this, try to replicate its structure. Otherwise, create the following table:*
-     | Area                      | Indicator                           | Value    | Trend (if available) |
-     |---------------------------|-------------------------------------|----------|----------------------|
-     | [e.g., System Performance]| [e.g., Active Users (>400 steps)] | [Value]  | [Trend Icon/Text]    |
-     | ...                       | ...                                 | ...      | ...                  |
+     - *Present data as a JSON object within a ```json code block. Use "Performance Indicators" as the `tableTitle`. Headers should include "Area", "Indicator", "Value", and "Trend (if available)".*
+
    - **4.2 Hardware Configuration Summary:** (If available in Landscape chapter)
-     - *If the input Markdown contains a table for this, try to replicate its structure. Otherwise, create the following table:*
-     | Host        | Manufacturer | Model                               | CPU Type          | CPU MHz | Virtualization | OS                   | CPUs | Cores | Memory (MB) |
-     |-------------|--------------|-------------------------------------|-------------------|---------|----------------|----------------------|------|-------|-------------|
-     | [Host Name] | [Manuf.]     | [Model]                             | [CPU]             | [MHz]   | [Virt.]        | [OS Details]         | [#]  | [#]   | [Mem]       |
-     | ...         | ...          | ...                                 | ...               | ...     | ...            | ...                  | ...  | ...   | ...         |
+     - *Present data as a JSON object within a ```json code block. Use "Hardware Configuration Summary" as the `tableTitle`. Headers should include "Host", "Manufacturer", "Model", "CPU Type", "CPU MHz", "Virtualization", "OS", "CPUs", "Cores", and "Memory (MB)".*
+
    - **4.3 Transport Landscape Summary:** (If available in Landscape chapter)
-     - *If the input Markdown contains a table for this, try to replicate its structure. Otherwise, create the following table:*
-     | Transport Track | Position | System Role | System ID | Installation Number | System Number        |
-     |-----------------|----------|-------------|-----------|---------------------|----------------------|
-     | [Track Name]    | [Pos.]   | [Role]      | [SID]     | [Install No.]       | [System No.]         |
-     | ...             | ...      | ...         | ...       | ...                 | ...                  |
+     - *Present data as a JSON object within a ```json code block. Use "Transport Landscape Summary" as the `tableTitle`. Headers should include "Transport Track", "Position", "System Role", "System ID", "Installation Number", and "System Number".*
+
    - **4.4 Key Deviating/Important HANA DB Parameters:** (If HANA DB chapters are present)
-     - *If the input Markdown contains a table for this, try to replicate its structure. Otherwise, create the following table:*
-     | Database SID | Location (e.g., global.ini [section]) | Parameter Name                | Layer    | Current Value | Recommended Value | SAP Note (if any) |
-     |--------------|---------------------------------------|-------------------------------|----------|---------------|-------------------|-------------------|
-     | [SID]        | [Location]                            | [Parameter]                   | [Layer]  | [Current]     | [Recommended]     | [Note]            |
-     | ...          | ...                                   | ...                           | ...      | ...           | ...               | ...               |
+     - *Present data as a JSON object within a ```json code block. Use "Key Deviating/Important HANA DB Parameters" as the `tableTitle`. Headers should include "Database SID", "Location (e.g., global.ini [section])", "Parameter Name", "Layer", "Current Value", "Recommended Value", and "SAP Note (if any)".*
+
    - **4.5 Top Transactions by Workload/DB Load:** (If Performance/Workload chapters are present)
-     - *If the input Markdown contains tables for these, try to replicate their structure. Otherwise, create tables similar to the following:*
-     *Table for Top Dialog/HTTP(S) Transactions by Total Response Time*
-     | Transaction/Service | Type | Dialog Steps | Total Resp. Time (%) | Avg. Resp. Time (ms) | Avg. CPU (ms) | Avg. DB (ms) | Avg. GUI (ms) |
-     |---------------------|------|--------------|----------------------|----------------------|---------------|--------------|---------------|
-     | [Name]              | [Typ]| [Steps]      | [%]                  | [Avg Resp]           | [CPU]         | [DB]         | [GUI]         |
-     *Table for Top Transactions by DB Load*
-     | Transaction/Service | Type | Dialog Steps | Total DB Time (%) | Avg. DB Time (ms) |
-     |---------------------|------|--------------|-------------------|-------------------|
-     | [Name]              | [Typ]| [Steps]      | [%]               | [Avg DB]          |
+     - *If data for "Top Dialog/HTTP(S) Transactions by Total Response Time" is available, present it as a JSON object within a ```json code block. Use "Top Dialog/HTTP(S) Transactions by Total Response Time" as the `tableTitle`. Headers should include "Transaction/Service", "Type", "Dialog Steps", "Total Resp. Time (%)", "Avg. Resp. Time (ms)", "Avg. CPU (ms)", "Avg. DB (ms)", and "Avg. GUI (ms)".*
+     - *If data for "Top Transactions by DB Load" is available, present it as a separate JSON object within a ```json code block. Use "Top Transactions by DB Load" as the `tableTitle`. Headers should include "Transaction/Service", "Type", "Dialog Steps", "Total DB Time (%)", and "Avg. DB Time (ms)".*
 
 **## 5. Overall System Health Assessment**
    - A concluding sentence or two on the overall health based on the number and severity of findings.
@@ -179,10 +165,24 @@ Your output MUST be in Markdown format and follow this structure strictly:
     *   Use bullet points for lists of findings and recommendations.
     *   When quoting recommendations, use italics or blockquotes if appropriate.
 
-6.  **Handling Tables and Metrics:**
-    *   **If the input Markdown already contains well-formatted tables for specific data (e.g., Performance Indicators, Hardware Config), try to replicate or use that structure directly.** You might need to adjust column names for consistency with your output format.
-    *   If tables are not present in the input Markdown for these sections, or are poorly formatted, create them as per the "Output Structure" section.
-    *   For performance indicators, include the trend if shown (often an arrow icon or text).
+6.  **Handling Tables and Metrics (IMPORTANT: JSON Format for Section 4):**
+    *   For all tables generated under **"## 4. Key Metrics and Parameters Summary"**, you MUST NOT use Markdown table syntax.
+    *   Instead, represent each table as a JSON object embedded within a fenced code block, like this:
+        ```json
+        {
+          "tableTitle": "A Descriptive Title for the Table (e.g., Performance Indicators)",
+          "headers": ["ColumnHeader1", "ColumnHeader2", "ColumnHeader3"],
+          "rows": [
+            {"ColumnHeader1": "Row1Value1", "ColumnHeader2": "Row1Value2", "ColumnHeader3": "Row1Value3"},
+            {"ColumnHeader1": "Row2Value1", "ColumnHeader2": "Row2Value2", "ColumnHeader3": "Row2Value3"}
+          ]
+        }
+        ```
+    *   Ensure the `tableTitle` is descriptive and matches the sub-section (e.g., "Performance Indicators", "Hardware Configuration Summary").
+    *   The `headers` array should list the column headers.
+    *   Each element in the `rows` array MUST be an object where keys are the column headers and values are the cell content for that row.
+    *   If the input Markdown already contains tables for these sections, extract the data and reformat it into this JSON structure. Do not attempt to replicate the input Markdown table format directly for Section 4.
+    *   For performance indicators, diligently search for trend information. This is often represented by arrow icons (e.g., ↑, ↓, →), textual descriptions (e.g., "increasing", "decreasing", "stable"), or other visual cues next to the metric value. If a trend is found, include its representation (e.g., the icon as a character or the descriptive text) as the value for the "Trend" key in the corresponding row object. If no trend is explicitly indicated for a metric, use `null` or an empty string for its trend value.
 
 7.  **Chapter-wise Deep Dive Instructions (Examples - adapt based on actual EWA content, guided by Markdown headers):**
     *   **Service Summary (`## 1 Service Summary` or similar):** Extract all red/yellow alerts from "Alert Overview." List "Guided Self-Services." Extract "Performance Indicators."
