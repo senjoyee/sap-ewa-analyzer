@@ -268,6 +268,10 @@ class AnalyzeDocumentRequest(BaseModel):
 class AIAnalyzeRequest(BaseModel):
     blob_name: str
 
+# Model for AI reprocess request
+class AIReprocessRequest(BaseModel):
+    blob_name: str
+
 @app.post("/api/analyze")
 async def analyze_document(request: AnalyzeDocumentRequest):
     """
@@ -378,6 +382,83 @@ async def analyze_document_with_ai_endpoint(request: AIAnalyzeRequest):
         
     except Exception as e:
         error_message = f"Error in AI analysis endpoint: {str(e)}"
+        print(error_message)
+        raise HTTPException(status_code=500, detail=error_message)
+
+
+@app.post("/api/reprocess-ai")
+async def reprocess_document_with_ai(request: AIReprocessRequest):
+    """
+    Reprocess a document with AI by deleting existing analysis files and running analysis again.
+    
+    This endpoint takes a previously analyzed document and:
+    1. Deletes the existing AI analysis files (_AI.md, _metrics.json, _parameters.json)
+    2. Runs the AI analysis again to generate fresh results
+    
+    Parameters:
+    - request: An AIReprocessRequest object containing:
+      * blob_name: The name of the file in Azure Blob Storage to reprocess
+    
+    Returns:
+    - JSON response with reprocessing status and information about the generated files
+    
+    Raises:
+    - 404 Not Found: If the specified file doesn't exist
+    - 500 Internal Server Error: If reprocessing fails for any reason
+    """
+    try:
+        blob_name = request.blob_name
+        print(f"Starting AI reprocessing for document: {blob_name}")
+        
+        # Verify the original file exists
+        blob_service_client = BlobServiceClient.from_connection_string(AZURE_STORAGE_CONNECTION_STRING)
+        container_client = blob_service_client.get_container_client(AZURE_STORAGE_CONTAINER_NAME)
+        
+        if not any(blob.name == blob_name for blob in container_client.list_blobs()):
+            raise HTTPException(status_code=404, detail=f"File {blob_name} not found in storage")
+        
+        # Get the base name without extension
+        base_name = os.path.splitext(blob_name)[0]
+        
+        # List of files to delete
+        files_to_delete = [
+            f"{base_name}_AI.md",
+            f"{base_name}_metrics.json",
+            f"{base_name}_parameters.json"
+        ]
+        
+        # Delete existing analysis files
+        deleted_files = []
+        for file_name in files_to_delete:
+            try:
+                blob_client = container_client.get_blob_client(file_name)
+                if blob_client.exists():
+                    blob_client.delete_blob()
+                    deleted_files.append(file_name)
+                    print(f"Deleted existing analysis file: {file_name}")
+            except Exception as e:
+                print(f"Warning: Could not delete {file_name}: {str(e)}")
+        
+        # Run the AI analysis again
+        result = await execute_ewa_analysis(blob_name)
+        
+        if result.get("error"):
+            print(f"Error in AI reprocessing: {result.get('message')}")
+            raise HTTPException(status_code=500, detail=result.get('message'))
+        
+        print(f"AI reprocessing completed successfully for {blob_name}")
+        return {
+            "message": "Reprocessing completed successfully",
+            "deleted_files": deleted_files,
+            "analysis_file": f"{base_name}_AI.md",
+            "metrics_file": f"{base_name}_metrics.json",
+            "parameters_file": f"{base_name}_parameters.json",
+            "result": result
+        }
+    except HTTPException as http_error:
+        raise http_error
+    except Exception as e:
+        error_message = f"Error in AI reprocessing endpoint: {str(e)}"
         print(error_message)
         raise HTTPException(status_code=500, detail=error_message)
 

@@ -192,6 +192,59 @@ const FileList = ({ onFileSelect, refreshTrigger, selectedFile }) => {
     }
   };
 
+  // Function to handle reprocessing of AI analysis
+  const handleReprocessAI = async (file) => {
+    console.log(`Reprocessing AI analysis for file: ${file.name}`);
+    
+    // Confirm reprocessing with the user
+    if (!window.confirm(`This will delete the existing AI analysis for "${file.name}" and create a new one. Continue?`)) {
+      return; // User cancelled
+    }
+    
+    // Set status to analyzing
+    setAiAnalyzing(prev => ({
+      ...prev,
+      [file.id || file.name]: 'analyzing'
+    }));
+    
+    try {
+      // Make API call to reprocess with AI
+      const response = await fetch('http://localhost:8001/api/reprocess-ai', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ blob_name: file.name }),
+      });
+      
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.detail || `AI Reprocessing failed: ${response.status}`);
+      }
+      
+      const result = await response.json();
+      console.log('AI Reprocessing result:', result);
+      
+      // Set status to completed
+      setAiAnalyzing(prev => ({
+        ...prev,
+        [file.id || file.name]: 'completed'
+      }));
+      
+      // Show success message
+      alert(`AI Reprocessing completed successfully! Analysis has been updated.`);
+      
+    } catch (error) {
+      console.error(`Error in AI reprocessing for file ${file.name}:`, error);
+      // Set status back to completed on error (since we were in a completed state before)
+      setAiAnalyzing(prev => ({
+        ...prev,
+        [file.id || file.name]: 'completed'
+      }));
+      alert(`Error in AI reprocessing: ${error.message}`);
+    }
+  };
+
   // Function to handle displaying AI analysis
   const handleDisplayAnalysis = async (file) => {
     console.log(`Displaying AI analysis for file: ${file.name}`);
@@ -580,7 +633,7 @@ const FileList = ({ onFileSelect, refreshTrigger, selectedFile }) => {
               <ListItemButton 
                 onClick={() => onFileSelect(file)}
                 selected={isSelected}
-                sx={{ pr: 9 }} // Make room for the analyze button and status
+                sx={{ pr: aiAnalyzing[file.id || file.name] === 'completed' ? 16 : 9 }} // More room for dual buttons when AI analyzed
               >
                 <ListItemIcon sx={{ minWidth: 36 }}>
                   {getFileIcon(file.name)}
@@ -707,27 +760,47 @@ const FileList = ({ onFileSelect, refreshTrigger, selectedFile }) => {
                 </Tooltip>
               </ListItemButton>
               <ListItemSecondaryAction>
-                {/* If file has been AI-analyzed, only show Display Analysis button */}
+                {/* If file has been AI-analyzed, show Display Analysis and Reprocess buttons */}
                 {aiAnalyzing[file.id || file.name] === 'completed' ? (
-                  <Tooltip title="View AI Analysis">
-                    <IconButton 
-                      edge="end" 
-                      size="small" 
-                      color="success"
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        handleDisplayAnalysis(file);
-                      }}
-                      sx={{ 
-                        bgcolor: 'rgba(76, 175, 80, 0.08)',
-                        '&:hover': {
-                          bgcolor: 'rgba(76, 175, 80, 0.2)',
-                        }
-                      }}
-                    >
-                      <VisibilityIcon fontSize="small" />
-                    </IconButton>
-                  </Tooltip>
+                  <Box sx={{ display: 'flex', gap: 1 }}>
+                    <Tooltip title="View AI Analysis">
+                      <IconButton 
+                        edge="end" 
+                        size="small" 
+                        color="success"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          handleDisplayAnalysis(file);
+                        }}
+                        sx={{ 
+                          bgcolor: 'rgba(76, 175, 80, 0.08)',
+                          '&:hover': {
+                            bgcolor: 'rgba(76, 175, 80, 0.2)',
+                          }
+                        }}
+                      >
+                        <VisibilityIcon fontSize="small" />
+                      </IconButton>
+                    </Tooltip>
+                    <Tooltip title="Reprocess with AI">
+                      <IconButton 
+                        size="small" 
+                        color="secondary"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          handleReprocessAI(file);
+                        }}
+                        sx={{ 
+                          bgcolor: 'rgba(156, 39, 176, 0.08)',
+                          '&:hover': {
+                            bgcolor: 'rgba(156, 39, 176, 0.2)',
+                          }
+                        }}
+                      >
+                        <AutorenewIcon fontSize="small" />
+                      </IconButton>
+                    </Tooltip>
+                  </Box>
                 ) : (
                   /* If file is being AI-analyzed, show the analyzing state */
                   aiAnalyzing[file.id || file.name] === 'analyzing' ? (

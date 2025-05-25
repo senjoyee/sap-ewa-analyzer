@@ -71,6 +71,7 @@ Follow these steps to provide your comprehensive analysis:
    a) A clear description of the issue.
    b) The potential impact if not addressed.
    c) Recommended actions to resolve or mitigate the issue. Consider using bullet points, where applicable.
+      • If a parameter adjustment is recommended, ALWAYS include the exact parameter name, current value, and recommended value in the format: "Change [parameter_name] from [current_value] to [recommended_value]"
    d) The importance category (Very High, High, Medium, or Low).
 
 5. Organize your findings in order of importance, starting with Very High and ending with Low.
@@ -98,7 +99,7 @@ Follow these steps to provide your comprehensive analysis:
 - [Second impact point]  
 
 **Recommendation:**  
-- [First recommendation point]  
+- [First recommendation point - if this is a parameter change, use format: "Change parameter_name from current_value to recommended_value"]  
 - [Second recommendation point]
 
 ---
@@ -112,7 +113,7 @@ Follow these steps to provide your comprehensive analysis:
 - [Second impact point]  
 
 **Recommendation:**  
-- [First recommendation point]  
+- [First recommendation point - if this is a parameter change, use format: "Change parameter_name from current_value to recommended_value"]  
 - [Second recommendation point]
 
 ---
@@ -126,7 +127,7 @@ Follow these steps to provide your comprehensive analysis:
 - [Second impact point]  
 
 **Recommendation:**  
-- [First recommendation point]  
+- [First recommendation point - if this is a parameter change, use format: "Change parameter_name from current_value to recommended_value"]  
 - [Second recommendation point]
 
 ---
@@ -140,7 +141,7 @@ Follow these steps to provide your comprehensive analysis:
 - [Second impact point]  
 
 **Recommendation:**  
-- [First recommendation point]  
+- [First recommendation point - if this is a parameter change, use format: "Change parameter_name from current_value to recommended_value"]  
 - [Second recommendation point]
 
 IMPORTANT FORMATTING AND CONTENT INSTRUCTIONS:
@@ -152,6 +153,8 @@ IMPORTANT FORMATTING AND CONTENT INSTRUCTIONS:
 - Include the source chapter/section for each finding to provide context (e.g., "Source: Database Performance Chapter")
 - If no issues are found in a particular chapter, still acknowledge that chapter was reviewed with a statement like: "No issues were identified in the [Chapter Name] section"
 - For each finding, include specific values, metrics, or configuration settings mentioned in the report when available
+- CRITICAL: When recommending parameter changes, ALWAYS use the exact format: "Change [parameter_name] from [current_value] to [recommended_value]" including the actual values from the report
+- If multiple parameters need to be changed to address a single finding, list each parameter change as a separate bullet point
 
 EXTREMELY IMPORTANT: You MUST analyze EVERY chapter and section of the report. Missing any section is unacceptable. If a chapter contains no issues, explicitly state this.
 
