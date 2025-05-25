@@ -70,19 +70,27 @@ Your output MUST be in Markdown format and follow this structure strictly:
    - Clearly indicate the EWA's own rating if an icon (Red/Yellow) or explicit rating text is present for an alert in the input Markdown.
 
 **## 2. Key System Information**
-   - Present this information **using standard Markdown table syntax**. Extract values directly from the input Markdown. The table should look like this:
-     | Parameter             | Value                                      |
-     |-----------------------|--------------------------------------------|
-     | SAP System ID         | [Extract from EWA]                         |
-     | Product               | [Extract from EWA]                         |
-     | Status                | [Extract from EWA, e.g., Productive]       |
-     | DB System             | [Extract from EWA, e.g., SAP HANA Database X.XX.XXX.XX] |
-     | Analysis Period       | From [Analysis from] to [Until]          |
-     | EWA Processed On      | [Processed on date by SAP Solution Manager]|
-     | SolMan Release        | [Release of SAP Solution Manager]          |
-     | SolMan Service Tool   | [Service Tool version, e.g., 720 SPXX]     |
-     | SolMan Service Content| [Service Content date]                     |
-   - **Ensure each 'Parameter' and its 'Value' are on separate rows in the final Markdown table output, as shown in the example.**
+   - Present this information as a JSON object embedded within a fenced code block. Do NOT use Markdown table syntax for this section.
+   - The JSON object should have a `tableTitle` key with the value "Key System Information".
+   - It should also have an `items` key, which is an array of objects. Each object in the array represents a parameter and its value, with keys "parameter" and "value".
+   - Extract values directly from the input Markdown.
+   - Example JSON structure:
+     ```json
+     {
+       "tableTitle": "Key System Information",
+       "items": [
+         {"parameter": "SAP System ID", "value": "[Extract from EWA]"},
+         {"parameter": "Product", "value": "[Extract from EWA]"},
+         {"parameter": "Status", "value": "[Extract from EWA, e.g., Productive]"},
+         {"parameter": "DB System", "value": "[Extract from EWA, e.g., SAP HANA Database X.XX.XXX.XX]"},
+         {"parameter": "Analysis Period", "value": "From [Analysis from] to [Until]"},
+         {"parameter": "EWA Processed On", "value": "[Processed on date by SAP Solution Manager]"},
+         {"parameter": "SolMan Release", "value": "[Release of SAP Solution Manager]"},
+         {"parameter": "SolMan Service Tool", "value": "[Service Tool version, e.g., 720 SPXX]"},
+         {"parameter": "SolMan Service Content", "value": "[Service Content date]"}
+       ]
+     }
+     ```
 
 **## 3. Detailed Findings and Recommendations (Chapter-wise Analysis)**
    - Iterate through the chapters present in the EWA report, identified by Markdown headers (e.g., `## Chapter Title`).
@@ -98,23 +106,33 @@ Your output MUST be in Markdown format and follow this structure strictly:
      - **Key Metrics/Parameters (if applicable):** If the EWA Markdown presents data in tables (e.g., Performance Indicators, Hardware Config, Transport Landscape, HANA parameters), replicate or summarize this tabular structure.
 
 **## 4. Key Metrics and Parameters Summary**
+   **Overall Data Extraction Principle for Section 4:** For each sub-section below (4.1 to 4.5), if the corresponding data exists in the EWA report (often presented in tables within relevant chapters like Service Summary, Landscape, Performance, HANA Database, etc.), you are required to extract ALL relevant rows and data points. Ensure no part of a table pertinent to a sub-section is omitted. If a table in the EWA report is broken into multiple visual parts but logically belongs to one of these sub-sections, consolidate all its data into the single specified JSON structure for that sub-section.
+
    - **Instructions for this section:** Present all data for sub-sections 4.1 through 4.5 using the JSON table format described in "Core Instructions and Guidelines #6". Each sub-section should contain one such JSON block if data is available.
 
    - **4.1 Performance Indicators:** (If available, usually in Service Summary)
-     - *Present data as a JSON object within a ```json code block. Use "Performance Indicators" as the `tableTitle`. Headers should include "Area", "Indicator", "Value", and "Trend (if available)".*
+     - *Present data as a JSON object within a ```json code block. Use "Performance Indicators" as the `tableTitle`.
+     - The `headers` for this JSON object MUST be ["Area", "Indicator", "Value", "Trend"].
+     - The EWA report's "Performance Indicators" table may contain multiple sub-sections or categories under the "Area" column (e.g., "System Performance", "Hardware Capacity", "Database Performance", "Database Space Management").
+     - You MUST extract ALL rows from ALL such areas presented under the main "Performance Indicators" table in the input Markdown.
+     - Each row in the output JSON's `rows` array must be an object containing all four keys: "Area", "Indicator", "Value", and "Trend".
+     - For the "Trend" value, diligently search for trend information (often an arrow icon like ↑, ↓, →, or text). If found, include its representation. If no trend is explicitly indicated, use `null` or an empty string.*
 
    - **4.2 Hardware Configuration Summary:** (If available in Landscape chapter)
-     - *Present data as a JSON object within a ```json code block. Use "Hardware Configuration Summary" as the `tableTitle`. Headers should include "Host", "Manufacturer", "Model", "CPU Type", "CPU MHz", "Virtualization", "OS", "CPUs", "Cores", and "Memory (MB)".*
+     - *Present data as a JSON object within a ```json code block. Use "Hardware Configuration Summary" as the `tableTitle`. Headers should include "Host", "Manufacturer", "Model", "CPU Type", "CPU MHz", "Virtualization", "OS", "CPUs", "Cores", and "Memory (MB)".
+     - Ensure you capture all listed hosts and their complete configuration details if the table in the EWA report spans multiple pages or sections.*
 
    - **4.3 Transport Landscape Summary:** (If available in Landscape chapter)
-     - *Present data as a JSON object within a ```json code block. Use "Transport Landscape Summary" as the `tableTitle`. Headers should include "Transport Track", "Position", "System Role", "System ID", "Installation Number", and "System Number".*
+     - *Present data as a JSON object within a ```json code block. Use "Transport Landscape Summary" as the `tableTitle`. Headers should include "Transport Track", "Position", "System Role", "System ID", "Installation Number", and "System Number".
+     - Make sure to extract all entries from the transport landscape table, regardless of how it's formatted or paginated in the input Markdown.*
 
    - **4.4 Key Deviating/Important HANA DB Parameters:** (If HANA DB chapters are present)
-     - *Present data as a JSON object within a ```json code block. Use "Key Deviating/Important HANA DB Parameters" as the `tableTitle`. Headers should include "Database SID", "Location (e.g., global.ini [section])", "Parameter Name", "Layer", "Current Value", "Recommended Value", and "SAP Note (if any)".*
+     - *Present data as a JSON object within a ```json code block. Use "Key Deviating/Important HANA DB Parameters" as the `tableTitle`. Headers should include "Database SID", "Location (e.g., global.ini [section])", "Parameter Name", "Layer", "Current Value", "Recommended Value", and "SAP Note (if any)".
+     - Extract all listed parameters, ensuring no deviations or important parameters mentioned in the relevant EWA sections are missed.*
 
    - **4.5 Top Transactions by Workload/DB Load:** (If Performance/Workload chapters are present)
-     - *If data for "Top Dialog/HTTP(S) Transactions by Total Response Time" is available, present it as a JSON object within a ```json code block. Use "Top Dialog/HTTP(S) Transactions by Total Response Time" as the `tableTitle`. Headers should include "Transaction/Service", "Type", "Dialog Steps", "Total Resp. Time (%)", "Avg. Resp. Time (ms)", "Avg. CPU (ms)", "Avg. DB (ms)", and "Avg. GUI (ms)".*
-     - *If data for "Top Transactions by DB Load" is available, present it as a separate JSON object within a ```json code block. Use "Top Transactions by DB Load" as the `tableTitle`. Headers should include "Transaction/Service", "Type", "Dialog Steps", "Total DB Time (%)", and "Avg. DB Time (ms)".*
+     - *If data for "Top Dialog/HTTP(S) Transactions by Total Response Time" is available, present it as a JSON object within a ```json code block. Use "Top Dialog/HTTP(S) Transactions by Total Response Time" as the `tableTitle`. Headers should include "Transaction/Service", "Type", "Dialog Steps", "Total Resp. Time (%)", "Avg. Resp. Time (ms)", "Avg. CPU (ms)", "Avg. DB (ms)", and "Avg. GUI (ms)". Ensure all transactions listed in the EWA report for this category are included.*
+     - *If data for "Top Transactions by DB Load" is available, present it as a separate JSON object within a ```json code block. Use "Top Transactions by DB Load" as the `tableTitle`. Headers should include "Transaction/Service", "Type", "Dialog Steps", "Total DB Time (%)", and "Avg. DB Time (ms)". Ensure all transactions listed in the EWA report for this category are included.*
 
 **## 5. Overall System Health Assessment**
    - A concluding sentence or two on the overall health based on the number and severity of findings.
