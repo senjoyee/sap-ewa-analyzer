@@ -92,8 +92,37 @@ const JsonCodeBlockRenderer = ({ node, inline, className, children, ...props }) 
       const jsonString = String(children).replace(/\n$/, ''); // Remove trailing newline
       const jsonData = JSON.parse(jsonString);
 
-      // Check if it's our specific table structure
-      if (jsonData && jsonData.tableTitle && Array.isArray(jsonData.headers) && Array.isArray(jsonData.rows)) {
+      // Case 1: Check if it's the Key System Information format with items (parameter/value pairs)
+      if (jsonData && jsonData.tableTitle && Array.isArray(jsonData.items)) {
+        return (
+          <Box sx={{ my: 2, border: '1px solid', borderColor: 'divider', borderRadius: 1, overflow: 'hidden' }}>
+            <Typography variant="h6" sx={{ p: 2, bgcolor: 'action.hover' }}>
+              {jsonData.tableTitle}
+            </Typography>
+            <TableContainer component={Paper} elevation={0} square>
+              <Table size="small">
+                <TableHead>
+                  <TableRow>
+                    <TableCell sx={{ fontWeight: 'bold', width: '40%' }}>Parameter</TableCell>
+                    <TableCell sx={{ fontWeight: 'bold', width: '60%' }}>Value</TableCell>
+                  </TableRow>
+                </TableHead>
+                <TableBody>
+                  {jsonData.items.map((item, index) => (
+                    <TableRow key={index}>
+                      <TableCell>{item.parameter}</TableCell>
+                      <TableCell>{item.value}</TableCell>
+                    </TableRow>
+                  ))}
+                </TableBody>
+              </Table>
+            </TableContainer>
+          </Box>
+        );
+      }
+      
+      // Case 2: Check if it's our table structure with headers and rows
+      else if (jsonData && jsonData.tableTitle && Array.isArray(jsonData.headers) && Array.isArray(jsonData.rows)) {
         return (
           <Box sx={{ my: 2, border: '1px solid', borderColor: 'divider', borderRadius: 1, overflow: 'hidden' }}>
             <Typography variant="h6" sx={{ p: 2, bgcolor: 'action.hover' }}>
@@ -122,6 +151,55 @@ const JsonCodeBlockRenderer = ({ node, inline, className, children, ...props }) 
           </Box>
         );
       }
+      
+      // Case 3: Special handling for Performance Indicators and other tables
+      // This is for sections like 4.1 Performance Indicators shown in the screenshot
+      else if (jsonData && typeof jsonData === 'object') {
+        // Extract the first key as the title, assuming it's a proper table
+        const tableTitle = Object.keys(jsonData)[0];
+        const tableData = jsonData[tableTitle];
+        
+        // If we have an array of objects, render as a table
+        if (Array.isArray(tableData)) {
+          // Extract headers from the first item's keys
+          const firstItem = tableData[0] || {};
+          const headers = Object.keys(firstItem);
+          
+          if (headers.length > 0) {
+            return (
+              <Box sx={{ my: 2, border: '1px solid', borderColor: 'divider', borderRadius: 1, overflow: 'hidden' }}>
+                <Typography variant="h6" sx={{ p: 2, bgcolor: 'action.hover' }}>
+                  {tableTitle}
+                </Typography>
+                <TableContainer component={Paper} elevation={0} square>
+                  <Table size="small">
+                    <TableHead>
+                      <TableRow>
+                        {headers.map((header, index) => (
+                          <TableCell key={index} sx={{ fontWeight: 'bold' }}>
+                            {header.charAt(0).toUpperCase() + header.slice(1)}
+                          </TableCell>
+                        ))}
+                      </TableRow>
+                    </TableHead>
+                    <TableBody>
+                      {tableData.map((row, rowIndex) => (
+                        <TableRow key={rowIndex}>
+                          {headers.map((header, cellIndex) => (
+                            <TableCell key={cellIndex}>
+                              {String(row[header] === undefined || row[header] === null ? '' : row[header])}
+                            </TableCell>
+                          ))}
+                        </TableRow>
+                      ))}
+                    </TableBody>
+                  </Table>
+                </TableContainer>
+              </Box>
+            );
+          }
+        }
+      }
     } catch (error) {
       // Not a valid JSON or not our table structure, render as normal code block
       console.warn('Failed to parse JSON for table or invalid table structure:', error);
@@ -130,7 +208,6 @@ const JsonCodeBlockRenderer = ({ node, inline, className, children, ...props }) 
 
   // Fallback to default code rendering or use a syntax highlighter if available
   // For simplicity, rendering as a preformatted code block here.
-  // You might want to integrate react-syntax-highlighter for better code display.
   return (
     <Box component="pre" sx={{ p: 1, my: 1, backgroundColor: 'action.selected', borderRadius: 1, overflowX: 'auto', fontSize: '0.875rem' }}>
       <Box component="code" className={className} {...props}>
