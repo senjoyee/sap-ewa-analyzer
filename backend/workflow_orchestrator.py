@@ -698,61 +698,8 @@ class EWAWorkflowOrchestrator:
             summary_blob_name = f"{base_name}_AI.md"
             await self.upload_to_blob(summary_blob_name, state.summary_result, "text/markdown")
             
-            # Save metrics as JSON
-            if state.metrics_result:
-                # Clean any HTML tags from metrics data
-                cleaned_metrics = self.clean_html_from_json_object(state.metrics_result)
-                
-                # Special handling for metric names - ensure they're clean
-                if 'metrics' in cleaned_metrics and isinstance(cleaned_metrics['metrics'], list):
-                    for metric in cleaned_metrics['metrics']:
-                        if 'name' in metric and isinstance(metric['name'], str):
-                            # Remove any HTML tags and normalize spacing
-                            metric['name'] = re.sub(r'\s+', ' ', re.sub(r'<[^>]*>|</[^>]*>', '', metric['name'])).strip()
-                            
-                        # Also clean current and target values which might contain HTML
-                        for field in ['current', 'target', 'description']:
-                            if field in metric and isinstance(metric[field], str):
-                                # Process complex HTML content in values
-                                metric[field] = re.sub(r'\s+', ' ', re.sub(r'<[^>]*>|</[^>]*>', '', metric[field])).strip()
-                
-                metrics_blob_name = f"{base_name}_metrics.json"
-                metrics_json = json.dumps(cleaned_metrics, indent=2)
-                await self.upload_to_blob(metrics_blob_name, metrics_json, "application/json")
-            
-            # Save parameters as JSON
-            if state.parameters_result:
-                # Clean any HTML tags from parameters data
-                cleaned_parameters = self.clean_html_from_json_object(state.parameters_result)
-                
-                # Special handling for parameter names - ensure they're clean
-                if 'parameters' in cleaned_parameters and isinstance(cleaned_parameters['parameters'], list):
-                    for param in cleaned_parameters['parameters']:
-                        if 'name' in param and isinstance(param['name'], str):
-                            # Remove any HTML tags and normalize spacing
-                            param['name'] = re.sub(r'\s+', ' ', re.sub(r'<[^>]*>|</[^>]*>', '', param['name'])).strip()
-                            
-                            # Handle special cases where HTML might break parameter names
-                            # For example: "sslsessioncach<br>emode" -> "sslsessioncachemode"
-                            param['name'] = param['name'].replace('|', '_').replace('=', '_')
-                            
-                        # Also clean current and recommended values which might contain HTML
-                        for field in ['current', 'recommended', 'description']:
-                            if field in param and isinstance(param[field], str):
-                                # Process complex HTML content in values
-                                raw_value = param[field]
-                                
-                                # Handle potential pipe and bracket syntax seen in screenshot
-                                if '|' in raw_value or '[' in raw_value:
-                                    # Preserve important parts of the parameter value syntax
-                                    clean_value = re.sub(r'<[^>]*>|</[^>]*>', '', raw_value)
-                                    param[field] = re.sub(r'\s+', ' ', clean_value).strip()
-                                else:
-                                    param[field] = re.sub(r'\s+', ' ', re.sub(r'<[^>]*>|</[^>]*>', '', raw_value)).strip()
-                
-                parameters_blob_name = f"{base_name}_parameters.json"
-                parameters_json = json.dumps(cleaned_parameters, indent=2)
-                await self.upload_to_blob(parameters_blob_name, parameters_json, "application/json")
+            # Only save the summary result - metrics and parameters generation has been removed
+            # We're keeping the code simple by removing the metrics and parameters JSON generation
             
             return state
         except Exception as e:
@@ -772,38 +719,19 @@ class EWAWorkflowOrchestrator:
             if state.error:
                 raise Exception(state.error)
             
-            # Execute all three workflows in parallel for efficiency
-            summary_task = self.generate_summary_step(state)
-            metrics_task = self.extract_metrics_step(state)
-            parameters_task = self.extract_parameters_step(state)
+            # Execute only the summary workflow
+            summary_state = await self.generate_summary_step(state)
             
-            # Wait for all to complete
-            summary_state, metrics_state, parameters_state = await asyncio.gather(
-                summary_task, metrics_task, parameters_task
-            )
-            
-            # Check for errors and collect them
-            errors = []
+            # Check for errors
             if summary_state.error:
-                errors.append(f"Summary generation failed: {summary_state.error}")
-            if metrics_state.error:
-                errors.append(f"Metrics extraction failed: {metrics_state.error}")
-            if parameters_state.error:
-                errors.append(f"Parameters extraction failed: {parameters_state.error}")
+                errors = [f"Summary generation failed: {summary_state.error}"]
+                raise Exception(f"Workflow step failed: {'; '.join(errors)}")
             
-            # If all three failed, raise an exception
-            if len(errors) == 3:
-                raise Exception(f"All workflow steps failed: {'; '.join(errors)}")
-            
-            # If some failed, log warnings but continue
-            if errors:
-                print(f"Some workflow steps failed: {'; '.join(errors)}")
-                # Continue with partial results
-            
-            # Combine results
+            # Store the summary result
             state.summary_result = summary_state.summary_result
-            state.metrics_result = metrics_state.metrics_result  
-            state.parameters_result = parameters_state.parameters_result
+            # Set metrics and parameters to None as these steps are removed
+            state.metrics_result = None
+            state.parameters_result = None
             
             # Save all results
             state = await self.save_results_step(state)

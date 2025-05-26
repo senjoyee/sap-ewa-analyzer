@@ -348,42 +348,66 @@ async def analyze_document_with_ai_endpoint(request: AIAnalyzeRequest):
     Analyze a processed document using Azure OpenAI GPT-4.1 models.
     
     This endpoint takes a previously processed document (in markdown format) and performs
-    AI analysis using Azure OpenAI GPT models. The analysis includes generating executive summaries,
-    extracting metrics, and identifying parameter recommendations from SAP EWA reports.
+    AI analysis using Azure OpenAI GPT models. The analysis includes generating an executive summary
+    and detailed analysis of the SAP EWA report.
     
-    The analysis is performed asynchronously and creates three output files:
+    The analysis is performed asynchronously and creates one output file:
     - {filename}_AI.md: Executive summary and analysis in markdown format
-    - {filename}_metrics.json: Structured metrics data extracted from the document
-    - {filename}_parameters.json: Parameter recommendations extracted from the document
     
     Parameters:
     - request: An AIAnalyzeRequest object containing:
       * blob_name: The name of the processed markdown file in Azure Blob Storage to analyze
     
     Returns:
-    - JSON response with analysis status and information about the generated files
+    - JSON response with analysis status and information about the generated file
     
     Raises:
     - 404 Not Found: If the specified markdown file doesn't exist
     - 500 Internal Server Error: If analysis fails for any reason
     """
+    if not blob_service_client:
+        raise HTTPException(status_code=500, detail="Azure Blob Service client not initialized.")
+    
+    # Extract blob name from request
+    blob_name = request.blob_name
+    
+    # Construct the markdown file name
+    base_name, extension = os.path.splitext(blob_name)
+    markdown_file = blob_name
+    
+    # If the extension is not .md, assume we're looking for a processed markdown file
+    if extension.lower() != ".md":
+        markdown_file = f"{base_name}.md"
+    
+    # Check if the markdown file exists
+    container_client = blob_service_client.get_container_client(AZURE_STORAGE_CONTAINER_NAME)
+    
     try:
-        print(f"Starting AI analysis for document: {request.blob_name}")
-        
-        # Call the AI analysis service
-        result = await execute_ewa_analysis(request.blob_name)
-        
-        if result.get("error"):
-            print(f"Error in AI analysis: {result.get('message')}")
-            raise HTTPException(status_code=500, detail=result.get('message'))
-        
-        print(f"AI analysis completed successfully for {request.blob_name}")
-        return result
-        
+        # Check if blob exists
+        blob_client = container_client.get_blob_client(markdown_file)
+        blob_properties = blob_client.get_blob_properties()
+        print(f"Found markdown file {markdown_file} for analysis.")
     except Exception as e:
-        error_message = f"Error in AI analysis endpoint: {str(e)}"
-        print(error_message)
-        raise HTTPException(status_code=500, detail=error_message)
+        raise HTTPException(status_code=404, detail=f"Markdown file {markdown_file} not found. Please process the document first.")
+    
+    try:
+        # Execute the AI analysis workflow
+        result = await execute_ewa_analysis(markdown_file)
+        
+        # Check if analysis was successful
+        if not result.get("success", False):
+            raise HTTPException(status_code=500, detail=f"Analysis failed: {result.get('message', 'Unknown error')}")
+        
+        # Return the analysis result
+        return {
+            "success": True,
+            "message": "Analysis completed successfully",
+            "original_file": blob_name,
+            "analysis_file": result.get("summary_file"),
+            "preview": result.get("summary_preview", "")
+        }
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Analysis failed: {str(e)}")
 
 
 @app.post("/api/reprocess-ai")
@@ -392,7 +416,7 @@ async def reprocess_document_with_ai(request: AIReprocessRequest):
     Reprocess a document with AI by deleting existing analysis files and running analysis again.
     
     This endpoint takes a previously analyzed document and:
-    1. Deletes the existing AI analysis files (_AI.md, _metrics.json, _parameters.json)
+    1. Deletes the existing AI analysis file (_AI.md)
     2. Runs the AI analysis again to generate fresh results
     
     Parameters:
@@ -400,44 +424,46 @@ async def reprocess_document_with_ai(request: AIReprocessRequest):
       * blob_name: The name of the file in Azure Blob Storage to reprocess
     
     Returns:
-    - JSON response with reprocessing status and information about the generated files
+    - JSON response with reprocessing status and information about the generated file
     
     Raises:
     - 404 Not Found: If the specified file doesn't exist
     - 500 Internal Server Error: If reprocessing fails for any reason
     """
+    if not blob_service_client:
+        raise HTTPException(status_code=500, detail="Azure Blob Service client not initialized.")
+    
     try:
+        # Extract blob name from request
         blob_name = request.blob_name
-        print(f"Starting AI reprocessing for document: {blob_name}")
+        print(f"Reprocessing AI analysis for {blob_name}")
         
-        # Verify the original file exists
-        blob_service_client = BlobServiceClient.from_connection_string(AZURE_STORAGE_CONNECTION_STRING)
+        # Check if the container exists
         container_client = blob_service_client.get_container_client(AZURE_STORAGE_CONTAINER_NAME)
-        
-        if not any(blob.name == blob_name for blob in container_client.list_blobs()):
-            raise HTTPException(status_code=404, detail=f"File {blob_name} not found in storage")
         
         # Get the base name without extension
         base_name = os.path.splitext(blob_name)[0]
+        ai_file = f"{base_name}_AI.md"
         
-        # List of files to delete
-        files_to_delete = [
-            f"{base_name}_AI.md",
-            f"{base_name}_metrics.json",
-            f"{base_name}_parameters.json"
-        ]
-        
-        # Delete existing analysis files
+        # Track deleted files
         deleted_files = []
-        for file_name in files_to_delete:
+        
+        # Check if AI summary file exists
+        blobs_list = container_client.list_blobs(name_starts_with=base_name)
+        
+        # Collect all file names
+        existing_files = [blob.name for blob in blobs_list]
+        
+        # Check for AI summary file
+        if ai_file in existing_files:
+            print(f"Found existing AI analysis file: {ai_file}")
             try:
-                blob_client = container_client.get_blob_client(file_name)
-                if blob_client.exists():
-                    blob_client.delete_blob()
-                    deleted_files.append(file_name)
-                    print(f"Deleted existing analysis file: {file_name}")
-            except Exception as e:
-                print(f"Warning: Could not delete {file_name}: {str(e)}")
+                blob_client = container_client.get_blob_client(ai_file)
+                blob_client.delete_blob()
+                deleted_files.append(ai_file)
+                print(f"Deleted existing AI analysis file: {ai_file}")
+            except Exception as delete_error:
+                print(f"Error deleting AI file {ai_file}: {str(delete_error)}")
         
         # Run the AI analysis again
         result = await execute_ewa_analysis(blob_name)
@@ -446,15 +472,15 @@ async def reprocess_document_with_ai(request: AIReprocessRequest):
             print(f"Error in AI reprocessing: {result.get('message')}")
             raise HTTPException(status_code=500, detail=result.get('message'))
         
+        # Log success
         print(f"AI reprocessing completed successfully for {blob_name}")
         return {
             "message": "Reprocessing completed successfully",
             "deleted_files": deleted_files,
             "analysis_file": f"{base_name}_AI.md",
-            "metrics_file": f"{base_name}_metrics.json",
-            "parameters_file": f"{base_name}_parameters.json",
             "result": result
         }
+        
     except HTTPException as http_error:
         raise http_error
     except Exception as e:
@@ -462,8 +488,6 @@ async def reprocess_document_with_ai(request: AIReprocessRequest):
         print(error_message)
         raise HTTPException(status_code=500, detail=error_message)
 
-
-@app.get("/api/download/{blob_name}")
 async def download_file(blob_name: str):
     """
     Download a file from Azure Blob Storage.

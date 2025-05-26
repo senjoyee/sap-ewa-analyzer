@@ -265,48 +265,11 @@ const FileList = ({ onFileSelect, refreshTrigger, selectedFile }) => {
       
       const analysisContent = await response.text();
       
-      // Try to fetch metrics data
-      let metricsData = null;
-      try {
-        const metricsResponse = await fetch(`http://localhost:8001/api/metrics/${file.name}`, {
-          method: 'GET',
-        });
-        
-        if (metricsResponse.ok) {
-          metricsData = await metricsResponse.json();
-          console.log('Successfully loaded metrics data:', metricsData);
-        } else {
-          console.log(`Metrics data not found for ${file.name}, will display markdown only`);
-        }
-      } catch (metricsError) {
-        // Just log metrics error but continue with analysis display
-        console.error('Error fetching metrics data:', metricsError);
-      }
-      
-      // Try to fetch parameters data
-      let parametersData = null;
-      try {
-        const parametersResponse = await fetch(`http://localhost:8001/api/parameters/${file.name}`, {
-          method: 'GET',
-        });
-        
-        if (parametersResponse.ok) {
-          parametersData = await parametersResponse.json();
-          console.log('Successfully loaded parameters data:', parametersData);
-        } else {
-          console.log(`Parameters data not found for ${file.name}, will display markdown only`);
-        }
-      } catch (parametersError) {
-        // Just log parameters error but continue with analysis display
-        console.error('Error fetching parameters data:', parametersError);
-      }
-      
-      // Call onFileSelect with the analysis content, metrics, parameters, and type
+      // Call onFileSelect with just the analysis content and type
+      // No longer fetching metrics or parameters as these are no longer generated
       onFileSelect({
         ...file,
         analysisContent,
-        metricsData,
-        parametersData,
         displayType: 'analysis'
       });
       
