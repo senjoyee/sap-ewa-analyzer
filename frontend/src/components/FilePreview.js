@@ -95,25 +95,69 @@ const JsonCodeBlockRenderer = ({ node, inline, className, children, ...props }) 
       // Case 1: Check if it's the Key System Information format with items (parameter/value pairs)
       if (jsonData && jsonData.tableTitle && Array.isArray(jsonData.items)) {
         return (
-          <Box sx={{ my: 2, border: '1px solid', borderColor: 'divider', borderRadius: 1, overflow: 'hidden' }}>
-            <Typography variant="h6" sx={{ p: 2, bgcolor: 'action.hover' }}>
+          <Box sx={{ my: 2, boxShadow: 3, borderRadius: 2, overflow: 'hidden' }}>
+            <Typography variant="h6" sx={{ 
+              p: 2, 
+              bgcolor: (theme) => theme.palette.mode === 'dark' ? 'primary.dark' : 'primary.light',
+              color: (theme) => theme.palette.mode === 'dark' ? 'primary.contrastText' : 'primary.dark',
+              fontWeight: 'bold'
+            }}>
               {jsonData.tableTitle}
             </Typography>
-            <TableContainer component={Paper} elevation={0} square>
-              <Table size="small">
+            <TableContainer component={Paper} elevation={0}>
+              <Table size="small" sx={{
+                borderCollapse: 'collapse',
+                tableLayout: 'auto',
+                width: '100%',
+                '& th, & td': {
+                  borderRight: (theme) => `1px solid ${theme.palette.divider}`,
+                  '&:last-child': {
+                    borderRight: 'none'
+                  }
+                }
+              }}>
                 <TableHead>
-                  <TableRow>
-                    <TableCell sx={{ fontWeight: 'bold', width: '40%' }}>Parameter</TableCell>
-                    <TableCell sx={{ fontWeight: 'bold', width: '60%' }}>Value</TableCell>
+                  <TableRow sx={{ bgcolor: (theme) => theme.palette.mode === 'dark' ? 'grey.800' : 'grey.100' }}>
+                    <TableCell sx={{ 
+                      fontWeight: 'bold', 
+                      width: '40%', 
+                      fontSize: '0.9rem',
+                      borderBottom: (theme) => `2px solid ${theme.palette.primary.main}`,
+                      paddingLeft: 2
+                    }}>Parameter</TableCell>
+                    <TableCell sx={{ 
+                      fontWeight: 'bold', 
+                      width: '60%', 
+                      fontSize: '0.9rem',
+                      borderBottom: (theme) => `2px solid ${theme.palette.primary.main}`,
+                      paddingLeft: 2
+                    }}>Value</TableCell>
                   </TableRow>
                 </TableHead>
                 <TableBody>
-                  {jsonData.items.map((item, index) => (
-                    <TableRow key={index}>
-                      <TableCell>{item.parameter}</TableCell>
-                      <TableCell>{item.value}</TableCell>
-                    </TableRow>
-                  ))}
+                  {jsonData.items.map((item, index) => {
+                    // Determine if the value is numeric or short text
+                    // We'll consider anything with alphanumeric content over 20 chars as long text
+                    const isLongText = item.value.length > 20 && /[a-zA-Z]/.test(item.value);
+                    const isNumericOrShort = !isLongText && (/^[\d.,\s%]+$/.test(item.value) || item.value.length < 10);
+                    
+                    return (
+                      <TableRow key={index} sx={{ 
+                        '&:nth-of-type(odd)': {
+                          bgcolor: (theme) => theme.palette.mode === 'dark' ? 'rgba(255, 255, 255, 0.05)' : 'rgba(0, 0, 0, 0.02)'
+                        },
+                        '&:hover': {
+                          bgcolor: (theme) => theme.palette.mode === 'dark' ? 'rgba(255, 255, 255, 0.1)' : 'rgba(0, 0, 0, 0.04)'
+                        }
+                      }}>
+                        <TableCell sx={{ fontWeight: 500, paddingLeft: 2 }}>{item.parameter}</TableCell>
+                        <TableCell sx={{ 
+                          textAlign: isNumericOrShort ? 'center' : 'left',
+                          paddingLeft: isNumericOrShort ? 0 : 2
+                        }}>{item.value}</TableCell>
+                      </TableRow>
+                    );
+                  })}
                 </TableBody>
               </Table>
             </TableContainer>
@@ -124,25 +168,109 @@ const JsonCodeBlockRenderer = ({ node, inline, className, children, ...props }) 
       // Case 2: Check if it's our table structure with headers and rows
       else if (jsonData && jsonData.tableTitle && Array.isArray(jsonData.headers) && Array.isArray(jsonData.rows)) {
         return (
-          <Box sx={{ my: 2, border: '1px solid', borderColor: 'divider', borderRadius: 1, overflow: 'hidden' }}>
-            <Typography variant="h6" sx={{ p: 2, bgcolor: 'action.hover' }}>
+          <Box sx={{ my: 2, boxShadow: 3, borderRadius: 2, overflow: 'hidden' }}>
+            <Typography variant="h6" sx={{ 
+              p: 2, 
+              bgcolor: (theme) => theme.palette.mode === 'dark' ? 'primary.dark' : 'primary.light',
+              color: (theme) => theme.palette.mode === 'dark' ? 'primary.contrastText' : 'primary.dark',
+              fontWeight: 'bold'
+            }}>
               {jsonData.tableTitle}
             </Typography>
-            <TableContainer component={Paper} elevation={0} square>
-              <Table size="small">
+            <TableContainer component={Paper} elevation={0}>
+              <Table size="small" sx={{
+                borderCollapse: 'collapse',
+                tableLayout: 'auto',
+                width: '100%',
+                '& th, & td': {
+                  borderRight: (theme) => `1px solid ${theme.palette.divider}`,
+                  '&:last-child': {
+                    borderRight: 'none'
+                  }
+                }
+              }}>
                 <TableHead>
-                  <TableRow>
-                    {jsonData.headers.map((header, index) => (
-                      <TableCell key={index} sx={{ fontWeight: 'bold' }}>{header}</TableCell>
-                    ))}
+                  <TableRow sx={{ bgcolor: (theme) => theme.palette.mode === 'dark' ? 'grey.800' : 'grey.100' }}>
+                    {jsonData.headers.map((header, index) => {
+                      // Check if any cell in this column has long text content
+                      const hasLongTextInColumn = jsonData.rows.some(row => {
+                        const val = String(row[header] === undefined || row[header] === null ? '' : row[header]);
+                        return val.length > 20 && /[a-zA-Z]/.test(val);
+                      });
+                      
+                      // Check if this is a numeric column header
+                      const isNumericHeader = !hasLongTextInColumn && (
+                        header.toLowerCase().includes('count') || 
+                        header.toLowerCase().includes('value') ||
+                        header.toLowerCase().includes('qty') ||
+                        header.toLowerCase().includes('amount') ||
+                        header.toLowerCase().includes('number') ||
+                        header.toLowerCase().includes('size') ||
+                        header.toLowerCase().includes('mhz') ||
+                        header.toLowerCase().includes('cpus')
+                      );
+
+                      return (
+                        <TableCell key={index} sx={{ 
+                          fontWeight: 'bold',
+                          fontSize: '0.9rem',
+                          borderBottom: (theme) => `2px solid ${theme.palette.primary.main}`,
+                          textAlign: isNumericHeader ? 'center' : 'left',
+                          paddingLeft: isNumericHeader ? 0 : 2,
+                          // Make ID and name columns less wide
+                          ...(header.toLowerCase().includes('id') && { maxWidth: '120px' }),
+                          ...(header.toLowerCase().includes('name') && { maxWidth: '180px' }),
+                          // Make numeric columns narrower
+                          ...(isNumericHeader && { width: 'fit-content', minWidth: '80px' })
+                        }}>{header}</TableCell>
+                      );
+                    })}
                   </TableRow>
                 </TableHead>
                 <TableBody>
                   {jsonData.rows.map((row, rowIndex) => (
-                    <TableRow key={rowIndex}>
-                      {jsonData.headers.map((header, cellIndex) => (
-                        <TableCell key={cellIndex}>{String(row[header] === undefined || row[header] === null ? '' : row[header])}</TableCell>
-                      ))}
+                    <TableRow key={rowIndex} sx={{ 
+                      '&:nth-of-type(odd)': {
+                        bgcolor: (theme) => theme.palette.mode === 'dark' ? 'rgba(255, 255, 255, 0.05)' : 'rgba(0, 0, 0, 0.02)'
+                      },
+                      '&:hover': {
+                        bgcolor: (theme) => theme.palette.mode === 'dark' ? 'rgba(255, 255, 255, 0.1)' : 'rgba(0, 0, 0, 0.04)'
+                      }
+                    }}>
+                      {jsonData.headers.map((header, cellIndex) => {
+                        const cellValue = String(row[header] === undefined || row[header] === null ? '' : row[header]);
+                        
+                        // Check if any cell in this column has long text content
+                        const hasLongTextInColumn = jsonData.rows.some(r => {
+                          const val = String(r[header] === undefined || r[header] === null ? '' : r[header]);
+                          return val.length > 20 && /[a-zA-Z]/.test(val);
+                        });
+                        
+                        // Determine if this cell contains numeric data
+                        const isNumeric = !hasLongTextInColumn && (
+                          /^[\d.,\s%]+$/.test(cellValue) || 
+                          header.toLowerCase().includes('count') || 
+                          header.toLowerCase().includes('value') ||
+                          header.toLowerCase().includes('qty') ||
+                          header.toLowerCase().includes('mhz') ||
+                          header.toLowerCase().includes('cpus')
+                        );
+                        
+                        return (
+                          <TableCell key={cellIndex} sx={{
+                            ...(cellIndex === 0 && { fontWeight: 500 }),
+                            textAlign: isNumeric ? 'center' : 'left',
+                            paddingLeft: isNumeric ? 0 : 2,
+                            // Truncate very long text
+                            ...(cellValue.length > 50 && {
+                              maxWidth: '300px',
+                              overflow: 'hidden',
+                              textOverflow: 'ellipsis',
+                              whiteSpace: 'nowrap'
+                            })
+                          }}>{cellValue}</TableCell>
+                        );
+                      })}
                     </TableRow>
                   ))}
                 </TableBody>
@@ -167,29 +295,116 @@ const JsonCodeBlockRenderer = ({ node, inline, className, children, ...props }) 
           
           if (headers.length > 0) {
             return (
-              <Box sx={{ my: 2, border: '1px solid', borderColor: 'divider', borderRadius: 1, overflow: 'hidden' }}>
-                <Typography variant="h6" sx={{ p: 2, bgcolor: 'action.hover' }}>
+              <Box sx={{ my: 2, boxShadow: 3, borderRadius: 2, overflow: 'hidden' }}>
+                <Typography variant="h6" sx={{ 
+                  p: 2, 
+                  bgcolor: (theme) => theme.palette.mode === 'dark' ? 'primary.dark' : 'primary.light',
+                  color: (theme) => theme.palette.mode === 'dark' ? 'primary.contrastText' : 'primary.dark',
+                  fontWeight: 'bold'
+                }}>
                   {tableTitle}
                 </Typography>
-                <TableContainer component={Paper} elevation={0} square>
-                  <Table size="small">
+                <TableContainer component={Paper} elevation={0}>
+                  <Table size="small" sx={{
+                    borderCollapse: 'collapse',
+                    tableLayout: 'auto', 
+                    width: '100%',
+                    '& th, & td': {
+                      borderRight: (theme) => `1px solid ${theme.palette.divider}`,
+                      '&:last-child': {
+                        borderRight: 'none'
+                      }
+                    }
+                  }}>
                     <TableHead>
-                      <TableRow>
-                        {headers.map((header, index) => (
-                          <TableCell key={index} sx={{ fontWeight: 'bold' }}>
-                            {header.charAt(0).toUpperCase() + header.slice(1)}
-                          </TableCell>
-                        ))}
+                      <TableRow sx={{ bgcolor: (theme) => theme.palette.mode === 'dark' ? 'grey.800' : 'grey.100' }}>
+                        {headers.map((header, index) => {
+                          // Check if any cell in this column has long text content
+                          const hasLongTextInColumn = tableData.some(row => {
+                            const val = String(row[header] === undefined || row[header] === null ? '' : row[header]);
+                            return val.length > 20 && /[a-zA-Z]/.test(val);
+                          });
+                          
+                          // Determine if this is a numeric column
+                          const isNumericHeader = !hasLongTextInColumn && (
+                            header.toLowerCase().includes('count') || 
+                            header.toLowerCase().includes('value') ||
+                            header.toLowerCase().includes('qty') ||
+                            header.toLowerCase().includes('amount') ||
+                            header.toLowerCase().includes('number') ||
+                            header.toLowerCase().includes('size') ||
+                            header.toLowerCase().includes('mhz') ||
+                            header.toLowerCase().includes('cpus')
+                          );
+                          
+                          return (
+                            <TableCell key={index} sx={{ 
+                              fontWeight: 'bold',
+                              fontSize: '0.9rem',
+                              borderBottom: (theme) => `2px solid ${theme.palette.primary.main}`,
+                              textAlign: isNumericHeader ? 'center' : 'left',
+                              paddingLeft: isNumericHeader ? 0 : 2,
+                              // Make ID and name columns less wide
+                              ...(header.toLowerCase().includes('id') && { maxWidth: '120px' }),
+                              ...(header.toLowerCase().includes('name') && { maxWidth: '180px' }),
+                              // Make numeric columns narrower
+                              ...(isNumericHeader && { width: 'fit-content', minWidth: '80px' })
+                            }}>
+                              {header.charAt(0).toUpperCase() + header.slice(1)}
+                            </TableCell>
+                          );
+                        })}
                       </TableRow>
                     </TableHead>
                     <TableBody>
                       {tableData.map((row, rowIndex) => (
-                        <TableRow key={rowIndex}>
-                          {headers.map((header, cellIndex) => (
-                            <TableCell key={cellIndex}>
-                              {String(row[header] === undefined || row[header] === null ? '' : row[header])}
-                            </TableCell>
-                          ))}
+                        <TableRow key={rowIndex} sx={{ 
+                          '&:nth-of-type(odd)': {
+                            bgcolor: (theme) => theme.palette.mode === 'dark' ? 'rgba(255, 255, 255, 0.05)' : 'rgba(0, 0, 0, 0.02)'
+                          },
+                          '&:hover': {
+                            bgcolor: (theme) => theme.palette.mode === 'dark' ? 'rgba(255, 255, 255, 0.1)' : 'rgba(0, 0, 0, 0.04)'
+                          }
+                        }}>
+                          {headers.map((header, cellIndex) => {
+                            const cellValue = String(row[header] === undefined || row[header] === null ? '' : row[header]);
+                            
+                            // Check if any cell in this column has long text content
+                            const hasLongTextInColumn = tableData.some(r => {
+                              const val = String(r[header] === undefined || r[header] === null ? '' : r[header]);
+                              return val.length > 20 && /[a-zA-Z]/.test(val);
+                            });
+                            
+                            // Determine if this cell contains numeric data
+                            const isNumeric = !hasLongTextInColumn && (
+                              /^[\d.,\s%]+$/.test(cellValue) || 
+                              header.toLowerCase().includes('count') || 
+                              header.toLowerCase().includes('value') ||
+                              header.toLowerCase().includes('qty') ||
+                              header.toLowerCase().includes('mhz') ||
+                              header.toLowerCase().includes('cpus')
+                            );
+                            
+                            // Host columns should be left-aligned
+                            const isHostColumn = header.toLowerCase() === 'host';
+                            
+                            return (
+                              <TableCell key={cellIndex} sx={{
+                                ...(cellIndex === 0 && { fontWeight: 500 }),
+                                textAlign: isNumeric ? 'center' : 'left',
+                                paddingLeft: (isNumeric || (!isHostColumn && cellIndex === 0)) ? 0 : 2,
+                                // Truncate very long text
+                                ...(cellValue.length > 50 && {
+                                  maxWidth: '300px',
+                                  overflow: 'hidden',
+                                  textOverflow: 'ellipsis',
+                                  whiteSpace: 'nowrap'
+                                })
+                              }}>
+                                {cellValue}
+                              </TableCell>
+                            );
+                          })}
                         </TableRow>
                       ))}
                     </TableBody>
