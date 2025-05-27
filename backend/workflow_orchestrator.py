@@ -2,23 +2,17 @@
 SAP EWA Analysis Workflow Orchestration Module
 
 This module implements a custom orchestration system for analyzing SAP Early Watch Alert (EWA) reports
-using Azure OpenAI services. It manages the complete workflow through parallel execution of three
-specialized analysis tasks:
+using Azure OpenAI services. It manages the workflow for generating comprehensive analysis of EWA reports:
 
 1. Summary Workflow - Generates an executive summary with findings and recommendations
-2. Metrics Extraction Workflow - Extracts key metrics as structured JSON data
-3. Parameters Extraction Workflow - Extracts parameter recommendations as structured JSON
 
 Key Functionality:
-- Orchestrating complex multi-step AI analysis workflows
-- Parallel execution of multiple analysis tasks for efficiency
-- Specialized prompting for different types of information extraction
-- JSON response validation and repair
+- Orchestrating AI analysis workflow
+- Specialized prompting for comprehensive information extraction
 - Integration with Azure Blob Storage for document persistence
 - Error handling and status reporting
 
-The orchestrator ensures each workflow component operates independently while maintaining
-a cohesive end-to-end analysis process for SAP EWA reports.
+The orchestrator ensures a cohesive end-to-end analysis process for SAP EWA reports.
 """
 
 import os
@@ -39,10 +33,8 @@ AZURE_OPENAI_ENDPOINT = os.getenv("AZURE_OPENAI_ENDPOINT")
 AZURE_OPENAI_API_KEY = os.getenv("AZURE_OPENAI_API_KEY")
 AZURE_OPENAI_API_VERSION = os.getenv("AZURE_OPENAI_API_VERSION", "2024-02-01")
 
-# Model deployment names
+# Model deployment name
 AZURE_OPENAI_SUMMARY_MODEL = os.getenv("AZURE_OPENAI_SUMMARY_MODEL", "gpt-4.1-mini")
-AZURE_OPENAI_METRICS_MODEL = os.getenv("AZURE_OPENAI_METRICS_MODEL", "gpt-4.1-mini")
-AZURE_OPENAI_PARAMETERS_MODEL = os.getenv("AZURE_OPENAI_PARAMETERS_MODEL", "gpt-4.1-mini")
 
 # Azure Storage configuration
 AZURE_STORAGE_CONNECTION_STRING = os.getenv("AZURE_STORAGE_CONNECTION_STRING")
@@ -216,105 +208,7 @@ Your output MUST be in Markdown format and follow this structure strictly:
 10. **Avoiding Hallucinations:** Base ALL your findings, recommendations, and metrics STRICTLY on the provided EWA report Markdown. Do not infer information not present.
 """
 
-METRICS_EXTRACTION_PROMPT = """You are an expert SAP Basis Architect tasked with extracting ALL key metrics from an SAP Early Watch Alert report.
-
-Your goal is to identify and extract every important metric, KPI, and performance indicator mentioned in the report.
-
-You MUST return ONLY valid, parseable JSON with no additional text, comments, or markdown formatting. The response should be a single JSON object that follows this exact structure:
-
-{
-  "metrics": [
-    {
-      "name": "METRIC_NAME",
-      "current": "CURRENT_VALUE",
-      "target": "TARGET_VALUE", 
-      "status": "STATUS",
-      "category": "CATEGORY",
-      "description": "Brief description of what this metric measures"
-    }
-  ]
-}
-
-CRITICAL JSON FORMATTING REQUIREMENTS:
-- All strings MUST be enclosed in double quotes
-- Do not use single quotes anywhere in the JSON
-- Ensure all quotation marks, braces, and brackets are properly closed and balanced
-- Do not include any special characters or escape sequences that would make the JSON invalid
-- No trailing commas
-- No comments within the JSON
-- No HTML tags (<br>, <p>, etc.) in any values, especially metric names
-
-**Status values must be EXACTLY one of: "success", "warning", or "critical"**
-**Category values should group related metrics (e.g., "Performance", "Availability", "Database", "Memory", etc.)**
-
-INSTRUCTIONS:
-- Extract ALL metrics mentioned in the report
-- Include the current value and target/threshold value for each metric
-- Classify each metric with the appropriate status based on how it compares to targets/thresholds
-- Group metrics into logical categories
-- Provide a brief description of what each metric measures
-- Pay special attention to performance metrics, availability metrics, and resource utilization metrics
-- Metric names must be plain text without any HTML formatting or tags
-- If a metric name appears to be split with HTML tags (like "availability<br>rate"), combine it into a single clean name ("availabilityrate")
-
-IMPORTANT: Your response MUST be a syntactically valid JSON object only. No preamble, no explanations, no additional text or markdown. Just the JSON.
-- Do NOT use ellipsis ('...') or placeholders; provide the complete JSON without omissions.
-
-**Wrap your JSON output in a fenced code block with ```json and ```**
-"""
-
-PARAMETERS_EXTRACTION_PROMPT = """You are an expert SAP Basis Architect tasked with extracting ALL parameter recommendations from an SAP Early Watch Alert report.
-
-Your goal is to identify and extract every important parameter setting, configuration value, and tuning recommendation mentioned in the report.
-
-You MUST return ONLY valid, parseable JSON with no additional text, comments, or markdown formatting. The response should be a single JSON object that follows this exact structure:
-
-{
-  "parameters": [
-    {
-      "name": "PARAMETER_NAME",
-      "current": "CURRENT_VALUE",
-      "recommended": "RECOMMENDED_VALUE",
-      "impact": "IMPACT_LEVEL",
-      "system_type": "SYSTEM_TYPE",
-      "description": "Description of what this parameter controls and why it should be changed"
-    }
-  ]
-}
-
-CRITICAL JSON FORMATTING REQUIREMENTS:
-- All strings MUST be enclosed in double quotes
-- Do not use single quotes anywhere in the JSON
-- Ensure all quotation marks, braces, and brackets are properly closed and balanced
-- Do not include any special characters or escape sequences that would make the JSON invalid
-- No trailing commas
-- No comments within the JSON
-- No HTML tags (<br>, <p>, etc.) in any values, especially parameter names
-
-**IMPACT_LEVEL must be EXACTLY one of: "high", "medium", or "low"**
-**SYSTEM_TYPE must be EXACTLY one of: "Database", "Application Server", "Both", or "System"**
-
-CRITICAL REQUIREMENTS:
-- Clearly distinguish between database parameters and SAP Application Server parameters using the system_type field
-- For database parameters: use SYSTEM_TYPE = "Database"
-- For SAP Application Server parameters: use SYSTEM_TYPE = "Application Server"  
-- For parameters that affect both: use SYSTEM_TYPE = "Both"
-- For general system parameters: use SYSTEM_TYPE = "System"
-- Parameter names must be plain text without any HTML formatting or tags
-
-INSTRUCTIONS:
-- Extract ALL parameter recommendations mentioned in the report
-- Include current values and recommended values where available
-- Assess impact level based on the criticality described in the report
-- Provide clear descriptions of what each parameter does
-- Look for ALL parameter recommendations
-- Pay special attention to database-specific vs application server-specific parameters
-- If a parameter name appears to be split with HTML tags (like "sslsessioncach<br>emode"), combine it into a single clean name ("sslsessioncachemode")
-
-IMPORTANT: Your response MUST be a syntactically valid JSON object only. No preamble, no explanations, no additional text or markdown. Just the JSON.
-- Do NOT use ellipsis ('...') or placeholders; provide the complete JSON without omissions.
-- Wrap your JSON output in a fenced code block with ```json and ```**
-"""
+# The metrics and parameters extraction prompts have been removed as they are no longer used
 
 
 def repair_json(json_string: str) -> str:
@@ -518,143 +412,7 @@ class EWAWorkflowOrchestrator:
             state.error = str(e)
             return state
     
-    async def extract_metrics_step(self, state: WorkflowState) -> WorkflowState:
-        """Step 3: Extract metrics as JSON"""
-        try:
-            print(f"[STEP 3] Extracting metrics for {state.blob_name} using {AZURE_OPENAI_METRICS_MODEL}")
-            metrics_response = await self.call_openai(
-                METRICS_EXTRACTION_PROMPT, 
-                state.markdown_content,
-                model=AZURE_OPENAI_METRICS_MODEL,
-                max_tokens=16000
-            )
-            
-            # Parse JSON response with improved error handling
-            try:
-                # First try direct parsing
-                state.metrics_result = json.loads(metrics_response.strip())
-                print("Successfully parsed metrics JSON directly")
-            except json.JSONDecodeError as e:
-                print(f"Direct JSON parsing failed: {e}")
-                print(f"Raw response (first 500 chars): {metrics_response[:500]}...")
-                
-                # Try to repair the JSON string
-                try:
-                    repaired_json = repair_json(metrics_response)
-                    state.metrics_result = json.loads(repaired_json)
-                    print("Successfully parsed metrics JSON after repair")
-                except json.JSONDecodeError as e2:
-                    print(f"JSON repair failed: {e2}")
-                    
-                    # If repair failed, try to extract JSON from response if it's wrapped in text
-                    # Pattern 1: JSON wrapped in code blocks
-                    json_match = re.search(r'```(?:json)?\s*(\{.*?\})\s*```', metrics_response, re.DOTALL | re.IGNORECASE)
-                    if json_match:
-                        try:
-                            extracted_json = repair_json(json_match.group(1))  # Apply repair to extracted JSON too
-                            state.metrics_result = json.loads(extracted_json)
-                            print("Successfully extracted and repaired JSON from code block")
-                        except json.JSONDecodeError as e3:
-                            print(f"Code block JSON parsing failed: {e3}")
-                            json_match = None
-                    
-                    if not json_match:
-                        # Pattern 2: Look for raw JSON object
-                        json_match = re.search(r'(\{[^{}]*(?:\{[^{}]*\}[^{}]*)*\})', metrics_response, re.DOTALL)
-                        if json_match:
-                            try:
-                                extracted_json = repair_json(json_match.group(1))
-                                state.metrics_result = json.loads(extracted_json)
-                                print("Successfully extracted and repaired raw JSON object")
-                            except json.JSONDecodeError as e4:
-                                print(f"Raw JSON parsing failed: {e4}")
-                                json_match = None
-                    
-                    if not json_match:
-                        # If all parsing fails, create a fallback structure
-                        print("All JSON parsing and repair attempts failed, creating fallback structure")
-                        
-                        # Create a basic structure but preserve the raw content for debugging
-                        state.metrics_result = {
-                            "error": "JSON parsing failed",
-                            "raw_response": metrics_response[:1000] if len(metrics_response) > 1000 else metrics_response,
-                            "metrics": []
-                        }
-            
-            return state
-        except Exception as e:
-            print(f"Error in extract_metrics_step: {e}")
-            state.error = str(e)
-            return state
-    
-    async def extract_parameters_step(self, state: WorkflowState) -> WorkflowState:
-        """Step 4: Extract parameters as JSON"""
-        try:
-            print(f"[STEP 4] Extracting parameters for {state.blob_name} using {AZURE_OPENAI_PARAMETERS_MODEL}")
-            parameters_response = await self.call_openai(
-                PARAMETERS_EXTRACTION_PROMPT, 
-                state.markdown_content,
-                model=AZURE_OPENAI_PARAMETERS_MODEL,
-                max_tokens=16000
-            )
-            
-            # Parse JSON response with improved error handling
-            try:
-                # First try direct parsing
-                state.parameters_result = json.loads(parameters_response.strip())
-                print("Successfully parsed parameters JSON directly")
-            except json.JSONDecodeError as e:
-                print(f"Direct JSON parsing failed: {e}")
-                print(f"Raw response (first 500 chars): {parameters_response[:500]}...")
-                
-                # Try to repair the JSON string
-                try:
-                    repaired_json = repair_json(parameters_response)
-                    state.parameters_result = json.loads(repaired_json)
-                    print("Successfully parsed parameters JSON after repair")
-                except json.JSONDecodeError as e2:
-                    print(f"JSON repair failed: {e2}")
-                    
-                    # If repair failed, try to extract JSON from response if it's wrapped in text
-                    # Pattern 1: JSON wrapped in code blocks
-                    json_match = re.search(r'```(?:json)?\s*(\{.*?\})\s*```', parameters_response, re.DOTALL | re.IGNORECASE)
-                    if json_match:
-                        try:
-                            extracted_json = repair_json(json_match.group(1))  # Apply repair to extracted JSON too
-                            state.parameters_result = json.loads(extracted_json)
-                            print("Successfully extracted and repaired JSON from code block")
-                        except json.JSONDecodeError as e3:
-                            print(f"Code block JSON parsing failed: {e3}")
-                            json_match = None
-                    
-                    if not json_match:
-                        # Pattern 2: Look for raw JSON object
-                        json_match = re.search(r'(\{[^{}]*(?:\{[^{}]*\}[^{}]*)*\})', parameters_response, re.DOTALL)
-                        if json_match:
-                            try:
-                                extracted_json = repair_json(json_match.group(1))
-                                state.parameters_result = json.loads(extracted_json)
-                                print("Successfully extracted and repaired raw JSON object")
-                            except json.JSONDecodeError as e4:
-                                print(f"Raw JSON parsing failed: {e4}")
-                                json_match = None
-                    
-                    if not json_match:
-                        # If all parsing fails, create a fallback structure
-                        print("All JSON parsing and repair attempts failed, creating fallback structure")
-                        
-                        # Create a basic structure but preserve the raw content for debugging
-                        state.parameters_result = {
-                            "error": "JSON parsing failed",
-                            "raw_response": parameters_response[:1000] if len(parameters_response) > 1000 else parameters_response,
-                            "parameters": []
-                        }
-            
-            return state
-        except Exception as e:
-            print(f"Error in extract_parameters_step: {e}")
-            state.error = str(e)
-            return state
+    # The extract_metrics_step and extract_parameters_step methods have been removed as they are no longer used
     
     def clean_html_from_json_object(self, json_obj):
         """Remove HTML tags from all string values in a JSON object recursively"""
