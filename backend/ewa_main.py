@@ -488,6 +488,7 @@ async def reprocess_document_with_ai(request: AIReprocessRequest):
         print(error_message)
         raise HTTPException(status_code=500, detail=error_message)
 
+@app.get("/api/download/{blob_name}")
 async def download_file(blob_name: str):
     """
     Download a file from Azure Blob Storage.

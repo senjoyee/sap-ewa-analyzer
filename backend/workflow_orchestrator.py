@@ -55,78 +55,97 @@ Your output MUST be in Markdown format and follow this structure strictly:
 
 **SAP EarlyWatch Alert - Deep Dive Summary Report**
 
-**## 1. Executive Summary & High-Priority Actions**
-   - Briefly state the overall health impression derived from the EWA.
-   - List **ONLY Very High and High priority** actionable insights and recommendations.
-   - For each insight, state the issue, the system/component affected (if specific), and the recommended action.
-   - Clearly indicate the EWA's own rating if an icon (Red/Yellow) or explicit rating text is present for an alert in the input Markdown.
-
-**## 2. Key System Information**
-   - Present this information as a JSON object embedded within a fenced code block. Do NOT use Markdown table syntax for this section.
-   - The JSON object should have a `tableTitle` key with the value "Key System Information".
-   - It should also have an `items` key, which is an array of objects. Each object in the array represents a parameter and its value, with keys "parameter" and "value".
+**## 1. Key System Information**
+   - Present this information as a Markdown bulleted list. Do NOT use JSON or table syntax for this section.
    - Extract values directly from the input Markdown.
-   - Example JSON structure:
-     ```json
-     {
-       "tableTitle": "Key System Information",
-       "items": [
-         {"parameter": "SAP System ID", "value": "[Extract from EWA]"},
-         {"parameter": "Product", "value": "[Extract from EWA]"},
-         {"parameter": "Status", "value": "[Extract from EWA, e.g., Productive]"},
-         {"parameter": "DB System", "value": "[Extract from EWA, e.g., SAP HANA Database X.XX.XXX.XX]"},
-         {"parameter": "Analysis Period", "value": "From [Analysis from] to [Until]"},
-         {"parameter": "EWA Processed On", "value": "[Processed on date by SAP Solution Manager]"},
-         {"parameter": "SolMan Release", "value": "[Release of SAP Solution Manager]"},
-         {"parameter": "SolMan Service Tool", "value": "[Service Tool version, e.g., 720 SPXX]"},
-         {"parameter": "SolMan Service Content", "value": "[Service Content date]"}
-       ]
-     }
-     ```
+   - Format each parameter as a bullet point with the parameter name in bold, followed by its value.
+   - Include the following key system parameters (where available in the document):
+     * **SAP System ID**: [Extract from EWA]
+     * **Product**: [Extract from EWA]
+     * **Status**: [Extract from EWA, e.g., Productive]
+     * **DB System**: [Extract from EWA, e.g., SAP HANA or Oracle Database]
+     * **Analysis Period**: From [Analysis from] to [Until]
+     * **EWA Processed On**: [Processed on date by SAP Solution Manager]
 
-**## 3. Detailed Findings and Recommendations (Chapter-wise Analysis)**
-   - Iterate through the chapters present in the EWA report, identified by Markdown headers (e.g., `## Chapter Title`).
-   - For each relevant chapter/section (e.g., Service Summary, Landscape, Software Configuration, Hardware Capacity, Workload, Performance, Security, HANA Database, etc.):
-     - **Chapter Title:** (e.g., "### 3.X Software Configuration for [System ID]") - *Mirror the chapter title from the input Markdown.*
-     - **Key Findings:** Bullet points summarizing important observations, deviations, or issues.
-     - **Actionable Recommendations:**
-       - **Priority:** [Very High / High / Medium / Low] - *Base this on the EWA's visual cues (Red/Yellow icons, or explicit rating text like "Critical", "Warning") and the contextual severity. See Prioritization Logic below.*
-       - **Issue:** Clearly describe the problem or potential risk.
-       - **EWA Recommendation:** Quote or paraphrase the EWA's recommendation.
-       - **Affected Component/System:** If applicable (e.g., specific HANA DB, ABAP stack).
-       - **Relevant SAP Note(s):** List any SAP Notes mentioned.
-     - **Key Metrics/Parameters (if applicable):** If the EWA Markdown presents data in tables (e.g., Performance Indicators, Hardware Config, Transport Landscape, HANA parameters), replicate or summarize this tabular structure.
+**## 2. Comprehensive Findings and Recommendations**
+   - Begin with a brief statement about the overall health impression derived from the EWA.
+   - **Chapter Analysis Requirement:** You MUST analyze EVERY chapter present in the EWA report, identified by Markdown headers (e.g., `## Chapter Title`). Key chapters typically include:
+     * Service Summary (`## 1 Service Summary` or similar)
+     * Landscape (`## 2 Landscape`)
+     * Software Configuration (e.g., `## 4 Software Configuration for [System ID]`)
+     * Security (e.g., `## 11 Security`)
+     * SAP Database (e.g., `## 15 SAP Database HXX`)
+   - If a standard chapter is missing, explicitly note this (e.g., "The Hardware Capacity chapter was not present in this report.").
+   - Organize all findings by priority category as follows:
 
-**## 4. Key Metrics and Parameters Summary**
-   **Overall Data Extraction Principle for Section 4:** For each sub-section below (4.1 to 4.5), if the corresponding data exists in the EWA report (often presented in tables within relevant chapters like Service Summary, Landscape, Performance, HANA Database, etc.), you are required to extract ALL relevant rows and data points. Ensure no part of a table pertinent to a sub-section is omitted. If a table in the EWA report is broken into multiple visual parts but logically belongs to one of these sub-sections, consolidate all its data into the single specified JSON structure for that sub-section.
+   ### 2.1 Critical Findings
+   - List all Very High/Critical priority issues from all chapters.
+   - For each finding include:
+     * Source chapter name
+     * Issue description
+     * Affected component/system
+     * Recommendation
+     * EWA's own rating (Red/Yellow icons or explicit text)
+     * Relevant SAP Notes (if mentioned)
 
-   - **Instructions for this section:** Present all data for sub-sections 4.1 through 4.5 using the JSON table format described in "Core Instructions and Guidelines #6". Each sub-section should contain one such JSON block if data is available.
+   ### 2.2 High Priority Findings
+   - List all High priority issues from all chapters.
+   - For each finding include:
+     * Source chapter name
+     * Issue description
+     * Affected component/system
+     * Recommendation
+     * EWA's own rating (Red/Yellow icons or explicit text)
+     * Relevant SAP Notes (if mentioned)
 
-   - **4.1 Performance Indicators:** (If available, usually in Service Summary)
+   ### 2.3 Medium Priority Findings
+   - List all Medium priority issues from all chapters.
+   - For each finding include:
+     * Source chapter name
+     * Issue description
+     * Affected component/system
+     * Recommendation
+     * EWA's own rating (Red/Yellow icons or explicit text)
+     * Relevant SAP Notes (if mentioned)
+
+   ### 2.4 Low Priority Findings
+   - List all Low priority issues from all chapters (if any).
+   - For each finding include:
+     * Source chapter name
+     * Issue description
+     * Affected component/system
+     * Recommendation
+     * EWA's own rating (Red/Yellow icons or explicit text)
+     * Relevant SAP Notes (if mentioned)
+
+**## 3. Key Metrics and Parameters Summary**
+   **Overall Data Extraction Principle for Section 3:** For each sub-section below (3.1 to 3.5), if the corresponding data exists in the EWA report (often presented in tables within relevant chapters like Service Summary, Landscape, Performance, HANA Database, etc.), you are required to extract ALL relevant rows and data points. Ensure no part of a table pertinent to a sub-section is omitted. If a table in the EWA report is broken into multiple visual parts but logically belongs to one of these sub-sections, consolidate all its data into the single specified JSON structure for that sub-section.
+
+   - **Instructions for this section:** Present all data for sub-sections 3.1 through 3.5 using the JSON table format described in "Core Instructions and Guidelines #6". Each sub-section should contain one such JSON block if data is available.
+
+   - **3.1 Performance Indicators:** (If available, usually in Service Summary)
      - *Present data as a JSON object within a ```json code block. Use "Performance Indicators" as the `tableTitle`.
-     - The `headers` for this JSON object MUST be ["Area", "Indicator", "Value", "Trend"].
      - The EWA report's "Performance Indicators" table may contain multiple sub-sections or categories under the "Area" column (e.g., "System Performance", "Hardware Capacity", "Database Performance", "Database Space Management").
      - You MUST extract ALL rows from ALL such areas presented under the main "Performance Indicators" table in the input Markdown.
-     - Each row in the output JSON's `rows` array must be an object containing all four keys: "Area", "Indicator", "Value", and "Trend".
-     - For the "Trend" value, diligently search for trend information (often an arrow icon like ↑, ↓, →, or text). If found, include its representation. If no trend is explicitly indicated, use `null` or an empty string.*
+     - Exclude the trend column from the JSON table.
+     
+   - **3.2 Hardware Configuration Summary:** (If available in Landscape chapter)
+      - *Present data as a JSON object within a ```json code block. Use "Hardware Configuration Summary" as the `tableTitle`. Headers should include "Host", "Manufacturer", "Model", "CPU Type", "CPU MHz", "Virtualization", "OS", "CPUs", "Cores", and "Memory (MB)".
+      - Ensure you capture all listed hosts and their complete configuration details if the table in the EWA report spans multiple pages or sections.*
 
-   - **4.2 Hardware Configuration Summary:** (If available in Landscape chapter)
-     - *Present data as a JSON object within a ```json code block. Use "Hardware Configuration Summary" as the `tableTitle`. Headers should include "Host", "Manufacturer", "Model", "CPU Type", "CPU MHz", "Virtualization", "OS", "CPUs", "Cores", and "Memory (MB)".
-     - Ensure you capture all listed hosts and their complete configuration details if the table in the EWA report spans multiple pages or sections.*
+   - **3.3 Transport Landscape Summary:** (If available in Landscape chapter)
+      - *Present data as a JSON object within a ```json code block. 
+      - Make sure to extract all entries from the transport landscape table, regardless of how it's formatted or paginated in the input Markdown.*
 
-   - **4.3 Transport Landscape Summary:** (If available in Landscape chapter)
-     - *Present data as a JSON object within a ```json code block. Use "Transport Landscape Summary" as the `tableTitle`. Headers should include "Transport Track", "Position", "System Role", "System ID", "Installation Number", and "System Number".
-     - Make sure to extract all entries from the transport landscape table, regardless of how it's formatted or paginated in the input Markdown.*
+   - **3.4 Key Deviating/Important Database Parameters:** (If Database chapters are present)
+      - *Present data as a JSON object within a ```json code block. 
+      - Extract all listed parameters, ensuring no deviations or important parameters mentioned in the relevant EWA sections are missed.*
 
-   - **4.4 Key Deviating/Important HANA DB Parameters:** (If HANA DB chapters are present)
-     - *Present data as a JSON object within a ```json code block. Use "Key Deviating/Important HANA DB Parameters" as the `tableTitle`. Headers should include "Database SID", "Location (e.g., global.ini [section])", "Parameter Name", "Layer", "Current Value", "Recommended Value", and "SAP Note (if any)".
-     - Extract all listed parameters, ensuring no deviations or important parameters mentioned in the relevant EWA sections are missed.*
+   - **3.5 Top Transactions by Workload/DB Load:** (If Performance/Workload chapters are present)
+      - *If data for "Top Dialog/HTTP(S) Transactions by Total Response Time" is available, present it as a JSON object within a ```json code block. 
+      - *If data for "Top Transactions by DB Load" is available, present it as a separate JSON object within a ```json code block. 
 
-   - **4.5 Top Transactions by Workload/DB Load:** (If Performance/Workload chapters are present)
-     - *If data for "Top Dialog/HTTP(S) Transactions by Total Response Time" is available, present it as a JSON object within a ```json code block. Use "Top Dialog/HTTP(S) Transactions by Total Response Time" as the `tableTitle`. Headers should include "Transaction/Service", "Type", "Dialog Steps", "Total Resp. Time (%)", "Avg. Resp. Time (ms)", "Avg. CPU (ms)", "Avg. DB (ms)", and "Avg. GUI (ms)". Ensure all transactions listed in the EWA report for this category are included.*
-     - *If data for "Top Transactions by DB Load" is available, present it as a separate JSON object within a ```json code block. Use "Top Transactions by DB Load" as the `tableTitle`. Headers should include "Transaction/Service", "Type", "Dialog Steps", "Total DB Time (%)", and "Avg. DB Time (ms)". Ensure all transactions listed in the EWA report for this category are included.*
-
-**## 5. Overall System Health Assessment**
+**## 4. Overall System Health Assessment**
    - A concluding sentence or two on the overall health based on the number and severity of findings.
 
 **# Core Instructions and Guidelines:**
@@ -175,8 +194,8 @@ Your output MUST be in Markdown format and follow this structure strictly:
     *   Use bullet points for lists of findings and recommendations.
     *   When quoting recommendations, use italics or blockquotes if appropriate.
 
-6.  **Handling Tables and Metrics (IMPORTANT: JSON Format for Section 4):**
-    *   For all tables generated under **"## 4. Key Metrics and Parameters Summary"**, you MUST NOT use Markdown table syntax.
+6.  **Handling Tables and Metrics (IMPORTANT: JSON Format for Section 3):**
+     *   For all tables generated under **"## 3. Key Metrics and Parameters Summary"**, you MUST NOT use Markdown table syntax.
     *   Instead, represent each table as a JSON object embedded within a fenced code block, like this:
         ```json
         {
@@ -198,8 +217,8 @@ Your output MUST be in Markdown format and follow this structure strictly:
     *   **Service Summary (`## 1 Service Summary` or similar):** Extract all red/yellow alerts from "Alert Overview." List "Guided Self-Services." Extract "Performance Indicators."
     *   **Landscape (`## 2 Landscape`):** Use information here to populate "Hardware Configuration" and "Transport Landscape" tables in section 4 of your output.
     *   **Software Configuration (e.g., `## 4 Software Configuration for [System ID]`):** Check maintenance phases, Fiori/UI5 versions, support package status, DB/OS maintenance, Kernel release.
-    *   **Security (e.g., `## 11 Security`):** High importance. Check HANA DB security, ABAP stack security, critical authorizations.
-    *   **SAP HANA Database (e.g., `## 15 SAP HANA Database HXX`):** Extract alerts, parameter deviations, resource consumption, workload, administration issues, and top SQL statements.
+    *   **Security (e.g., `## 11 Security`):** High importance. Check DB security, ABAP stack security, critical authorizations.
+    *   **SAP Database (e.g., `## 15 SAP Database HXX`):** Extract alerts, parameter deviations, resource consumption, workload, administration issues, and top SQL statements.
 
 8.  **Tone and Language:** Maintain a professional, objective, and concise tone. Use clear language.
 
@@ -367,17 +386,47 @@ class EWAWorkflowOrchestrator:
     async def call_openai(self, prompt: str, content: str, model: str, max_tokens: int = 8000) -> str:
         """Make a call to Azure OpenAI with specified model"""
         try:
-            response = self.client.chat.completions.create(
-                model=model,
-                messages=[
-                    {"role": "system", "content": prompt},
-                    {"role": "user", "content": f"Please analyze this EWA document:\n\n{content}"}
-                ],
-                temperature=0.1,
-                max_tokens=max_tokens,
-                frequency_penalty=0,
-                presence_penalty=0
-            )
+            # Create messages array (common for all models)
+            messages = [
+                {"role": "system", "content": prompt},
+                {"role": "user", "content": f"Please analyze this EWA document:\n\n{content}"}
+            ]
+            
+            # Handle model-specific parameters
+            if "o4-mini" in model:
+                # o4-mini parameters
+                params = {
+                    "model": model,
+                    "messages": messages,
+                    "max_completion_tokens": 32000,
+                    "reasoning_effort": "medium"
+                }
+                print(f"[MODEL INFO] Using model: {model} with max_completion_tokens=32000")
+                print(f"[MODEL PARAMS] Using reasoning_effort=medium with {model} model")
+            else:
+                # Parameters for other models
+                params = {
+                    "model": model,
+                    "messages": messages,
+                    "temperature": 0.1,
+                    "max_tokens": max_tokens,
+                    "frequency_penalty": 0,
+                    "presence_penalty": 0
+                }
+                print(f"[MODEL INFO] Using model: {model} with max_tokens={max_tokens}")
+            
+            response = self.client.chat.completions.create(**params)
+            
+            # Extract and log token usage information
+            if hasattr(response, 'usage') and response.usage is not None:
+                prompt_tokens = response.usage.prompt_tokens
+                completion_tokens = response.usage.completion_tokens
+                total_tokens = response.usage.total_tokens
+                
+                print(f"[TOKEN USAGE] Prompt: {prompt_tokens} | Completion: {completion_tokens} | Total: {total_tokens}")
+                print(f"[TOKEN USAGE] Completion tokens used: {completion_tokens}/{32000 if 'o4-mini' in model else max_tokens} ({(completion_tokens / (32000 if 'o4-mini' in model else max_tokens) * 100):.1f}%)")
+            else:
+                print("[TOKEN USAGE] Token usage information not available in the response")
             
             return response.choices[0].message.content
             
@@ -400,7 +449,8 @@ class EWAWorkflowOrchestrator:
     async def generate_summary_step(self, state: WorkflowState) -> WorkflowState:
         """Step 2: Generate executive summary (no metrics/parameters)"""
         try:
-            print(f"[STEP 2] Generating summary for {state.blob_name} using {AZURE_OPENAI_SUMMARY_MODEL}")
+            model = AZURE_OPENAI_SUMMARY_MODEL
+            print(f"[STEP 2] Generating summary for {state.blob_name} using model: {model}")
             state.summary_result = await self.call_openai(
                 SUMMARY_PROMPT, 
                 state.markdown_content,
