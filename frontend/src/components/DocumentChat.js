@@ -245,10 +245,35 @@ const DocumentChat = ({ fileName, documentContent }) => {
 
     try {
       // Simple approach - use relative URL with the proxy
+      let combinedDocumentContent = documentContent || 'No document content available';
+
+      // Attempt to fetch image descriptions
+      if (fileName) {
+        try {
+          const baseName = fileName.substring(0, fileName.lastIndexOf('.'));
+          const imageDescFileName = `${baseName}_image_descriptions.md`;
+          console.log(`Attempting to fetch image descriptions: /api/download/${imageDescFileName}`);
+          const imageDescResponse = await fetch(`/api/download/${imageDescFileName}`);
+          if (imageDescResponse.ok) {
+            const imageDescText = await imageDescResponse.text();
+            if (imageDescText && imageDescText.trim() !== '' && !imageDescText.toLowerCase().includes('not found')) {
+              combinedDocumentContent += `\n\n--- IMAGE DESCRIPTIONS ---\n${imageDescText}`;
+              console.log(`Successfully fetched and appended image descriptions for ${fileName}`);
+            } else {
+              console.log(`Image descriptions file for ${fileName} was empty or indicated 'not found'.`);
+            }
+          } else {
+            console.log(`Could not fetch image descriptions for ${fileName}, status: ${imageDescResponse.status}`);
+          }
+        } catch (imgError) {
+          console.error('Error fetching image descriptions:', imgError);
+        }
+      }
+
       const requestBody = {
         message: inputValue,
         fileName: fileName,
-        documentContent: documentContent || 'No document content available',
+        documentContent: combinedDocumentContent,
         chatHistory: messages.map(m => ({ text: m.text, isUser: m.isUser }))
       };
       

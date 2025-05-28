@@ -205,7 +205,7 @@ async def list_files():
                     print(f"Found AI analysis file for: {original_base_name}")
         
         # Now process all files, marking those that have been processed
-        # but excluding .json and .md files from the final list
+        # but excluding .json, .md, and image files from the final list
         files = []
         for blob in blob_list:
             # Get the blob name and check if it's a file type we want to display
@@ -214,6 +214,11 @@ async def list_files():
             # Skip .json and .md files in the main list
             if name.endswith('.json') or name.endswith('.md'):
                 print(f"Skipping file in list: {blob.name}")
+                continue
+            
+            # Skip extracted image files (these are artifacts from PDF processing)
+            if name.endswith(('.png', '.jpg', '.jpeg', '.gif', '.bmp', '.tiff')):
+                print(f"Skipping extracted image file: {blob.name}")
                 continue
                 
             # Get the blob client to access properties and metadata
@@ -345,7 +350,7 @@ async def get_document_analysis_status(blob_name: str):
 @app.post("/api/analyze-ai")
 async def analyze_document_with_ai_endpoint(request: AIAnalyzeRequest):
     """
-    Analyze a processed document using Azure OpenAI GPT-4.1 models.
+    Analyze a processed document using Azure OpenAI GPT-4.1 mini models.
     
     This endpoint takes a previously processed document (in markdown format) and performs
     AI analysis using Azure OpenAI GPT models. The analysis includes generating an executive summary
@@ -396,7 +401,8 @@ async def analyze_document_with_ai_endpoint(request: AIAnalyzeRequest):
         
         # Check if analysis was successful
         if not result.get("success", False):
-            raise HTTPException(status_code=500, detail=f"Analysis failed: {result.get('message', 'Unknown error')}")
+            # Surface the full failure payload
+            raise HTTPException(status_code=500, detail=result)
         
         # Return the analysis result
         return {
@@ -407,6 +413,8 @@ async def analyze_document_with_ai_endpoint(request: AIAnalyzeRequest):
             "preview": result.get("summary_preview", "")
         }
     except Exception as e:
+        import traceback
+        traceback.print_exc()
         raise HTTPException(status_code=500, detail=f"Analysis failed: {str(e)}")
 
 
@@ -488,6 +496,7 @@ async def reprocess_document_with_ai(request: AIReprocessRequest):
         print(error_message)
         raise HTTPException(status_code=500, detail=error_message)
 
+@app.get("/api/download/{blob_name}")
 async def download_file(blob_name: str):
     """
     Download a file from Azure Blob Storage.
@@ -687,10 +696,10 @@ class ChatRequest(BaseModel):
 @app.post("/api/chat")
 async def chat_with_document(request: ChatRequest):
     """
-    Chat with a document using Azure OpenAI GPT-4.
+    Chat with a document using Azure OpenAI GPT-4.1 mini.
     
     This endpoint enables interactive Q&A with SAP EWA reports by using the document content
-    as context for answering user questions. It leverages Azure OpenAI's GPT-4o models
+    as context for answering user questions. It leverages Azure OpenAI's GPT-4.1 mini models
     to provide contextually relevant responses based on the specific document content.
     
     The endpoint maintains conversation history to enable follow-up questions and
@@ -778,20 +787,14 @@ DOCUMENT: {request.fileName}
 CONTENT:
 {doc_content}
 
-IMPORTANT INSTRUCTIONS:
-1. This is an SAP Early Watch Alert (EWA) report which contains system performance metrics, issues, warnings, and recommendations.
-2. The report typically covers areas like database statistics, memory usage, backup frequency, system availability, and performance parameters.
-3. When answering questions, focus on extracting SPECIFIC INFORMATION from the document, even if it's just a brief mention.
-4. If information is present but brief, explain it and note that limited details are available.
-5. Be especially attentive to technical metrics, parameter recommendations, and critical warnings in the report.
-6. Quote specific sections and values from the report whenever possible.
-7. If you truly cannot find ANY mention of a topic, only then state that it's not in the document.
+The document content may also include a section at the end, starting with '--- IMAGE DESCRIPTIONS ---', which contains textual descriptions of images extracted from the report. When relevant to the user's query (e.g., questions about charts, graphs, visual trends, or elements that might be depicted visually), you should refer to this section to enhance your answer.
 
-DIRECTING USERS TO SPECIALIZED SECTIONS:
-1. This application has DEDICATED SECTIONS for Key Metrics and Parameters that provide more detailed and structured information.
+IMPORTANT INSTRUCTIONS:
+1. When users ask for a general summary or overview of the EWA report, DO NOT generate a new summary. Instead, EXPLAIN that a comprehensive AI-generated summary is available in the "AI Analysis" section and direct them to click the "Display Analysis" button. Use text like: "A detailed AI-generated summary and analysis for this report is available. Please click the 'Display Analysis' button to view it."
 2. When users ask about specific metrics (KPIs, performance indicators, thresholds), give a brief summary, excluding any specific values, explain that the information is available in the "Key Metrics" section, and then EXPLICITLY direct them to the "Key Metrics" section with text like: "For more detailed metrics information with current values and status indicators, please refer to the Key Metrics section."
 3. When users ask about parameters or configuration recommendations, provide a brief overview, excluding any specific values, explain that the information is available in the "Parameters" section, and then EXPLICITLY direct them to the "Parameters" section with text like: "For complete parameter recommendations with current and suggested values, please refer to the Parameters section."
 4. These specialized sections provide interactive, structured data that's easier to navigate than the text summary.
+5. If the user's query seems to relate to visual information (like charts, graphs, trend arrows, or color-coded statuses that are often presented visually in EWA reports), check the '--- IMAGE DESCRIPTIONS ---' section if available in the provided document content. Integrate insights from these descriptions into your response, and you can mention that the information is derived from visual elements if it adds clarity.
 
 Keep your responses informative and technically precise, as you're assisting an SAP administrator. Use markdown formatting for better readability."""
         

@@ -23,6 +23,7 @@ import pathlib
 from azure.storage.blob import BlobServiceClient, ContentSettings
 from dotenv import load_dotenv
 import pymupdf4llm
+import json
 
 # Load environment variables from .env file
 load_dotenv()
@@ -96,10 +97,49 @@ def convert_pdf_to_markdown(blob_name: str) -> dict:
             temp_file.write(pdf_content)
         
         conversion_status_tracker[blob_name]["progress"] = 30
-        conversion_status_tracker[blob_name]["message"] = "Converting PDF to markdown"
+        conversion_status_tracker[blob_name]["message"] = "Converting PDF to markdown with image extraction"
         
-        # Use pymupdf4llm to convert PDF to markdown
-        md_text = pymupdf4llm.to_markdown(temp_pdf_path)
+        # Create temporary directory for images
+        temp_images_dir = os.path.join(os.path.dirname(os.path.abspath(__file__)), "temp_images")
+        os.makedirs(temp_images_dir, exist_ok=True)
+        
+        # Use pymupdf4llm to convert PDF to markdown with image extraction
+        md_text = pymupdf4llm.to_markdown(
+            temp_pdf_path,
+            write_images=True,
+            image_path=temp_images_dir,
+            image_format="png",
+            dpi=300,
+            image_size_limit=0.03  # Filter out very small decorative elements
+        )
+        
+        # Upload extracted images to blob storage
+        extracted_images = []
+        if os.path.exists(temp_images_dir):
+            for image_file in os.listdir(temp_images_dir):
+                if image_file.endswith('.png'):
+                    image_path = os.path.join(temp_images_dir, image_file)
+                    
+                    # Create image blob name (preserve original naming from pymupdf4llm)
+                    image_blob_name = f"{os.path.splitext(blob_name)[0]}_images/{image_file}"
+                    
+                    # Upload image to blob storage
+                    with open(image_path, 'rb') as image_data:
+                        image_blob_client = container_client.get_blob_client(image_blob_name)
+                        image_blob_client.upload_blob(
+                            image_data.read(),
+                            overwrite=True,
+                            metadata=metadata,
+                            content_settings=ContentSettings(content_type="image/png")
+                        )
+                    extracted_images.append(image_blob_name)
+                    
+                    # Clean up temporary image file
+                    os.remove(image_path)
+            
+            # Clean up temporary images directory
+            if os.path.exists(temp_images_dir):
+                os.rmdir(temp_images_dir)
         
         conversion_status_tracker[blob_name]["progress"] = 70
         conversion_status_tracker[blob_name]["message"] = "Uploading markdown to blob storage"
@@ -122,7 +162,11 @@ def convert_pdf_to_markdown(blob_name: str) -> dict:
         conversion_status_tracker[blob_name]["message"] = "Creating JSON status file"
         
         json_blob_name = os.path.splitext(blob_name)[0] + ".json"
-        json_content = f'{{"processed": true, "markdown_file": "{markdown_blob_name}"}}'
+        json_content = json.dumps({
+            "processed": True,
+            "markdown_file": markdown_blob_name,
+            "extracted_images": extracted_images
+        })
         
         json_blob_client = container_client.get_blob_client(json_blob_name)
         json_blob_client.upload_blob(
@@ -144,7 +188,8 @@ def convert_pdf_to_markdown(blob_name: str) -> dict:
             "progress": 100,
             "message": "Conversion completed successfully",
             "markdown_blob": markdown_blob_name,
-            "json_blob": json_blob_name
+            "json_blob": json_blob_name,
+            "extracted_images": extracted_images
         })
         
         return {
@@ -154,7 +199,8 @@ def convert_pdf_to_markdown(blob_name: str) -> dict:
             "json_file": json_blob_name,
             "start_time": start_time.isoformat(),
             "end_time": end_time.isoformat(),
-            "duration_seconds": (end_time - start_time).total_seconds()
+            "duration_seconds": (end_time - start_time).total_seconds(),
+            "extracted_images": extracted_images
         }
         
     except Exception as e:

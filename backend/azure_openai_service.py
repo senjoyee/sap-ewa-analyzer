@@ -128,7 +128,7 @@ class AzureOpenAIService:
             raise
     
     async def analyze_with_gpt4(self, markdown_content: str) -> dict:
-        """Send markdown content to GPT-4 for analysis and extract structured metrics"""
+        """Send markdown content to GPT-4.1 mini for analysis and extract structured metrics"""
         try:
             print("Sending content to Azure OpenAI for analysis...")
             
@@ -295,7 +295,7 @@ class AzureOpenAIService:
     
     async def process_document_analysis(self, blob_name: str) -> dict:
         """
-        Complete workflow: Download markdown, analyze with GPT-4, upload result
+        Complete workflow: Download markdown, analyze with GPT-4.1 mini, upload result
         
         Args:
             blob_name: Name of the original file (will look for corresponding .md file)
@@ -312,7 +312,7 @@ class AzureOpenAIService:
             if not markdown_content.strip():
                 raise ValueError("Downloaded markdown content is empty")
             
-            # Step 2: Analyze with GPT-4 - now returns a dict with markdown and metrics_data
+            # Step 2: Analyze with GPT-4.1 mini - now returns a dict with markdown and metrics_data
             analysis_result = await self.analyze_with_gpt4(markdown_content)
             
             # Extract markdown content, metrics data, and parameters data
