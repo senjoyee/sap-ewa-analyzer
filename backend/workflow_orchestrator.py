@@ -94,23 +94,22 @@ The input will be **Markdown text derived from an SAP EarlyWatch Alert report.**
     *   Use bullet points for lists of findings and recommendations.
     *   When quoting recommendations, use italics or blockquotes if appropriate.
 
-6.  **Handling Tables and Metrics (IMPORTANT: JSON Format for Section 3):**
-     *   For all tables generated under **"## 3. Key Metrics and Parameters Summary"**, you MUST NOT use Markdown table syntax.
-    *   Instead, represent each table as a JSON object embedded within a fenced code block, like this:
-        ```json
-        {
-          "tableTitle": "A Descriptive Title for the Table (e.g., Performance Indicators)",
-          "headers": ["ColumnHeader1", "ColumnHeader2", "ColumnHeader3"],
-          "rows": [
-            {"ColumnHeader1": "Row1Value1", "ColumnHeader2": "Row1Value2", "ColumnHeader3": "Row1Value3"},
-            {"ColumnHeader1": "Row2Value1", "ColumnHeader2": "Row2Value2", "ColumnHeader3": "Row2Value3"}
-          ]
-        }
+6.  **Handling Tables and Metrics (IMPORTANT: Markdown Tables for Section 3):**
+     *   For all tables generated under **"## 3. Key Metrics and Parameters Summary"**, you MUST use proper Markdown table syntax.
+    *   Create well-formatted markdown tables with clear headers and aligned columns like this:
         ```
-    *   Ensure the `tableTitle` is descriptive and matches the sub-section (e.g., "Performance Indicators", "Hardware Configuration Summary").
-    *   The `headers` array should list the column headers.
-    *   Each element in the `rows` array MUST be an object where keys are the column headers and values are the cell content for that row.
-    *   If the input Markdown already contains tables for these sections, extract the data and reformat it into this JSON structure. Do not attempt to replicate the input Markdown table format directly for Section 3.
+        ### Table Title
+
+        | Column Header 1 | Column Header 2 | Column Header 3 |
+        |----------------|----------------|----------------|
+        | Row 1 Value 1  | Row 1 Value 2  | Row 1 Value 3  |
+        | Row 2 Value 1  | Row 2 Value 2  | Row 2 Value 3  |
+        ```
+    *   Use a descriptive header (H3 level) above each table that matches the sub-section (e.g., "Performance Indicators", "Hardware Configuration Summary").
+    *   Include column headers that clearly describe each data point.
+    *   Ensure table columns are properly aligned with dashes in the header row.
+    *   If the input Markdown already contains tables for these sections, extract the data and reformat it into this markdown table structure with consistent formatting.
+    *   For emphasis, use **bold** text for critical values, *italic* for warnings, and standard text for normal values.
     *   For performance indicators, diligently search for trend information. This is often represented by arrow icons (e.g., ↑, ↓, →), textual descriptions (e.g., "increasing", "decreasing", "stable"), or other visual cues next to the metric value. If a trend is found, include its representation (e.g., the icon as a character or the descriptive text) as the value for the "Trend" key in the corresponding row object. If no trend is explicitly indicated for a metric, use `null` or an empty string for its trend value.
 
 7.  **Chapter-wise Deep Dive Instructions (Examples - adapt based on actual EWA content, guided by Markdown headers):**
@@ -190,28 +189,38 @@ Your output MUST be in Markdown format and follow this structure strictly:
      * Relevant SAP Notes (if mentioned)
 
 **## 3. Key Metrics and Parameters Summary**
-   **Overall Data Extraction Principle for Section 3:** For each sub-section below (3.1 to 3.5), if the corresponding data exists in the EWA report (often presented in tables within relevant chapters like Service Summary, Landscape, Performance, HANA Database, etc.), you are required to extract ALL relevant rows and data points. Ensure no part of a table pertinent to a sub-section is omitted. If a table in the EWA report is broken into multiple visual parts but logically belongs to one of these sub-sections, consolidate all its data into the single specified JSON structure for that sub-section.
+   **Overall Data Extraction Principle for Section 3:** For each sub-section below (3.1 to 3.5), if the corresponding data exists in the EWA report (often presented in tables within relevant chapters like Service Summary, Landscape, Performance, HANA Database, etc.), you are required to extract ALL relevant rows and data points. Ensure no part of a table pertinent to a sub-section is omitted. If a table in the EWA report is broken into multiple visual parts but logically belongs to one of these sub-sections, consolidate all its data into a single well-formatted markdown table for that sub-section.
 
-   - **Instructions for this section:** Present all data for sub-sections 3.1 through 3.5 using the JSON table format described in "Core Instructions and Guidelines #6". Each sub-section should contain one such JSON block if data is available.
+   - **Instructions for this section:** Present all data for sub-sections 3.1 through 3.5 using properly formatted markdown tables as described in "Core Instructions and Guidelines #6". Each sub-section should contain one such table if data is available.
 
    - **3.1 Performance Indicators:** (If available, usually in Service Summary)
-      - *Present data as a JSON object within a ```json code block. Use "Performance Indicators" as the `tableTitle`.
+      - Create a markdown table with the header "### Performance Indicators"
+      - Include columns for "Area", "Indicators", and "Value"
+      - CRITICAL: The table MUST CONTAIN EXACTLY THESE THREE COLUMNS AND NO OTHERS. DO NOT include any Trend column or any other columns.
+      - IMPORTANT: Even if the original table contains a Trend column or trend indicators, you MUST EXCLUDE this information completely.
       - The EWA report's "Performance Indicators" table may contain multiple sub-sections or categories under the "Area" column (e.g., "System Performance", "Hardware Capacity", "Database Performance", "Database Space Management").
-      - CRITICAL: The JSON `headers` array MUST CONTAIN EXACTLY THESE THREE COLUMNS AND NO OTHERS: ["Area", "Indicators", "Value"]. DO NOT include any Trend column or any other columns.
-      - Each row object in the `rows` array must have ONLY these three properties: "Area", "Indicators", and "Value".
+      - Format the table with proper column alignment and headers.
       - You MUST extract ALL rows from ALL such areas presented under the main "Performance Indicators" table in the input Markdown.
+      - Use formatting (bold/italic) to highlight critical or warning values.
           
    - **3.2 Hardware Configuration Summary:** (If available in Landscape chapter)
-      - *Present data as a JSON object within a ```json code block. Use "Hardware Configuration Summary" as the `tableTitle`. Headers should include "Host", "Manufacturer", "Model", "CPU Type", "CPU MHz", "Virtualization", "OS", "CPUs", "Cores", and "Memory (MB)".
-      - Ensure you capture all listed hosts and their complete configuration details if the table in the EWA report spans multiple pages or sections.*
+      - Create a markdown table with the header "### Hardware Configuration Summary"
+      - Include columns for "Host", "Manufacturer", "Model", "CPU Type", "CPU MHz", "Virtualization", "OS", "CPUs", "Cores", and "Memory (MB)".
+      - Format the table with proper column alignment and headers.
+      - Ensure you capture all listed hosts and their complete configuration details if the table in the EWA report spans multiple pages or sections.
 
    - **3.3 Key Deviating/Important Database Parameters:** (If Database chapters are present)
-      - *Present data as a JSON object within a ```json code block. 
-      - Extract all listed parameters, ensuring no deviations or important parameters mentioned in the relevant EWA sections are missed.*
+      - Create a markdown table with the header "### Key Database Parameters"
+      - Include columns for "Parameter Name", "Current Value", "Recommended Value", and "Impact/Description".
+      - Format the table with proper column alignment and headers.
+      - Extract all listed parameters, ensuring no deviations or important parameters mentioned in the relevant EWA sections are missed.
+      - Use bold formatting for critical parameters that require immediate attention.
 
    - **3.4 Top Transactions by Workload/DB Load:** (If Performance/Workload chapters are present)
-      - *If data for "Top Dialog/HTTP(S) Transactions by Total Response Time" is available, present it as a JSON object within a ```json code block. 
-      - *If data for "Top Transactions by DB Load" is available, present it as a separate JSON object within a ```json code block. 
+      - Create a markdown table with the header "### Top Transactions by Response Time"
+      - Include relevant columns from the source data (e.g., "Transaction", "Description", "Response Time", "DB Time", "CPU Time", etc.)
+      - If data for "Top Transactions by DB Load" is available, create a separate markdown table with the header "### Top Transactions by DB Load"
+      - Format all tables with proper column alignment and headers.
 
 **## 4. Overall System Health Assessment**
    - A concluding sentence or two on the overall health based on the number and severity of findings.

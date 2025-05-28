@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import ReactMarkdown from 'react-markdown';
+import remarkGfm from 'remark-gfm';
 import Paper from '@mui/material/Paper';
 import Typography from '@mui/material/Typography';
 import Box from '@mui/material/Box';
@@ -635,7 +636,66 @@ const FilePreview = ({ selectedFile }) => {
               {/* Analysis Content Section */}
               <ReactMarkdown
                 key={selectedFile ? selectedFile.name : 'default-key'}
+                remarkPlugins={[remarkGfm]}
                 components={{
+                  table: ({ node, ...props }) => (
+                    <Box sx={{
+                      width: '100%',
+                      margin: '12px 0',
+                      overflow: 'auto',
+                      '& table': {
+                        borderCollapse: 'collapse',
+                        width: '100%',
+                        fontSize: '0.9rem',
+                        border: isDark ? '1px solid rgba(255, 255, 255, 0.1)' : '1px solid rgba(0, 0, 0, 0.1)',
+                        boxShadow: '0 2px 5px rgba(0, 0, 0, 0.1)',
+                        borderRadius: '4px',
+                        overflow: 'hidden',
+                      }
+                    }}>
+                      <table {...props} />
+                    </Box>
+                  ),
+                  thead: ({ node, ...props }) => (
+                    <thead style={{
+                      backgroundColor: isDark ? 'rgba(255, 255, 255, 0.15)' : 'rgba(25, 118, 210, 0.12)',
+                    }} {...props} />
+                  ),
+                  th: ({ node, ...props }) => (
+                    <th style={{
+                      padding: '10px 12px',
+                      textAlign: 'center',
+                      fontWeight: 'bold',
+                      color: isDark ? 'white' : '#1976d2',
+                      borderBottom: isDark ? '2px solid rgba(255, 255, 255, 0.2)' : '2px solid #1976d2',
+                      borderRight: isDark ? '1px solid rgba(255, 255, 255, 0.1)' : '1px solid rgba(0, 0, 0, 0.08)',
+                    }} {...props} />
+                  ),
+                  tr: ({ node, index, ...props }) => {
+                    // Apply different styling to even rows for zebra striping
+                    const isEven = index % 2 === 0;
+                    return (
+                      <tr style={{
+                        backgroundColor: isEven 
+                          ? (isDark ? 'rgba(255, 255, 255, 0.03)' : 'rgba(0, 0, 0, 0.02)') 
+                          : 'transparent',
+                        '&:hover': {
+                          backgroundColor: isDark ? 'rgba(255, 255, 255, 0.07)' : 'rgba(0, 0, 0, 0.04)',
+                        },
+                      }} {...props} />
+                    );
+                  },
+                  td: ({ node, ...props }) => (
+                    <td style={{
+                      padding: '8px 12px',
+                      borderBottom: isDark ? '1px solid rgba(255, 255, 255, 0.05)' : '1px solid rgba(0, 0, 0, 0.05)',
+                      textAlign: 'center',
+                      borderRight: isDark ? '1px solid rgba(255, 255, 255, 0.05)' : '1px solid rgba(0, 0, 0, 0.05)',
+                      wordBreak: 'break-word',
+                      overflowWrap: 'break-word',
+                      maxWidth: '400px',
+                    }} {...props} />
+                  ),
                   h1: ({ children }) => (
                     <Typography 
                       variant="h4" 
