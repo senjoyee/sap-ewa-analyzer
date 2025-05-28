@@ -1,5 +1,6 @@
 import React, { useState, useRef, useEffect } from 'react';
 import ReactMarkdown from 'react-markdown';
+import remarkGfm from 'remark-gfm';
 import {
   Box,
   Paper,
@@ -185,17 +186,48 @@ const BubbleContent = styled(Paper)(({ theme, isUser, isError }) => ({
   '& table': {
     borderCollapse: 'collapse',
     width: '100%',
-    margin: theme.spacing(0.75, 0),
+    margin: theme.spacing(1.5, 0),
     fontSize: '0.8rem',
-  },
-  '& th, & td': {
     border: `1px solid ${theme.palette.divider}`,
-    padding: theme.spacing(0.25, 0.5),
-    textAlign: 'left',
+    boxShadow: '0 2px 5px rgba(0, 0, 0, 0.1)',
+    borderRadius: '4px',
+    overflow: 'hidden',
+  },
+  '& thead': {
+    backgroundColor: theme.palette.mode === 'dark' ? 'rgba(255, 255, 255, 0.15)' : theme.palette.primary.light,
   },
   '& th': {
-    backgroundColor: theme.palette.mode === 'dark' ? 'rgba(255, 255, 255, 0.1)' : 'rgba(0, 0, 0, 0.05)',
+    padding: theme.spacing(0.75, 1),
+    textAlign: 'center',
     fontWeight: 'bold',
+    color: theme.palette.mode === 'dark' ? 'white' : theme.palette.primary.contrastText,
+    borderBottom: `2px solid ${theme.palette.mode === 'dark' ? 'rgba(255, 255, 255, 0.2)' : theme.palette.primary.main}`,
+  },
+  '& td': {
+    padding: theme.spacing(0.75, 1),
+    borderBottom: `1px solid ${theme.palette.divider}`,
+    textAlign: 'center',
+    borderRight: `1px solid ${theme.palette.divider}`,
+  },
+  '& tr:nth-of-type(even)': {
+    backgroundColor: theme.palette.mode === 'dark' ? 'rgba(255, 255, 255, 0.05)' : 'rgba(0, 0, 0, 0.02)',
+  },
+  '& tr:hover': {
+    backgroundColor: theme.palette.mode === 'dark' ? 'rgba(255, 255, 255, 0.1)' : 'rgba(0, 0, 0, 0.04)',
+  },
+  '& tr:last-child td': {
+    borderBottom: 'none',
+  },
+  '& td:last-child': {
+    borderRight: 'none',
+  },
+  '& code': {
+    backgroundColor: theme.palette.mode === 'dark' ? 'rgba(0, 0, 0, 0.4)' : 'rgba(0, 0, 0, 0.06)',
+    padding: '3px 5px',
+    borderRadius: 4,
+    fontFamily: '"Consolas", "Monaco", "Andale Mono", monospace',
+    fontSize: '0.75rem',
+    color: theme.palette.mode === 'dark' ? theme.palette.primary.light : theme.palette.primary.dark,
   },
 }));
 
@@ -384,7 +416,7 @@ const DocumentChat = ({ fileName, documentContent }) => {
                   {message.text}
                 </Typography>
               ) : (
-                <ReactMarkdown>
+                <ReactMarkdown remarkPlugins={[remarkGfm]}>
                   {message.text}
                 </ReactMarkdown>
               )}
