@@ -113,7 +113,7 @@ Your output MUST be in Markdown format and follow this structure strictly:
    - **4.1 Performance Indicators:** (If available, usually in Service Summary)
      - *Present data as a JSON object within a ```json code block. Use "Performance Indicators" as the `tableTitle`.
      - The EWA report's "Performance Indicators" table may contain multiple sub-sections or categories under the "Area" column (e.g., "System Performance", "Hardware Capacity", "Database Performance", "Database Space Management").
-     - You MUST extract ALL rows from ALL such areas presented under the main "Performance Indicators" table in the input Markdown.
+     - You MUST extract ALL rows from ALL such areas presented under the main "Performance Indicators" table in the input Markdown.\n
      
      
    - **4.2 Hardware Configuration Summary:** (If available in Landscape chapter)
@@ -778,10 +778,9 @@ IMPORTANT: If this image contains any table, you MUST provide a structured JSON 
 
 Focus on extracting:
 1. Performance metrics, values, and KPIs from the table
-2. SIMPLIFIED trend indicators - Use ONLY "up", "down", "same", or "unknown" for each row
-3. Chart data points, graphs, or visualizations
-4. Status indicators (red, yellow, green indicators)
-5. System parameters or configuration values
+2. Chart data points, graphs, or visualizations
+3. Status indicators (red, yellow, green indicators)
+4. System parameters or configuration values
 
 For all tables, include EVERY row and ensure every column is populated with the simplified text values."""
                         
@@ -977,20 +976,8 @@ For all tables, include EVERY row and ensure every column is populated with the 
                         
                         # For Performance Indicators table, ensure trend values are simplified
                         if isinstance(json_data, dict):
-                            if 'tableType' in json_data and json_data['tableType'] == 'PerformanceIndicators':
-                                if 'tableData' in json_data and 'rows' in json_data['tableData']:
-                                    for row in json_data['tableData']['rows']:
-                                        if 'Trend' in row:
-                                            # Normalize trend values to one of our standard values
-                                            trend = row['Trend'].lower().strip()
-                                            if any(word in trend for word in ['up', 'increase', 'higher', 'better', '↑', 'positive']):
-                                                row['Trend'] = 'up'
-                                            elif any(word in trend for word in ['down', 'decrease', 'lower', 'worse', '↓', 'negative']):
-                                                row['Trend'] = 'down'
-                                            elif any(word in trend for word in ['same', 'steady', 'stable', 'neutral', '→', 'no change']):
-                                                row['Trend'] = 'same'
-                                            else:
-                                                row['Trend'] = 'unknown'
+                            # Potentially, other tableType specific logic could go here in the future
+                            pass # Placeholder if we need to re-introduce specific logic for other table types
                         
                         # Add successfully parsed data to the results
                         extracted_data.append(json_data)
@@ -1128,7 +1115,8 @@ For all tables, include EVERY row and ensure every column is populated with the 
             
             # Add structured data from images if available
             if state.structured_image_data and len(state.structured_image_data) > 0:
-                enhanced_content += "\n\n## STRUCTURED DATA EXTRACTED FROM IMAGES:\n"
+                enhanced_content += "\n\n## VISUAL ANALYSIS FROM EXTRACTED IMAGES:\n"
+                enhanced_content += "_The following structured data, including tables with trend indicators (e.g., ⬆️, ⬇️, ➡️), was extracted from visual elements in the report:_\n\n"
                 
                 for data_item in state.structured_image_data:
                     # Check if it's a table and has the necessary components
