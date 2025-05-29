@@ -34,7 +34,7 @@ const spinAnimation = {
     },
   },
 };
-const drawerWidth = 380; // Increased width to accommodate analyze buttons and status
+const drawerWidth = 480; // Increased width to accommodate analyze buttons and status and show more file details
 const collapsedDrawerWidth = 0; // Width when drawer is collapsed
 
 // Inner App component that uses the theme context

@@ -60,29 +60,33 @@ The input will be **Markdown text derived from an SAP EarlyWatch Alert report.**
     *   Note any "Guided Self-Services" recommended.
 
 3.  **Prioritization Logic (CRITICAL - Apply Diligently):**
-    *   **Very High Priority:**
-        *   Critical security vulnerabilities explicitly stated (e.g., outdated software with *no longer ensured security notes*, critical authorizations like SAP_ALL in productive clients, DATA ADMIN privilege in HANA, RFC Gateway security not active).
-        *   Product versions where mainstream maintenance *has ended or will end in the very near future (e.g., < 3 months)*, especially for productive systems.
-        *   Severe performance bottlenecks explicitly identified as critical or causing system instability (e.g., "Severe issues for operating or administration in terms of data backup/recovery").
-        *   Critical data inconsistencies in core financial modules (FI-GL, AA).
-        *   Explicitly stated "RED" alerts from the EWA, especially in the Service Summary or critical component checks (e.g., HANA DB).
-    *   **High Priority:**
-        *   Significant security risks (e.g., default passwords for standard users, SAP* issues, ABAP password policy weaknesses, outdated support packages beyond the 24-month security note coverage).
-        *   Product versions where mainstream maintenance will end in the near future (e.g., 3-6 months).
-        *   Performance issues with significant impact (e.g., consistently high response times for critical transactions, hardware capacity nearing limits, important HANA parameters not set as recommended leading to performance/stability risk).
-        *   Data quality issues in important SAP modules or services.
-        *   EWA "Yellow" alerts that indicate a clear risk or deviation from best practice with potential impact.
-        *   Missing critical periodic jobs.
-    *   **Medium Priority:**
-        *   Deviations from SAP best practices that might lead to future issues (e.g., non-critical HANA parameters deviating, suboptimal configurations without immediate critical impact).
-        *   Minor performance issues or warnings.
-        *   Recommendations for housekeeping or DVM where no immediate crisis is indicated.
-        *   Most "Guided Self-Services" unless the underlying issue is clearly High/Very High.
-        *   Upcoming end of maintenance (e.g., 6-18 months) that needs planning.
-        *   ABAP Dumps if not excessively high or critical.
-    *   **Low Priority:**
-        *   Informational items or minor deviations with no clear immediate impact.
-        *   Long-term planning items.
+    *   **Primary Rule: Adhere to EWA's Explicit Classification.** If the EWA report text *explicitly states a priority* for a finding (e.g., "alerts with medium priority", "critical issue", "high risk", "RED alert", "YELLOW alert"), YOU MUST USE THAT CLASSIFICATION. Do not override the EWA's own stated priority.
+    *   **Secondary Rule: AI-Driven Classification (Use if EWA is not explicit).** If the EWA report does *not* explicitly state a priority for a specific finding, OR if it uses general terms like "RED alert" or "YELLOW alert" without a more specific priority level (e.g. High, Medium), then use the detailed guidelines below to determine its priority. In such cases, your classification should be based on the severity and potential impact of the issue described.
+
+    *   **Detailed Guidelines for AI-Driven Classification (when EWA is not explicit or uses general color ratings):**
+        *   **Very High Priority:**
+            *   Critical security vulnerabilities explicitly stated (e.g., outdated software with *no longer ensured security notes*, critical authorizations like SAP_ALL in productive clients, DATA ADMIN privilege in HANA, RFC Gateway security not active).
+            *   Product versions where mainstream maintenance *has ended or will end in the very near future (e.g., < 3 months)*, especially for productive systems.
+            *   Severe performance bottlenecks explicitly identified as critical or causing system instability (e.g., "Severe issues for operating or administration in terms of data backup/recovery").
+            *   Critical data inconsistencies in core financial modules (FI-GL, AA).
+            *   If the EWA mentions a "RED" alert and provides no other specific priority, it should generally be considered Very High unless other context strongly suggests otherwise.
+        *   **High Priority:**
+            *   Significant security risks (e.g., default passwords for standard users, SAP* issues, ABAP password policy weaknesses, outdated support packages beyond the 24-month security note coverage).
+            *   Product versions where mainstream maintenance will end in the near future (e.g., 3-6 months).
+            *   Performance issues with significant impact (e.g., consistently high response times for critical transactions, hardware capacity nearing limits, important HANA parameters not set as recommended leading to performance/stability risk).
+            *   Data quality issues in important SAP modules or services.
+            *   If the EWA mentions a "YELLOW" alert and provides no other specific priority, it should generally be considered High unless other context strongly suggests otherwise.
+            *   Missing critical periodic jobs.
+        *   **Medium Priority:**
+            *   Deviations from SAP best practices that might lead to future issues (e.g., non-critical HANA parameters deviating, suboptimal configurations without immediate critical impact).
+            *   Minor performance issues or warnings.
+            *   Recommendations for housekeeping or DVM where no immediate crisis is indicated.
+            *   Most "Guided Self-Services" unless the underlying issue is clearly High/Very High based on the EWA's description or your AI-driven classification.
+            *   Upcoming end of maintenance (e.g., 6-18 months) that needs planning.
+            *   ABAP Dumps if not excessively high or critical.
+        *   **Low Priority:**
+            *   Informational items or minor deviations with no clear immediate impact.
+            *   Long-term planning items.
 
 4.  **Extracting Key Information:**
     *   Always state the System ID (SID) the finding pertains to, especially if multiple systems (e.g., different HANA DBs H00, HCP, HLP) are covered in one EWA.
