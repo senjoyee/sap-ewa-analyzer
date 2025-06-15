@@ -23,7 +23,7 @@ from fastapi.middleware.cors import CORSMiddleware
 from azure.storage.blob import BlobServiceClient, BlobClient, ContainerClient
 from dotenv import load_dotenv
 from pydantic import BaseModel
-from document_converter import convert_document_to_markdown, get_conversion_status
+from converters.document_converter import convert_document_to_markdown, get_conversion_status
 from workflow_orchestrator import execute_ewa_analysis
 import uvicorn # For running the app
 import os
