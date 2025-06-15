@@ -1,4 +1,6 @@
 import React from 'react';
+import '@fontsource/noto-sans/400.css';
+import '@fontsource/noto-sans/600.css';
 import ReactDOM from 'react-dom/client';
 import './App.css'; // We'll create this next
 import App from './App'; // And this one too

@@ -105,6 +105,14 @@ const FileList = ({ onFileSelect, refreshTrigger, selectedFile }) => {
     return grouped;
   };
 
+  // Function to handle accordion expand/collapse
+  const handleAccordionChange = (customer) => (event, isExpanded) => {
+    setExpandedCustomers(prev => ({
+      ...prev,
+      [customer]: isExpanded
+    }));
+  };
+
   // Function to handle analyze button click
   const handleAnalyze = async (file) => {
     console.log(`Analyzing file: ${file.name}`);
@@ -277,29 +285,6 @@ const FileList = ({ onFileSelect, refreshTrigger, selectedFile }) => {
       console.error(`Error fetching AI analysis for file ${file.name}:`, error);
       alert(`Error fetching AI analysis: ${error.message}`);
     }
-  };
-
-  // Handle expanding/collapsing a single customer accordion
-  const handleCustomerAccordionChange = (customer, isExpanded) => {
-    setExpandedCustomers(prev => ({
-      ...prev,
-      [customer]: isExpanded
-    }));
-  };
-
-  // Handle expanding all customer accordions
-  const handleExpandAll = () => {
-    const allCustomers = {};
-    files.forEach(file => {
-      const customer = file.customer_name || 'Unknown';
-      allCustomers[customer] = true;
-    });
-    setExpandedCustomers(allCustomers);
-  };
-
-  // Handle collapsing all customer accordions
-  const handleCollapseAll = () => {
-    setExpandedCustomers({});
   };
 
   // Start polling for status updates
@@ -509,7 +494,14 @@ const FileList = ({ onFileSelect, refreshTrigger, selectedFile }) => {
               <Button 
                 size="small" 
                 variant="text" 
-                onClick={handleExpandAll}
+                onClick={() => {
+                  const allExpanded = {};
+                  const filesByCustomer = groupByCustomer(files);
+                  Object.keys(filesByCustomer).forEach(customer => {
+                    allExpanded[customer] = true;
+                  });
+                  setExpandedCustomers(allExpanded);
+                }}
                 sx={{ fontSize: '0.75rem', minWidth: 0, py: 0.5 }}
               >
                 Expand All
@@ -517,7 +509,7 @@ const FileList = ({ onFileSelect, refreshTrigger, selectedFile }) => {
               <Button 
                 size="small" 
                 variant="text" 
-                onClick={handleCollapseAll}
+                onClick={() => setExpandedCustomers({})}
                 sx={{ fontSize: '0.75rem', minWidth: 0, py: 0.5 }}
               >
                 Collapse All
@@ -527,63 +519,75 @@ const FileList = ({ onFileSelect, refreshTrigger, selectedFile }) => {
         )}
         
         {/* Customer accordions */}
-        {customers.map(customer => (
+        {Object.keys(filesByCustomer).map((customer) => (
           <Accordion 
             key={customer}
-            disableGutters 
+            expanded={expandedCustomers[customer] !== false}
+            onChange={handleAccordionChange(customer)}
             elevation={0}
-            expanded={!!expandedCustomers[customer]}
-            onChange={(e, isExpanded) => handleCustomerAccordionChange(customer, isExpanded)}
             sx={{ 
               mb: 1,
-              bgcolor: isDark ? 'rgba(255, 255, 255, 0.03)' : 'rgba(0, 0, 0, 0.02)',
+              backgroundColor: '#ffffff',
+              border: '1px solid #e0e0e0',
+              borderRadius: '8px !important',
               overflow: 'hidden',
-              '&:before': { display: 'none' }, // Remove the default divider
-              borderRadius: 2,
-              border: isDark ? '1px solid rgba(255, 255, 255, 0.05)' : '1px solid rgba(0, 0, 0, 0.08)'
+              '&:before': {
+                display: 'none',
+              },
+              '&.Mui-expanded': {
+                margin: '0 0 8px 0',
+              }
             }}
           >
             <AccordionSummary 
               expandIcon={<ExpandMoreIcon />}
               sx={{ 
                 minHeight: 48,
-                '& .MuiAccordionSummary-content': { margin: '12px 0' },
+                backgroundColor: '#f8f9fa',
+                borderBottom: '1px solid #e0e0e0',
+                '&.Mui-expanded': {
+                  minHeight: 48,
+                },
+                '& .MuiAccordionSummary-content': {
+                  margin: '12px 0',
+                  '&.Mui-expanded': {
+                    margin: '12px 0',
+                  }
+                }
               }}
             >
-              <Box sx={{ display: 'flex', alignItems: 'center' }}>
-                <BusinessIcon sx={{ mr: 1, fontSize: 20, color: 'primary.main' }} />
-                <Typography variant="subtitle2">{customer}</Typography>
+              <Box sx={{ display: 'flex', alignItems: 'center', width: '100%' }}>
+                <BusinessIcon sx={{ 
+                  mr: 1.5, 
+                  fontSize: 20,
+                  color: '#2193b0'
+                }} />
+                <Typography sx={{ 
+                  fontWeight: 500,
+                  fontSize: '0.9rem',
+                  color: '#333'
+                }}>
+                  {customer}
+                </Typography>
                 <Chip 
                   label={filesByCustomer[customer].length} 
                   size="small" 
-                  color="primary"
-                  variant="outlined"
-                  sx={{ ml: 1, height: 20, minWidth: 20, fontSize: '0.7rem' }}
+                  sx={{ 
+                    ml: 'auto',
+                    mr: 1,
+                    height: 20,
+                    minWidth: 20,
+                    fontSize: '0.7rem',
+                    fontWeight: 600,
+                    backgroundColor: '#e3f2fd',
+                    color: '#1976d2',
+                    border: 'none',
+                  }}
                 />
               </Box>
             </AccordionSummary>
-            <AccordionDetails sx={{ p: 0 }}>
-              <List 
-                sx={{ 
-                  py: 0,
-                  '& .MuiListItemButton-root': {
-                    borderRadius: 1,
-                    mx: 0.5,
-                    my: 0.5,
-                    transition: 'all 0.2s',
-                    '&:hover': {
-                      bgcolor: isDark ? 'rgba(255, 255, 255, 0.08)' : 'rgba(0, 0, 0, 0.05)',
-                    },
-                    '&.Mui-selected': {
-                      bgcolor: isDark ? 'primary.dark' : 'primary.light',
-                      color: isDark ? 'white' : 'primary.dark',
-                      '&:hover': {
-                        bgcolor: isDark ? 'primary.dark' : 'primary.light',
-                      },
-                    },
-                  }
-                }}
-              >
+            <AccordionDetails sx={{ p: 1, backgroundColor: '#fafafa' }}>
+              <List sx={{ py: 0 }}>
                 {filesByCustomer[customer].map((file) => {
           const isSelected = selectedFile && (selectedFile.id === file.id || selectedFile.name === file.name);
           
@@ -591,92 +595,82 @@ const FileList = ({ onFileSelect, refreshTrigger, selectedFile }) => {
             <ListItem 
               key={file.id || file.name} 
               disablePadding 
-              sx={{ position: 'relative', mb: 0.5 }}
+              sx={{ 
+                position: 'relative', 
+                mb: 0.5,
+                '&:last-child': { mb: 0 }
+              }}
             >
               <ListItemButton 
                 onClick={() => onFileSelect(file)}
                 selected={isSelected}
-                sx={{ pr: aiAnalyzing[file.id || file.name] === 'completed' ? 16 : 9 }} // More room for dual buttons when AI analyzed
+                sx={{ 
+                  pr: aiAnalyzing[file.id || file.name] === 'completed' ? 16 : 9,
+                  mx: 0.5,
+                  borderRadius: 1,
+                  minHeight: 64,
+                  transition: 'all 0.2s',
+                  backgroundColor: '#ffffff',
+                  border: '1px solid transparent',
+                  '&.Mui-selected': {
+                    backgroundColor: '#e3f2fd',
+                    borderColor: '#2193b0',
+                    '&:hover': {
+                      backgroundColor: '#bbdefb',
+                    }
+                  },
+                  '&:hover': {
+                    backgroundColor: '#f5f5f5',
+                    borderColor: '#e0e0e0',
+                  }
+                }}
               >
-                <ListItemIcon sx={{ minWidth: 36 }}>
+                <ListItemIcon sx={{ minWidth: 40 }}>
                   {getFileIcon(file.name)}
                 </ListItemIcon>
                 <Tooltip title={file.name} placement="top-start">
                   <ListItemText 
-                    primary={file.name} 
+                    primary={
+                      <Typography sx={{ 
+                        fontSize: '0.875rem',
+                        fontWeight: 500,
+                        color: '#333',
+                        overflow: 'hidden',
+                        textOverflow: 'ellipsis',
+                        whiteSpace: 'nowrap'
+                      }}>
+                        {file.name}
+                      </Typography>
+                    }
                     secondary={
-                      <Box sx={{ display: 'flex', flexDirection: 'column' }}>
-                        <Box sx={{ display: 'flex', alignItems: 'center' }}>
-                          <Box component="span" sx={{ mr: 1 }}>{formatFileSize(file.size)}</Box>
-                          {file.customer_name && (
-                            <Chip 
-                              label={`Customer: ${file.customer_name}`}
-                              size="small"
-                              color="secondary"
-                              variant="outlined"
-                              sx={{ height: 20, fontSize: '0.6rem', mr: 1 }}
-                            />
-                          )}
-                        </Box>
-                        <Box sx={{ display: 'flex', alignItems: 'center', mt: 0.5 }}>
-                          {analyzingFiles[file.id || file.name] === 'pending' && (
-                            <Chip 
-                              icon={<PendingIcon />} 
-                              label="Pending" 
-                              size="small" 
-                              color="default" 
-                              variant="outlined"
-                              sx={{ height: 20, fontSize: '0.6rem' }}
-                            />
-                          )}
-                          {analyzingFiles[file.id || file.name] === 'analyzing' && (
-                            <Box sx={{ display: 'flex', alignItems: 'center' }}>
-                              <Chip 
-                                icon={
-                                  <AutorenewIcon 
-                                    sx={{ 
-                                      animation: 'spin 2s linear infinite',
-                                      '@keyframes spin': {
-                                        '0%': { transform: 'rotate(0deg)' },
-                                        '100%': { transform: 'rotate(360deg)' }
-                                      }
-                                    }} 
-                                  />
-                                } 
-                                label={`Processing ${analysisProgress[file.name] || 0}%`} 
-                                size="small" 
-                                color="warning" 
-                                variant="outlined"
-                                sx={{ height: 20, fontSize: '0.6rem', mr: 1 }}
-                              />
-                              {analysisProgress[file.name] > 0 && (
-                                <Box sx={{ position: 'relative', width: 40, height: 4, borderRadius: 2, bgcolor: 'background.paper', overflow: 'hidden' }}>
-                                  <Box 
-                                    sx={{ 
-                                      position: 'absolute',
-                                      left: 0,
-                                      top: 0,
-                                      height: '100%',
-                                      width: `${analysisProgress[file.name]}%`,
-                                      bgcolor: 'warning.main',
-                                      transition: 'width 0.3s ease'
-                                    }}
-                                  />
-                                </Box>
-                              )}
-                            </Box>
-                          )}
-                          {analyzingFiles[file.id || file.name] === 'analyzed' && (
-                            <Chip 
-                              icon={<CheckCircleIcon />} 
-                              label="Processed" 
-                              size="small" 
-                              color="success" 
-                              variant="outlined"
-                              sx={{ height: 20, fontSize: '0.6rem' }}
-                            />
-                          )}
-                          {aiAnalyzing[file.id || file.name] === 'analyzing' && (
+                      <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5, mt: 0.5 }}>
+                        <Typography variant="caption" sx={{ color: '#666' }}>
+                          {formatFileSize(file.size)}
+                        </Typography>
+                        {file.customer_name && (
+                          <Typography variant="caption" sx={{ color: '#666' }}>
+                            • {file.customer_name}
+                          </Typography>
+                        )}
+                        {analyzingFiles[file.id || file.name] === 'pending' && (
+                          <Chip 
+                            icon={<PendingIcon sx={{ fontSize: '0.875rem' }} />} 
+                            label="Pending" 
+                            size="small" 
+                            sx={{ 
+                              height: 18,
+                              fontSize: '0.65rem',
+                              backgroundColor: '#f5f5f5',
+                              color: '#666',
+                              '& .MuiChip-icon': {
+                                fontSize: '0.875rem',
+                                color: '#666'
+                              }
+                            }}
+                          />
+                        )}
+                        {analyzingFiles[file.id || file.name] === 'analyzing' && (
+                          <Box sx={{ display: 'flex', alignItems: 'center' }}>
                             <Chip 
                               icon={
                                 <AutorenewIcon 
@@ -689,24 +683,69 @@ const FileList = ({ onFileSelect, refreshTrigger, selectedFile }) => {
                                   }} 
                                 />
                               } 
-                              label="AI Analyzing" 
+                              label={`Processing ${analysisProgress[file.name] || 0}%`} 
                               size="small" 
                               color="warning" 
                               variant="outlined"
-                              sx={{ height: 20, fontSize: '0.6rem', mr: 1 }}
+                              sx={{ height: 18, fontSize: '0.65rem', mr: 1 }}
                             />
-                          )}
-                          {aiAnalyzing[file.id || file.name] === 'completed' && (
-                            <Chip 
-                              icon={<CheckCircleIcon />} 
-                              label="AI Analyzed" 
-                              size="small" 
-                              color="success" 
-                              variant="outlined"
-                              sx={{ height: 20, fontSize: '0.6rem' }}
-                            />
-                          )}
-                        </Box>
+                            {analysisProgress[file.name] > 0 && (
+                              <Box sx={{ position: 'relative', width: 40, height: 4, borderRadius: 2, bgcolor: 'background.paper', overflow: 'hidden' }}>
+                                <Box 
+                                  sx={{ 
+                                    position: 'absolute',
+                                    left: 0,
+                                    top: 0,
+                                    height: '100%',
+                                    width: `${analysisProgress[file.name]}%`,
+                                    bgcolor: 'warning.main',
+                                    transition: 'width 0.3s ease'
+                                  }}
+                                />
+                              </Box>
+                            )}
+                          </Box>
+                        )}
+                        {analyzingFiles[file.id || file.name] === 'analyzed' && (
+                          <Chip 
+                            icon={<CheckCircleIcon />} 
+                            label="Processed" 
+                            size="small" 
+                            color="success" 
+                            variant="outlined"
+                            sx={{ height: 18, fontSize: '0.65rem' }}
+                          />
+                        )}
+                        {aiAnalyzing[file.id || file.name] === 'analyzing' && (
+                          <Chip 
+                            icon={
+                              <AutorenewIcon 
+                                sx={{ 
+                                  animation: 'spin 2s linear infinite',
+                                  '@keyframes spin': {
+                                    '0%': { transform: 'rotate(0deg)' },
+                                    '100%': { transform: 'rotate(360deg)' }
+                                  }
+                                }} 
+                              />
+                            } 
+                            label="AI Analyzing" 
+                            size="small" 
+                            color="warning" 
+                            variant="outlined"
+                            sx={{ height: 18, fontSize: '0.65rem', mr: 1 }}
+                          />
+                        )}
+                        {aiAnalyzing[file.id || file.name] === 'completed' && (
+                          <Chip 
+                            icon={<CheckCircleIcon />} 
+                            label="AI Analyzed" 
+                            size="small" 
+                            color="success" 
+                            variant="outlined"
+                            sx={{ height: 18, fontSize: '0.65rem' }}
+                          />
+                        )}
                       </Box>
                     }
                     primaryTypographyProps={{
@@ -722,45 +761,58 @@ const FileList = ({ onFileSelect, refreshTrigger, selectedFile }) => {
                   />
                 </Tooltip>
               </ListItemButton>
-              <ListItemSecondaryAction>
-                {/* If file has been AI-analyzed, show Display Analysis and Reprocess buttons */}
+              <ListItemSecondaryAction sx={{ 
+                display: 'flex', 
+                gap: 0.5,
+                pr: 1
+              }}>
+                {/* If file has been AI-analyzed, only show the Display Analysis button */}
                 {aiAnalyzing[file.id || file.name] === 'completed' ? (
-                  <Box sx={{ display: 'flex', gap: 1 }}>
-                    <Tooltip title="View AI Analysis">
+                  <Tooltip title="Display Analysis">
+                    <IconButton 
+                      edge="end" 
+                      size="small" 
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        handleDisplayAnalysis(file);
+                      }}
+                      sx={{ 
+                        backgroundColor: '#4caf50',
+                        color: 'white',
+                        width: 32,
+                        height: 32,
+                        '&:hover': {
+                          backgroundColor: '#45a049',
+                        }
+                      }}
+                    >
+                      <VisibilityIcon sx={{ fontSize: 18 }} />
+                    </IconButton>
+                  </Tooltip>
+                ) : analyzingFiles[file.id || file.name] === 'analyzing' ? (
+                  <Box sx={{ 
+                    display: 'flex', 
+                    alignItems: 'center',
+                    backgroundColor: '#fff3e0',
+                    borderRadius: 1,
+                    px: 1,
+                    py: 0.5
+                  }}>
+                    <Tooltip title="Processing...">
                       <IconButton 
                         edge="end" 
                         size="small" 
-                        color="success"
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          handleDisplayAnalysis(file);
-                        }}
+                        disabled={true}
                         sx={{ 
-                          bgcolor: 'rgba(76, 175, 80, 0.08)',
-                          '&:hover': {
-                            bgcolor: 'rgba(76, 175, 80, 0.2)',
-                          }
+                          width: 32,
+                          height: 32,
+                          color: '#f57c00'
                         }}
                       >
-                        <VisibilityIcon fontSize="small" />
-                      </IconButton>
-                    </Tooltip>
-                    <Tooltip title="Reprocess with AI">
-                      <IconButton 
-                        size="small" 
-                        color="secondary"
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          handleReprocessAI(file);
-                        }}
-                        sx={{ 
-                          bgcolor: 'rgba(156, 39, 176, 0.08)',
-                          '&:hover': {
-                            bgcolor: 'rgba(156, 39, 176, 0.2)',
-                          }
-                        }}
-                      >
-                        <AutorenewIcon fontSize="small" />
+                        <AutorenewIcon sx={{ 
+                          fontSize: 18,
+                          animation: 'spin 2s linear infinite' 
+                        }} />
                       </IconButton>
                     </Tooltip>
                   </Box>
@@ -771,20 +823,18 @@ const FileList = ({ onFileSelect, refreshTrigger, selectedFile }) => {
                       <IconButton 
                         edge="end" 
                         size="small" 
-                        color="secondary"
                         disabled={true}
                         sx={{ 
-                          bgcolor: 'rgba(156, 39, 176, 0.04)',
+                          backgroundColor: '#f3e5f5',
+                          width: 32,
+                          height: 32,
+                          color: '#7b1fa2'
                         }}
                       >
                         <AutorenewIcon 
-                          fontSize="small" 
                           sx={{ 
-                            animation: 'spin 2s linear infinite',
-                            '@keyframes spin': {
-                              '0%': { transform: 'rotate(0deg)' },
-                              '100%': { transform: 'rotate(360deg)' }
-                            }
+                            fontSize: 18,
+                            animation: 'spin 2s linear infinite'
                           }} 
                         />
                       </IconButton>
@@ -796,19 +846,21 @@ const FileList = ({ onFileSelect, refreshTrigger, selectedFile }) => {
                         <IconButton 
                           edge="end" 
                           size="small" 
-                          color="secondary"
                           onClick={(e) => {
                             e.stopPropagation();
                             handleAnalyzeAI(file);
                           }}
                           sx={{ 
-                            bgcolor: 'rgba(156, 39, 176, 0.08)',
+                            backgroundColor: '#9c27b0',
+                            color: 'white',
+                            width: 32,
+                            height: 32,
                             '&:hover': {
-                              bgcolor: 'rgba(156, 39, 176, 0.2)',
+                              backgroundColor: '#7b1fa2',
                             }
                           }}
                         >
-                          <AiAnalysisIcon fontSize="small" />
+                          <AiAnalysisIcon sx={{ fontSize: 18 }} />
                         </IconButton>
                       </Tooltip>
                     ) : (
@@ -816,19 +868,21 @@ const FileList = ({ onFileSelect, refreshTrigger, selectedFile }) => {
                         <IconButton 
                           edge="end" 
                           size="small" 
-                          color="primary"
                           onClick={(e) => {
                             e.stopPropagation();
                             handleAnalyze(file);
                           }}
                           sx={{ 
-                            bgcolor: 'rgba(144, 202, 249, 0.08)',
+                            backgroundColor: '#2196f3',
+                            color: 'white',
+                            width: 32,
+                            height: 32,
                             '&:hover': {
-                              bgcolor: 'rgba(144, 202, 249, 0.2)',
+                              backgroundColor: '#1976d2',
                             }
                           }}
                         >
-                          <PlayArrowIcon fontSize="small" />
+                          <PlayArrowIcon sx={{ fontSize: 18 }} />
                         </IconButton>
                       </Tooltip>
                     )
@@ -847,31 +901,116 @@ const FileList = ({ onFileSelect, refreshTrigger, selectedFile }) => {
   }
 
   return (
-    <Paper elevation={0} sx={{ 
-      padding: 2, 
-      backgroundColor: 'transparent', 
-      borderRadius: 3,
+    <Box sx={{ 
+      display: 'flex',
+      flexDirection: 'column',
       height: '100%',
+      gap: 2
     }}>
-      <Typography 
-        variant="h6" 
-        gutterBottom 
-        component="div"
-        sx={{ px: 1, mb: 1.5, fontWeight: 500, display: 'flex', alignItems: 'center' }}
+      <Box sx={{ 
+        display: 'flex',
+        justifyContent: 'space-between',
+        alignItems: 'center',
+        mb: 1
+      }}>
+        <Typography 
+          variant="subtitle1" 
+          sx={{ 
+            fontWeight: 600,
+            color: '#1a1a1a',
+            fontSize: '0.95rem',
+            display: 'flex',
+            alignItems: 'center',
+            gap: 1
+          }}
+        >
+          <FolderIcon sx={{ fontSize: 20, color: '#2193b0' }} />
+          Uploaded Files
+          {files.length > 0 && (
+            <Chip 
+              label={files.length} 
+              size="small" 
+              sx={{ 
+                ml: 0.5,
+                height: 20,
+                minWidth: 20,
+                fontSize: '0.7rem',
+                fontWeight: 600,
+                backgroundColor: '#e3f2fd',
+                color: '#1976d2',
+                border: 'none',
+              }}
+            />
+          )}
+        </Typography>
+        <Box sx={{ display: 'flex', gap: 0.5 }}>
+          <Button
+            size="small"
+            onClick={() => {
+              const allExpanded = {};
+              const filesByCustomer = groupByCustomer(files);
+              Object.keys(filesByCustomer).forEach(customer => {
+                allExpanded[customer] = true;
+              });
+              setExpandedCustomers(allExpanded);
+            }}
+            sx={{ 
+              fontSize: '0.75rem',
+              textTransform: 'none',
+              color: '#666',
+              minWidth: 'auto',
+              px: 1,
+              '&:hover': {
+                backgroundColor: 'rgba(0,0,0,0.04)',
+              }
+            }}
+          >
+            EXPAND ALL
+          </Button>
+          <Button
+            size="small"
+            onClick={() => setExpandedCustomers({})}
+            sx={{ 
+              fontSize: '0.75rem',
+              textTransform: 'none',
+              color: '#666',
+              minWidth: 'auto',
+              px: 1,
+              '&:hover': {
+                backgroundColor: 'rgba(0,0,0,0.04)',
+              }
+            }}
+          >
+            COLLAPSE ALL
+          </Button>
+        </Box>
+      </Box>
+      <Paper 
+        elevation={0} 
+        sx={{ 
+          flex: 1,
+          overflow: 'auto',
+          backgroundColor: '#fafafa',
+          border: '1px solid #e0e0e0',
+          borderRadius: 2,
+          '&::-webkit-scrollbar': {
+            width: '6px',
+          },
+          '&::-webkit-scrollbar-track': {
+            background: '#f1f1f1',
+          },
+          '&::-webkit-scrollbar-thumb': {
+            background: '#c1c1c1',
+            borderRadius: '3px',
+            '&:hover': {
+              background: '#a8a8a8',
+            },
+          },
+        }}
       >
-        <InsertDriveFileIcon sx={{ mr: 1, fontSize: 18 }} />
-        Uploaded Files
-        {files.length > 0 && (
-          <Chip 
-            label={files.length} 
-            size="small" 
-            color="primary"
-            sx={{ ml: 1, height: 20, minWidth: 20, fontSize: '0.7rem' }}
-          />
-        )}
-      </Typography>
-      {content}
-    </Paper>
+        {content}
+      </Paper>
+    </Box>
   );
 };
 

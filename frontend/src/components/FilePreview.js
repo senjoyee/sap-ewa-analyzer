@@ -199,31 +199,59 @@ const JsonCodeBlockRenderer = ({ node, inline, className, children, ...props }) 
                         return val.length > 20 && /[a-zA-Z]/.test(val);
                       });
                       
-                      // Check if this is a numeric column header
+                      // Determine if this is a numeric column header
                       const isNumericHeader = !hasLongTextInColumn && (
                         header.toLowerCase().includes('count') || 
                         header.toLowerCase().includes('value') ||
                         header.toLowerCase().includes('qty') ||
-                        header.toLowerCase().includes('amount') ||
-                        header.toLowerCase().includes('number') ||
-                        header.toLowerCase().includes('size') ||
                         header.toLowerCase().includes('mhz') ||
                         header.toLowerCase().includes('cpus')
                       );
 
                       return (
                         <TableCell key={index} sx={{ 
-                          fontWeight: 'bold',
-                          fontSize: '0.9rem',
-                          borderBottom: (theme) => `2px solid ${theme.palette.primary.main}`,
+                          fontWeight: 600,
+                          fontSize: '0.8125rem',
+                          fontFamily: '"Noto Sans", "Noto Sans", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif',
+                          color: (theme) => theme.palette.mode === 'dark' ? '#ffffff' : '#2d3748',
+                          background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
+                          borderBottom: '2px solid transparent',
+                          borderImage: 'linear-gradient(90deg, #667eea 0%, #764ba2 100%) 1',
                           textAlign: isNumericHeader ? 'center' : 'left',
                           paddingLeft: isNumericHeader ? 0 : 2,
+                          padding: '16px 12px',
+                          textTransform: 'uppercase',
+                          letterSpacing: '0.08em',
+                          position: 'relative',
+                          transition: 'all 0.3s ease',
+                          textShadow: '0 1px 2px rgba(0,0,0,0.3)',
+                          '&:hover': {
+                            color: '#ffffff',
+                            transform: 'translateY(-1px)',
+                            textShadow: '0 2px 4px rgba(0,0,0,0.4)',
+                          },
                           // Make ID and name columns less wide
                           ...(header.toLowerCase().includes('id') && { maxWidth: '120px' }),
-                          ...(header.toLowerCase().includes('name') && { maxWidth: '180px' }),
+                          ...(header.toLowerCase().includes('name') && { maxWidth: '200px' }),
                           // Make numeric columns narrower
-                          ...(isNumericHeader && { width: 'fit-content', minWidth: '80px' })
-                        }}>{header}</TableCell>
+                          ...(isNumericHeader && { width: 'fit-content', minWidth: '90px' }),
+                          '&::after': {
+                            content: '""',
+                            position: 'absolute',
+                            bottom: 0,
+                            left: 0,
+                            right: 0,
+                            height: '2px',
+                            background: 'linear-gradient(90deg, transparent, #667eea, transparent)',
+                            transform: 'scaleX(0)',
+                            transition: 'transform 0.3s ease',
+                          },
+                          '&:hover::after': {
+                            transform: 'scaleX(1)',
+                          }
+                        }}>
+                          {header.charAt(0).toUpperCase() + header.slice(1).replace(/_/g, ' ')}
+                        </TableCell>
                       );
                     })}
                   </TableRow>
@@ -296,62 +324,140 @@ const JsonCodeBlockRenderer = ({ node, inline, className, children, ...props }) 
           
           if (headers.length > 0) {
             return (
-              <Box sx={{ my: 2, boxShadow: 3, borderRadius: 2, overflow: 'hidden' }}>
+              <Box sx={{ 
+                my: 3, 
+                borderRadius: 3,
+                overflow: 'hidden',
+                background: (theme) => theme.palette.mode === 'dark' 
+                  ? 'linear-gradient(145deg, #1a1a1a 0%, #0a0a0a 100%)'
+                  : 'linear-gradient(145deg, #ffffff 0%, #f5f5f5 100%)',
+                boxShadow: (theme) => theme.palette.mode === 'dark'
+                  ? '0 8px 32px 0 rgba(0, 0, 0, 0.5), 0 2px 8px 0 rgba(0, 0, 0, 0.3)'
+                  : '0 8px 32px 0 rgba(31, 38, 135, 0.15), 0 2px 8px 0 rgba(31, 38, 135, 0.08)',
+                border: (theme) => `1px solid ${theme.palette.mode === 'dark' ? 'rgba(255, 255, 255, 0.1)' : 'rgba(0, 0, 0, 0.08)'}`,
+                transition: 'all 0.3s cubic-bezier(0.4, 0, 0.2, 1)',
+                '&:hover': {
+                  transform: 'translateY(-2px)',
+                  boxShadow: (theme) => theme.palette.mode === 'dark'
+                    ? '0 12px 40px 0 rgba(0, 0, 0, 0.6), 0 4px 12px 0 rgba(0, 0, 0, 0.4)'
+                    : '0 12px 40px 0 rgba(31, 38, 135, 0.2), 0 4px 12px 0 rgba(31, 38, 135, 0.1)',
+                }
+              }}>
                 <Typography variant="h6" sx={{ 
-                  p: 2, 
-                  bgcolor: (theme) => theme.palette.mode === 'dark' ? 'primary.dark' : 'primary.light',
-                  color: (theme) => theme.palette.mode === 'dark' ? 'primary.contrastText' : 'primary.dark',
-                  fontWeight: 'bold'
+                  p: 2.5,
+                  background: (theme) => theme.palette.mode === 'dark'
+                    ? 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)'
+                    : 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
+                  color: '#ffffff',
+                  fontWeight: 600,
+                  fontFamily: '"Noto Sans", "Noto Sans", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif',
+                  fontSize: '1.125rem',
+                  letterSpacing: '0.5px',
+                  textShadow: '0 1px 2px rgba(0,0,0,0.3)',
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: 1,
+                  '&::before': {
+                    content: '""',
+                    width: '4px',
+                    height: '24px',
+                    bgcolor: '#ffffff',
+                    borderRadius: '2px',
+                    opacity: 0.8,
+                  }
                 }}>
                   {tableTitle}
                 </Typography>
-                <TableContainer component={Paper} elevation={0}>
-                  <Table size="small" sx={{
-                    borderCollapse: 'collapse',
-                    tableLayout: 'auto', 
-                    width: '100%',
-                    '& th, & td': {
-                      borderRight: (theme) => `1px solid ${theme.palette.divider}`,
-                      '&:last-child': {
-                        borderRight: 'none'
-                      }
+                <TableContainer sx={{ 
+                  maxHeight: 600,
+                  '&::-webkit-scrollbar': {
+                    height: '10px',
+                    width: '10px',
+                  },
+                  '&::-webkit-scrollbar-track': {
+                    background: (theme) => theme.palette.mode === 'dark' ? '#1a1a1a' : '#f5f5f5',
+                    borderRadius: '5px',
+                  },
+                  '&::-webkit-scrollbar-thumb': {
+                    background: (theme) => theme.palette.mode === 'dark'
+                      ? 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)'
+                      : 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
+                    borderRadius: '5px',
+                    '&:hover': {
+                      background: (theme) => theme.palette.mode === 'dark'
+                        ? 'linear-gradient(135deg, #764ba2 0%, #667eea 100%)'
+                        : 'linear-gradient(135deg, #764ba2 0%, #667eea 100%)',
+                    }
+                  }
+                }}>
+                  <Table stickyHeader sx={{ 
+                    '& .MuiTableCell-root': {
+                      fontFamily: '"Noto Sans", "Noto Sans", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif',
+                      WebkitFontSmoothing: 'antialiased',
+                      MozOsxFontSmoothing: 'grayscale',
                     }
                   }}>
                     <TableHead>
-                      <TableRow sx={{ bgcolor: (theme) => theme.palette.mode === 'dark' ? 'grey.800' : 'grey.100' }}>
-                        {headers.map((header, index) => {
+                      <TableRow>
+                        {headers.map((header, idx) => {
                           // Check if any cell in this column has long text content
                           const hasLongTextInColumn = tableData.some(row => {
                             const val = String(row[header] === undefined || row[header] === null ? '' : row[header]);
                             return val.length > 20 && /[a-zA-Z]/.test(val);
                           });
                           
-                          // Determine if this is a numeric column
+                          // Determine if this is a numeric column header
                           const isNumericHeader = !hasLongTextInColumn && (
                             header.toLowerCase().includes('count') || 
                             header.toLowerCase().includes('value') ||
                             header.toLowerCase().includes('qty') ||
-                            header.toLowerCase().includes('amount') ||
-                            header.toLowerCase().includes('number') ||
-                            header.toLowerCase().includes('size') ||
                             header.toLowerCase().includes('mhz') ||
                             header.toLowerCase().includes('cpus')
                           );
-                          
+
                           return (
-                            <TableCell key={index} sx={{ 
-                              fontWeight: 'bold',
-                              fontSize: '0.9rem',
-                              borderBottom: (theme) => `2px solid ${theme.palette.primary.main}`,
+                            <TableCell key={idx} sx={{ 
+                              fontWeight: 600,
+                              fontSize: '0.8125rem',
+                              fontFamily: '"Noto Sans", "Noto Sans", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif',
+                              color: (theme) => theme.palette.mode === 'dark' ? '#ffffff' : '#2d3748',
+                              background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
+                              borderBottom: '2px solid transparent',
+                              borderImage: 'linear-gradient(90deg, #667eea 0%, #764ba2 100%) 1',
                               textAlign: isNumericHeader ? 'center' : 'left',
                               paddingLeft: isNumericHeader ? 0 : 2,
+                              padding: '16px 12px',
+                              textTransform: 'uppercase',
+                              letterSpacing: '0.08em',
+                              position: 'relative',
+                              transition: 'all 0.3s ease',
+                              textShadow: '0 1px 2px rgba(0,0,0,0.3)',
+                              '&:hover': {
+                                color: '#ffffff',
+                                transform: 'translateY(-1px)',
+                                textShadow: '0 2px 4px rgba(0,0,0,0.4)',
+                              },
                               // Make ID and name columns less wide
                               ...(header.toLowerCase().includes('id') && { maxWidth: '120px' }),
-                              ...(header.toLowerCase().includes('name') && { maxWidth: '180px' }),
+                              ...(header.toLowerCase().includes('name') && { maxWidth: '200px' }),
                               // Make numeric columns narrower
-                              ...(isNumericHeader && { width: 'fit-content', minWidth: '80px' })
+                              ...(isNumericHeader && { width: 'fit-content', minWidth: '90px' }),
+                              '&::after': {
+                                content: '""',
+                                position: 'absolute',
+                                bottom: 0,
+                                left: 0,
+                                right: 0,
+                                height: '2px',
+                                background: 'linear-gradient(90deg, transparent, #667eea, transparent)',
+                                transform: 'scaleX(0)',
+                                transition: 'transform 0.3s ease',
+                              },
+                              '&:hover::after': {
+                                transform: 'scaleX(1)',
+                              }
                             }}>
-                              {header.charAt(0).toUpperCase() + header.slice(1)}
+                              {header.charAt(0).toUpperCase() + header.slice(1).replace(/_/g, ' ')}
                             </TableCell>
                           );
                         })}
@@ -360,12 +466,25 @@ const JsonCodeBlockRenderer = ({ node, inline, className, children, ...props }) 
                     <TableBody>
                       {tableData.map((row, rowIndex) => (
                         <TableRow key={rowIndex} sx={{ 
+                          transition: 'all 0.2s cubic-bezier(0.4, 0, 0.2, 1)',
                           '&:nth-of-type(odd)': {
-                            bgcolor: (theme) => theme.palette.mode === 'dark' ? 'rgba(255, 255, 255, 0.05)' : 'rgba(0, 0, 0, 0.02)'
+                            bgcolor: (theme) => theme.palette.mode === 'dark' 
+                              ? 'rgba(102, 126, 234, 0.03)' 
+                              : 'rgba(102, 126, 234, 0.02)'
                           },
                           '&:hover': {
-                            bgcolor: (theme) => theme.palette.mode === 'dark' ? 'rgba(255, 255, 255, 0.1)' : 'rgba(0, 0, 0, 0.04)'
-                          }
+                            bgcolor: (theme) => theme.palette.mode === 'dark' 
+                              ? 'rgba(102, 126, 234, 0.12)' 
+                              : 'rgba(102, 126, 234, 0.08)',
+                            transform: 'scale(1.01)',
+                            boxShadow: (theme) => theme.palette.mode === 'dark'
+                              ? '0 4px 12px rgba(102, 126, 234, 0.2)'
+                              : '0 4px 12px rgba(102, 126, 234, 0.15)',
+                            '& td': {
+                              color: (theme) => theme.palette.mode === 'dark' ? '#ffffff' : '#1a202c',
+                            }
+                          },
+                          cursor: 'pointer',
                         }}>
                           {headers.map((header, cellIndex) => {
                             const cellValue = String(row[header] === undefined || row[header] === null ? '' : row[header]);
@@ -385,15 +504,33 @@ const JsonCodeBlockRenderer = ({ node, inline, className, children, ...props }) 
                               header.toLowerCase().includes('mhz') ||
                               header.toLowerCase().includes('cpus')
                             );
-                            
+
                             // Host columns should be left-aligned
                             const isHostColumn = header.toLowerCase() === 'host';
                             
                             return (
                               <TableCell key={cellIndex} sx={{
-                                ...(cellIndex === 0 && { fontWeight: 500 }),
+                                ...(cellIndex === 0 && { 
+                                  fontWeight: 600,
+                                  color: (theme) => theme.palette.mode === 'dark' ? '#a78bfa' : '#6366f1',
+                                }),
                                 textAlign: isNumeric ? 'center' : 'left',
                                 paddingLeft: (isNumeric || (!isHostColumn && cellIndex === 0)) ? 0 : 2,
+                                padding: '14px 12px',
+                                fontSize: '0.8125rem',
+                                fontFamily: '"Noto Sans", "Noto Sans", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif',
+                                color: (theme) => theme.palette.mode === 'dark' ? '#e2e8f0' : '#4a5568',
+                                transition: 'all 0.2s ease',
+                                position: 'relative',
+                                WebkitFontSmoothing: 'antialiased',
+                                MozOsxFontSmoothing: 'grayscale',
+                                lineHeight: 1.5,
+                                // Special styling for numeric values
+                                ...(isNumeric && {
+                                  fontFamily: '"SF Mono", Monaco, "Cascadia Code", "Roboto Mono", Consolas, "Courier New", monospace',
+                                  fontWeight: 500,
+                                  color: (theme) => theme.palette.mode === 'dark' ? '#60a5fa' : '#3b82f6',
+                                }),
                                 // Truncate very long text
                                 ...(cellValue.length > 50 && {
                                   maxWidth: '300px',
@@ -638,384 +775,49 @@ const FilePreview = ({ selectedFile }) => {
                 key={selectedFile ? selectedFile.name : 'default-key'}
                 remarkPlugins={[remarkGfm]}
                 components={{
-                  table: ({ node, ...props }) => (
-                    <Box sx={{
-                      width: '100%',
-                      margin: '12px 0',
-                      overflow: 'auto',
-                      '& table': {
-                        borderCollapse: 'collapse',
-                        width: '100%',
-                        fontSize: '0.9rem',
-                        border: isDark ? '1px solid rgba(255, 255, 255, 0.1)' : '1px solid rgba(0, 0, 0, 0.1)',
-                        boxShadow: '0 2px 5px rgba(0, 0, 0, 0.1)',
-                        borderRadius: '4px',
-                        overflow: 'hidden',
-                      }
-                    }}>
-                      <table {...props} />
-                    </Box>
-                  ),
-                  thead: ({ node, ...props }) => (
-                    <thead style={{
-                      backgroundColor: isDark ? 'rgba(255, 255, 255, 0.15)' : 'rgba(25, 118, 210, 0.12)',
-                    }} {...props} />
-                  ),
-                  th: ({ node, ...props }) => (
-                    <th style={{
-                      padding: '10px 12px',
-                      textAlign: 'center',
-                      fontWeight: 'bold',
-                      color: isDark ? 'white' : '#1976d2',
-                      borderBottom: isDark ? '2px solid rgba(255, 255, 255, 0.2)' : '2px solid #1976d2',
-                      borderRight: isDark ? '1px solid rgba(255, 255, 255, 0.1)' : '1px solid rgba(0, 0, 0, 0.08)',
-                    }} {...props} />
-                  ),
-                  tr: ({ node, index, ...props }) => {
-                    // Apply different styling to even rows for zebra striping
-                    const isEven = index % 2 === 0;
-                    return (
-                      <tr style={{
-                        backgroundColor: isEven 
-                          ? (isDark ? 'rgba(255, 255, 255, 0.03)' : 'rgba(0, 0, 0, 0.02)') 
-                          : 'transparent',
-                        '&:hover': {
-                          backgroundColor: isDark ? 'rgba(255, 255, 255, 0.07)' : 'rgba(0, 0, 0, 0.04)',
-                        },
-                      }} {...props} />
-                    );
-                  },
-                  td: ({ node, ...props }) => (
-                    <td style={{
-                      padding: '8px 12px',
-                      borderBottom: isDark ? '1px solid rgba(255, 255, 255, 0.05)' : '1px solid rgba(0, 0, 0, 0.05)',
-                      textAlign: 'center',
-                      borderRight: isDark ? '1px solid rgba(255, 255, 255, 0.05)' : '1px solid rgba(0, 0, 0, 0.05)',
-                      wordBreak: 'break-word',
-                      overflowWrap: 'break-word',
-                      maxWidth: '400px',
-                    }} {...props} />
-                  ),
-                  h1: ({ children }) => (
-                    <Typography 
-                      variant="h4" 
-                      component="h1" 
-                      gutterBottom 
-                      sx={{ 
-                        fontWeight: 700, 
-                        color: 'primary.main',
-                        fontSize: '1.6rem',
-                        letterSpacing: '-0.01em',
-                        mt: 2,
-                        mb: 2,
-                        pb: 1.5,
-                        borderBottom: isDark ? '1px solid rgba(255, 255, 255, 0.1)' : '1px solid rgba(0, 0, 0, 0.1)'
-                      }}
-                    >
-                      {children}
-                    </Typography>
-                  ),
-                  h2: ({ children }) => (
-                    <Typography 
-                      variant="h5" 
-                      component="h2" 
-                      gutterBottom 
-                      sx={{ 
-                        fontWeight: 600, 
-                        mt: 3, 
-                        mb: 1.5,
-                        fontSize: '1.25rem',
-                        color: isDark ? 'rgba(246, 130, 61, 0.95)' : '#FF6B3D',
-                        paddingBottom: 0.75,
-                        borderBottom: isDark ? '1px solid rgba(246, 130, 61, 0.3)' : '1px solid rgba(255, 107, 61, 0.2)'
-                      }}
-                    >
-                      {children}
-                    </Typography>
-                  ),
-                  h3: ({ children }) => (
-                    <Typography 
-                      variant="h6" 
-                      component="h3" 
-                      gutterBottom 
-                      sx={{ 
-                        fontWeight: 600, 
-                        mt: 2.5, 
-                        mb: 1,
-                        fontSize: '1.05rem',
-                        color: isDark ? 'rgba(246, 184, 61, 0.95)' : '#D96B00'
-                      }}
-                    >
-                      {children}
-                    </Typography>
-                  ),
-                  h1: ({ children }) => (
-                    <Typography 
-                      variant="h4" 
-                      component="h1" 
-                      gutterBottom 
-                      sx={{ 
-                        fontWeight: 700, 
-                        mt: 4, 
-                        mb: 2,
-                        fontSize: '1.75rem',
-                        color: isDark ? 'primary.light' : 'primary.dark'
-                      }}
-                    >
-                      {children}
-                    </Typography>
-                  ),
-                  h2: ({ children }) => (
-                    <Typography 
-                      variant="h5" 
-                      component="h2" 
-                      gutterBottom 
-                      sx={{ 
-                        fontWeight: 600, 
-                        mt: 3, 
-                        mb: 1.5,
-                        fontSize: '1.4rem',
-                        color: isDark ? 'secondary.light' : 'secondary.dark'
-                      }}
-                    >
-                      {children}
-                    </Typography>
-                  ),
-                  em: ({ children }) => (
-                    <Typography 
-                      component="em" 
-                      sx={{ 
-                        fontStyle: 'italic',
-                        color: isDark ? 'info.light' : 'info.dark'
-                      }}
-                    >
-                      {children}
-                    </Typography>
-                  ),
-                  p: ({ children }) => (
-                    <Typography 
-                      variant="body1" 
-                      paragraph 
-                      sx={{ 
-                        lineHeight: 1.6,
-                        mb: 1.75,
-                        fontSize: '0.925rem',
-                        letterSpacing: '0.01em'
-                      }}
-                    >
-                      {children}
-                    </Typography>
-                  ),
-                  ul: ({ children }) => (
-                    <Box 
-                      component="ul" 
-                      sx={{ 
-                        pl: 4, 
-                        mb: 3,
-                        mt: 1.5
-                      }}
-                    >
-                      {children}
-                    </Box>
-                  ),
-                  li: ({ children }) => (
-                    <Typography 
-                      component="li" 
-                      variant="body1" 
-                      sx={{ 
-                        mb: 0.9, 
-                        lineHeight: 1.5,
-                        fontSize: '0.925rem',
-                        position: 'relative',
-                        '&::before': {
-                          content: '"\u2022"',
-                          position: 'absolute',
-                          left: -18,
-                          color: 'primary.main',
-                          fontWeight: 'bold'
-                        }
-                      }}
-                    >
-                      {children}
-                    </Typography>
-                  ),
-                  strong: ({ children }) => (
-                    <Typography 
-                      component="strong" 
-                      sx={{ 
-                        fontWeight: 700,
-                        color: isDark ? 'primary.light' : 'primary.dark'
-                      }}
-                    >
-                      {children}
-                    </Typography>
-                  ),
-                  // Custom component to style and wrap findings sections
-                  blockquote: ({ children }) => {
-                    // Try to determine if this is a finding block
-                    const childText = children?.toString().toLowerCase() || '';
-                    
-                    // Detect severity level based on content
-                    let severityColor = 'rgba(25, 118, 210, 0.15)';
-                    let borderColor = 'rgba(25, 118, 210, 0.5)';
-                    let icon = null;
-                    let severityText = '';
-                    
-                    if (childText.includes('critical') || childText.includes('error') || childText.includes('high priority')) {
-                      severityColor = isDark ? 'rgba(244, 67, 54, 0.15)' : 'rgba(244, 67, 54, 0.08)';
-                      borderColor = 'rgba(244, 67, 54, 0.5)';
-                      severityText = 'CRITICAL';
-                      icon = '🔴';
-                    } else if (childText.includes('warning') || childText.includes('moderate') || childText.includes('medium priority')) {
-                      severityColor = isDark ? 'rgba(255, 152, 0, 0.15)' : 'rgba(255, 152, 0, 0.08)';
-                      borderColor = 'rgba(255, 152, 0, 0.5)';
-                      severityText = 'WARNING';
-                      icon = '🟠';
-                    } else if (childText.includes('info') || childText.includes('note') || childText.includes('low priority')) {
-                      severityColor = isDark ? 'rgba(3, 169, 244, 0.15)' : 'rgba(3, 169, 244, 0.08)';
-                      borderColor = 'rgba(3, 169, 244, 0.5)';
-                      severityText = 'INFO';
-                      icon = 'ℹ️';
-                    }
-                    
-                    return (
-                      <Box sx={{
-                        backgroundColor: severityColor,
-                        borderLeft: `4px solid ${borderColor}`,
-                        borderRadius: 1,
-                        p: 1.5,
-                        mb: 2,
-                        mt: 2,
-                        boxShadow: isDark ? '0 3px 6px rgba(0, 0, 0, 0.3)' : '0 1px 4px rgba(0, 0, 0, 0.1)',
-                      }}>
-                        {severityText && (
-                          <Box sx={{ 
-                            display: 'flex', 
-                            alignItems: 'center', 
-                            mb: 0.75,
-                            pb: 0.75,
-                            borderBottom: `1px solid ${borderColor}`
-                          }}>
-                            {icon && (
-                              <Typography sx={{ mr: 1, fontSize: '1.2rem' }}>
-                                {icon}
-                              </Typography>
-                            )}
-                            <Typography 
-                              variant="subtitle1" 
-                              sx={{ 
-                                fontWeight: 600,
-                                letterSpacing: '0.05em',
-                                fontSize: '0.875rem'
-                              }}
-                            >
-                              {severityText}
-                            </Typography>
-                          </Box>
-                        )}
-                        {children}
-                      </Box>
-                    );
-                  },
-                  
-                  // Style for findings/recommendations
-                  h4: ({ children }) => {
-                    const headingText = children?.toString() || '';
-                    let iconSymbol = null;
-                    let headingColor = 'text.primary';
-                    
-                    // Apply custom styling based on heading content
-                    if (headingText.toLowerCase().includes('finding')) {
-                      iconSymbol = '🔍';
-                      headingColor = isDark ? '#FF5722' : '#D84315';
-                    } else if (headingText.toLowerCase().includes('recommendation')) {
-                      iconSymbol = '💡';
-                      headingColor = isDark ? '#4CAF50' : '#2E7D32';
-                    } else if (headingText.toLowerCase().includes('impact')) {
-                      iconSymbol = '⚠️';
-                      headingColor = isDark ? '#FF9800' : '#ED6C02';
-                    } else if (headingText.toLowerCase().includes('description')) {
-                      iconSymbol = '📝';
-                      headingColor = isDark ? '#03A9F4' : '#0277BD';
-                    }
-                    
-                    return (
-                      <Typography 
-                        variant="subtitle1" 
-                        component="h4" 
-                        sx={{ 
-                          fontWeight: 600, 
-                          color: headingColor,
-                          display: 'flex',
-                          alignItems: 'center',
-                          mb: 1,
-                          mt: 1.5,
-                          fontSize: '0.95rem'
-                        }}
-                      >
-                        {iconSymbol && (
-                          <Typography component="span" sx={{ mr: 1 }}>
-                            {iconSymbol}
-                          </Typography>
-                        )}
-                        {children}
-                      </Typography>
-                    );
-                  },
-                  
-                  // Highlighted description lists for key-value pairs
-                  dl: ({ children }) => (
-                    <Box sx={{
-                      backgroundColor: isDark ? 'rgba(255, 255, 255, 0.05)' : 'rgba(0, 0, 0, 0.02)',
-                      borderRadius: 1,
-                      p: 2,
-                      mb: 3,
-                      border: isDark ? '1px solid rgba(255, 255, 255, 0.1)' : '1px solid rgba(0, 0, 0, 0.05)',
-                    }}>
-                      {children}
-                    </Box>
-                  ),
-                  
-                  dt: ({ children }) => (
-                    <Typography 
-                      component="dt" 
-                      sx={{ 
-                        fontWeight: 600, 
-                        color: isDark ? 'primary.light' : 'primary.dark',
-                        mb: 0.5
-                      }}
-                    >
-                      {children}
-                    </Typography>
-                  ),
-                  
-                  dd: ({ children }) => (
-                    <Typography 
-                      component="dd" 
-                      sx={{ 
-                        ml: 2, 
-                        mb: 1.5,
-                        color: 'text.secondary'
-                      }}
-                    >
-                      {children}
-                    </Typography>
-                  ),
-                  
-                  // Enhanced table styling
                   table: ({ children }) => (
                     <Box sx={{ 
                       overflowX: 'auto', 
                       mb: 3,
                       mt: 2,
+                      borderRadius: 3,
+                      overflow: 'hidden',
+                      background: isDark 
+                        ? 'linear-gradient(145deg, #1a1a1a 0%, #0a0a0a 100%)'
+                        : 'linear-gradient(145deg, #ffffff 0%, #f5f5f5 100%)',
+                      boxShadow: isDark
+                        ? '0 8px 32px 0 rgba(0, 0, 0, 0.5), 0 2px 8px 0 rgba(0, 0, 0, 0.3)'
+                        : '0 8px 32px 0 rgba(31, 38, 135, 0.15), 0 2px 8px 0 rgba(31, 38, 135, 0.08)',
+                      border: `1px solid ${isDark ? 'rgba(255, 255, 255, 0.1)' : 'rgba(0, 0, 0, 0.08)'}`,
+                      transition: 'all 0.3s cubic-bezier(0.4, 0, 0.2, 1)',
+                      '&:hover': {
+                        transform: 'translateY(-2px)',
+                        boxShadow: isDark
+                          ? '0 12px 40px 0 rgba(0, 0, 0, 0.6), 0 4px 12px 0 rgba(0, 0, 0, 0.4)'
+                          : '0 12px 40px 0 rgba(31, 38, 135, 0.2), 0 4px 12px 0 rgba(31, 38, 135, 0.1)',
+                      },
                       '& table': {
                         width: '100%',
                         borderCollapse: 'separate',
                         borderSpacing: 0,
-                        borderRadius: 1,
-                        overflow: 'hidden',
-                        border: isDark ? '1px solid rgba(255, 255, 255, 0.1)' : '1px solid rgba(0, 0, 0, 0.1)',
-                        boxShadow: isDark ? '0 4px 8px rgba(0, 0, 0, 0.5)' : '0 2px 8px rgba(0, 0, 0, 0.1)',
+                        fontSize: '0.875rem',
+                        fontFamily: '"Noto Sans", "Noto Sans", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif',
+                        WebkitFontSmoothing: 'antialiased',
+                        MozOsxFontSmoothing: 'grayscale',
+                      },
+                      '&::-webkit-scrollbar': {
+                        height: '10px',
+                      },
+                      '&::-webkit-scrollbar-track': {
+                        background: isDark ? '#1a1a1a' : '#f5f5f5',
+                        borderRadius: '5px',
+                      },
+                      '&::-webkit-scrollbar-thumb': {
+                        background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
+                        borderRadius: '5px',
+                        '&:hover': {
+                          background: 'linear-gradient(135deg, #764ba2 0%, #667eea 100%)',
+                        }
                       }
                     }}>
                       <table>{children}</table>
@@ -1023,37 +825,61 @@ const FilePreview = ({ selectedFile }) => {
                   ),
                   thead: ({ children }) => (
                     <thead style={{ 
-                      backgroundColor: isDark ? 'rgba(97, 97, 255, 0.15)' : 'rgba(63, 81, 181, 0.08)', 
-                      borderBottom: isDark ? '1px solid rgba(255, 255, 255, 0.2)' : '1px solid rgba(0, 0, 0, 0.2)', 
+                      background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
                     }}>
                       {children}
                     </thead>
-                  ),
-                  tbody: ({ children }) => (
-                    <tbody>{children}</tbody>
                   ),
                   tr: ({ children, index }) => {
                     // Determine if this is an odd or even row
                     const isEven = index % 2 === 0;
                     return (
                       <tr style={{ 
-                        borderBottom: isDark ? '1px solid rgba(255, 255, 255, 0.05)' : '1px solid rgba(0, 0, 0, 0.05)',
+                        transition: 'all 0.2s cubic-bezier(0.4, 0, 0.2, 1)',
                         backgroundColor: isEven ? 
-                          (isDark ? 'rgba(255, 255, 255, 0.02)' : 'rgba(0, 0, 0, 0.01)') : 
-                          'transparent'
-                      }}>
+                          (isDark ? 'rgba(102, 126, 234, 0.03)' : 'rgba(102, 126, 234, 0.02)') : 
+                          'transparent',
+                        cursor: 'pointer',
+                      }}
+                      onMouseEnter={(e) => {
+                        e.currentTarget.style.backgroundColor = isDark 
+                          ? 'rgba(102, 126, 234, 0.12)' 
+                          : 'rgba(102, 126, 234, 0.08)';
+                        e.currentTarget.style.transform = 'scale(1.01)';
+                        e.currentTarget.style.boxShadow = isDark
+                          ? '0 4px 12px rgba(102, 126, 234, 0.2)'
+                          : '0 4px 12px rgba(102, 126, 234, 0.15)';
+                      }}
+                      onMouseLeave={(e) => {
+                        e.currentTarget.style.backgroundColor = isEven ? 
+                          (isDark ? 'rgba(102, 126, 234, 0.03)' : 'rgba(102, 126, 234, 0.02)') : 
+                          'transparent';
+                        e.currentTarget.style.transform = 'scale(1)';
+                        e.currentTarget.style.boxShadow = 'none';
+                      }}
+                      >
                         {children}
                       </tr>
                     );
                   },
                   th: ({ children }) => (
                     <th style={{ 
-                      padding: '12px 16px', 
-                      textAlign: 'left', 
+                      padding: '16px 12px', 
+                      textAlign: 'center', 
                       fontWeight: 600,
-                      fontSize: '0.875rem',
-                      color: isDark ? 'rgba(255, 255, 255, 0.95)' : 'rgba(0, 0, 0, 0.95)',
-                      whiteSpace: 'nowrap'
+                      fontSize: '0.8125rem',
+                      fontFamily: '"Noto Sans", "Noto Sans", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif',
+                      color: '#ffffff',
+                      textTransform: 'uppercase',
+                      letterSpacing: '0.08em',
+                      position: 'relative',
+                      borderBottom: '2px solid transparent',
+                      borderImage: 'linear-gradient(90deg, #667eea 0%, #764ba2 100%) 1',
+                      borderRight: '1px solid rgba(255, 255, 255, 0.1)',
+                      whiteSpace: 'nowrap',
+                      textShadow: '0 1px 2px rgba(0,0,0,0.3)',
+                      WebkitFontSmoothing: 'antialiased',
+                      MozOsxFontSmoothing: 'grayscale',
                     }}>
                       {children}
                     </th>
@@ -1063,13 +889,23 @@ const FilePreview = ({ selectedFile }) => {
                     const content = children?.toString() || '';
                     const hasStatusIcon = content.includes('✅') || content.includes('❌') || content.includes('⚠️');
                     
-                    let textColor = isDark ? 'rgba(255, 255, 255, 0.85)' : 'rgba(0, 0, 0, 0.85)';
+                    // Check if this is the first cell (usually contains primary identifier)
+                    const isFirstCell = false; // Can't determine position in ReactMarkdown context
+                    
+                    // Check if content is numeric
+                    const isNumeric = /^[\d.,\s%]+$/.test(content) || 
+                                    content.includes('ms') || 
+                                    content.includes('GB') ||
+                                    content.includes('MHz');
+                    
+                    let textColor = isDark ? '#e2e8f0' : '#4a5568';
                     let fontWeight = '400';
-                    let fontSize = '0.875rem';
+                    let fontSize = '0.8125rem';
+                    let fontFamily = '"Noto Sans", "Noto Sans", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif';
                     
                     if (hasStatusIcon) {
                       fontWeight = '600';
-                      fontSize = '1rem';
+                      fontSize = '0.9375rem';
                       
                       if (content.includes('✅')) {
                         textColor = '#4CAF50'; // Green for success
@@ -1078,22 +914,181 @@ const FilePreview = ({ selectedFile }) => {
                       } else if (content.includes('⚠️')) {
                         textColor = '#FF9800'; // Orange for warning
                       }
+                    } else if (isNumeric) {
+                      fontFamily = '"SF Mono", Monaco, "Cascadia Code", "Roboto Mono", Consolas, "Courier New", monospace';
+                      fontWeight = '500';
+                      textColor = isDark ? '#60a5fa' : '#3b82f6';
                     }
                     
                     return (
                       <td style={{ 
-                        padding: '10px 16px',
+                        padding: '14px 12px',
                         fontSize: fontSize,
                         fontWeight: fontWeight,
+                        fontFamily: fontFamily,
                         color: textColor,
                         verticalAlign: 'middle',
-                        textAlign: hasStatusIcon ? 'center' : 'left'
+                        textAlign: hasStatusIcon ? 'center' : 'left',
+                        borderBottom: '1px solid rgba(102, 126, 234, 0.06)',
+                        borderRight: '1px solid rgba(102, 126, 234, 0.04)',
+                        transition: 'background-color 0.2s ease, color 0.2s ease',
+                        WebkitFontSmoothing: 'antialiased',
+                        MozOsxFontSmoothing: 'grayscale',
+                        lineHeight: 1.5,
                       }}>
                         {children}
                       </td>
                     );
                   },
+                  tbody: ({ children }) => (
+                    <tbody style={{
+                      backgroundColor: 'transparent',
+                    }}>
+                      {children}
+                    </tbody>
+                  ),
                   code: JsonCodeBlockRenderer,
+                  h1: ({ children }) => (
+                    <Typography 
+                      variant="h4" 
+                      sx={{ 
+                        mt: 3, 
+                        mb: 2, 
+                        fontWeight: 600,
+                        fontFamily: '"Noto Sans", "Noto Sans", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif',
+                        fontSize: '1.75rem',
+                        letterSpacing: '-0.02em',
+                        color: isDark ? '#f3f4f6' : '#111827',
+                        WebkitFontSmoothing: 'antialiased',
+                        MozOsxFontSmoothing: 'grayscale',
+                      }}
+                    >
+                      {children}
+                    </Typography>
+                  ),
+                  h2: ({ children }) => (
+                    <Typography 
+                      variant="h5" 
+                      sx={{ 
+                        mt: 2.5, 
+                        mb: 1.5, 
+                        fontWeight: 600,
+                        fontFamily: '"Noto Sans", "Noto Sans", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif',
+                        fontSize: '1.375rem',
+                        letterSpacing: '-0.01em',
+                        color: isDark ? '#e5e7eb' : '#1f2937',
+                        WebkitFontSmoothing: 'antialiased',
+                        MozOsxFontSmoothing: 'grayscale',
+                      }}
+                    >
+                      {children}
+                    </Typography>
+                  ),
+                  h3: ({ children }) => (
+                    <Typography 
+                      variant="h6" 
+                      sx={{ 
+                        mt: 2, 
+                        mb: 1, 
+                        fontWeight: 600,
+                        fontFamily: '"Noto Sans", "Noto Sans", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif',
+                        fontSize: '1.125rem',
+                        letterSpacing: '0',
+                        color: isDark ? '#d1d5db' : '#374151',
+                        WebkitFontSmoothing: 'antialiased',
+                        MozOsxFontSmoothing: 'grayscale',
+                      }}
+                    >
+                      {children}
+                    </Typography>
+                  ),
+                  p: ({ children }) => (
+                    <Typography 
+                      paragraph 
+                      sx={{ 
+                        mb: 1.5,
+                        fontFamily: '"Noto Sans", "Noto Sans", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif',
+                        fontSize: '0.85rem',
+                        lineHeight: 1.7,
+                        color: isDark ? '#d1d5db' : '#4b5563',
+                        WebkitFontSmoothing: 'antialiased',
+                        MozOsxFontSmoothing: 'grayscale',
+                      }}
+                    >
+                      {children}
+                    </Typography>
+                  ),
+                  ul: ({ children }) => (
+                    <Box component="ul" sx={{ 
+                      mb: 2, 
+                      pl: 3,
+                      '& li': {
+                        fontFamily: '"Noto Sans", "Noto Sans", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif',
+                        fontSize: '0.85rem',
+                        lineHeight: 1.7,
+                        color: isDark ? '#d1d5db' : '#4b5563',
+                        WebkitFontSmoothing: 'antialiased',
+                        MozOsxFontSmoothing: 'grayscale',
+                      }
+                    }}>
+                      {children}
+                    </Box>
+                  ),
+                  ol: ({ children }) => (
+                    <Box component="ol" sx={{ 
+                      mb: 2, 
+                      pl: 3,
+                      '& li': {
+                        fontFamily: '"Noto Sans", "Noto Sans", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif',
+                        fontSize: '0.85rem',
+                        lineHeight: 1.7,
+                        color: isDark ? '#d1d5db' : '#4b5563',
+                        WebkitFontSmoothing: 'antialiased',
+                        MozOsxFontSmoothing: 'grayscale',
+                      }
+                    }}>
+                      {children}
+                    </Box>
+                  ),
+                  li: ({ children }) => (
+                    <Box component="li" sx={{ 
+                      mb: 0.5,
+                      '&::marker': {
+                        color: isDark ? '#9ca3af' : '#6b7280',
+                      }
+                    }}>
+                      {children}
+                    </Box>
+                  ),
+                  strong: ({ children }) => (
+                    <Box 
+                      component="strong" 
+                      sx={{ 
+                        fontWeight: 600,
+                        color: isDark ? '#f3f4f6' : '#111827',
+                      }}
+                    >
+                      {children}
+                    </Box>
+                  ),
+                  blockquote: ({ children }) => (
+                    <Box 
+                      component="blockquote" 
+                      sx={{ 
+                        borderLeft: '4px solid',
+                        borderColor: 'primary.main',
+                        pl: 2,
+                        ml: 0,
+                        my: 2,
+                        fontStyle: 'italic',
+                        color: isDark ? '#9ca3af' : '#6b7280',
+                        fontFamily: '"Noto Sans", "Noto Sans", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif',
+                        fontSize: '0.85rem',
+                      }}
+                    >
+                      {children}
+                    </Box>
+                  ),
                   // ... other custom components like h1, p, table etc. should remain here
                 }}
               >

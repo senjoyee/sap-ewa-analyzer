@@ -109,30 +109,65 @@ const AppContent = () => {
             [`& .MuiDrawer-paper`]: {
               width: sidebarCollapsed ? collapsedDrawerWidth : drawerWidth,
               boxSizing: 'border-box',
-              background: 'linear-gradient(180deg, #f5f5f5 0%, #e0e0e0 100%)',
-              borderRight: '1px solid rgba(0, 0, 0, 0.05)',
+              background: '#ffffff',
+              borderRight: '1px solid #e0e0e0',
               transition: 'width 225ms cubic-bezier(0.4, 0, 0.6, 1) 0ms',
               overflow: 'hidden',
+              boxShadow: '2px 0 8px rgba(0, 0, 0, 0.05)',
             },
           }}
         >
           <Toolbar /> {/* Spacer to offset content below AppBar */}
           {/* Collapse button */}
-          <Box sx={{ display: 'flex', justifyContent: 'flex-end', pr: 1, mt: 1 }}>
+          <Box sx={{ 
+            display: 'flex', 
+            justifyContent: 'space-between', 
+            alignItems: 'center',
+            px: 2, 
+            pt: 2,
+            pb: 1
+          }}>
+            <Typography variant="h6" sx={{ 
+              fontWeight: 600,
+              color: '#1a1a1a',
+              fontSize: '1.1rem'
+            }}>
+              File Management
+            </Typography>
             <IconButton
               onClick={() => setSidebarCollapsed(true)}
               size="small"
               sx={{
-                backgroundColor: 'rgba(0,0,0,0.05)',
+                color: '#666',
                 '&:hover': {
-                  backgroundColor: 'rgba(0,0,0,0.1)',
+                  backgroundColor: 'rgba(0,0,0,0.04)',
                 }
               }}
             >
-              <ChevronLeftIcon />
+              <ChevronLeftIcon fontSize="small" />
             </IconButton>
           </Box>
-          <Box sx={{ overflow: 'auto', padding: 2, display: 'flex', flexDirection: 'column', gap: 2 }}>
+          <Box sx={{ 
+            overflow: 'auto', 
+            px: 2,
+            pb: 2,
+            display: 'flex', 
+            flexDirection: 'column', 
+            gap: 3,
+            '&::-webkit-scrollbar': {
+              width: '6px',
+            },
+            '&::-webkit-scrollbar-track': {
+              background: '#f1f1f1',
+            },
+            '&::-webkit-scrollbar-thumb': {
+              background: '#c1c1c1',
+              borderRadius: '3px',
+              '&:hover': {
+                background: '#a8a8a8',
+              },
+            },
+          }}>
             <FileUpload onUploadSuccess={handleUploadSuccess} />
             <FileList 
               onFileSelect={setSelectedFileForPreview} 

@@ -209,7 +209,7 @@ const FileUpload = ({ onUploadSuccess }) => {
         ));
 
         if (response.ok) {
-          const result = await response.json();
+          await response.json();
           setUploadingFilesInfo(prev => prev.map((f, index) => 
             index === i ? { ...f, status: 'success' } : f
           ));
@@ -250,22 +250,85 @@ const FileUpload = ({ onUploadSuccess }) => {
   };
 
   return (
-    <Box sx={{ mb: 2 }}>
-      <input
-        type="file"
-        multiple
-        ref={fileInputRef}
-        onChange={handleFilesSelected}
-        style={{ display: 'none' }}
-        accept="*" // Or specify types like ".pdf,.txt,.jpg"
-      />
-      
+    <Paper 
+      elevation={0}
+      sx={{ 
+        p: 2.5,
+        background: '#f8f9fa',
+        border: '2px dashed #e0e0e0',
+        borderRadius: 2,
+        transition: 'all 0.3s ease',
+        '&:hover': {
+          borderColor: '#2193b0',
+          background: '#f0f7ff',
+        }
+      }}
+    >
+      <Box sx={{ textAlign: 'center' }}>
+        <CloudUploadIcon sx={{ 
+          fontSize: 48, 
+          color: '#2193b0',
+          mb: 1,
+          opacity: 0.8
+        }} />
+        <Typography 
+          variant="h6" 
+          sx={{ 
+            mb: 0.5,
+            fontWeight: 500,
+            color: '#333'
+          }}
+        >
+          Upload Files
+        </Typography>
+        <Typography 
+          variant="body2" 
+          sx={{ 
+            color: '#666',
+            mb: 2
+          }}
+        >
+          Drag and drop files here or click to browse
+        </Typography>
+        
+        <input
+          ref={fileInputRef}
+          type="file"
+          multiple
+          onChange={handleFilesSelected}
+          style={{ display: 'none' }}
+          accept="*"
+        />
+        
+        <Button
+          variant="contained"
+          startIcon={<AddIcon />}
+          onClick={handleAddClick}
+          sx={{
+            background: 'linear-gradient(45deg, #2193b0 30%, #6dd5ed 90%)',
+            color: 'white',
+            px: 3,
+            py: 1,
+            borderRadius: 2,
+            textTransform: 'none',
+            fontWeight: 500,
+            boxShadow: '0 3px 5px 2px rgba(33, 147, 176, .3)',
+            '&:hover': {
+              background: 'linear-gradient(45deg, #1e7e95 30%, #5bc0d8 90%)',
+              boxShadow: '0 4px 8px 3px rgba(33, 147, 176, .4)',
+            }
+          }}
+        >
+          Browse Files
+        </Button>
+      </Box>
+
       {/* Customer name input fields - shown only after file selection */}
       {showCustomerFields && filesWithCustomers.length > 0 && (
         <Paper 
           elevation={0} 
           sx={{ 
-            p: 2, 
+            p: 2,
             mb: 2,
             bgcolor: isDark ? 'rgba(255, 255, 255, 0.05)' : 'rgba(0, 0, 0, 0.02)', 
             borderRadius: 2,
@@ -346,43 +409,6 @@ const FileUpload = ({ onUploadSuccess }) => {
               startIcon={<CloudUploadIcon />}
             >
               Upload Files ({filesWithCustomers.length})
-            </Button>
-          </Box>
-        </Paper>
-      )}
-
-      {/* File upload area - hidden when customer fields are shown */}
-      {!showCustomerFields && (
-        <Paper 
-          elevation={0} 
-          sx={{ 
-            p: 2, 
-            bgcolor: isDark ? 'rgba(255, 255, 255, 0.03)' : 'rgba(0, 0, 0, 0.02)', 
-            border: isDark ? '1px dashed rgba(255, 255, 255, 0.2)' : '1px dashed rgba(0, 0, 0, 0.2)',
-            borderRadius: 2,
-            textAlign: 'center',
-            transition: 'all 0.2s',
-            '&:hover': {
-              bgcolor: isDark ? 'rgba(255, 255, 255, 0.05)' : 'rgba(0, 0, 0, 0.04)',
-              borderColor: 'primary.main'
-            }
-          }}
-        >
-          <Box sx={{ py: 1.5, display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
-            <CloudUploadIcon sx={{ fontSize: 40, color: 'primary.main', mb: 1 }} />
-            <Typography variant="h6" gutterBottom sx={{ fontSize: '1rem' }}>
-              Upload Files
-            </Typography>
-            <Typography variant="body2" color="text.secondary" sx={{ mb: 1.5 }}>
-              Drag and drop files here or click to browse
-            </Typography>
-            <Button
-              variant="contained"
-              startIcon={<AddIcon />}
-              onClick={handleAddClick}
-              size="small"
-            >
-              Browse Files
             </Button>
           </Box>
         </Paper>
@@ -473,7 +499,7 @@ const FileUpload = ({ onUploadSuccess }) => {
           ))}
         </Box>
       )}
-    </Box>
+    </Paper>
   );
 };
 
