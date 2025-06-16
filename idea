@@ -1,0 +1,30 @@
+Below are ideas that fit naturally on top of your existing “convert → analyze → save” pipeline. I’ve ordered them roughly by implementation size and how much they touch your current code.
+
+Small-impact (quick wins) • Progress & status API: expose the same polling information you already gather (status, progress) via a simple REST endpoint so the UI can show real-time conversion and analysis progress.
+• Retry / back-off wrapper around 
+call_openai
+ and blob downloads (e.g., 3 retries with exponential back-off) to harden against transient network hiccups.
+• Metadata tagging: when you save _AI.md, also set blob metadata (e.g., analysis_completed_at, analysis_version) so downstream systems can query results efficiently.
+• Configurable max tokens & model via env vars or parameters instead of constants, letting ops switch models without redeploying.
+
+Medium-impact • Parallel / batch processing: accept a list of blob names and run 
+process_and_analyze_ewa
+ concurrently with asyncio.gather, throttled to N concurrent tasks. Great for clearing a backlog.
+• Fine-grained summarization: run the summary prompt section-by-section (e.g., one message per EWA chapter) and then stitch an overall summary. Improves quality on large documents.
+• Notification hook: publish a message (Service Bus / Event Grid / webhook) when analysis finishes or fails so other services or Teams/Slack can react.
+• Prompt versioning: keep prompt files in prompts/<name>/v1.md, v2.md etc. and embed the version used in the saved blob metadata; helps audit why two runs differ.
+
+Large-impact (architectural) • Structured findings extraction: revive or redesign the metrics/parameters step so you emit structured JSON alongside the markdown; store it in Cosmos DB or as a sibling blob. Enables dashboards.
+• Embedding & semantic search: generate embeddings of the summary and store them in a vector DB (Azure AI Search). Users could then ask cross-report questions (“show past EWA reports with similar HANA issues”).
+• Multi-language support: detect document language, select a language-specific prompt and model, and optionally translate results back to English.
+• Orchestrator as Azure Function / Durable Functions: move the polling loop into a Durable Function with sub-orchestrations for conversion and analysis, gaining built-in timeout, retry, and state persistence.
+• Role-based access & PII redaction: before uploading results, run a PII detector, mask sensitive data, and tag the blob with required ACLs.
+
+Questions before you choose a direction
+
+Is the priority more on user experience (progress, notifications) or deeper analytics (metrics, embeddings)?
+Do you anticipate high parallel load where concurrency & throttling matter?
+Are there compliance constraints (PII, audit trails) that influence which features are most urgent?
+Let me know your answers and I can outline an implementation plan for the features you pick.
+
+Feedback submitted

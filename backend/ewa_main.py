@@ -9,7 +9,6 @@ Key Functionality:
 - File upload and management with Azure Blob Storage
 - Document processing (converting various formats to markdown)
 - AI analysis of SAP EWA reports using Azure OpenAI
-- Extraction of structured metrics and parameters
 - Document chat capabilities with context-aware responses
 - Status tracking for all asynchronous operations
 
@@ -18,15 +17,14 @@ The API is designed to be consumed by a React frontend, with endpoints organized
 """
 
 import os
-from fastapi import FastAPI, UploadFile, File, HTTPException, Form, Depends, Response
+from fastapi import FastAPI, UploadFile, File, HTTPException, Form, Response
 from fastapi.middleware.cors import CORSMiddleware
-from azure.storage.blob import BlobServiceClient, BlobClient, ContainerClient
+from azure.storage.blob import BlobServiceClient
 from dotenv import load_dotenv
 from pydantic import BaseModel
 from converters.document_converter import convert_document_to_markdown, get_conversion_status
-from workflow_orchestrator import execute_ewa_analysis
+from workflow_orchestrator import ewa_orchestrator
 import uvicorn # For running the app
-import os
 import json
 
 # Load environment variables from .env file
@@ -147,11 +145,7 @@ async def list_files():
       * type: File type/extension
       * customerName: Associated customer name from metadata
       * processed: Boolean indicating if the file has been processed
-      * processing: Boolean indicating if processing is in progress
-      * processingProgress: Percentage of processing completed
       * ai_analyzed: Boolean indicating if AI analysis has been performed
-      * has_metrics: Boolean indicating if metrics data is available
-      * has_parameters: Boolean indicating if parameters data is available
     
     Raises:
     - 500 Internal Server Error: If Azure Blob Storage is not properly configured
@@ -170,8 +164,6 @@ async def list_files():
         json_files = {}
         md_files = {}
         ai_analyzed_files = {}  # Track files that have been AI-analyzed
-        metrics_files = {}  # Track files that have metrics
-        parameters_files = {}  # Track files that have parameters
         
         for blob in blob_list:
             name = blob.name.lower()
@@ -180,16 +172,6 @@ async def list_files():
                 base_name = os.path.splitext(blob.name)[0]
                 json_files[base_name] = True
                 print(f"Found JSON file: {blob.name}, base name: {base_name}")
-                
-                # Check if this is a metrics or parameters file
-                if base_name.endswith('_metrics'):
-                    original_base_name = base_name[:-8]  # Remove _metrics
-                    metrics_files[original_base_name] = True
-                    print(f"Found metrics file for: {original_base_name}")
-                elif base_name.endswith('_parameters'):
-                    original_base_name = base_name[:-11]  # Remove _parameters
-                    parameters_files[original_base_name] = True
-                    print(f"Found parameters file for: {original_base_name}")
                     
             elif name.endswith('.md'):
                 # Store the base name (without extension) as key
@@ -236,11 +218,7 @@ async def list_files():
             is_processed = base_name in json_files or base_name in md_files
             # Check if this file has been AI-analyzed
             is_ai_analyzed = base_name in ai_analyzed_files
-            # Check if this file has metrics
-            has_metrics = base_name in metrics_files
-            # Check if this file has parameters
-            has_parameters = base_name in parameters_files
-            print(f"File {blob.name} processed status: {is_processed}, AI analyzed: {is_ai_analyzed}, has metrics: {has_metrics}, has parameters: {has_parameters}")
+            print(f"File {blob.name} processed status: {is_processed}, AI analyzed: {is_ai_analyzed}")
             
             files.append({
                 "name": blob.name, 
@@ -248,9 +226,7 @@ async def list_files():
                 "size": blob.size,
                 "customer_name": customer_name,
                 "processed": is_processed,
-                "ai_analyzed": is_ai_analyzed,
-                "has_metrics": has_metrics,
-                "has_parameters": has_parameters
+                "ai_analyzed": is_ai_analyzed
             })
         
         print(f"Returning {len(files)} files in the list")
@@ -260,20 +236,12 @@ async def list_files():
         raise HTTPException(status_code=500, detail=f"Could not list files: {str(e)}")
 
 
-# Model for analyze request
-class AnalyzeDocumentRequest(BaseModel):
-    blob_name: str
-
-# Model for AI analyze request  
-class AIAnalyzeRequest(BaseModel):
-    blob_name: str
-
-# Model for AI reprocess request
-class AIReprocessRequest(BaseModel):
+# Model for requests that only need a blob_name
+class BlobNameRequest(BaseModel):
     blob_name: str
 
 @app.post("/api/analyze")
-async def analyze_document(request: AnalyzeDocumentRequest):
+async def analyze_document(request: BlobNameRequest):
     """
     Process a document using Azure Document Intelligence.
     
@@ -342,8 +310,61 @@ async def get_document_analysis_status(blob_name: str):
         raise HTTPException(status_code=500, detail=f"Error getting conversion status: {str(e)}")
 
 
+@app.post("/api/process-and-analyze")
+async def process_and_analyze_document_endpoint(request: BlobNameRequest):
+    """
+    Process a document to markdown and then perform AI analysis in a single combined workflow.
+    
+    This endpoint triggers a sequential operation:
+    1. Converts the specified document (PDF, DOCX, DOC) to markdown format.
+    2. If conversion is successful, performs AI analysis on the generated markdown file.
+    
+    The entire operation is blocking from the client's perspective until both steps are complete
+    or an error occurs.
+    
+    Parameters:
+    - request: A ProcessAndAnalyzeRequest object containing:
+      * blob_name: The name of the original file in Azure Blob Storage to process and analyze.
+    
+    Returns:
+    - JSON response with the overall status, including success/failure, messages, and 
+      references to output files (e.g., AI analysis markdown file).
+    
+    Raises:
+    - 404 Not Found: If the specified file doesn't exist at the start of conversion.
+    - 500 Internal Server Error: If any part of the combined workflow fails.
+    """
+    if not blob_service_client: # Ensure blob service is available
+        raise HTTPException(status_code=500, detail="Azure Blob Service client not initialized.")
+
+    try:
+        # The ewa_orchestrator instance is globally available in workflow_orchestrator.py
+        # and execute_ewa_analysis (which uses it) is already imported.
+        # We need to call the new method on the global instance.
+        from workflow_orchestrator import ewa_orchestrator # Ensure direct access if not already structured
+        
+        result = await ewa_orchestrator.process_and_analyze_ewa(request.blob_name)
+        
+        if not result.get("success", False):
+            # If the orchestrator indicates failure, return appropriate HTTP error
+            # The orchestrator should provide a 'message' in its result
+            status_code = result.get("status_code", 500) # Allow orchestrator to suggest status code
+            raise HTTPException(status_code=status_code, detail=result.get('message', 'Combined processing and analysis failed.'))
+        
+        return result # Return the success response from the orchestrator
+
+    except HTTPException as http_exc:
+        # Re-raise HTTPExceptions directly (e.g., from the check above or if orchestrator raises one)
+        raise http_exc
+    except Exception as e:
+        # Catch any other unexpected errors
+        print(f"Error in /api/process-and-analyze endpoint for {request.blob_name}: {str(e)}")
+        # Consider logging the full traceback here: import traceback; traceback.print_exc()
+        raise HTTPException(status_code=500, detail=f"An unexpected error occurred during combined processing and analysis: {str(e)}")
+
+
 @app.post("/api/analyze-ai")
-async def analyze_document_with_ai_endpoint(request: AIAnalyzeRequest):
+async def analyze_document_with_ai_endpoint(request: BlobNameRequest):
     """
     Analyze a processed document using Azure OpenAI GPT-4.1 models.
     
@@ -392,7 +413,7 @@ async def analyze_document_with_ai_endpoint(request: AIAnalyzeRequest):
     
     try:
         # Execute the AI analysis workflow
-        result = await execute_ewa_analysis(markdown_file)
+        result = await ewa_orchestrator.execute_workflow(markdown_file)
         
         # Check if analysis was successful
         if not result.get("success", False):
@@ -411,7 +432,7 @@ async def analyze_document_with_ai_endpoint(request: AIAnalyzeRequest):
 
 
 @app.post("/api/reprocess-ai")
-async def reprocess_document_with_ai(request: AIReprocessRequest):
+async def reprocess_document_with_ai(request: BlobNameRequest):
     """
     Reprocess a document with AI by deleting existing analysis files and running analysis again.
     
@@ -466,7 +487,7 @@ async def reprocess_document_with_ai(request: AIReprocessRequest):
                 print(f"Error deleting AI file {ai_file}: {str(delete_error)}")
         
         # Run the AI analysis again
-        result = await execute_ewa_analysis(blob_name)
+        result = await ewa_orchestrator.execute_workflow(blob_name)
         
         if result.get("error"):
             print(f"Error in AI reprocessing: {result.get('message')}")
@@ -552,129 +573,6 @@ async def download_file(blob_name: str):
         raise HTTPException(status_code=500, detail=error_message)
 
 
-@app.get("/api/metrics/{blob_name}")
-async def get_metrics_data(blob_name: str):
-    """
-    Get structured metrics data extracted from an SAP EWA report.
-    
-    This endpoint retrieves the metrics data that was extracted during AI analysis of an SAP EWA report.
-    The metrics data contains quantitative information about system performance, resource utilization,
-    and other key performance indicators (KPIs) from the report.
-    
-    Parameters:
-    - blob_name: The base name of the file (without extension) for which to retrieve metrics
-    
-    Returns:
-    - JSON response containing structured metrics data with the following format:
-      * metrics: Array of metric objects, each containing:
-        - name: Name of the metric
-        - current: Current value
-        - target: Target or threshold value
-        - status: Status indicator ("success", "warning", or "critical")
-        - category: Category of the metric (e.g., "Performance", "Memory")
-        - description: Description of what the metric measures
-    
-    Raises:
-    - 404 Not Found: If the specified file or metrics data doesn't exist
-    - 500 Internal Server Error: If metrics data retrieval fails
-    """
-    try:
-        if not blob_service_client:
-            raise HTTPException(status_code=500, detail="Azure Blob Service client not initialized")
-        
-        # Construct metrics file name
-        base_name = os.path.splitext(blob_name)[0]
-        metrics_blob_name = f"{base_name}_metrics.json"
-        
-        # Get blob client
-        blob_client = blob_service_client.get_blob_client(
-            container=AZURE_STORAGE_CONTAINER_NAME, 
-            blob=metrics_blob_name
-        )
-        
-        # Check if blob exists
-        if not blob_client.exists():
-            raise HTTPException(status_code=404, detail=f"Metrics file not found for {blob_name}")
-        
-        # Download and parse JSON content
-        blob_data = blob_client.download_blob()
-        content = blob_data.readall().decode('utf-8')
-        
-        import json
-        metrics_data = json.loads(content)
-        
-        return metrics_data
-        
-    except HTTPException:
-        raise
-    except Exception as e:
-        error_message = f"Error getting metrics data for {blob_name}: {str(e)}"
-        print(error_message)
-        raise HTTPException(status_code=500, detail=error_message)
-
-
-@app.get("/api/parameters/{blob_name}")
-async def get_parameters_data(blob_name: str):
-    """
-    Get structured parameters data and recommendations extracted from an SAP EWA report.
-    
-    This endpoint retrieves parameter recommendations that were extracted during AI analysis
-    of an SAP EWA report. The data contains configuration suggestions for optimizing system
-    performance, including database parameters, memory settings, and other system configurations.
-    
-    Parameters:
-    - blob_name: The base name of the file (without extension) for which to retrieve parameter data
-    
-    Returns:
-    - JSON response containing structured parameters data with the following format:
-      * parameters: Array of parameter objects, each containing:
-        - name: Name of the parameter
-        - current: Current parameter value
-        - recommended: Recommended parameter value
-        - impact: Impact level of the change ("high", "medium", or "low")
-        - category: Category of the parameter (e.g., "Memory Management", "Performance")
-        - system_type: Type of system the parameter applies to ("HANA", "Application Server", "Both", or "System")
-        - description: Description of what the parameter controls and why it should be changed
-    
-    Raises:
-    - 404 Not Found: If the specified file or parameters data doesn't exist
-    - 500 Internal Server Error: If parameters data retrieval fails
-    """
-    try:
-        if not blob_service_client:
-            raise HTTPException(status_code=500, detail="Azure Blob Service client not initialized")
-        
-        # Construct parameters file name
-        base_name = os.path.splitext(blob_name)[0]
-        parameters_blob_name = f"{base_name}_parameters.json"
-        
-        # Get blob client
-        blob_client = blob_service_client.get_blob_client(
-            container=AZURE_STORAGE_CONTAINER_NAME, 
-            blob=parameters_blob_name
-        )
-        
-        # Check if blob exists
-        if not blob_client.exists():
-            raise HTTPException(status_code=404, detail=f"Parameters file not found for {blob_name}")
-        
-        # Download and parse JSON content
-        blob_data = blob_client.download_blob()
-        content = blob_data.readall().decode('utf-8')
-        
-        import json
-        parameters_data = json.loads(content)
-        
-        return parameters_data
-        
-    except HTTPException:
-        raise
-    except Exception as e:
-        error_message = f"Error getting parameters data for {blob_name}: {str(e)}"
-        print(error_message)
-        raise HTTPException(status_code=500, detail=error_message)
-
-
 # Model for chat request
 class ChatRequest(BaseModel):
     message: str
@@ -722,7 +620,7 @@ async def chat_with_document(request: ChatRequest):
         api_key = os.getenv("AZURE_OPENAI_API_KEY")
         api_version = os.getenv("AZURE_OPENAI_API_VERSION", "2024-12-01-preview")
         azure_endpoint = os.getenv("AZURE_OPENAI_ENDPOINT")
-        model_name = os.getenv("AZURE_OPENAI_DEPLOYMENT_NAME", "gpt-4.1-mini")
+        model_name = os.getenv("AZURE_OPENAI_DEPLOYMENT_NAME", "gpt-4.1")
         
         if not api_key or not azure_endpoint:
             raise ValueError("Missing required environment variables: AZURE_OPENAI_API_KEY or AZURE_OPENAI_ENDPOINT")

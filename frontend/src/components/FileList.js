@@ -88,6 +88,7 @@ const FileList = ({ onFileSelect, refreshTrigger, selectedFile }) => {
   const [analysisProgress, setAnalysisProgress] = useState({}); // Track progress for each file
   const [expandedCustomers, setExpandedCustomers] = useState({});
   const [aiAnalyzing, setAiAnalyzing] = useState({}); // Track AI analysis status for each file
+  const [combinedProcessingStatus, setCombinedProcessingStatus] = useState({}); // Track combined processing & AI analysis status
   const pollingIntervalsRef = useRef({});
   const { theme } = useTheme();
   const isDark = theme === 'dark';
@@ -287,6 +288,63 @@ const FileList = ({ onFileSelect, refreshTrigger, selectedFile }) => {
     }
   };
 
+  // Function to handle combined processing and AI analysis
+  const handleProcessAndAnalyze = async (file) => {
+    console.log(`Starting combined processing and AI analysis for file: ${file.name}`);
+    setCombinedProcessingStatus(prev => ({
+      ...prev,
+      [file.id || file.name]: 'processing'
+    }));
+
+    try {
+      const response = await fetch('http://localhost:8001/api/process-and-analyze', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ blob_name: file.name }),
+      });
+
+      if (!response.ok) {
+        const errorData = await response.json();
+        // Try to get a specific message from the backend, otherwise use a generic one
+        const message = errorData.detail || (errorData.message || `Combined processing and analysis failed: ${response.status}`);
+        throw new Error(message);
+      }
+
+      const result = await response.json();
+      console.log('Combined Processing and AI Analysis result:', result);
+
+      setCombinedProcessingStatus(prev => ({
+        ...prev,
+        [file.id || file.name]: 'completed'
+      }));
+
+      // Update the file in the main 'files' state to reflect new status and analysis file name
+      setFiles(currentFiles =>
+        currentFiles.map(f =>
+          (f.id || f.name) === (file.id || file.name)
+            ? { ...f, processed: true, ai_analyzed: true, analysis_file: result.summary_file, /* any other fields from result if needed */ } 
+            : f
+        )
+      );
+      
+      // Also update the individual status trackers if they are still used elsewhere or for consistency
+      setAnalyzingFiles(prev => ({ ...prev, [file.id || file.name]: 'analyzed' }));
+      setAiAnalyzing(prev => ({ ...prev, [file.id || file.name]: 'completed' }));
+
+      alert(`Processing and AI Analysis for ${file.name} completed successfully! Analysis saved as: ${result.summary_file}`);
+
+    } catch (error) {
+      console.error(`Error in combined processing and AI analysis for file ${file.name}:`, error);
+      setCombinedProcessingStatus(prev => ({
+        ...prev,
+        [file.id || file.name]: 'error'
+      }));
+      alert(`Error in combined processing and AI analysis for ${file.name}: ${error.message}`);
+    }
+  };
+
   // Start polling for status updates
   const startStatusPolling = (fileName) => {
     // Clear any existing polling interval for this file
@@ -406,6 +464,16 @@ const FileList = ({ onFileSelect, refreshTrigger, selectedFile }) => {
         ...prev,
         ...aiStatusMap
       }));
+
+      const newCombinedStatus = {};
+      filesWithIds.forEach(file => {
+        if (file.ai_analyzed) {
+          newCombinedStatus[file.id || file.name] = 'completed';
+        } else {
+          newCombinedStatus[file.id || file.name] = 'idle';
+        }
+      });
+      setCombinedProcessingStatus(newCombinedStatus);
       
       // Auto-expand any customer with only one file or if few total customers
       const grouped = groupByCustomer(filesWithIds);
@@ -487,42 +555,12 @@ const FileList = ({ onFileSelect, refreshTrigger, selectedFile }) => {
     
     content = (
       <Box>
-        {/* Expand/Collapse All controls */}
-        {customers.length > 1 && (
-          <Box sx={{ mb: 1.5, px: 1, display: 'flex', justifyContent: 'flex-end' }}>
-            <Box sx={{ display: 'flex', gap: 1 }}>
-              <Button 
-                size="small" 
-                variant="text" 
-                onClick={() => {
-                  const allExpanded = {};
-                  const filesByCustomer = groupByCustomer(files);
-                  Object.keys(filesByCustomer).forEach(customer => {
-                    allExpanded[customer] = true;
-                  });
-                  setExpandedCustomers(allExpanded);
-                }}
-                sx={{ fontSize: '0.75rem', minWidth: 0, py: 0.5 }}
-              >
-                Expand All
-              </Button>
-              <Button 
-                size="small" 
-                variant="text" 
-                onClick={() => setExpandedCustomers({})}
-                sx={{ fontSize: '0.75rem', minWidth: 0, py: 0.5 }}
-              >
-                Collapse All
-              </Button>
-            </Box>
-          </Box>
-        )}
         
         {/* Customer accordions */}
         {Object.keys(filesByCustomer).map((customer) => (
           <Accordion 
             key={customer}
-            expanded={expandedCustomers[customer] !== false}
+            expanded={expandedCustomers[customer] === true}
             onChange={handleAccordionChange(customer)}
             elevation={0}
             sx={{ 
@@ -604,8 +642,8 @@ const FileList = ({ onFileSelect, refreshTrigger, selectedFile }) => {
               <ListItemButton 
                 onClick={() => onFileSelect(file)}
                 selected={isSelected}
-                sx={{ 
-                  pr: aiAnalyzing[file.id || file.name] === 'completed' ? 16 : 9,
+                sx={{
+                  pr: 16, // Standard padding for secondary action
                   mx: 0.5,
                   borderRadius: 1,
                   minHeight: 64,
@@ -652,241 +690,45 @@ const FileList = ({ onFileSelect, refreshTrigger, selectedFile }) => {
                             • {file.customer_name}
                           </Typography>
                         )}
-                        {analyzingFiles[file.id || file.name] === 'pending' && (
-                          <Chip 
-                            icon={<PendingIcon sx={{ fontSize: '0.875rem' }} />} 
-                            label="Pending" 
-                            size="small" 
-                            sx={{ 
-                              height: 18,
-                              fontSize: '0.65rem',
-                              backgroundColor: '#f5f5f5',
-                              color: '#666',
-                              '& .MuiChip-icon': {
-                                fontSize: '0.875rem',
-                                color: '#666'
-                              }
-                            }}
-                          />
-                        )}
-                        {analyzingFiles[file.id || file.name] === 'analyzing' && (
-                          <Box sx={{ display: 'flex', alignItems: 'center' }}>
-                            <Chip 
-                              icon={
-                                <AutorenewIcon 
-                                  sx={{ 
-                                    animation: 'spin 2s linear infinite',
-                                    '@keyframes spin': {
-                                      '0%': { transform: 'rotate(0deg)' },
-                                      '100%': { transform: 'rotate(360deg)' }
-                                    }
-                                  }} 
-                                />
-                              } 
-                              label={`Processing ${analysisProgress[file.name] || 0}%`} 
-                              size="small" 
-                              color="warning" 
-                              variant="outlined"
-                              sx={{ height: 18, fontSize: '0.65rem', mr: 1 }}
-                            />
-                            {analysisProgress[file.name] > 0 && (
-                              <Box sx={{ position: 'relative', width: 40, height: 4, borderRadius: 2, bgcolor: 'background.paper', overflow: 'hidden' }}>
-                                <Box 
-                                  sx={{ 
-                                    position: 'absolute',
-                                    left: 0,
-                                    top: 0,
-                                    height: '100%',
-                                    width: `${analysisProgress[file.name]}%`,
-                                    bgcolor: 'warning.main',
-                                    transition: 'width 0.3s ease'
-                                  }}
-                                />
-                              </Box>
-                            )}
-                          </Box>
-                        )}
-                        {analyzingFiles[file.id || file.name] === 'analyzed' && (
-                          <Chip 
-                            icon={<CheckCircleIcon />} 
-                            label="Processed" 
-                            size="small" 
-                            color="success" 
-                            variant="outlined"
-                            sx={{ height: 18, fontSize: '0.65rem' }}
-                          />
-                        )}
-                        {aiAnalyzing[file.id || file.name] === 'analyzing' && (
-                          <Chip 
-                            icon={
-                              <AutorenewIcon 
-                                sx={{ 
-                                  animation: 'spin 2s linear infinite',
-                                  '@keyframes spin': {
-                                    '0%': { transform: 'rotate(0deg)' },
-                                    '100%': { transform: 'rotate(360deg)' }
-                                  }
-                                }} 
-                              />
-                            } 
-                            label="AI Analyzing" 
-                            size="small" 
-                            color="warning" 
-                            variant="outlined"
-                            sx={{ height: 18, fontSize: '0.65rem', mr: 1 }}
-                          />
-                        )}
-                        {aiAnalyzing[file.id || file.name] === 'completed' && (
-                          <Chip 
-                            icon={<CheckCircleIcon />} 
-                            label="AI Analyzed" 
-                            size="small" 
-                            color="success" 
-                            variant="outlined"
-                            sx={{ height: 18, fontSize: '0.65rem' }}
-                          />
-                        )}
                       </Box>
                     }
-                    primaryTypographyProps={{
-                      noWrap: true,
-                      fontSize: '0.875rem',
-                      fontWeight: isSelected ? 500 : 400
-                    }}
-                    secondaryTypographyProps={{
-                      component: 'div',
-                      noWrap: true,
-                      fontSize: '0.75rem'
-                    }}
                   />
                 </Tooltip>
               </ListItemButton>
-              <ListItemSecondaryAction sx={{ 
-                display: 'flex', 
-                gap: 0.5,
-                pr: 1
-              }}>
-                {/* If file has been AI-analyzed, only show the Display Analysis button */}
-                {aiAnalyzing[file.id || file.name] === 'completed' ? (
-                  <Tooltip title="Display Analysis">
-                    <IconButton 
-                      edge="end" 
-                      size="small" 
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        handleDisplayAnalysis(file);
-                      }}
-                      sx={{ 
-                        backgroundColor: '#4caf50',
-                        color: 'white',
-                        width: 32,
-                        height: 32,
-                        '&:hover': {
-                          backgroundColor: '#45a049',
-                        }
-                      }}
-                    >
-                      <VisibilityIcon sx={{ fontSize: 18 }} />
-                    </IconButton>
-                  </Tooltip>
-                ) : analyzingFiles[file.id || file.name] === 'analyzing' ? (
-                  <Box sx={{ 
-                    display: 'flex', 
-                    alignItems: 'center',
-                    backgroundColor: '#fff3e0',
-                    borderRadius: 1,
-                    px: 1,
-                    py: 0.5
-                  }}>
-                    <Tooltip title="Processing...">
-                      <IconButton 
-                        edge="end" 
-                        size="small" 
-                        disabled={true}
-                        sx={{ 
-                          width: 32,
-                          height: 32,
-                          color: '#f57c00'
-                        }}
+              <ListItemSecondaryAction sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                {combinedProcessingStatus[file.id || file.name] === 'processing' ? (
+                  <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, minWidth: 100, justifyContent: 'center' }}>
+                    <CircularProgress size={20} thickness={4} color="primary" />
+                    <Typography variant="caption" color="text.secondary">Processing...</Typography>
+                  </Box>
+                ) : (combinedProcessingStatus[file.id || file.name] === 'completed' || file.ai_analyzed) ? (
+                  <Box sx={{ display: 'flex', gap: 0.5 }}>
+                    <Tooltip title="Display AI Analysis">
+                      <Button
+                        variant="contained"
+                        size="small"
+                        color="success"
+                        startIcon={<VisibilityIcon fontSize="small" />}
+                        onClick={() => handleDisplayAnalysis(file)}
+                        sx={{ textTransform: 'none', fontSize: '0.75rem', py: 0.5, px:1, minWidth: 'auto' }}
                       >
-                        <AutorenewIcon sx={{ 
-                          fontSize: 18,
-                          animation: 'spin 2s linear infinite' 
-                        }} />
-                      </IconButton>
+                        Display
+                      </Button>
                     </Tooltip>
                   </Box>
-                ) : (
-                  /* If file is being AI-analyzed, show the analyzing state */
-                  aiAnalyzing[file.id || file.name] === 'analyzing' ? (
-                    <Tooltip title="AI Analysis in progress...">
-                      <IconButton 
-                        edge="end" 
-                        size="small" 
-                        disabled={true}
-                        sx={{ 
-                          backgroundColor: '#f3e5f5',
-                          width: 32,
-                          height: 32,
-                          color: '#7b1fa2'
-                        }}
-                      >
-                        <AutorenewIcon 
-                          sx={{ 
-                            fontSize: 18,
-                            animation: 'spin 2s linear infinite'
-                          }} 
-                        />
-                      </IconButton>
-                    </Tooltip>
-                  ) : (
-                    /* Otherwise show the regular process or analyze buttons based on processed state */
-                    analyzingFiles[file.id || file.name] === 'analyzed' ? (
-                      <Tooltip title="Analyze with AI">
-                        <IconButton 
-                          edge="end" 
-                          size="small" 
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            handleAnalyzeAI(file);
-                          }}
-                          sx={{ 
-                            backgroundColor: '#9c27b0',
-                            color: 'white',
-                            width: 32,
-                            height: 32,
-                            '&:hover': {
-                              backgroundColor: '#7b1fa2',
-                            }
-                          }}
-                        >
-                          <AiAnalysisIcon sx={{ fontSize: 18 }} />
-                        </IconButton>
-                      </Tooltip>
-                    ) : (
-                      <Tooltip title="Process file">
-                        <IconButton 
-                          edge="end" 
-                          size="small" 
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            handleAnalyze(file);
-                          }}
-                          sx={{ 
-                            backgroundColor: '#2196f3',
-                            color: 'white',
-                            width: 32,
-                            height: 32,
-                            '&:hover': {
-                              backgroundColor: '#1976d2',
-                            }
-                          }}
-                        >
-                          <PlayArrowIcon sx={{ fontSize: 18 }} />
-                        </IconButton>
-                      </Tooltip>
-                    )
-                  )
+                ) : ( /* Covers 'idle', 'error', or undefined states for combinedProcessingStatus and file not ai_analyzed */
+                  <Tooltip title={combinedProcessingStatus[file.id || file.name] === 'error' ? "Retry Processing and Analysis" : "Process and Analyze Document"}>
+                    <Button
+                      variant="contained"
+                      size="small"
+                      color={combinedProcessingStatus[file.id || file.name] === 'error' ? "error" : "primary"}
+                      startIcon={<PlayArrowIcon fontSize="small" />}
+                      onClick={() => handleProcessAndAnalyze(file)}
+                      sx={{ textTransform: 'none', fontSize: '0.75rem', py: 0.5, px:1, minWidth: 'auto' }}
+                    >
+                      {combinedProcessingStatus[file.id || file.name] === 'error' ? "Retry" : "Process"}
+                    </Button>
+                  </Tooltip>
                 )}
               </ListItemSecondaryAction>
             </ListItem>

@@ -1,4 +1,4 @@
-import React, { useState, useRef } from 'react';
+import React, { useState, useRef, useEffect } from 'react';
 import Button from '@mui/material/Button';
 import Typography from '@mui/material/Typography';
 import Alert from '@mui/material/Alert';
@@ -7,6 +7,10 @@ import Paper from '@mui/material/Paper';
 import TextField from '@mui/material/TextField';
 import FormControl from '@mui/material/FormControl';
 import FormHelperText from '@mui/material/FormHelperText';
+import Select from '@mui/material/Select';
+import InputLabel from '@mui/material/InputLabel';
+import MenuItem from '@mui/material/MenuItem';
+import FormLabel from '@mui/material/FormLabel';
 import LinearProgress from '@mui/material/LinearProgress';
 import Chip from '@mui/material/Chip';
 import IconButton from '@mui/material/IconButton';
@@ -72,6 +76,13 @@ const FileUpload = ({ onUploadSuccess }) => {
   const [overallStatus, setOverallStatus] = useState({ message: '', error: '' });
   const [filesWithCustomers, setFilesWithCustomers] = useState([]); // Array of {file, customerName, error} objects
   const [showCustomerFields, setShowCustomerFields] = useState(false); // Control visibility of customer fields
+  const [customers, setCustomers] = useState([
+    'TBS',
+    'Eviosys',
+    'BSW',
+    'Asahi',
+    'Corex'
+  ]); // Predefined customer list
   const fileInputRef = useRef(null);
   
   // Function to dismiss overall status message
@@ -328,15 +339,15 @@ const FileUpload = ({ onUploadSuccess }) => {
         <Paper 
           elevation={0} 
           sx={{ 
-            p: 2,
-            mb: 2,
+            p: 3,
+            mb: 3,
             bgcolor: isDark ? 'rgba(255, 255, 255, 0.05)' : 'rgba(0, 0, 0, 0.02)', 
             borderRadius: 2,
             border: isDark ? '1px solid rgba(255, 255, 255, 0.05)' : '1px solid rgba(0, 0, 0, 0.05)',
           }}
         >
-          <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 2 }}>
-            <Typography variant="subtitle2">
+          <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 3 }}>
+            <Typography variant="subtitle2" sx={{ fontWeight: 500, fontSize: '1rem' }}>
               Enter Customer Information
             </Typography>
             <Badge badgeContent={filesWithCustomers.length} color="primary" sx={{ mr: 1 }}>
@@ -344,59 +355,66 @@ const FileUpload = ({ onUploadSuccess }) => {
             </Badge>
           </Box>
           
-          <Divider sx={{ mb: 2 }} />
+          <Divider sx={{ mb: 3 }} />
           
           {/* Individual file entries with customer name fields */}
           {filesWithCustomers.map((fileData, index) => (
-            <Box key={index} sx={{ mb: index < filesWithCustomers.length - 1 ? 2 : 0 }}>
-              <Box sx={{ display: 'flex', alignItems: 'center', mb: 1 }}>
+            <Box key={index} sx={{ mb: index < filesWithCustomers.length - 1 ? 4 : 0, py: 1 }}>
+              <Box sx={{ display: 'flex', alignItems: 'center', mb: 2 }}>
                 {getFileIcon(fileData.file.name)}
-                <Typography variant="body2" sx={{ ml: 1, fontWeight: 500 }} noWrap>
+                <Typography variant="body2" sx={{ ml: 1.5, fontWeight: 500 }} noWrap>
                   {fileData.file.name}
                 </Typography>
-                <Typography variant="caption" sx={{ ml: 1, color: 'text.secondary' }}>
+                <Typography variant="caption" sx={{ ml: 1.5, color: 'text.secondary' }}>
                   ({formatFileSize(fileData.file.size)})
                 </Typography>
               </Box>
               
-              <FormControl fullWidth error={!!fileData.error} sx={{ mb: 1 }}>
-                <TextField
-                  label={`Customer Name for ${fileData.file.name}`}
+              <FormControl fullWidth error={!!fileData.error} sx={{ mb: 2, mt: 1 }} required>
+                <InputLabel id={`customer-select-label-${index}`} error={!!fileData.error}>
+                  Select Customer for {fileData.file.name.substring(0, 15)}...
+                </InputLabel>
+                <Select
+                  labelId={`customer-select-label-${index}`}
                   value={fileData.customerName}
                   onChange={(e) => handleCustomerNameChange(index, e.target.value)}
-                  variant="outlined"
                   size="small"
-                  required
-                  autoFocus={index === 0}
                   error={!!fileData.error}
-                  placeholder="Enter customer name"
-                  InputProps={{
-                    startAdornment: <BusinessIcon sx={{ mr: 1, color: 'text.secondary' }} />,
-                  }}
+                  required
+                  startAdornment={<BusinessIcon sx={{ mr: 1, color: 'text.secondary' }} />}
                   sx={{
-                    '& .MuiOutlinedInput-root': {
-                      borderRadius: 1.5,
-                      bgcolor: isDark ? 'rgba(255, 255, 255, 0.03)' : 'rgba(0, 0, 0, 0.02)',
-                    }
+                    borderRadius: 1.5,
+                    bgcolor: isDark ? 'rgba(255, 255, 255, 0.03)' : 'rgba(0, 0, 0, 0.02)',
                   }}
-                />
+                  displayEmpty
+                >
+                  <MenuItem value="" disabled>
+                    <em>Select a customer (required)</em>
+                  </MenuItem>
+                  {customers.map((customer) => (
+                    <MenuItem key={customer} value={customer}>
+                      {customer}
+                    </MenuItem>
+                  ))}
+                </Select>
                 {fileData.error && (
-                  <FormHelperText>{fileData.error}</FormHelperText>
+                  <FormHelperText error>{fileData.error}</FormHelperText>
                 )}
               </FormControl>
               
               {index < filesWithCustomers.length - 1 && (
-                <Divider sx={{ my: 2 }} />
+                <Divider sx={{ my: 3 }} />
               )}
             </Box>
           ))}
           
-          <Box sx={{ display: 'flex', justifyContent: 'space-between', mt: 3 }}>
+          <Box sx={{ display: 'flex', justifyContent: 'space-between', mt: 4, pt: 1 }}>
             <Button
               variant="outlined"
               size="small"
               onClick={handleCancelUpload}
               startIcon={<CloseIcon />}
+              sx={{ py: 1 }}
             >
               Cancel
             </Button>
@@ -407,6 +425,7 @@ const FileUpload = ({ onUploadSuccess }) => {
               onClick={handleProceedWithUpload}
               disabled={filesWithCustomers.every(f => !f.customerName.trim())}
               startIcon={<CloudUploadIcon />}
+              sx={{ py: 1 }}
             >
               Upload Files ({filesWithCustomers.length})
             </Button>

@@ -17,8 +17,8 @@ making it easy to check the progress of any document conversion process.
 
 import os
 from datetime import datetime
-from . import pdf_markdown_converter # MODIFIED IMPORT
-from . import docx_markdown_converter # MODIFIED IMPORT
+from converters import pdf_markdown_converter
+from converters import docx_markdown_converter
 
 # Dictionary to track the status of document conversion jobs across all file types
 # This is a global tracker for the unified converter

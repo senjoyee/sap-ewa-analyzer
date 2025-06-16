@@ -25,7 +25,7 @@ import tempfile
 from azure.storage.blob import BlobServiceClient, ContentSettings
 from dotenv import load_dotenv
 import docx2txt
-from .doc_extractor import extract_text_from_doc # MODIFIED IMPORT
+from converters.doc_extractor import extract_text_from_doc
 
 # Load environment variables from .env file
 load_dotenv()
@@ -248,8 +248,7 @@ if __name__ == "__main__":
             blob_client.upload_blob(f, overwrite=True)
         
         # Convert the file
-        print(f"Starting conversion of {os.path.basename(test_file_path)} in Azure Blob Storage...")
         result = convert_docx_to_markdown(os.path.basename(test_file_path))
         print(f"Conversion result: {result}")
     else:
-        print(f"Test file '{test_file_path}' not found. Please create it or provide a valid path.")
+        print(f"Test file not found: {test_file_path}")
