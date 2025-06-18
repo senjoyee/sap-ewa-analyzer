@@ -326,20 +326,20 @@ const MetricsTable = ({ metricsData }) => {
                     </TableCell>
                     <TableCell 
                       sx={{ 
-                        fontFamily: 'monospace',
+                        fontFamily: '"Noto Sans", sans-serif',
                         fontSize: '0.875rem',
                         py: 1.5,
                         fontWeight: metric.status === 'critical' ? 600 : 400,
                         color: metric.status === 'critical' ? 
                           (isDark ? '#ff6b6b' : '#d32f2f') : 
-                          'inherit'
+                          'text.primary'
                       }}
                     >
                       {metric.current}
                     </TableCell>
                     <TableCell 
                       sx={{ 
-                        fontFamily: 'monospace',
+                        fontFamily: '"Noto Sans", sans-serif',
                         fontSize: '0.875rem',
                         py: 1.5
                       }}

@@ -38,6 +38,14 @@ export const appTheme = createTheme({
     button: { fontWeight: 500 },
   },
   components: {
+    MuiTableCell: {
+      styleOverrides: {
+        root: {
+          fontFamily: '"Noto Sans", -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif',
+          color: 'inherit'
+        }
+      }
+    },
     MuiAppBar: {
       styleOverrides: {
         root: {

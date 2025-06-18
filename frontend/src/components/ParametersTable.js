@@ -220,18 +220,18 @@ const ParametersTable = ({ parametersData }) => {
                       component="th" 
                       scope="row"
                       sx={{ 
-                        fontFamily: 'monospace',
+                        fontFamily: '"Noto Sans", sans-serif',
                         fontWeight: 600,
                         fontSize: '0.85rem'
                       }}
                     >
                       {param.name}
                     </TableCell>
-                    <TableCell sx={{ fontFamily: 'monospace', fontSize: '0.85rem' }}>
+                    <TableCell sx={{ fontFamily: '"Noto Sans", sans-serif', fontSize: '0.85rem', color: 'text.primary' }}>
                       {param.current}
                     </TableCell>
                     <TableCell sx={{ 
-                      fontFamily: 'monospace', 
+                      fontFamily: '"Noto Sans", sans-serif', 
                       fontSize: '0.85rem',
                       fontWeight: 600,
                       color: param.current !== param.recommended ? 

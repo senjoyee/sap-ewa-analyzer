@@ -525,12 +525,6 @@ const JsonCodeBlockRenderer = ({ node, inline, className, children, ...props }) 
                                 WebkitFontSmoothing: 'antialiased',
                                 MozOsxFontSmoothing: 'grayscale',
                                 lineHeight: 1.5,
-                                // Special styling for numeric values
-                                ...(isNumeric && {
-                                  fontFamily: '"SF Mono", Monaco, "Cascadia Code", "Roboto Mono", Consolas, "Courier New", monospace',
-                                  fontWeight: 500,
-                                  color: (theme) => theme.palette.mode === 'dark' ? '#60a5fa' : '#3b82f6',
-                                }),
                                 // Truncate very long text
                                 ...(cellValue.length > 50 && {
                                   maxWidth: '300px',
