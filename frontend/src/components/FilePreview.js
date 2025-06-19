@@ -908,10 +908,6 @@ const FilePreview = ({ selectedFile }) => {
                       } else if (content.includes('⚠️')) {
                         textColor = '#FF9800'; // Orange for warning
                       }
-                    } else if (isNumeric) {
-                      fontFamily = '"SF Mono", Monaco, "Cascadia Code", "Roboto Mono", Consolas, "Courier New", monospace';
-                      fontWeight = '500';
-                      textColor = isDark ? '#60a5fa' : '#3b82f6';
                     }
                     
                     return (
