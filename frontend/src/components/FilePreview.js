@@ -29,8 +29,8 @@ import TableRow from '@mui/material/TableRow';
 import { useTheme } from '../contexts/ThemeContext';
 
 // Import our custom table components
-import MetricsTable from './MetricsTable';
-import ParametersTable from './ParametersTable';
+// import MetricsTable from './MetricsTable';
+// import ParametersTable from './ParametersTable';
 import DocumentChat from './DocumentChat';
 
 // Helper function to get appropriate file type label and icon
@@ -1121,7 +1121,7 @@ const FilePreview = ({ selectedFile }) => {
                     </AccordionSummary>
                     <AccordionDetails sx={{ p: 0 }}>
                       <Box sx={{ p: 3 }}>
-                        <MetricsTable metricsData={metricsData} />
+                        {/* <MetricsTable metricsData={metricsData} /> */}
                       </Box>
                     </AccordionDetails>
                   </Accordion>
@@ -1160,7 +1160,7 @@ const FilePreview = ({ selectedFile }) => {
                     </AccordionSummary>
                     <AccordionDetails sx={{ p: 0 }}>
                       <Box sx={{ p: 3 }}>
-                        <ParametersTable parametersData={parametersData} />
+                        {/* <ParametersTable parametersData={parametersData} /> */}
                       </Box>
                     </AccordionDetails>
                   </Accordion>
