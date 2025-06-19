@@ -565,8 +565,8 @@ const FileList = ({ onFileSelect, refreshTrigger, selectedFile }) => {
             elevation={0}
             sx={{ 
               mb: 1,
-              backgroundColor: '#ffffff',
-              border: '1px solid #e0e0e0',
+              backgroundColor: '#1a1a1a',
+              border: '1px solid #333333',
               borderRadius: '8px !important',
               overflow: 'hidden',
               '&:before': {
@@ -578,11 +578,11 @@ const FileList = ({ onFileSelect, refreshTrigger, selectedFile }) => {
             }}
           >
             <AccordionSummary 
-              expandIcon={<ExpandMoreIcon />}
+              expandIcon={<ExpandMoreIcon sx={{ color: '#ffffff' }} />}
               sx={{ 
                 minHeight: 48,
-                backgroundColor: '#f8f9fa',
-                borderBottom: '1px solid #e0e0e0',
+                backgroundColor: '#2a2a2a',
+                borderBottom: '1px solid #333333',
                 '&.Mui-expanded': {
                   minHeight: 48,
                 },
@@ -598,12 +598,12 @@ const FileList = ({ onFileSelect, refreshTrigger, selectedFile }) => {
                 <BusinessIcon sx={{ 
                   mr: 1.5, 
                   fontSize: 20,
-                  color: '#2193b0'
+                  color: '#60a5fa'
                 }} />
                 <Typography sx={{ 
                   fontWeight: 500,
                   fontSize: '0.9rem',
-                  color: '#333'
+                  color: '#ffffff'
                 }}>
                   {customer}
                 </Typography>
@@ -617,14 +617,14 @@ const FileList = ({ onFileSelect, refreshTrigger, selectedFile }) => {
                     minWidth: 20,
                     fontSize: '0.7rem',
                     fontWeight: 600,
-                    backgroundColor: '#e3f2fd',
-                    color: '#1976d2',
-                    border: 'none',
+                    backgroundColor: '#333333',
+                    color: '#60a5fa',
+                    border: '1px solid #60a5fa',
                   }}
                 />
               </Box>
             </AccordionSummary>
-            <AccordionDetails sx={{ p: 1, backgroundColor: '#fafafa' }}>
+            <AccordionDetails sx={{ p: 1, backgroundColor: '#1a1a1a' }}>
               <List sx={{ py: 0 }}>
                 {filesByCustomer[customer].map((file) => {
           const isSelected = selectedFile && (selectedFile.id === file.id || selectedFile.name === file.name);
@@ -648,18 +648,18 @@ const FileList = ({ onFileSelect, refreshTrigger, selectedFile }) => {
                   borderRadius: 1,
                   minHeight: 64,
                   transition: 'all 0.2s',
-                  backgroundColor: '#ffffff',
+                  backgroundColor: '#242424',
                   border: '1px solid transparent',
                   '&.Mui-selected': {
-                    backgroundColor: '#e3f2fd',
-                    borderColor: '#2193b0',
+                    backgroundColor: '#333333',
+                    borderColor: '#60a5fa',
                     '&:hover': {
-                      backgroundColor: '#bbdefb',
+                      backgroundColor: '#404040',
                     }
                   },
                   '&:hover': {
-                    backgroundColor: '#f5f5f5',
-                    borderColor: '#e0e0e0',
+                    backgroundColor: '#2a2a2a',
+                    borderColor: '#444444',
                   }
                 }}
               >
@@ -672,7 +672,7 @@ const FileList = ({ onFileSelect, refreshTrigger, selectedFile }) => {
                       <Typography sx={{ 
                         fontSize: '0.875rem',
                         fontWeight: 500,
-                        color: '#333',
+                        color: '#ffffff',
                         overflow: 'hidden',
                         textOverflow: 'ellipsis',
                         whiteSpace: 'nowrap'
@@ -682,11 +682,11 @@ const FileList = ({ onFileSelect, refreshTrigger, selectedFile }) => {
                     }
                     secondary={
                       <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5, mt: 0.5 }}>
-                        <Typography variant="caption" sx={{ color: '#666' }}>
+                        <Typography variant="caption" sx={{ color: '#cccccc' }}>
                           {formatFileSize(file.size)}
                         </Typography>
                         {file.customer_name && (
-                          <Typography variant="caption" sx={{ color: '#666' }}>
+                          <Typography variant="caption" sx={{ color: '#cccccc' }}>
                             • {file.customer_name}
                           </Typography>
                         )}
@@ -759,14 +759,14 @@ const FileList = ({ onFileSelect, refreshTrigger, selectedFile }) => {
           variant="subtitle1" 
           sx={{ 
             fontWeight: 600,
-            color: '#1a1a1a',
+            color: '#ffffff',
             fontSize: '0.95rem',
             display: 'flex',
             alignItems: 'center',
             gap: 1
           }}
         >
-          <FolderIcon sx={{ fontSize: 20, color: '#2193b0' }} />
+          <FolderIcon sx={{ fontSize: 20, color: '#60a5fa' }} />
           Uploaded Files
           {files.length > 0 && (
             <Chip 
@@ -778,9 +778,9 @@ const FileList = ({ onFileSelect, refreshTrigger, selectedFile }) => {
                 minWidth: 20,
                 fontSize: '0.7rem',
                 fontWeight: 600,
-                backgroundColor: '#e3f2fd',
-                color: '#1976d2',
-                border: 'none',
+                backgroundColor: '#333333',
+                color: '#60a5fa',
+                border: '1px solid #60a5fa',
               }}
             />
           )}
@@ -832,20 +832,20 @@ const FileList = ({ onFileSelect, refreshTrigger, selectedFile }) => {
         sx={{ 
           flex: 1,
           overflow: 'auto',
-          backgroundColor: '#fafafa',
-          border: '1px solid #e0e0e0',
+          backgroundColor: '#1a1a1a',
+          border: '1px solid #333333',
           borderRadius: 2,
           '&::-webkit-scrollbar': {
             width: '6px',
           },
           '&::-webkit-scrollbar-track': {
-            background: '#f1f1f1',
+            background: '#1a1a1a',
           },
           '&::-webkit-scrollbar-thumb': {
-            background: '#c1c1c1',
+            background: '#333333',
             borderRadius: '3px',
             '&:hover': {
-              background: '#a8a8a8',
+              background: '#444444',
             },
           },
         }}

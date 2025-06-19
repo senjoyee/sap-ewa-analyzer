@@ -1,40 +1,41 @@
 import { createTheme } from '@mui/material/styles';
 
-// Theme configuration
+// Dark/Black Theme configuration
 export const appTheme = createTheme({
   palette: {
-    mode: 'light',
+    mode: 'dark',
     primary: {
-      main: '#1976d2',
-      light: '#42a5f5',
-      dark: '#1565c0',
+      main: '#ffffff',
+      light: '#f5f5f5',
+      dark: '#e0e0e0',
     },
     secondary: {
-      main: '#9c27b0',
-      light: '#ba68c8',
-      dark: '#7b1fa2',
+      main: '#bb86fc',
+      light: '#d4a8ff',
+      dark: '#a266ff',
     },
     background: {
-      default: '#f5f5f5',
-      paper: '#ffffff',
+      default: '#000000',
+      paper: '#121212',
     },
     text: {
-      primary: 'rgba(0, 0, 0, 0.87)',
-      secondary: 'rgba(0, 0, 0, 0.6)',
-      disabled: 'rgba(0, 0, 0, 0.38)',
+      primary: '#ffffff',
+      secondary: 'rgba(255, 255, 255, 0.7)',
+      disabled: 'rgba(255, 255, 255, 0.38)',
     },
+    divider: 'rgba(255, 255, 255, 0.12)',
   },
   shape: {
     borderRadius: 8,
   },
   typography: {
     fontFamily: '"Noto Sans", -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif',
-    h1: { fontWeight: 500 },
-    h2: { fontWeight: 500 },
-    h3: { fontWeight: 500 },
-    h4: { fontWeight: 500 },
-    h5: { fontWeight: 500 },
-    h6: { fontWeight: 500 },
+    h1: { fontWeight: 500, color: '#ffffff' },
+    h2: { fontWeight: 500, color: '#ffffff' },
+    h3: { fontWeight: 500, color: '#ffffff' },
+    h4: { fontWeight: 500, color: '#ffffff' },
+    h5: { fontWeight: 500, color: '#ffffff' },
+    h6: { fontWeight: 500, color: '#ffffff' },
     button: { fontWeight: 500 },
   },
   components: {
@@ -42,14 +43,33 @@ export const appTheme = createTheme({
       styleOverrides: {
         root: {
           fontFamily: '"Noto Sans", -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif',
-          color: 'inherit'
+          color: '#ffffff',
+          borderColor: 'rgba(255, 255, 255, 0.12)',
         }
       }
     },
     MuiAppBar: {
       styleOverrides: {
         root: {
-          backgroundImage: 'linear-gradient(to right, #2193b0, #6dd5ed)',
+          backgroundImage: 'linear-gradient(to right, #1a1a1a, #333333)',
+          backgroundColor: '#000000',
+        },
+      },
+    },
+    MuiPaper: {
+      styleOverrides: {
+        root: {
+          backgroundImage: 'none',
+          backgroundColor: '#121212',
+        },
+      },
+    },
+    MuiButton: {
+      styleOverrides: {
+        root: {
+          '&:hover': {
+            backgroundColor: 'rgba(255, 255, 255, 0.08)',
+          },
         },
       },
     },

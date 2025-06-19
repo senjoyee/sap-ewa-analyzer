@@ -265,20 +265,20 @@ const FileUpload = ({ onUploadSuccess }) => {
       elevation={0}
       sx={{ 
         p: 2.5,
-        background: '#f8f9fa',
-        border: '2px dashed #e0e0e0',
+        background: '#1a1a1a',
+        border: '2px dashed #333333',
         borderRadius: 2,
         transition: 'all 0.3s ease',
         '&:hover': {
-          borderColor: '#2193b0',
-          background: '#f0f7ff',
+          borderColor: '#60a5fa',
+          background: '#242424',
         }
       }}
     >
       <Box sx={{ textAlign: 'center' }}>
         <CloudUploadIcon sx={{ 
           fontSize: 48, 
-          color: '#2193b0',
+          color: '#60a5fa',
           mb: 1,
           opacity: 0.8
         }} />
@@ -287,7 +287,7 @@ const FileUpload = ({ onUploadSuccess }) => {
           sx={{ 
             mb: 0.5,
             fontWeight: 500,
-            color: '#333'
+            color: '#ffffff'
           }}
         >
           Upload Files
@@ -295,7 +295,7 @@ const FileUpload = ({ onUploadSuccess }) => {
         <Typography 
           variant="body2" 
           sx={{ 
-            color: '#666',
+            color: '#cccccc',
             mb: 2
           }}
         >
@@ -316,17 +316,18 @@ const FileUpload = ({ onUploadSuccess }) => {
           startIcon={<AddIcon />}
           onClick={handleAddClick}
           sx={{
-            background: 'linear-gradient(45deg, #2193b0 30%, #6dd5ed 90%)',
+            background: 'linear-gradient(45deg, #1a1a1a 30%, #333333 90%)',
             color: 'white',
             px: 3,
             py: 1,
             borderRadius: 2,
             textTransform: 'none',
             fontWeight: 500,
-            boxShadow: '0 3px 5px 2px rgba(33, 147, 176, .3)',
+            boxShadow: '0 3px 5px 2px rgba(0, 0, 0, .3)',
+            border: '1px solid #60a5fa',
             '&:hover': {
-              background: 'linear-gradient(45deg, #1e7e95 30%, #5bc0d8 90%)',
-              boxShadow: '0 4px 8px 3px rgba(33, 147, 176, .4)',
+              background: 'linear-gradient(45deg, #333333 30%, #555555 90%)',
+              boxShadow: '0 4px 8px 3px rgba(0, 0, 0, .4)',
             }
           }}
         >

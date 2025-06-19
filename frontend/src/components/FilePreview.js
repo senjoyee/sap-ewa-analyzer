@@ -567,7 +567,7 @@ const JsonCodeBlockRenderer = ({ node, inline, className, children, ...props }) 
 const FilePreview = ({ selectedFile }) => {
   const fileTypeInfo = selectedFile ? getFileTypeInfo(selectedFile.name) : null;
   const { theme } = useTheme();
-  const isDark = theme === 'dark';
+  const isDark = true; // Force dark mode to true since we switched to black theme
   const [error, setError] = useState(null);
   const [originalContent, setOriginalContent] = useState('');
   
@@ -1085,6 +1085,28 @@ const FilePreview = ({ selectedFile }) => {
                         color: isDark ? '#9ca3af' : '#6b7280',
                         fontFamily: '"Noto Sans", "Noto Sans", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif',
                         fontSize: '0.85rem',
+                      }}
+                    >
+                      {children}
+                    </Box>
+                  ),
+                  a: ({ children, href }) => (
+                    <Box 
+                      component="a" 
+                      href={href}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      sx={{ 
+                        color: isDark ? '#60a5fa' : '#2563eb', // Light blue for dark theme, darker blue for light theme
+                        textDecoration: 'underline',
+                        fontWeight: 500,
+                        '&:hover': {
+                          color: isDark ? '#93c5fd' : '#1d4ed8',
+                          textDecoration: 'none',
+                        },
+                        '&:visited': {
+                          color: isDark ? '#a78bfa' : '#7c3aed',
+                        }
                       }}
                     >
                       {children}

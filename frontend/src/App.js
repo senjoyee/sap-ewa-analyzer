@@ -69,31 +69,30 @@ const AppContent = () => {
     <MuiThemeProvider theme={currentTheme}>
       <Box sx={{ display: 'flex', height: '100vh' }}>
         <CssBaseline />
-        <AppBar
-          position="fixed"
-          elevation={0}
+        <AppBar 
+          position="fixed" 
           sx={{ 
             zIndex: (muiTheme) => muiTheme.zIndex.drawer + 1,
-            background: 'linear-gradient(to right, #2193b0, #6dd5ed)',
-            borderBottom: '1px solid rgba(0, 0, 0, 0.05)'
+            background: 'linear-gradient(to right, #1a1a1a, #333333)',
+            borderBottom: '1px solid rgba(255, 255, 255, 0.1)'
           }}
         >
           <Toolbar>
             <Box sx={{ display: 'flex', alignItems: 'center' }}>
-              <DescriptionIcon sx={{ mr: 1.5 }} />
-              <Typography variant="h6" noWrap component="div">
+              <DescriptionIcon sx={{ mr: 1.5, color: '#ffffff' }} />
+              <Typography variant="h6" noWrap component="div" sx={{ color: '#ffffff' }}>
                 EWA Analyzer
               </Typography>
             </Box>
             <Box sx={{ flexGrow: 1 }} />
             {/* Theme toggle removed as we're using only light theme */}
             <Tooltip title="Settings">
-              <IconButton color="inherit">
+              <IconButton sx={{ color: '#ffffff' }}>
                 <SettingsIcon />
               </IconButton>
             </Tooltip>
             <Tooltip title="Help">
-              <IconButton color="inherit">
+              <IconButton sx={{ color: '#ffffff' }}>
                 <HelpOutlineIcon />
               </IconButton>
             </Tooltip>
@@ -109,11 +108,12 @@ const AppContent = () => {
             [`& .MuiDrawer-paper`]: {
               width: sidebarCollapsed ? collapsedDrawerWidth : drawerWidth,
               boxSizing: 'border-box',
-              background: '#ffffff',
-              borderRight: '1px solid #e0e0e0',
+              background: '#121212',
+              borderRight: '1px solid #333333',
               transition: 'width 225ms cubic-bezier(0.4, 0, 0.6, 1) 0ms',
               overflow: 'hidden',
-              boxShadow: '2px 0 8px rgba(0, 0, 0, 0.05)',
+              boxShadow: '2px 0 8px rgba(0, 0, 0, 0.3)',
+              color: '#ffffff',
             },
           }}
         >
@@ -129,7 +129,7 @@ const AppContent = () => {
           }}>
             <Typography variant="h6" sx={{ 
               fontWeight: 600,
-              color: '#1a1a1a',
+              color: '#ffffff',
               fontSize: '1.1rem'
             }}>
               File Management
@@ -138,9 +138,9 @@ const AppContent = () => {
               onClick={() => setSidebarCollapsed(true)}
               size="small"
               sx={{
-                color: '#666',
+                color: '#ffffff',
                 '&:hover': {
-                  backgroundColor: 'rgba(0,0,0,0.04)',
+                  backgroundColor: 'rgba(255,255,255,0.1)',
                 }
               }}
             >
@@ -154,17 +154,18 @@ const AppContent = () => {
             display: 'flex', 
             flexDirection: 'column', 
             gap: 3,
+            background: '#121212',
             '&::-webkit-scrollbar': {
               width: '6px',
             },
             '&::-webkit-scrollbar-track': {
-              background: '#f1f1f1',
+              background: '#1a1a1a',
             },
             '&::-webkit-scrollbar-thumb': {
-              background: '#c1c1c1',
+              background: '#333333',
               borderRadius: '3px',
               '&:hover': {
-                background: '#a8a8a8',
+                background: '#555555',
               },
             },
           }}>
@@ -186,16 +187,16 @@ const AppContent = () => {
               left: 0,
               zIndex: 1200,
               transform: 'translateY(-50%)',
-              backgroundColor: '#e0e0e0',
+              backgroundColor: '#333333',
               borderRadius: '0 4px 4px 0',
-              boxShadow: '2px 0 8px rgba(0,0,0,0.15)',
+              boxShadow: '2px 0 8px rgba(0,0,0,0.5)',
               transition: 'left 225ms cubic-bezier(0.4, 0, 0.6, 1) 0ms',
             }}
           >
             <IconButton
               onClick={() => setSidebarCollapsed(false)}
               size="small"
-              sx={{ borderRadius: '0 4px 4px 0', padding: '12px 4px' }}
+              sx={{ borderRadius: '0 4px 4px 0', padding: '12px 4px', color: '#ffffff' }}
             >
               <ChevronRightIcon />
             </IconButton>
@@ -210,7 +211,7 @@ const AppContent = () => {
             width: `calc(100% - ${sidebarCollapsed ? collapsedDrawerWidth : drawerWidth}px)`,
             display: 'flex',
             flexDirection: 'column',
-            background: 'linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%)',
+            background: '#000000',
             transition: 'width 225ms cubic-bezier(0.4, 0, 0.6, 1) 0ms, margin 225ms cubic-bezier(0.4, 0, 0.6, 1) 0ms',
           }}
         >
