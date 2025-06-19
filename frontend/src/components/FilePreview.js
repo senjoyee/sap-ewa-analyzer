@@ -1054,8 +1054,19 @@ const FilePreview = ({ selectedFile }) => {
                     <Box 
                       component="strong" 
                       sx={{ 
-                        fontWeight: 600,
+                        fontWeight: 400,
                         color: isDark ? '#f3f4f6' : '#111827',
+                      }}
+                    >
+                      {children}
+                    </Box>
+                  ),
+                  em: ({ children }) => (
+                    <Box 
+                      component="em" 
+                      sx={{ 
+                        fontStyle: 'normal',
+                        fontWeight: 400,
                       }}
                     >
                       {children}
