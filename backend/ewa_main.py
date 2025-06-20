@@ -172,6 +172,13 @@ async def list_files():
                 base_name = os.path.splitext(blob.name)[0]
                 json_files[base_name] = True
                 print(f"Found JSON file: {blob.name}, base name: {base_name}")
+                
+                # Check if this is an AI analysis JSON file
+                if base_name.endswith('_AI'):
+                    # Get the original file name by removing _AI suffix
+                    original_base_name = base_name[:-3]  # Remove _AI
+                    ai_analyzed_files[original_base_name] = True
+                    print(f"Found AI analysis JSON file for: {original_base_name}")
                     
             elif name.endswith('.md'):
                 # Store the base name (without extension) as key
@@ -179,12 +186,12 @@ async def list_files():
                 md_files[base_name] = True
                 print(f"Found MD file: {blob.name}, base name: {base_name}")
                 
-                # Check if this is an AI analysis file
+                # Check if this is an AI analysis markdown file
                 if base_name.endswith('_AI'):
                     # Get the original file name by removing _AI suffix
                     original_base_name = base_name[:-3]  # Remove _AI
                     ai_analyzed_files[original_base_name] = True
-                    print(f"Found AI analysis file for: {original_base_name}")
+                    print(f"Found AI analysis markdown file for: {original_base_name}")
         
         # Now process all files, marking those that have been processed
         # but excluding .json and .md files from the final list
@@ -317,10 +324,10 @@ async def process_and_analyze_document_endpoint(request: BlobNameRequest):
     
     This endpoint triggers a sequential operation:
     1. Converts the specified document (PDF, DOCX, DOC) to markdown format.
-    2. If conversion is successful, performs AI analysis on the generated markdown file.
+    2. If conversion is successful, performs AI analysis using the new agentic workflow with structured JSON schema validation.
     
     The entire operation is blocking from the client's perspective until both steps are complete
-    or an error occurs.
+    or an error occurs. The AI analysis creates both human-readable markdown and machine-readable JSON output.
     
     Parameters:
     - request: A ProcessAndAnalyzeRequest object containing:
@@ -328,7 +335,7 @@ async def process_and_analyze_document_endpoint(request: BlobNameRequest):
     
     Returns:
     - JSON response with the overall status, including success/failure, messages, and 
-      references to output files (e.g., AI analysis markdown file).
+      references to output files (e.g., AI analysis markdown and JSON files).
     
     Raises:
     - 404 Not Found: If the specified file doesn't exist at the start of conversion.
@@ -339,8 +346,7 @@ async def process_and_analyze_document_endpoint(request: BlobNameRequest):
 
     try:
         # The ewa_orchestrator instance is globally available in workflow_orchestrator.py
-        # and execute_ewa_analysis (which uses it) is already imported.
-        # We need to call the new method on the global instance.
+        # and process_and_analyze_ewa uses the new agentic workflow
         from workflow_orchestrator import ewa_orchestrator # Ensure direct access if not already structured
         
         result = await ewa_orchestrator.process_and_analyze_ewa(request.blob_name)
@@ -351,8 +357,7 @@ async def process_and_analyze_document_endpoint(request: BlobNameRequest):
             status_code = result.get("status_code", 500) # Allow orchestrator to suggest status code
             raise HTTPException(status_code=status_code, detail=result.get('message', 'Combined processing and analysis failed.'))
         
-        return result # Return the success response from the orchestrator
-
+        return result # Return the success response from the orchestrator (includes JSON file info)
     except HTTPException as http_exc:
         # Re-raise HTTPExceptions directly (e.g., from the check above or if orchestrator raises one)
         raise http_exc
@@ -366,21 +371,18 @@ async def process_and_analyze_document_endpoint(request: BlobNameRequest):
 @app.post("/api/analyze-ai")
 async def analyze_document_with_ai_endpoint(request: BlobNameRequest):
     """
-    Analyze a processed document using Azure OpenAI GPT-4.1 models.
+    Analyze a processed document using Azure OpenAI GPT-4.1 models with structured JSON output.
     
     This endpoint takes a previously processed document (in markdown format) and performs
-    AI analysis using Azure OpenAI GPT models. The analysis includes generating an executive summary
-    and detailed analysis of the SAP EWA report.
-    
-    The analysis is performed asynchronously and creates one output file:
-    - {filename}_AI.md: Executive summary and analysis in markdown format
+    AI analysis using the new agentic workflow. The analysis includes generating an executive summary
+    with structured JSON schema validation and creates both markdown and JSON output files.
     
     Parameters:
     - request: An AIAnalyzeRequest object containing:
       * blob_name: The name of the processed markdown file in Azure Blob Storage to analyze
     
     Returns:
-    - JSON response with analysis status and information about the generated file
+    - JSON response with analysis status and information about the generated files
     
     Raises:
     - 404 Not Found: If the specified markdown file doesn't exist
@@ -412,19 +414,20 @@ async def analyze_document_with_ai_endpoint(request: BlobNameRequest):
         raise HTTPException(status_code=404, detail=f"Markdown file {markdown_file} not found. Please process the document first.")
     
     try:
-        # Execute the AI analysis workflow
+        # Execute the new agentic AI analysis workflow
         result = await ewa_orchestrator.execute_workflow(markdown_file)
         
         # Check if analysis was successful
         if not result.get("success", False):
             raise HTTPException(status_code=500, detail=f"Analysis failed: {result.get('message', 'Unknown error')}")
         
-        # Return the analysis result
+        # Return the analysis result with new JSON file information
         return {
             "success": True,
-            "message": "Analysis completed successfully",
+            "message": "Analysis completed successfully with structured JSON output",
             "original_file": blob_name,
             "analysis_file": result.get("summary_file"),
+            "analysis_json_file": result.get("summary_json_file"),
             "preview": result.get("summary_preview", "")
         }
     except Exception as e:
@@ -437,15 +440,15 @@ async def reprocess_document_with_ai(request: BlobNameRequest):
     Reprocess a document with AI by deleting existing analysis files and running analysis again.
     
     This endpoint takes a previously analyzed document and:
-    1. Deletes the existing AI analysis file (_AI.md)
-    2. Runs the AI analysis again to generate fresh results
+    1. Deletes the existing AI analysis files (_AI.md and _AI.json)
+    2. Runs the AI analysis again using the new agentic workflow to generate fresh results
     
     Parameters:
     - request: An AIReprocessRequest object containing:
       * blob_name: The name of the file in Azure Blob Storage to reprocess
     
     Returns:
-    - JSON response with reprocessing status and information about the generated file
+    - JSON response with reprocessing status and information about the generated files
     
     Raises:
     - 404 Not Found: If the specified file doesn't exist
@@ -464,29 +467,41 @@ async def reprocess_document_with_ai(request: BlobNameRequest):
         
         # Get the base name without extension
         base_name = os.path.splitext(blob_name)[0]
-        ai_file = f"{base_name}_AI.md"
+        ai_md_file = f"{base_name}_AI.md"
+        ai_json_file = f"{base_name}_AI.json"
         
         # Track deleted files
         deleted_files = []
         
-        # Check if AI summary file exists
+        # Check if AI files exist
         blobs_list = container_client.list_blobs(name_starts_with=base_name)
         
         # Collect all file names
         existing_files = [blob.name for blob in blobs_list]
         
-        # Check for AI summary file
-        if ai_file in existing_files:
-            print(f"Found existing AI analysis file: {ai_file}")
+        # Check for and delete AI markdown file
+        if ai_md_file in existing_files:
+            print(f"Found existing AI analysis file: {ai_md_file}")
             try:
-                blob_client = container_client.get_blob_client(ai_file)
+                blob_client = container_client.get_blob_client(ai_md_file)
                 blob_client.delete_blob()
-                deleted_files.append(ai_file)
-                print(f"Deleted existing AI analysis file: {ai_file}")
+                deleted_files.append(ai_md_file)
+                print(f"Deleted existing AI analysis file: {ai_md_file}")
             except Exception as delete_error:
-                print(f"Error deleting AI file {ai_file}: {str(delete_error)}")
+                print(f"Error deleting AI file {ai_md_file}: {str(delete_error)}")
         
-        # Run the AI analysis again
+        # Check for and delete AI JSON file
+        if ai_json_file in existing_files:
+            print(f"Found existing AI JSON file: {ai_json_file}")
+            try:
+                blob_client = container_client.get_blob_client(ai_json_file)
+                blob_client.delete_blob()
+                deleted_files.append(ai_json_file)
+                print(f"Deleted existing AI JSON file: {ai_json_file}")
+            except Exception as delete_error:
+                print(f"Error deleting AI JSON file {ai_json_file}: {str(delete_error)}")
+        
+        # Run the AI analysis again using the new agentic workflow
         result = await ewa_orchestrator.execute_workflow(blob_name)
         
         if result.get("error"):
@@ -496,16 +511,17 @@ async def reprocess_document_with_ai(request: BlobNameRequest):
         # Log success
         print(f"AI reprocessing completed successfully for {blob_name}")
         return {
-            "message": "Reprocessing completed successfully",
+            "message": "Reprocessing completed successfully with structured JSON output",
             "deleted_files": deleted_files,
-            "analysis_file": f"{base_name}_AI.md",
+            "analysis_file": result.get("summary_file"),
+            "analysis_json_file": result.get("summary_json_file"),
             "result": result
         }
         
     except HTTPException as http_error:
         raise http_error
     except Exception as e:
-        error_message = f"Error in AI reprocessing endpoint: {str(e)}"
+        error_message = f"Error in AI reprocessing endpoint for {request.blob_name}: {str(e)}"
         print(error_message)
         raise HTTPException(status_code=500, detail=error_message)
 
@@ -772,4 +788,17 @@ async def ping():
 
 # To run the app (for development): uvicorn ewa_main:app --reload --port 8001
 if __name__ == "__main__":
-    uvicorn.run("ewa_main:app", host="0.0.0.0", port=8001, reload=True)
+    try:
+        # Any other critical initializations that happen before uvicorn.run
+        # and after imports can also be moved inside this try block if needed.
+        print("Attempting to start EWA Analyzer backend...")
+        uvicorn.run("ewa_main:app", host="0.0.0.0", port=8001, reload=True)
+    except BaseException as e:
+        import traceback
+        print("--- STARTUP FAILED ---")
+        print(f"An error occurred during application startup: {type(e).__name__} - {e}")
+        print("Full traceback:")
+        traceback.print_exc()
+        print("--- END OF TRACEBACK ---")
+        # Optionally, re-raise the exception if you want the process to exit with an error code
+        # raise

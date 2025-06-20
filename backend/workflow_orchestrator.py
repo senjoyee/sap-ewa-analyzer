@@ -25,6 +25,8 @@ from dataclasses import dataclass
 from azure.storage.blob import BlobServiceClient
 from openai import AzureOpenAI
 from dotenv import load_dotenv
+from agent.ewa_agent import EWAAgent
+from utils.markdown_utils import json_to_markdown
 from converters import document_converter # Added for combined workflow
 
 # Load environment variables
@@ -74,6 +76,7 @@ class WorkflowState:
     blob_name: str
     markdown_content: str = ""
     summary_result: str = ""
+    summary_json: dict = None
     error: str = ""
 
 class EWAWorkflowOrchestrator:
@@ -241,6 +244,19 @@ class EWAWorkflowOrchestrator:
             return state
     
     # The extract_metrics_step and extract_parameters_step methods have been removed as they are no longer used
+
+    async def run_agent_step(self, state: WorkflowState) -> WorkflowState:
+        """Step 2: Generate structured JSON summary using EWAAgent"""
+        try:
+            print(f"[STEP 2] Running EWAAgent for {state.blob_name}")
+            agent = EWAAgent(client=self.client, model=AZURE_OPENAI_SUMMARY_MODEL, summary_prompt=SUMMARY_PROMPT)
+            summary_json = await agent.run(state.markdown_content)
+            state.summary_json = summary_json
+            state.summary_result = json_to_markdown(summary_json)
+            return state
+        except Exception as e:
+            state.error = str(e)
+            return state
     
     async def save_results_step(self, state: WorkflowState) -> WorkflowState:
         """Step 5: Save all results to blob storage"""
@@ -248,12 +264,14 @@ class EWAWorkflowOrchestrator:
             print(f"[STEP 5] Saving results for {state.blob_name}")
             base_name = os.path.splitext(state.blob_name)[0]
             
-            # Save summary as markdown
+            # Save summary markdown
             summary_blob_name = f"{base_name}_AI.md"
             await self.upload_to_blob(summary_blob_name, state.summary_result, "text/markdown")
             
-            # Only save the summary result - metrics and parameters generation has been removed
-            # We're keeping the code simple by removing the metrics and parameters JSON generation
+            # Save structured JSON as well
+            summary_json_blob_name = f"{base_name}_AI.json"
+            if state.summary_json is not None:
+                await self.upload_to_blob(summary_json_blob_name, json.dumps(state.summary_json, indent=2), "application/json")
             
             return state
         except Exception as e:
@@ -354,16 +372,17 @@ class EWAWorkflowOrchestrator:
             if state.error:
                 raise Exception(state.error)
             
-            # Execute only the summary workflow
-            summary_state = await self.generate_summary_step(state)
+            # Run the agentic structured summary workflow
+            summary_state = await self.run_agent_step(state)
             
             # Check for errors
             if summary_state.error:
-                errors = [f"Summary generation failed: {summary_state.error}"]
+                errors = [f"Agent summary generation failed: {summary_state.error}"]
                 raise Exception(f"Workflow step failed: {'; '.join(errors)}")
             
-            # Store the summary result
+            # Store the summary results
             state.summary_result = summary_state.summary_result
+            state.summary_json = summary_state.summary_json
             
             # Save all results
             state = await self.save_results_step(state)
@@ -377,6 +396,7 @@ class EWAWorkflowOrchestrator:
                 "message": "Workflow completed successfully",
                 "original_file": blob_name,
                 "summary_file": f"{base_name}_AI.md",
+                "summary_json_file": f"{base_name}_AI.json",
                 "summary_data": state.summary_result,
                 "summary_preview": state.summary_result[:500] + "..." if len(state.summary_result) > 500 else state.summary_result
             }
