@@ -96,14 +96,13 @@
         "description": "All relevant SAP system parameters identified in the report, for BASIS consultants.",
         "items": {
           "type": "object",
-          "required": ["name", "area", "current_value", "recommended_value", "description", "status"],
+          "required": ["name", "area", "current_value", "recommended_value", "description"],
           "properties": {
             "name": { "type": "string", "description": "Parameter name" },
             "area": { "type": "string", "description": "Functional/system area" },
             "current_value": { "type": "string", "description": "Current parameter value" },
             "recommended_value": { "type": "string", "description": "Recommended value (if any)" },
-            "description": { "type": "string", "description": "Purpose or notes about the parameter" },
-            "status": { "type": "string", "enum": ["OK", "Not optimal", "Critical"], "description": "Parameter compliance status" }
+            "description": { "type": "string", "description": "Purpose or notes about the parameter" }
           }
         }
       },

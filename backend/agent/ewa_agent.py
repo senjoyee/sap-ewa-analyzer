@@ -15,21 +15,12 @@ Follow these instructions precisely, adhering to the structure of the requested 
 3.  **Executive Summary**: Write a concise summary for a C-level audience, highlighting the overall system status, key business risks, and the most critical actions required.
 4.  **Positive Findings**: Identify areas where the system is performing well or best practices are being followed. Note the area and a brief description.
 5.  **Key Findings**: Detail important observations that are not yet critical but are relevant for system health. For each finding, specify the functional area, a description, its potential technical impact, and **translate this into a potential business impact** (e.g., 'Risk of delayed order processing'). Assign a severity level (Low, Medium, High).
-6.  **Critical Issues**: Identify only the most severe issues (High or Critical severity) that require immediate attention. For each issue, you must provide:
-    *   The EWA check ID.
-    *   The functional area.
-    *   A clear title.
-    *   A detailed description of the issue.
-    *   A hypothesized **likely root cause**, which you must deduce by **cross-correlating findings from different sections of the report**. (e.g., connect a performance issue with database growth and a specific un-optimized custom program). State the connection you found.
-    *   The **business impact** of the issue.
-    *   Its severity.
-    *   A list of **suggested SAP Notes/KBAs**.
-7.  **Recommendations**: Create a list of clear, actionable recommendations. For each, specify a unique ID (e.g., REC-001), priority, the responsible area, the specific action to take, a **validation step** to confirm the fix, and a **preventative action** to stop recurrence. Break down the estimated effort into 'Analysis' and 'Implementation' (Low, Medium, High). Link it to a critical issue ID if applicable.
-8.  **Quick Wins**: After generating all recommendations, create a separate `quickWins` list. Populate it with any recommendations you have marked as 'High' or 'Medium' priority but 'Low' for both analysis and implementation effort.
-9.  **Trend Analysis**: Analyze historical data in the report (e.g., Average Dialog Response Time, DB Growth). Provide the **previous value, the current value, and the percentage change**. Then, provide an overall rating ("Improving", "Stable", "Degrading") for performance and stability, supported by these metrics. Be comprehensive in your analysis.
-10. **Capacity Outlook**: Analyze data on resource consumption. Provide a summary for database growth, CPU, and memory utilization, and give a consolidated outlook on future capacity needs.
-11. **Parameters Table**: Extract and list all relevant parameters across the stack (App & DB) identified in the report. For each parameter, provide: name, area, current value, recommended value, description. Present this as an array in the JSON for tabular display. MAKE SURE ALL PARAMETERS ARE CAPTURED.
-12. **Benchmarking**: Based on your general knowledge of SAP systems, provide a brief benchmark analysis. For key metrics like response times or number of security alerts, comment on whether they are typical, high, or low for an ERP system of this type.
+6.  **Recommendations**: Create a list of clear, actionable recommendations. For each, specify a unique ID (e.g., REC-001), priority, the responsible area, the specific action to take, a **validation step** to confirm the fix, and a **preventative action** to stop recurrence. Break down the estimated effort into 'Analysis' and 'Implementation' (Low, Medium, High). Link it to a critical issue ID if applicable.
+7.  **Quick Wins**: After generating all recommendations, create a separate `quickWins` list. Populate it with any recommendations you have marked as 'High' or 'Medium' priority but 'Low' for both analysis and implementation effort.
+8.  **Trend Analysis**: Analyze historical data in the report (e.g., Average Dialog Response Time, DB Growth). Provide the **previous value, the current value, and the percentage change**. Then, provide an overall rating ("Improving", "Stable", "Degrading") for performance and stability, supported by these metrics. Be comprehensive in your analysis.
+9.  **Capacity Outlook**: Analyze data on resource consumption. Provide a summary for database growth, CPU, and memory utilization, and give a consolidated outlook on future capacity needs.
+10. **Parameters Table**: Extract and list all relevant parameters across the stack (App & DB) identified in the report. For each parameter, provide: name, area, current value, recommended value & description. Present this as an array in the JSON for tabular display. MAKE SURE ALL PARAMETERS ARE CAPTURED.
+11. **Benchmarking**: Based on your general knowledge of SAP systems, provide a brief benchmark analysis. For key metrics like response times or number of security alerts, comment on whether they are typical, high, or low for the system type.
 12. **Overall Risk**: Based on your complete analysis, assign a single overall risk rating: Low, Medium, High, or Critical.
 Ensure your entire output strictly adheres to the provided JSON schema. Do not add any commentary outside of the JSON structure."""
 

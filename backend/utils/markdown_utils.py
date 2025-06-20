@@ -30,9 +30,7 @@ def _array_to_markdown_table(array: List[Dict[str, Any]], section_name: str = No
         row = []
         for k in headers:
             v = item.get(k, 'N/A')
-            # Format dicts for display
             if isinstance(v, dict):
-                # Special formatting for estimatedEffort or similar objects
                 if set(v.keys()) == {'analysis', 'implementation'}:
                     v = f"Analysis: {v.get('analysis', 'N/A')}, Implementation: {v.get('implementation', 'N/A')}"
                 else:
@@ -58,7 +56,7 @@ def json_to_markdown(data: Dict[str, Any]) -> str:
     md.append("## System Health Overview")
     health = data.get('system_health_overview', {})
     if health:
-        rows = [[k.capitalize(), v] for k, v in health.items() if v is not None] # Filter out None values
+        rows = [[k.capitalize(), v] for k, v in health.items() if v is not None]
         if rows:
             md.extend(_format_table(["Area", "Status"], rows))
         else:
@@ -82,12 +80,12 @@ def json_to_markdown(data: Dict[str, Any]) -> str:
     if key_findings:
         headers = ["Severity", "Area", "Finding", "Technical Impact", "Business Impact"]
         rows = []
-        for f_item in key_findings: # Renamed f to f_item to avoid conflict with file open 'f'
+        for f_item in key_findings:
             rows.append([
-                f_item.get('severity', 'N/A'), 
-                f_item.get('area', 'N/A'), 
-                f_item.get('finding', 'N/A'), 
-                f_item.get('impact', 'N/A'), 
+                f_item.get('severity', 'N/A'),
+                f_item.get('area', 'N/A'),
+                f_item.get('finding', 'N/A'),
+                f_item.get('impact', 'N/A'),
                 f_item.get('businessImpact', 'N/A')
             ])
         md.extend(_format_table(headers, rows))
@@ -95,12 +93,34 @@ def json_to_markdown(data: Dict[str, Any]) -> str:
         md.append("No key findings reported.")
     md.append("\n---\n")
 
-    
     # --- Recommendations ---
     md.extend(_array_to_markdown_table(data.get('recommendations', []), 'Actionable Recommendations'))
 
-    # --- Parameters Table ---
-    md.extend(_array_to_markdown_table(data.get('parameters', []), 'Parameters Table'))
+    # --- Parameters Table (custom columns) ---
+    parameters = data.get('parameters', [])
+    md.append("## Parameters Table")
+    if parameters:
+        headers = [
+            "Parameter Name",
+            "Area",
+            "Current Value",
+            "Recommended Value",
+            "Description"
+        ]
+        rows = []
+        for p in parameters:
+            rows.append([
+                p.get('name', 'N/A'),
+                p.get('area', 'N/A'),
+                p.get('current_value', 'N/A'),
+                p.get('recommended_value', 'N/A'),
+                p.get('description', 'N/A')
+            ])
+        md.extend(_format_table(headers, rows))
+        md.append("")
+    else:
+        md.append("No parameters provided.")
+        md.append("")
     md.append("\n---\n")
 
     # --- Quick Wins ---
@@ -115,16 +135,15 @@ def json_to_markdown(data: Dict[str, Any]) -> str:
             md.append("### KPI Trends")
             headers = ["KPI Name", "Previous Value", "Current Value", "Change (%)"]
             rows = []
-            for kpi_item in kpi_trends: # Renamed kpi to kpi_item
+            for kpi_item in kpi_trends:
                 rows.append([
                     kpi_item.get('kpi_name', 'N/A'),
                     kpi_item.get('previous_value', 'N/A'),
                     kpi_item.get('current_value', 'N/A'),
-                    str(kpi_item.get('change_percentage', 'N/A')) # Ensure it's a string for table
+                    str(kpi_item.get('change_percentage', 'N/A'))
                 ])
             md.extend(_format_table(headers, rows))
             md.append("")
-        
         md.append(f"- **Overall Performance Trend:** `{trends.get('performance_trend', 'N/A')}`")
         md.append(f"- **Overall Stability Trend:** `{trends.get('stability_trend', 'N/A')}`")
         md.append(f"- **Trend Summary:** {trends.get('summary', 'N/A')}")
@@ -144,10 +163,6 @@ def json_to_markdown(data: Dict[str, Any]) -> str:
         md.append("No capacity outlook data provided.")
     md.append("\n---\n")
 
-    # --- Parameters Table ---
-    md.extend(_array_to_markdown_table(data.get('parameters', []), 'Parameters Table'))
-    md.append("\n---\n")
-
     # --- Benchmarking ---
     md.append("## Benchmarking")
     benchmarking = data.get('benchmarking', {})
@@ -156,6 +171,5 @@ def json_to_markdown(data: Dict[str, Any]) -> str:
         md.append(f"- **Summary:** {benchmarking.get('summary', 'N/A')}")
     else:
         md.append("No benchmarking data provided.")
-    # md.append("\n---\n") # Removed last --- to avoid double separator if it's the last section
 
     return "\n".join(md)

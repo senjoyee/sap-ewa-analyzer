@@ -42,6 +42,7 @@ import AutorenewIcon from '@mui/icons-material/Autorenew';
 import CheckCircleIcon from '@mui/icons-material/CheckCircle';
 import PendingIcon from '@mui/icons-material/Pending';
 import VisibilityIcon from '@mui/icons-material/Visibility';
+import RefreshIcon from '@mui/icons-material/Refresh';
 
 // Initialise weekOfYear plugin after all imports
 dayjs.extend(weekOfYear);
@@ -97,6 +98,7 @@ const FileList = ({ onFileSelect, refreshTrigger, selectedFile }) => {
   const [expandedCustomers, setExpandedCustomers] = useState({});
   const [aiAnalyzing, setAiAnalyzing] = useState({}); // Track AI analysis status for each file
   const [combinedProcessingStatus, setCombinedProcessingStatus] = useState({}); // Track combined processing & AI analysis status
+  const [reprocessingFiles, setReprocessingFiles] = useState({}); // Track reprocessing status for each file
   const pollingIntervalsRef = useRef({});
   const { theme } = useTheme();
   const isDark = theme === 'dark';
@@ -253,10 +255,10 @@ const FileList = ({ onFileSelect, refreshTrigger, selectedFile }) => {
       return; // User cancelled
     }
     
-    // Set status to analyzing
-    setAiAnalyzing(prev => ({
+    // Set status to reprocessing
+    setReprocessingFiles(prev => ({
       ...prev,
-      [file.id || file.name]: 'analyzing'
+      [file.id || file.name]: true
     }));
     
     try {
@@ -277,10 +279,10 @@ const FileList = ({ onFileSelect, refreshTrigger, selectedFile }) => {
       const result = await response.json();
       console.log('AI Reprocessing result:', result);
       
-      // Set status to completed
-      setAiAnalyzing(prev => ({
+      // Clear reprocessing status
+      setReprocessingFiles(prev => ({
         ...prev,
-        [file.id || file.name]: 'completed'
+        [file.id || file.name]: false
       }));
       
       // Show success message
@@ -288,10 +290,10 @@ const FileList = ({ onFileSelect, refreshTrigger, selectedFile }) => {
       
     } catch (error) {
       console.error(`Error in AI reprocessing for file ${file.name}:`, error);
-      // Set status back to completed on error (since we were in a completed state before)
-      setAiAnalyzing(prev => ({
+      // Clear reprocessing status on error
+      setReprocessingFiles(prev => ({
         ...prev,
-        [file.id || file.name]: 'completed'
+        [file.id || file.name]: false
       }));
       alert(`Error in AI reprocessing: ${error.message}`);
     }
@@ -757,18 +759,37 @@ const FileList = ({ onFileSelect, refreshTrigger, selectedFile }) => {
                                 </Box>
                               ) : (combinedProcessingStatus[file.id || file.name] === 'completed' || file.ai_analyzed) ? (
                                 <Box sx={{ display: 'flex', gap: 0.5 }}>
-                                  <Tooltip title="Display AI Analysis">
-                                    <Button
-                                      variant="contained"
-                                      size="small"
-                                      color="success"
-                                      startIcon={<VisibilityIcon fontSize="small" />}
-                                      onClick={() => handleDisplayAnalysis(file)}
-                                      sx={{ textTransform: 'none', fontSize: '0.75rem', py: 0.5, px:1, minWidth: 'auto' }}
-                                    >
-                                      Display
-                                    </Button>
-                                  </Tooltip>
+                                  {reprocessingFiles[file.id || file.name] ? (
+                                    <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                                      <CircularProgress size={16} thickness={4} color="primary" />
+                                      <Typography variant="caption" color="text.secondary">Reprocessing...</Typography>
+                                    </Box>
+                                  ) : (
+                                    <>
+                                      <Tooltip title="Display AI Analysis">
+                                        <Button
+                                          variant="contained"
+                                          size="small"
+                                          color="success"
+                                          onClick={() => handleDisplayAnalysis(file)}
+                                          sx={{ textTransform: 'none', minWidth: '32px', width: '32px', height: '32px', p: 0 }}
+                                        >
+                                          <VisibilityIcon fontSize="small" />
+                                        </Button>
+                                      </Tooltip>
+                                      <Tooltip title="Reprocess AI Analysis">
+                                        <Button
+                                          variant="contained"
+                                          size="small"
+                                          color="primary"
+                                          onClick={() => handleReprocessAI(file)}
+                                          sx={{ textTransform: 'none', minWidth: '32px', width: '32px', height: '32px', p: 0 }}
+                                        >
+                                          <RefreshIcon fontSize="small" />
+                                        </Button>
+                                      </Tooltip>
+                                    </>
+                                  )}
                                 </Box>
                               ) : (
                                 /* Covers 'idle', 'error', or undefined states for combinedProcessingStatus and file not ai_analyzed */
