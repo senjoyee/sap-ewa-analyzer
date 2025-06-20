@@ -272,6 +272,25 @@ class EWAWorkflowOrchestrator:
             summary_json_blob_name = f"{base_name}_AI.json"
             if state.summary_json is not None:
                 await self.upload_to_blob(summary_json_blob_name, json.dumps(state.summary_json, indent=2), "application/json")
+
+                # Persist report_date as blob metadata so that list_files can group by week/month
+                report_date = state.summary_json.get("report_date")
+                if report_date is None:
+                    report_date = state.summary_json.get("system_metadata", {}).get("report_date")
+                if report_date:
+                    try:
+                        orig_blob_client = self.blob_service_client.get_blob_client(
+                            container=AZURE_STORAGE_CONTAINER_NAME,
+                            blob=state.blob_name
+                        )
+                        existing_metadata = orig_blob_client.get_blob_properties().metadata or {}
+                        # Azure metadata keys must be lowercase
+                        existing_metadata["report_date"] = report_date
+                        orig_blob_client.set_blob_metadata(existing_metadata)
+                        print(f"Set report_date metadata ({report_date}) on {state.blob_name}")
+                    except Exception as meta_e:
+                        # Non-fatal; continue even if metadata update fails
+                        print(f"Warning: could not set report_date metadata for {state.blob_name}: {meta_e}")
             
             return state
         except Exception as e:

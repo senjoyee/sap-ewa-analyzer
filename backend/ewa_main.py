@@ -212,6 +212,7 @@ async def list_files():
             # Extract metadata (including customer_name)
             metadata = properties.metadata
             customer_name = metadata.get('customer_name', 'Unknown') if metadata else 'Unknown'
+            report_date = metadata.get('report_date') if metadata else None
             
             # Check if this file has been processed (has corresponding .json or .md file)
             base_name = os.path.splitext(blob.name)[0]
@@ -231,6 +232,7 @@ async def list_files():
                 "name": blob.name, 
                 "last_modified": blob.last_modified, 
                 "size": blob.size,
+                "report_date": report_date,
                 "customer_name": customer_name,
                 "processed": is_processed,
                 "ai_analyzed": is_ai_analyzed

@@ -92,6 +92,7 @@
             "priority": { "type": "string", "enum": ["High", "Medium", "Low"] },
             "estimatedEffort": {
               "type": "object",
+              "required": ["analysis", "implementation"],
               "properties": {
                 "analysis": { "type": "string", "enum": ["Low", "Medium", "High"] },
                 "implementation": { "type": "string", "enum": ["Low", "Medium", "High"] }

@@ -22,6 +22,11 @@ import ExpandMoreIcon from '@mui/icons-material/ExpandMore';
 import FolderIcon from '@mui/icons-material/Folder';
 import BusinessIcon from '@mui/icons-material/Business';
 import { useTheme } from '../contexts/ThemeContext';
+import dayjs from 'dayjs';
+import weekOfYear from 'dayjs/plugin/weekOfYear';
+import ListSubheader from '@mui/material/ListSubheader';
+
+
 
 // File type icons
 import PictureAsPdfIcon from '@mui/icons-material/PictureAsPdf';
@@ -37,6 +42,9 @@ import AutorenewIcon from '@mui/icons-material/Autorenew';
 import CheckCircleIcon from '@mui/icons-material/CheckCircle';
 import PendingIcon from '@mui/icons-material/Pending';
 import VisibilityIcon from '@mui/icons-material/Visibility';
+
+// Initialise weekOfYear plugin after all imports
+dayjs.extend(weekOfYear);
 
 // Helper function to get appropriate icon for file type
 const getFileIcon = (filename) => {
@@ -102,6 +110,41 @@ const FileList = ({ onFileSelect, refreshTrigger, selectedFile }) => {
         grouped[customer] = [];
       }
       grouped[customer].push(file);
+    });
+    return grouped;
+  };
+
+  // ---- Time-based grouping helpers ----
+  const getWeekKey = (file) => {
+    if (!file.report_date) return 'Unknown';
+    const d = dayjs(file.report_date);
+    if (!d.isValid()) return 'Unknown';
+    return `${d.year()}-W${String(d.week()).padStart(2, '0')}`;
+  };
+
+  const groupByWeek = (files) => {
+    const grouped = {};
+    files.forEach(f => {
+      const key = getWeekKey(f);
+      if (!grouped[key]) grouped[key] = [];
+      grouped[key].push(f);
+    });
+    return grouped;
+  };
+
+  // Month grouping helpers
+  const getMonthKey = (file) => {
+    if (!file.report_date) return 'Unknown';
+    const d = dayjs(file.report_date);
+    return d.isValid() ? d.format('YYYY-MM') : 'Unknown';
+  };
+
+  const groupByMonth = (files) => {
+    const grouped = {};
+    files.forEach(f => {
+      const key = getMonthKey(f);
+      if (!grouped[key]) grouped[key] = [];
+      grouped[key].push(f);
     });
     return grouped;
   };
@@ -626,121 +669,136 @@ const FileList = ({ onFileSelect, refreshTrigger, selectedFile }) => {
             </AccordionSummary>
             <AccordionDetails sx={{ p: 1, backgroundColor: '#1a1a1a' }}>
               <List sx={{ py: 0 }}>
-                {filesByCustomer[customer].map((file) => {
-          const isSelected = selectedFile && (selectedFile.id === file.id || selectedFile.name === file.name);
-          
-          return (
-            <ListItem 
-              key={file.id || file.name} 
-              disablePadding 
-              sx={{ 
-                position: 'relative', 
-                mb: 0.5,
-                '&:last-child': { mb: 0 }
-              }}
-            >
-              <ListItemButton 
-                onClick={() => onFileSelect(file)}
-                selected={isSelected}
-                sx={{
-                  pr: 16, // Standard padding for secondary action
-                  mx: 0.5,
-                  borderRadius: 1,
-                  minHeight: 64,
-                  transition: 'all 0.2s',
-                  backgroundColor: '#242424',
-                  border: '1px solid transparent',
-                  '&.Mui-selected': {
-                    backgroundColor: '#333333',
-                    borderColor: '#60a5fa',
-                    '&:hover': {
-                      backgroundColor: '#404040',
-                    }
-                  },
-                  '&:hover': {
-                    backgroundColor: '#2a2a2a',
-                    borderColor: '#444444',
-                  }
-                }}
-              >
-                <ListItemIcon sx={{ minWidth: 40 }}>
-                  {getFileIcon(file.name)}
-                </ListItemIcon>
-                <Tooltip title={file.name} placement="top-start">
-                  <ListItemText 
-                    primary={
-                      <Typography sx={{ 
-                        fontSize: '0.875rem',
-                        fontWeight: 500,
-                        color: '#ffffff',
-                        overflow: 'hidden',
-                        textOverflow: 'ellipsis',
-                        whiteSpace: 'nowrap'
-                      }}>
-                        {file.name}
-                      </Typography>
-                    }
-                    secondary={
-                      <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5, mt: 0.5 }}>
-                        <Typography variant="caption" sx={{ color: '#cccccc' }}>
-                          {formatFileSize(file.size)}
-                        </Typography>
-                        {file.customer_name && (
-                          <Typography variant="caption" sx={{ color: '#cccccc' }}>
-                            • {file.customer_name}
-                          </Typography>
-                        )}
-                      </Box>
-                    }
-                  />
-                </Tooltip>
-              </ListItemButton>
-              <ListItemSecondaryAction sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-                {combinedProcessingStatus[file.id || file.name] === 'processing' ? (
-                  <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, minWidth: 100, justifyContent: 'center' }}>
-                    <CircularProgress size={20} thickness={4} color="primary" />
-                    <Typography variant="caption" color="text.secondary">Processing...</Typography>
-                  </Box>
-                ) : (combinedProcessingStatus[file.id || file.name] === 'completed' || file.ai_analyzed) ? (
-                  <Box sx={{ display: 'flex', gap: 0.5 }}>
-                    <Tooltip title="Display AI Analysis">
-                      <Button
-                        variant="contained"
-                        size="small"
-                        color="success"
-                        startIcon={<VisibilityIcon fontSize="small" />}
-                        onClick={() => handleDisplayAnalysis(file)}
-                        sx={{ textTransform: 'none', fontSize: '0.75rem', py: 0.5, px:1, minWidth: 'auto' }}
-                      >
-                        Display
-                      </Button>
-                    </Tooltip>
-                  </Box>
-                ) : ( /* Covers 'idle', 'error', or undefined states for combinedProcessingStatus and file not ai_analyzed */
-                  <Tooltip title={combinedProcessingStatus[file.id || file.name] === 'error' ? "Retry Processing and Analysis" : "Process and Analyze Document"}>
-                    <Button
-                      variant="contained"
-                      size="small"
-                      color={combinedProcessingStatus[file.id || file.name] === 'error' ? "error" : "primary"}
-                      startIcon={<PlayArrowIcon fontSize="small" />}
-                      onClick={() => handleProcessAndAnalyze(file)}
-                      sx={{ textTransform: 'none', fontSize: '0.75rem', py: 0.5, px:1, minWidth: 'auto' }}
-                    >
-                      {combinedProcessingStatus[file.id || file.name] === 'error' ? "Retry" : "Process"}
-                    </Button>
-                  </Tooltip>
-                )}
-              </ListItemSecondaryAction>
-            </ListItem>
-          );
-        })}
+                {Object.entries(groupByMonth(filesByCustomer[customer]))
+                  .sort(([aKey],[bKey]) => {
+                    if (aKey === 'Unknown') return 1;
+                    if (bKey === 'Unknown') return -1;
+                    return dayjs(aKey + '-01').isBefore(dayjs(bKey + '-01')) ? -1 : 1;
+                  })
+                  .map(([monthKey, monthFiles]) => {
+                    return (
+                      <React.Fragment key={monthKey}>
+                      <ListSubheader component="div" sx={{ backgroundColor: '#1a1a1a', color: '#60a5fa' }}>
+                        {monthKey === 'Unknown' ? 'Unknown' : dayjs(monthKey + '-01').format('MMMM YYYY')}
+                      </ListSubheader>
+                      {monthFiles.map((file) => {
+                        const isSelected = selectedFile && (selectedFile.id === file.id || selectedFile.name === file.name);
+                        return (
+                          <ListItem 
+                            key={file.id || file.name} 
+                            disablePadding 
+                            sx={{ 
+                              position: 'relative', 
+                              mb: 0.5,
+                              '&:last-child': { mb: 0 }
+                            }}
+                          >
+                            <ListItemButton 
+                              onClick={() => onFileSelect(file)}
+                              selected={isSelected}
+                              sx={{
+                                pr: 16, // Standard padding for secondary action
+                                mx: 0.5,
+                                borderRadius: 1,
+                                minHeight: 64,
+                                transition: 'all 0.2s',
+                                backgroundColor: '#242424',
+                                border: '1px solid transparent',
+                                '&.Mui-selected': {
+                                  backgroundColor: '#333333',
+                                  borderColor: '#60a5fa',
+                                  '&:hover': {
+                                    backgroundColor: '#404040',
+                                  }
+                                },
+                                '&:hover': {
+                                  backgroundColor: '#2a2a2a',
+                                  borderColor: '#444444',
+                                }
+                              }}
+                            >
+                              <ListItemIcon sx={{ minWidth: 40 }}>
+                                {getFileIcon(file.name)}
+                              </ListItemIcon>
+                              <Tooltip title={file.name} placement="top-start">
+                                <ListItemText 
+                                  primary={
+                                    <Typography sx={{ 
+                                      fontSize: '0.875rem',
+                                      fontWeight: 500,
+                                      color: '#ffffff',
+                                      overflow: 'hidden',
+                                      textOverflow: 'ellipsis',
+                                      whiteSpace: 'nowrap'
+                                    }}>
+                                      {file.name}
+                                    </Typography>
+                                  }
+                                  secondary={
+                                    <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5, mt: 0.5 }}>
+                                      <Typography variant="caption" sx={{ color: '#cccccc' }}>
+                                        {formatFileSize(file.size)}
+                                      </Typography>
+                                      {file.customer_name && (
+                                        <Typography variant="caption" sx={{ color: '#cccccc' }}>
+                                          • {file.customer_name}
+                                        </Typography>
+                                      )}
+                                    </Box>
+                                  }
+                                />
+                              </Tooltip>
+                            </ListItemButton>
+                            <ListItemSecondaryAction sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                              {combinedProcessingStatus[file.id || file.name] === 'processing' ? (
+                                <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, minWidth: 100, justifyContent: 'center' }}>
+                                  <CircularProgress size={20} thickness={4} color="primary" />
+                                  <Typography variant="caption" color="text.secondary">Processing...</Typography>
+                                </Box>
+                              ) : (combinedProcessingStatus[file.id || file.name] === 'completed' || file.ai_analyzed) ? (
+                                <Box sx={{ display: 'flex', gap: 0.5 }}>
+                                  <Tooltip title="Display AI Analysis">
+                                    <Button
+                                      variant="contained"
+                                      size="small"
+                                      color="success"
+                                      startIcon={<VisibilityIcon fontSize="small" />}
+                                      onClick={() => handleDisplayAnalysis(file)}
+                                      sx={{ textTransform: 'none', fontSize: '0.75rem', py: 0.5, px:1, minWidth: 'auto' }}
+                                    >
+                                      Display
+                                    </Button>
+                                  </Tooltip>
+                                </Box>
+                              ) : (
+                                /* Covers 'idle', 'error', or undefined states for combinedProcessingStatus and file not ai_analyzed */
+                                <Tooltip title={combinedProcessingStatus[file.id || file.name] === 'error' ? "Retry Processing and Analysis" : "Process and Analyze Document"}>
+                                  <Button
+                                    variant="contained"
+                                    size="small"
+                                    color={combinedProcessingStatus[file.id || file.name] === 'error' ? "error" : "primary"}
+                                    startIcon={<PlayArrowIcon fontSize="small" />}
+                                    onClick={() => handleProcessAndAnalyze(file)}
+                                    sx={{ textTransform: 'none', fontSize: '0.75rem', py: 0.5, px:1, minWidth: 'auto' }}
+                                  >
+                                    {combinedProcessingStatus[file.id || file.name] === 'error' ? "Retry" : "Process"}
+                                  </Button>
+                                </Tooltip>
+                              )}
+                            </ListItemSecondaryAction>
+                          </ListItem>
+                        );
+                      })}
+                    </React.Fragment>
+                  );
+                })}
               </List>
             </AccordionDetails>
           </Accordion>
         ))}
       </Box>
     );
-  }
+   }
 
   return (
     <Box sx={{ 
