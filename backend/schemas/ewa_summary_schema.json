@@ -5,11 +5,12 @@
     "type": "object",
     "required": [
       "system_metadata",
-      "system_health_overview",
       "executive_summary",
+      "system_health_overview",
       "key_findings",
       "critical_issues",
       "recommendations",
+      "parameters",
       "quickWins",
       "trend_analysis",
       "capacity_outlook",
@@ -64,23 +65,7 @@
           }
         }
       },
-      "critical_issues": {
-        "type": "array",
-        "items": {
-          "type": "object",
-          "required": ["id", "area", "title", "description", "likely_root_cause", "businessImpact", "severity", "suggested_sap_notes"],
-          "properties": {
-            "id": { "type": "string", "description": "The EWA check ID or a unique identifier." },
-            "area": { "type": "string" },
-            "title": { "type": "string" },
-            "description": { "type": "string" },
-            "likely_root_cause": { "type": "string", "description": "A hypothesis on the root cause, based on cross-correlating data from the report." },
-            "businessImpact": { "type": "string", "description": "The potential risk to business operations." },
-            "severity": { "type": "string", "enum": ["High", "Critical"] },
-            "suggested_sap_notes": { "type": "array", "items": { "type": "string" } }
-          }
-        }
-      },
+
       "recommendations": {
         "type": "array",
         "description": "A full list of detailed, actionable recommendations.",
@@ -103,6 +88,22 @@
             "action": { "type": "string", "description": "The specific, detailed action to be taken." },
             "validationStep": { "type": "string", "description": "How to verify that the action was successful." },
             "preventativeAction": { "type": "string", "description": "A step to prevent this issue from recurring." }
+          }
+        }
+      },
+      "parameters": {
+        "type": "array",
+        "description": "All relevant SAP system parameters identified in the report, for BASIS consultants.",
+        "items": {
+          "type": "object",
+          "required": ["name", "area", "current_value", "recommended_value", "description", "status"],
+          "properties": {
+            "name": { "type": "string", "description": "Parameter name" },
+            "area": { "type": "string", "description": "Functional/system area" },
+            "current_value": { "type": "string", "description": "Current parameter value" },
+            "recommended_value": { "type": "string", "description": "Recommended value (if any)" },
+            "description": { "type": "string", "description": "Purpose or notes about the parameter" },
+            "status": { "type": "string", "enum": ["OK", "Not optimal", "Critical"], "description": "Parameter compliance status" }
           }
         }
       },

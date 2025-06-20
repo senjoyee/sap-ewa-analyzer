@@ -13,6 +13,38 @@ def _format_table(headers: List[str], rows: List[List[str]]) -> List[str]:
         md.append(f"| {' | '.join(str(x) if x is not None else 'N/A' for x in row)} |")
     return md
 
+def _array_to_markdown_table(array: List[Dict[str, Any]], section_name: str = None) -> List[str]:
+    md = []
+    if section_name:
+        md.append(f"## {section_name}")
+    if not array:
+        md.append(f"No {section_name.lower() if section_name else 'data'} provided.")
+        return md
+    # Collect all unique keys from all items for header
+    all_keys = set()
+    for item in array:
+        all_keys.update(item.keys())
+    headers = [str(k) for k in all_keys]
+    rows = []
+    for item in array:
+        row = []
+        for k in headers:
+            v = item.get(k, 'N/A')
+            # Format dicts for display
+            if isinstance(v, dict):
+                # Special formatting for estimatedEffort or similar objects
+                if set(v.keys()) == {'analysis', 'implementation'}:
+                    v = f"Analysis: {v.get('analysis', 'N/A')}, Implementation: {v.get('implementation', 'N/A')}"
+                else:
+                    v = ', '.join(f"{k}: {val}" for k, val in v.items()) if v else 'N/A'
+            elif isinstance(v, list):
+                v = ', '.join(str(x) for x in v) if v else 'N/A'
+            row.append(str(v))
+        rows.append(row)
+    md.extend(_format_table(headers, rows))
+    md.append("")
+    return md
+
 def json_to_markdown(data: Dict[str, Any]) -> str:
     """Converts the validated EWA summary JSON (v2.0) to a Markdown string."""
     md = []
@@ -41,13 +73,7 @@ def json_to_markdown(data: Dict[str, Any]) -> str:
     md.append("\n---\n")
 
     # --- Positive Findings ---
-    md.append("## Positive Findings")
-    positive_findings = data.get('positive_findings', [])
-    if positive_findings:
-        for finding in positive_findings:
-            md.append(f"- **{finding.get('area', 'N/A')}:** {finding.get('description', 'N/A')}")
-    else:
-        md.append("No positive findings reported.")
+    md.extend(_array_to_markdown_table(data.get('positive_findings', []), 'Positive Findings'))
     md.append("\n---\n")
 
     # --- Key Findings ---
@@ -69,51 +95,16 @@ def json_to_markdown(data: Dict[str, Any]) -> str:
         md.append("No key findings reported.")
     md.append("\n---\n")
 
-    # --- Critical Issues ---
-    md.append("## Critical Issues")
-    critical_issues = data.get('critical_issues', [])
-    if critical_issues:
-        for issue in critical_issues:
-            md.append(f"### `[{issue.get('severity', 'N/A')}]` {issue.get('title', 'N/A')} (ID: {issue.get('id', 'N/A')})")
-            md.append(f"- **Area:** {issue.get('area', 'N/A')}")
-            md.append(f"- **Description:** {issue.get('description', 'N/A')}")
-            md.append(f"- **Likely Root Cause:** {issue.get('likely_root_cause', 'N/A')}")
-            md.append(f"- **Business Impact:** {issue.get('businessImpact', 'N/A')}")
-            notes_list = issue.get('suggested_sap_notes', [])
-            notes = ", ".join(notes_list) if notes_list else 'N/A'
-            md.append(f"- **Suggested SAP Notes:** {notes}")
-            md.append("") # Spacer
-    else:
-        md.append("No critical issues reported.")
-    md.append("\n---\n")
     
-    # --- Helper function for formatting recommendations (used for Recommendations and Quick Wins) ---
-    def _format_recommendation_details(recommendations_list: List[Dict[str, Any]], title: str) -> List[str]:
-        rec_md = []
-        rec_md.append(f"## {title}")
-        if recommendations_list:
-            for r_item in recommendations_list: # Renamed r to r_item
-                rec_md.append(f"### `[{r_item.get('priority', 'N/A')}]` {r_item.get('action', 'No action text provided')} (ID: {r_item.get('recommendationId', 'N/A')})")
-                effort = r_item.get('estimatedEffort', {})
-                effort_analysis = effort.get('analysis', 'N/A')
-                effort_impl = effort.get('implementation', 'N/A')
-                rec_md.append(f"- **Estimated Effort:** Analysis: `{effort_analysis}`, Implementation: `{effort_impl}`")
-                rec_md.append(f"- **Responsible Area:** {r_item.get('responsibleArea', 'N/A')}")
-                if r_item.get('linkedIssueId'): # Check if linkedIssueId exists and is not empty
-                    rec_md.append(f"- **Linked Critical Issue ID:** {r_item.get('linkedIssueId')}")
-                rec_md.append(f"- **Validation Step:** {r_item.get('validationStep', 'N/A')}")
-                rec_md.append(f"- **Preventative Action:** {r_item.get('preventativeAction', 'N/A')}")
-                rec_md.append("") # Spacer
-        else:
-            rec_md.append(f"No {title.lower()} provided.")
-        rec_md.append("\n---\n")
-        return rec_md
-
     # --- Recommendations ---
-    md.extend(_format_recommendation_details(data.get('recommendations', []), "Actionable Recommendations"))
+    md.extend(_array_to_markdown_table(data.get('recommendations', []), 'Actionable Recommendations'))
+
+    # --- Parameters Table ---
+    md.extend(_array_to_markdown_table(data.get('parameters', []), 'Parameters Table'))
+    md.append("\n---\n")
 
     # --- Quick Wins ---
-    md.extend(_format_recommendation_details(data.get('quickWins', []), "Quick Wins"))
+    md.extend(_array_to_markdown_table(data.get('quickWins', []), 'Quick Wins'))
 
     # --- Trend Analysis ---
     md.append("## Trend Analysis")
@@ -151,6 +142,10 @@ def json_to_markdown(data: Dict[str, Any]) -> str:
         md.append(f"- **Capacity Summary:** {capacity.get('summary', 'N/A')}")
     else:
         md.append("No capacity outlook data provided.")
+    md.append("\n---\n")
+
+    # --- Parameters Table ---
+    md.extend(_array_to_markdown_table(data.get('parameters', []), 'Parameters Table'))
     md.append("\n---\n")
 
     # --- Benchmarking ---

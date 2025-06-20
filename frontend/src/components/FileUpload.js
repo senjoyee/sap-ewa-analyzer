@@ -384,8 +384,40 @@ const FileUpload = ({ onUploadSuccess }) => {
                   required
                   startAdornment={<BusinessIcon sx={{ mr: 1, color: 'text.secondary' }} />}
                   sx={{
-                    borderRadius: 1.5,
-                    bgcolor: isDark ? 'rgba(255, 255, 255, 0.03)' : 'rgba(0, 0, 0, 0.02)',
+                    borderRadius: 8,
+                    bgcolor: '#222',
+                    fontFamily: "'Inter', 'Roboto', 'Arial', sans-serif",
+                    fontSize: '1rem',
+                    fontWeight: 400,
+                    color: '#fff',
+                    minHeight: 44,
+                    '& .MuiSelect-select': {
+                      color: '#fff',
+                      fontFamily: "'Inter', 'Roboto', 'Arial', sans-serif",
+                      fontSize: '1rem',
+                      fontWeight: 400,
+                      background: 'none',
+                    },
+                    '& .MuiOutlinedInput-notchedOutline': {
+                      borderColor: '#333',
+                    },
+                    '&:hover .MuiOutlinedInput-notchedOutline': {
+                      borderColor: '#60a5fa',
+                    },
+                    '&.Mui-focused .MuiOutlinedInput-notchedOutline': {
+                      borderColor: '#60a5fa',
+                    },
+                  }}
+                  MenuProps={{
+                    PaperProps: {
+                      sx: {
+                        bgcolor: '#222',
+                        color: '#fff',
+                        fontFamily: "'Inter', 'Roboto', 'Arial', sans-serif",
+                        fontSize: '0.7rem',
+                        borderRadius: 2,
+                      },
+                    },
                   }}
                   displayEmpty
                 >
