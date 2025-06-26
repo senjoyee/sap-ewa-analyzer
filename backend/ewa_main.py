@@ -48,9 +48,13 @@ app = FastAPI()
 from routers.storage_router import router as storage_router
 from routers.conversion_router import router as conversion_router
 from routers.ai_router import router as ai_router
+from routers.export_router import router as export_router
+from routers.health_router import router as health_router
 app.include_router(storage_router)
 app.include_router(conversion_router)
 app.include_router(ai_router)
+app.include_router(export_router)
+app.include_router(health_router)
 
 # CORS Configuration
 origins = [
@@ -604,7 +608,7 @@ async def download_file(blob_name: str):
 
 
 # Endpoint: Export Markdown to PDF
-@app.get("/api/export-pdf")
+# @app.get("/api/export-pdf")  # migrated to export_router
 async def export_markdown_to_pdf(blob_name: str):
     """
     Convert a Markdown blob stored in Azure Blob Storage to a high-quality PDF using WeasyPrint.
@@ -851,7 +855,7 @@ Keep your responses informative and technically precise, as you're assisting an 
 
 
 # Simple test endpoint to check server availability
-@app.get("/api/ping")
+# @app.get("/api/ping")  # migrated to health_router
 async def ping():
     """
     Health check endpoint to verify the server is running.
