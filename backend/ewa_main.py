@@ -42,6 +42,12 @@ if not AZURE_STORAGE_CONTAINER_NAME:
 
 app = FastAPI()
 
+# ---------------------------------------------------------------------------
+# Register modular routers
+# ---------------------------------------------------------------------------
+from routers.storage_router import router as storage_router
+app.include_router(storage_router)
+
 # CORS Configuration
 origins = [
     "http://localhost:3000",  # Allow your React frontend
@@ -67,7 +73,7 @@ except Exception as e:
     blob_service_client = None
 
 
-@app.post("/api/upload")
+# @app.post("/api/upload")  # migrated to storage_router
 async def upload_file(file: UploadFile = File(...), customer_name: str = Form(...)):
     """
     Upload a document file to Azure Blob Storage.
@@ -129,7 +135,7 @@ async def upload_file(file: UploadFile = File(...), customer_name: str = Form(..
         raise HTTPException(status_code=500, detail=f"Could not upload file: {str(e)}")
 
 
-@app.get("/api/files")
+# @app.get("/api/files")  # migrated to storage_router
 async def list_files():
     """
     List all files stored in Azure Blob Storage with their processing status.
@@ -529,7 +535,7 @@ async def reprocess_document_with_ai(request: BlobNameRequest):
         print(error_message)
         raise HTTPException(status_code=500, detail=error_message)
 
-@app.get("/api/download/{blob_name}")
+# @app.get("/api/download/{blob_name}")  # migrated to storage_router
 async def download_file(blob_name: str):
     """
     Download a file from Azure Blob Storage.
