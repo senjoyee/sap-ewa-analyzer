@@ -78,15 +78,15 @@ def json_to_markdown(data: Dict[str, Any]) -> str:
     md.append("## Key Findings")
     key_findings = data.get('key_findings', [])
     if key_findings:
-        headers = ["Severity", "Area", "Finding", "Technical Impact", "Business Impact"]
+        headers = ["Area", "Finding", "Impact", "Business Impact", "Severity"]
         rows = []
         for f_item in key_findings:
             rows.append([
-                f_item.get('severity', 'N/A'),
-                f_item.get('area', 'N/A'),
-                f_item.get('finding', 'N/A'),
-                f_item.get('impact', 'N/A'),
-                f_item.get('businessImpact', 'N/A')
+                f_item.get('Area', 'N/A'),
+                f_item.get('Finding', 'N/A'),
+                f_item.get('Impact', 'N/A'),
+                f_item.get('Business Impact', 'N/A'),
+                f_item.get('Severity', 'N/A')
             ])
         md.extend(_format_table(headers, rows))
     else:
@@ -94,14 +94,14 @@ def json_to_markdown(data: Dict[str, Any]) -> str:
     md.append("\n---\n")
 
     # --- Recommendations ---
-    md.extend(_array_to_markdown_table(data.get('recommendations', []), 'Actionable Recommendations'))
+    md.extend(_array_to_markdown_table(data.get('recommendations', []), 'Recommendations'))
 
     # --- Parameters Table (custom columns) ---
     parameters = data.get('parameters', [])
-    md.append("## Parameters Table")
+    md.append("## Parameters")
     if parameters:
         headers = [
-            "Parameter Name",
+            "Name",
             "Area",
             "Current Value",
             "Recommended Value",
@@ -110,11 +110,11 @@ def json_to_markdown(data: Dict[str, Any]) -> str:
         rows = []
         for p in parameters:
             rows.append([
-                p.get('name', 'N/A'),
-                p.get('area', 'N/A'),
-                p.get('current_value', 'N/A'),
-                p.get('recommended_value', 'N/A'),
-                p.get('description', 'N/A')
+                p.get('Name', 'N/A'),
+                p.get('Area', 'N/A'),
+                p.get('Current Value', 'N/A'),
+                p.get('Recommended Value', 'N/A'),
+                p.get('Description', 'N/A')
             ])
         md.extend(_format_table(headers, rows))
         md.append("")
@@ -128,47 +128,47 @@ def json_to_markdown(data: Dict[str, Any]) -> str:
 
     # --- Trend Analysis ---
     md.append("## Trend Analysis")
-    trends = data.get('trend_analysis', {})
+    trends = data.get('Trend Analysis', {}) or data.get('trend_analysis', {})
     if trends:
-        kpi_trends = trends.get('kpi_trends', [])
+        kpi_trends = trends.get('KPI Trends', [])
         if kpi_trends:
             md.append("### KPI Trends")
-            headers = ["KPI Name", "Previous Value", "Current Value", "Change (%)"]
+            headers = ["KPI Name", "Previous Value", "Current Value", "Change Percentage"]
             rows = []
             for kpi_item in kpi_trends:
                 rows.append([
-                    kpi_item.get('kpi_name', 'N/A'),
-                    kpi_item.get('previous_value', 'N/A'),
-                    kpi_item.get('current_value', 'N/A'),
-                    str(kpi_item.get('change_percentage', 'N/A'))
+                    kpi_item.get('KPI Name', 'N/A'),
+                    kpi_item.get('Previous Value', 'N/A'),
+                    kpi_item.get('Current Value', 'N/A'),
+                    str(kpi_item.get('Change Percentage', 'N/A'))
                 ])
             md.extend(_format_table(headers, rows))
             md.append("")
-        md.append(f"- **Overall Performance Trend:** `{trends.get('performance_trend', 'N/A')}`")
-        md.append(f"- **Overall Stability Trend:** `{trends.get('stability_trend', 'N/A')}`")
-        md.append(f"- **Trend Summary:** {trends.get('summary', 'N/A')}")
+        md.append(f"- **Overall Performance Trend:** `{trends.get('Performance Trend', 'N/A')}`")
+        md.append(f"- **Overall Stability Trend:** `{trends.get('Stability Trend', 'N/A')}`")
+        md.append(f"- **Trend Summary:** {trends.get('Summary', 'N/A')}")
     else:
         md.append("No trend analysis data provided.")
     md.append("\n---\n")
 
     # --- Capacity Outlook ---
     md.append("## Capacity Outlook")
-    capacity = data.get('capacity_outlook', {})
+    capacity = data.get('Capacity Outlook', {})
     if capacity:
-        md.append(f"- **Database Growth:** {capacity.get('database_growth', 'N/A')}")
-        md.append(f"- **CPU Utilization:** {capacity.get('cpu_utilization', 'N/A')}")
-        md.append(f"- **Memory Utilization:** {capacity.get('memory_utilization', 'N/A')}")
-        md.append(f"- **Capacity Summary:** {capacity.get('summary', 'N/A')}")
+        md.append(f"- **Database Growth:** {capacity.get('Database Growth', 'N/A')}")
+        md.append(f"- **CPU Utilization:** {capacity.get('CPU Utilization', 'N/A')}")
+        md.append(f"- **Memory Utilization:** {capacity.get('Memory Utilization', 'N/A')}")
+        md.append(f"- **Capacity Summary:** {capacity.get('Summary', 'N/A')}")
     else:
         md.append("No capacity outlook data provided.")
     md.append("\n---\n")
 
     # --- Benchmarking ---
     md.append("## Benchmarking")
-    benchmarking = data.get('benchmarking', {})
+    benchmarking = data.get('Benchmarking', {})
     if benchmarking:
-        md.append(f"- **Comparison:** {benchmarking.get('comparison', 'N/A')}")
-        md.append(f"- **Summary:** {benchmarking.get('summary', 'N/A')}")
+        md.append(f"- **Comparison:** {benchmarking.get('Comparison', 'N/A')}")
+        md.append(f"- **Summary:** {benchmarking.get('Summary', 'N/A')}")
     else:
         md.append("No benchmarking data provided.")
 

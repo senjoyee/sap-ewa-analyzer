@@ -46,8 +46,8 @@
           "type": "object",
           "required": ["area", "description"],
           "properties": {
-            "area": { "type": "string" },
-            "description": { "type": "string" }
+            "Area": { "type": "string" },
+            "Description": { "type": "string" }
           }
         }
       },
@@ -57,11 +57,11 @@
           "type": "object",
           "required": ["area", "finding", "impact", "businessImpact", "severity"],
           "properties": {
-            "area": { "type": "string" },
-            "finding": { "type": "string" },
-            "impact": { "type": "string", "description": "The potential technical impact." },
-            "businessImpact": { "type": "string", "description": "The potential risk to business operations." },
-            "severity": { "type": "string", "enum": ["Low", "Medium", "High"] }
+            "Area": { "type": "string" },
+            "Finding": { "type": "string" },
+            "Impact": { "type": "string", "description": "The potential technical impact." },
+            "Business Impact": { "type": "string", "description": "The potential risk to business operations." },
+            "Severity": { "type": "string", "enum": ["Low", "Medium", "High"] }
           }
         }
       },
@@ -71,23 +71,22 @@
         "description": "A full list of detailed, actionable recommendations.",
         "items": {
           "type": "object",
-          "required": ["recommendationId", "priority", "estimatedEffort", "responsibleArea", "action", "validationStep", "preventativeAction"],
+          "required": ["Recommendation Id", "Priority", "Estimated Effort", "Responsible Area", "Action", "Preventative Action"],
           "properties": {
-            "recommendationId": { "type": "string", "pattern": "^REC-[0-9]{3}$" },
-            "priority": { "type": "string", "enum": ["High", "Medium", "Low"] },
-            "estimatedEffort": {
+            "Recommendation Id": { "type": "string", "pattern": "^REC-[0-9]{3}$" },
+            "Priority": { "type": "string", "enum": ["High", "Medium", "Low"] },
+            "Estimated Effort": {
               "type": "object",
-              "required": ["analysis", "implementation"],
+              "required": ["Analysis", "Implementation"],
               "properties": {
-                "analysis": { "type": "string", "enum": ["Low", "Medium", "High"] },
-                "implementation": { "type": "string", "enum": ["Low", "Medium", "High"] }
+                "Analysis": { "type": "string", "enum": ["Low", "Medium", "High"] },
+                "Implementation": { "type": "string", "enum": ["Low", "Medium", "High"] }
               }
             },
-            "responsibleArea": { "type": "string" },
-            "linkedIssueId": { "type": "string", "description": "The ID of the critical issue this recommendation addresses." },
-            "action": { "type": "string", "description": "The specific, detailed action to be taken." },
-            "validationStep": { "type": "string", "description": "How to verify that the action was successful." },
-            "preventativeAction": { "type": "string", "description": "A step to prevent this issue from recurring." }
+            "Responsible Area": { "type": "string" },
+            "Linked Issue Id": { "type": "string", "description": "The ID of the critical issue this recommendation addresses." },
+            "Action": { "type": "string", "description": "The specific, detailed action to be taken." },
+            "Preventative Action": { "type": "string", "description": "A step to prevent this issue from recurring." }
           }
         }
       },
@@ -98,11 +97,11 @@
           "type": "object",
           "required": ["name", "area", "current_value", "recommended_value", "description"],
           "properties": {
-            "name": { "type": "string", "description": "Parameter name" },
-            "area": { "type": "string", "description": "Functional/system area" },
-            "current_value": { "type": "string", "description": "Current parameter value" },
-            "recommended_value": { "type": "string", "description": "Recommended value (if any)" },
-            "description": { "type": "string", "description": "Purpose or notes about the parameter" }
+            "Name": { "type": "string", "description": "Parameter name" },
+            "Area": { "type": "string", "description": "Functional/system area" },
+            "Current Value": { "type": "string", "description": "Current parameter value" },
+            "Recommended Value": { "type": "string", "description": "Recommended value (if any)" },
+            "Description": { "type": "string", "description": "Purpose or notes about the parameter" }
           }
         }
       },
@@ -114,41 +113,41 @@
       "trend_analysis": {
         "type": "object",
         "properties": {
-          "kpi_trends": {
+          "KPI Trends": {
             "type": "array",
             "items": {
               "type": "object",
               "properties": {
-                "kpi_name": { "type": "string" },
-                "previous_value": { "type": "string" },
-                "current_value": { "type": "string" },
-                "change_percentage": { "type": "number" }
+                "KPI Name": { "type": "string" },
+                "Previous Value": { "type": "string" },
+                "Current Value": { "type": "string" },
+                "Change Percentage": { "type": "number" }
               }
             }
           },
-          "performance_trend": { "type": "string", "enum": ["Improving", "Stable", "Degrading"] },
-          "stability_trend": { "type": "string", "enum": ["Improving", "Stable", "Degrading"] },
-          "summary": { "type": "string" }
+          "Performance Trend": { "type": "string", "enum": ["Improving", "Stable", "Degrading"] },
+          "Stability Trend": { "type": "string", "enum": ["Improving", "Stable", "Degrading"] },
+          "Summary": { "type": "string" }
         }
       },
-      "capacity_outlook": {
+      "Capacity Outlook": {
         "type": "object",
         "properties": {
-          "database_growth": { "type": "string" },
-          "cpu_utilization": { "type": "string" },
-          "memory_utilization": { "type": "string" },
-          "summary": { "type": "string" }
+          "Database Growth": { "type": "string" },
+          "CPU Utilization": { "type": "string" },
+          "Memory Utilization": { "type": "string" },
+          "Summary": { "type": "string" }
         }
       },
       "benchmarking": {
         "type": "object",
         "description": "Compares system metrics against industry standards.",
         "properties": {
-          "comparison": { "type": "string", "description": "A statement comparing a key metric (e.g., response time) to a known benchmark." },
-          "summary": { "type": "string", "description": "An overall assessment of how the system stacks up against peers." }
+          "Comparison": { "type": "string", "description": "A statement comparing a key metric (e.g., response time) to a known benchmark." },
+          "Summary": { "type": "string", "description": "An overall assessment of how the system stacks up against peers." }
         }
       },
-      "overall_risk": {
+      "Overall Risk": {
         "type": "string",
         "enum": ["Low", "Medium", "High", "Critical"]
       }

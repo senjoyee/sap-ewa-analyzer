@@ -333,6 +333,19 @@ const FileList = ({ onFileSelect, refreshTrigger, selectedFile }) => {
     }
   };
 
+  // Function to export Markdown (or AI analysis) to PDF via backend endpoint
+  const handleExportPDF = async (file) => {
+    try {
+      const baseName = file.name.split('.').slice(0, -1).join('.');
+      const mdFileName = file.ai_analyzed ? `${baseName}_AI.md` : `${baseName}.md`;
+      const url = `http://localhost:8001/api/export-pdf?blob_name=${encodeURIComponent(mdFileName)}`;
+      window.open(url, '_blank');
+    } catch (err) {
+      console.error(`Error exporting PDF for ${file.name}:`, err);
+      alert(`Failed to export PDF: ${err.message}`);
+    }
+  };
+
   // Function to handle combined processing and AI analysis
   const handleProcessAndAnalyze = async (file) => {
     console.log(`Starting combined processing and AI analysis for file: ${file.name}`);
@@ -766,6 +779,17 @@ const FileList = ({ onFileSelect, refreshTrigger, selectedFile }) => {
                                     </Box>
                                   ) : (
                                     <>
+                                      <Tooltip title="Export PDF">
+                                        <Button
+                                          variant="contained"
+                                          size="small"
+                                          color="warning"
+                                          onClick={() => handleExportPDF(file)}
+                                          sx={{ textTransform: 'none', minWidth: '32px', width: '32px', height: '32px', p: 0 }}
+                                        >
+                                          <PictureAsPdfIcon fontSize="small" />
+                                        </Button>
+                                      </Tooltip>
                                       <Tooltip title="Display AI Analysis">
                                         <Button
                                           variant="contained"

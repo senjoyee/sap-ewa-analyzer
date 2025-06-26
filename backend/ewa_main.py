@@ -26,6 +26,8 @@ from converters.document_converter import convert_document_to_markdown, get_conv
 from workflow_orchestrator import ewa_orchestrator
 import uvicorn # For running the app
 import json
+import markdown2
+from weasyprint import HTML
 
 # Load environment variables from .env file
 load_dotenv()
@@ -590,6 +592,72 @@ async def download_file(blob_name: str):
         print(error_message)
         raise HTTPException(status_code=500, detail=error_message)
 
+
+# Endpoint: Export Markdown to PDF
+@app.get("/api/export-pdf")
+async def export_markdown_to_pdf(blob_name: str):
+    """
+    Convert a Markdown blob stored in Azure Blob Storage to a high-quality PDF using WeasyPrint.
+
+    Parameters:
+    - blob_name: The name of the **.md** file in Azure Blob Storage.
+
+    Returns:
+    - PDF file as `application/pdf` response.
+    """
+    if not blob_service_client:
+        raise HTTPException(status_code=500, detail="Azure Blob Service client not initialized.")
+
+    if not blob_name.lower().endswith(".md"):
+        raise HTTPException(status_code=400, detail="blob_name must point to a .md file.")
+
+    try:
+        blob_client = blob_service_client.get_blob_client(container=AZURE_STORAGE_CONTAINER_NAME, blob=blob_name)
+        if not blob_client.exists():
+            raise HTTPException(status_code=404, detail=f"Markdown file {blob_name} not found in storage")
+
+        md_bytes = blob_client.download_blob().readall()
+        md_text = md_bytes.decode("utf-8", errors="ignore")
+
+        # Convert Markdown to HTML with extras for tables & code blocks
+        body_html = markdown2.markdown(md_text, extras=["tables", "fenced-code-blocks", "footnotes"])
+
+        # Basic optional print stylesheet
+        styles = '''
+            @page { size: A4 landscape; margin: 20mm; }
+            body { font-family: "Helvetica", sans-serif; color: #000; }
+            code, pre { background: #f5f5f5; font-family: "Courier New", monospace; }
+            pre { padding: 8px; overflow-x: auto; }
+            table { border-collapse: collapse; width: 100%; table-layout: fixed; margin-bottom: 1em; }
+            th { 
+                border: 1px solid #666; 
+                padding: 8px; 
+                background-color: #f2f2f2; 
+                text-align: center; 
+                font-weight: bold;
+            }
+            td { 
+                border: 1px solid #ddd; 
+                padding: 8px; 
+                word-break: break-word; 
+                overflow-wrap: break-word; 
+                vertical-align: top;
+            }
+        '''
+        full_html = f"<html><head><meta charset='utf-8'><style>{styles}</style></head><body>{body_html}</body></html>"
+
+        pdf_bytes = HTML(string=full_html, base_url=".").write_pdf()
+
+        pdf_filename = os.path.splitext(blob_name)[0] + ".pdf"
+        return Response(content=pdf_bytes,
+                        media_type="application/pdf",
+                        headers={"Content-Disposition": f"attachment; filename=\"{pdf_filename}\""})
+
+    except HTTPException:
+        raise
+    except Exception as e:
+        print(f"Error exporting markdown to PDF for {blob_name}: {e}")
+        raise HTTPException(status_code=500, detail=f"Error exporting markdown to PDF: {str(e)}")
 
 # Model for chat request
 class ChatRequest(BaseModel):
