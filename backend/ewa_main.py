@@ -46,7 +46,11 @@ app = FastAPI()
 # Register modular routers
 # ---------------------------------------------------------------------------
 from routers.storage_router import router as storage_router
+from routers.conversion_router import router as conversion_router
+from routers.ai_router import router as ai_router
 app.include_router(storage_router)
+app.include_router(conversion_router)
+app.include_router(ai_router)
 
 # CORS Configuration
 origins = [
@@ -257,7 +261,7 @@ async def list_files():
 class BlobNameRequest(BaseModel):
     blob_name: str
 
-@app.post("/api/analyze")
+# @app.post("/api/analyze")  # migrated to conversion_router
 async def analyze_document(request: BlobNameRequest):
     """
     Process a document using Azure Document Intelligence.
@@ -291,7 +295,7 @@ async def analyze_document(request: BlobNameRequest):
         raise HTTPException(status_code=500, detail=f"Error converting document: {str(e)}")
 
 
-@app.get("/api/analysis-status/{blob_name}")
+# @app.get("/api/analysis-status/{blob_name}")  # migrated to conversion_router
 async def get_document_analysis_status(blob_name: str):
     """
     Get the status of a document conversion job.
@@ -327,7 +331,7 @@ async def get_document_analysis_status(blob_name: str):
         raise HTTPException(status_code=500, detail=f"Error getting conversion status: {str(e)}")
 
 
-@app.post("/api/process-and-analyze")
+# @app.post("/api/process-and-analyze")  # migrated to ai_router
 async def process_and_analyze_document_endpoint(request: BlobNameRequest):
     """
     Process a document to markdown and then perform AI analysis in a single combined workflow.
@@ -378,7 +382,7 @@ async def process_and_analyze_document_endpoint(request: BlobNameRequest):
         raise HTTPException(status_code=500, detail=f"An unexpected error occurred during combined processing and analysis: {str(e)}")
 
 
-@app.post("/api/analyze-ai")
+# @app.post("/api/analyze-ai")  # migrated to ai_router
 async def analyze_document_with_ai_endpoint(request: BlobNameRequest):
     """
     Analyze a processed document using Azure OpenAI GPT-4.1 models with structured JSON output.
@@ -444,7 +448,7 @@ async def analyze_document_with_ai_endpoint(request: BlobNameRequest):
         raise HTTPException(status_code=500, detail=f"Analysis failed: {str(e)}")
 
 
-@app.post("/api/reprocess-ai")
+# @app.post("/api/reprocess-ai")  # migrated to ai_router
 async def reprocess_document_with_ai(request: BlobNameRequest):
     """
     Reprocess a document with AI by deleting existing analysis files and running analysis again.
