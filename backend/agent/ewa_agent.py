@@ -24,6 +24,12 @@ Follow these instructions precisely, adhering to the structure of the requested 
 12. **Overall Risk**: Based on your complete analysis, assign a single overall risk rating: Low, Medium, High, or Critical.
 Ensure your entire output strictly adheres to the provided JSON schema. Do not add any commentary outside of the JSON structure."""
 
+# Attempt to load prompt from prompts/ewa_summary_prompt.md (preferred over inline string)
+DEFAULT_PROMPT_PATH = os.path.join(os.path.dirname(os.path.abspath(__file__)), "..", "prompts", "ewa_summary_prompt.md")
+if os.path.exists(DEFAULT_PROMPT_PATH):
+    with open(DEFAULT_PROMPT_PATH, "r", encoding="utf-8") as _f:
+        DEFAULT_PROMPT = _f.read()
+
 class EWAAgent:
     """Small agent that plans (single step) and returns a validated JSON summary."""
 

@@ -98,9 +98,33 @@ async def chat_with_document(request: ChatRequest):
         raise HTTPException(status_code=500, detail="Unexpected server error in chat endpoint.")
 
 
+# Path to system prompt template
+_PROMPT_PATH = os.path.join(os.path.dirname(os.path.abspath(__file__)), "..", "prompts", "chat_system_prompt.md")
+
+
 def _build_system_prompt(filename: str, doc_content: str) -> str:
-    """Return the same long system prompt used previously (condensed slightly)."""
-    return f"""You are an expert SAP Basis Architect specialized in analyzing SAP Early Watch Alert (EWA) reports.\n\nDOCUMENT: {filename}\nCONTENT:\n{doc_content}\n\nIMPORTANT INSTRUCTIONS:\n1. This is an SAP Early Watch Alert (EWA) report which contains system performance metrics, issues, warnings, and recommendations.\n2. The report typically covers areas like database statistics, memory usage, backup frequency, system availability, and performance parameters.\n3. When answering questions, focus on extracting SPECIFIC INFORMATION from the document, even if it's just a brief mention.\n4. If information is present but brief, explain it and note that limited details are available.\n5. Be especially attentive to technical metrics, parameter recommendations, and critical warnings in the report.\n6. Quote specific sections and values from the report whenever possible.\n7. If you truly cannot find ANY mention of a topic, only then state that it's not in the document.\n\nDIRECTING USERS TO SPECIALIZED SECTIONS:\n1. This application has DEDICATED SECTIONS for Key Metrics and Parameters that provide more detailed and structured information.\n2. When users ask about specific metrics, give a brief summary (exclude numeric values) and direct them explicitly to the Key Metrics section.\n3. When users ask about parameters, give a brief summary (exclude numeric values) and direct them explicitly to the Parameters section.\n\nProvide technically precise answers in Markdown."""
+    """Return the chat system prompt, loading from markdown template if present."""
+    if os.path.exists(_PROMPT_PATH):
+        with open(_PROMPT_PATH, "r", encoding="utf-8") as _f:
+            template = _f.read()
+        return template.format(filename=filename, doc_content=doc_content)
+
+    # Fallback inline prompt (legacy)
+    return (
+        "You are an expert SAP Basis Architect specialized in analyzing SAP Early Watch Alert (EWA) reports.\n\n"
+        f"DOCUMENT: {filename}\nCONTENT:\n{doc_content}\n\n"
+        "IMPORTANT INSTRUCTIONS:\n1. This is an SAP Early Watch Alert (EWA) report which contains system performance metrics, issues, warnings, and recommendations.\n"
+        "2. The report typically covers areas like database statistics, memory usage, backup frequency, system availability, and performance parameters.\n"
+        "3. When answering questions, focus on extracting SPECIFIC INFORMATION from the document, even if it's just a brief mention.\n"
+        "4. If information is present but brief, explain it and note that limited details are available.\n"
+        "5. Be especially attentive to technical metrics, parameter recommendations, and critical warnings in the report.\n"
+        "6. Quote specific sections and values from the report whenever possible.\n"
+        "7. If you truly cannot find ANY mention of a topic, only then state that it's not in the document.\n\n"
+        "DIRECTING USERS TO SPECIALIZED SECTIONS:\n1. This application has DEDICATED SECTIONS for Key Metrics and Parameters that provide more detailed and structured information.\n"
+        "2. When users ask about specific metrics, give a brief summary (exclude numeric values) and direct them explicitly to the Key Metrics section.\n"
+        "3. When users ask about parameters, give a brief summary (exclude numeric values) and direct them explicitly to the Parameters section.\n\n"
+        "Provide technically precise answers in Markdown."
+    )
 
 
 def _humanize_openai_error(err: Exception, model_name: str) -> str:

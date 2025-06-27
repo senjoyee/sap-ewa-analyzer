@@ -10,7 +10,7 @@ No functional changes.
 from __future__ import annotations
 
 from fastapi import APIRouter, HTTPException
-from models import BlobNameRequest
+from backend.models import BlobNameRequest
 
 from converters.document_converter import convert_document_to_markdown, get_conversion_status
 
