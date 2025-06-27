@@ -10,15 +10,13 @@ No functional changes.
 from __future__ import annotations
 
 from fastapi import APIRouter, HTTPException
-from pydantic import BaseModel
+from models import BlobNameRequest
 
 from converters.document_converter import convert_document_to_markdown, get_conversion_status
 
 router = APIRouter(prefix="/api", tags=["conversion"])
 
 
-class BlobNameRequest(BaseModel):
-    blob_name: str
 
 
 @router.post("/analyze")

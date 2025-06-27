@@ -14,7 +14,7 @@ import os
 from typing import Dict, Any
 
 from fastapi import APIRouter, HTTPException
-from pydantic import BaseModel
+from models import BlobNameRequest
 from azure.storage.blob import BlobServiceClient
 from dotenv import load_dotenv
 
@@ -36,8 +36,6 @@ except Exception as e:
 router = APIRouter(prefix="/api", tags=["ai-workflow"])
 
 
-class BlobNameRequest(BaseModel):
-    blob_name: str
 
 
 # ---------------------------------------------------------------------------
