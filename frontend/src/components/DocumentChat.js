@@ -267,7 +267,10 @@ const DocumentChat = ({ fileName, documentContent }) => {
     }
   }, [fileName, documentContent]);
 
-  const handleSendMessage = async () => {
+  // Determine API base URL: env var or same-origin
+const API_BASE = (process.env.REACT_APP_API_BASE || window.__ENV__?.REACT_APP_API_BASE || window.location.origin).replace(/\/$/, '');
+
+const handleSendMessage = async () => {
     if (!inputValue.trim() || loading) return;
 
     const userMessage = { text: inputValue, isUser: true, timestamp: new Date() };
@@ -286,7 +289,7 @@ const DocumentChat = ({ fileName, documentContent }) => {
       
       console.log(`Sending chat request for ${fileName} with content length: ${documentContent?.length || 0}`);
       
-      const response = await fetch('/api/chat', {
+      const response = await fetch(`${API_BASE}/api/chat`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',

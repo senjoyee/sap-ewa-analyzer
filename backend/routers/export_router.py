@@ -4,7 +4,7 @@ from __future__ import annotations
 
 import os
 
-from fastapi import APIRouter, HTTPException, Response
+from fastapi import APIRouter, HTTPException, Response, Query
 from azure.storage.blob import BlobServiceClient
 from dotenv import load_dotenv
 from weasyprint import HTML
@@ -26,7 +26,7 @@ router = APIRouter(prefix="/api", tags=["export"])
 
 
 @router.get("/export-pdf")
-async def export_markdown_to_pdf(blob_name: str):
+async def export_markdown_to_pdf(blob_name: str, landscape: bool = Query(True, description="Render PDF in landscape orientation (default: true)")):
     """Convert a Markdown blob stored in Azure Blob Storage to a PDF using WeasyPrint."""
     if not blob_service_client:
         raise HTTPException(status_code=500, detail="Azure Blob Service client not initialized")
@@ -47,14 +47,17 @@ async def export_markdown_to_pdf(blob_name: str):
 
         # Very basic markdown -> HTML conversion (could use markdown2 but avoid extra dep)
         from markdown2 import markdown
-        body_html = markdown(markdown_text)
+        # Enable GitHub-style tables and fenced code blocks for proper rendering
+        body_html = markdown(markdown_text, extras=["tables", "fenced-code-blocks"])
 
         styles = """
             body { font-family: Arial, Helvetica, sans-serif; }
-            table { width: 100%; border-collapse: collapse; }
+            table { border-collapse: collapse; width:100%; font-size:10pt; }
             th, td { border: 1px solid #ddd; padding: 6px; text-align: left; }
             th { background-color: #f2f2f2; }
         """
+        if landscape:
+            styles = "@page { size: A4 landscape; margin: 15mm; }\n" + styles
         full_html = f"<html><head><meta charset='utf-8'><style>{styles}</style></head><body>{body_html}</body></html>"
 
         pdf_bytes = HTML(string=full_html, base_url=".").write_pdf()

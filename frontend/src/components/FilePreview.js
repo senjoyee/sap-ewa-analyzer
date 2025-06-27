@@ -593,10 +593,13 @@ const FilePreview = ({ selectedFile }) => {
         // IMPORTANT: Try different file formats in a specific order to ensure we get the best content
         // 1. ALWAYS use the original markdown file as primary source for chat context
         const baseName = selectedFile.name.replace(/\.[^/.]+$/, "");
-        const mdFileName = `${baseName}.md`;
+        // Determine API base URL: env var or same-origin
+const API_BASE = (process.env.REACT_APP_API_BASE || window.__ENV__?.REACT_APP_API_BASE || window.location.origin).replace(/\/$/, '');
+
+const mdFileName = `${baseName}.md`;
         console.log(`Loading original markdown file for context: ${mdFileName}`);
         
-        let response = await fetch(`/api/download/${mdFileName}`);
+        let response = await fetch(`${API_BASE}/api/download/${mdFileName}`);
         
         // 2. Only if original markdown not found, try others as fallback
         if (!response.ok) {
@@ -604,13 +607,13 @@ const FilePreview = ({ selectedFile }) => {
           // Try AI file as fallback (not ideal but better than nothing)
           const aiFileName = `${baseName}_AI.md`;
           console.log(`Trying AI file as fallback: ${aiFileName}`);
-          response = await fetch(`/api/download/${aiFileName}`);
+          response = await fetch(`${API_BASE}/api/download/${aiFileName}`);
         }
         
         // 3. If markdown not found, try the original file as last resort
         if (!response.ok) {
           console.log(`Markdown file not found, trying original file: ${selectedFile.name}`);
-          response = await fetch(`/api/download/${selectedFile.name}`);
+          response = await fetch(`${API_BASE}/api/download/${selectedFile.name}`);
         }
         
         if (response.ok) {
