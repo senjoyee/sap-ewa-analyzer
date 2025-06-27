@@ -64,6 +64,21 @@ class EWAAgent:
         return summary_json
 
     # ----------------------------- Internal helpers ----------------------------- #
+
+    async def refine(self, markdown: str, draft_json: dict) -> dict:
+        """Improve a first-pass JSON using self.model, then return the new JSON."""
+        repair_prompt = (
+            "Using the prior draft below, enhance depth, fill missing values, "
+            "and return ONLY the corrected JSON object."
+        )
+        messages = [
+            {"role": "system", "content": self.summary_prompt},
+            {"role": "assistant", "content": json.dumps(draft_json)},
+            {"role": "user", "content": repair_prompt},
+        ]
+        response = await self._async_openai(messages)
+        return json.loads(response.choices[0].message.function_call.arguments)
+
     async def _call_openai(self, markdown: str) -> Dict[str, Any]:
         messages = [
             {"role": "system", "content": self.summary_prompt},
@@ -84,17 +99,39 @@ class EWAAgent:
 
     async def _async_openai(self, messages):
         loop = asyncio.get_running_loop()
-        return await loop.run_in_executor(
-            None,
-            lambda: self.client.chat.completions.create(
-                model=self.model,
-                messages=messages,
-                max_tokens=16384,
-                functions=[self.function_def],
-                function_call={"name": "create_ewa_summary"},
-                temperature=0.0,
-            ),
-        )
+        def call():
+            if "o4-mini" in self.model:
+                return self.client.chat.completions.create(
+                    model=self.model,
+                    messages=messages,
+                    max_completion_tokens=32768,
+                    reasoning_effort="high",
+                    functions=[self.function_def],
+                    function_call={"name": "create_ewa_summary"},
+                )
+            else:
+                return self.client.chat.completions.create(
+                    model=self.model,
+                    messages=messages,
+                    max_tokens=16384,
+                    functions=[self.function_def],
+                    function_call={"name": "create_ewa_summary"},
+                    temperature=0.0,
+                )
+        import traceback
+        try:
+            response = await loop.run_in_executor(None, call)
+            # Print token usage if available
+            if hasattr(response, 'usage') and response.usage is not None:
+                prompt_tokens = getattr(response.usage, 'prompt_tokens', None)
+                completion_tokens = getattr(response.usage, 'completion_tokens', None)
+                total_tokens = getattr(response.usage, 'total_tokens', None)
+                print(f"[TOKEN USAGE] Prompt: {prompt_tokens} | Completion: {completion_tokens} | Total: {total_tokens}")
+            return response
+        except Exception as e:
+            print("[EWAAgent._async_openai] Exception occurred:")
+            traceback.print_exc()
+            raise
 
     def _is_valid(self, data: Dict[str, Any]) -> bool:
         try:

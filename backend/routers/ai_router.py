@@ -14,7 +14,7 @@ import os
 from typing import Dict, Any
 
 from fastapi import APIRouter, HTTPException
-from backend.models import BlobNameRequest
+from models import BlobNameRequest
 from azure.storage.blob import BlobServiceClient
 from dotenv import load_dotenv
 

@@ -53,7 +53,7 @@ def load_summary_prompt():
     # os.path.dirname(__file__) gives the directory of the current script (backend)
     # os.path.join then constructs prompts/summary_system_prompt.md relative to that
     current_dir = os.path.dirname(os.path.abspath(__file__))
-    prompt_path = os.path.join(current_dir, "prompts", "summary_system_prompt.md")
+    prompt_path = os.path.join(current_dir, "prompts", "ewa_summary_prompt.md")
     try:
         with open(prompt_path, "r", encoding="utf-8") as f:
             return f.read()
@@ -178,11 +178,23 @@ class EWAWorkflowOrchestrator:
                 params = {
                     "model": model,
                     "messages": messages,
-                    "max_completion_tokens": 32000,
+                    "max_completion_tokens": 32768,
                     "reasoning_effort": "medium"
                 }
-                print(f"[MODEL INFO] Using model: {model} with max_completion_tokens=32000")
+                print(f"[MODEL INFO] Using model: {model} with max_completion_tokens=32768")
                 print(f"[MODEL PARAMS] Using reasoning_effort=medium with {model} model")
+            elif "gpt-4.1-mini" in model:
+                # gpt-4.1-mini expects max_tokens, not max_completion_tokens
+                params = {
+                    "model": model,
+                    "messages": messages,
+                    "temperature": 0.0,
+                    "top_p": 0.0,
+                    "max_tokens": max_tokens,
+                    "frequency_penalty": 0,
+                    "presence_penalty": 0
+                }
+                print(f"[MODEL INFO] Using model: {model} with max_tokens={max_tokens}")
             else:
                 # Parameters for other models
                 params = {
@@ -245,18 +257,28 @@ class EWAWorkflowOrchestrator:
     
     # The extract_metrics_step and extract_parameters_step methods have been removed as they are no longer used
 
-    async def run_agent_step(self, state: WorkflowState) -> WorkflowState:
-        """Step 2: Generate structured JSON summary using EWAAgent"""
+    async def run_dual_agent_step(self, state: WorkflowState) -> WorkflowState:
+        """Step 2: Two-pass summary workflow: fast extraction then deep refine."""
         try:
-            print(f"[STEP 2] Running EWAAgent for {state.blob_name}")
-            agent = EWAAgent(client=self.client, model=AZURE_OPENAI_SUMMARY_MODEL, summary_prompt=SUMMARY_PROMPT)
-            summary_json = await agent.run(state.markdown_content)
-            state.summary_json = summary_json
-            state.summary_result = json_to_markdown(summary_json)
+            import os
+            fast_model = os.getenv("AZURE_OPENAI_FAST_MODEL", "gpt-4.1-mini")
+            reasoning_model = os.getenv("AZURE_OPENAI_REASONING_MODEL", "o4-mini")
+
+            print(f"[STEP 2a] Running EWAAgent (fast model: {fast_model}) for {state.blob_name}")
+            fast_agent = EWAAgent(client=self.client, model=fast_model, summary_prompt=SUMMARY_PROMPT)
+            draft_json = await fast_agent.run(state.markdown_content)
+
+            print(f"[STEP 2b] Running EWAAgent.refine (reasoning model: {reasoning_model}) for {state.blob_name}")
+            deep_agent = EWAAgent(client=self.client, model=reasoning_model, summary_prompt=SUMMARY_PROMPT)
+            final_json = await deep_agent.refine(state.markdown_content, draft_json)
+
+            state.summary_json = final_json
+            state.summary_result = json_to_markdown(final_json)
             return state
         except Exception as e:
             state.error = str(e)
             return state
+
     
     async def save_results_step(self, state: WorkflowState) -> WorkflowState:
         """Step 5: Save all results to blob storage"""
@@ -391,8 +413,8 @@ class EWAWorkflowOrchestrator:
             if state.error:
                 raise Exception(state.error)
             
-            # Run the agentic structured summary workflow
-            summary_state = await self.run_agent_step(state)
+            # Run the two-pass agentic structured summary workflow
+            summary_state = await self.run_dual_agent_step(state)
             
             # Check for errors
             if summary_state.error:
