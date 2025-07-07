@@ -1,155 +1,233 @@
 {
-    "$schema": "https://json-schema.org/draft/2020-12/schema",
-    "title": "GodLevelEWAAnalysis",
-    "description": "A comprehensive, strategic, and actionable analysis of an SAP EarlyWatch Alert report.",
-    "type": "object",
-    "required": [
-      "system_metadata",
-      "executive_summary",
-      "system_health_overview",
-      "key_findings",
-      "critical_issues",
-      "recommendations",
-      "parameters",
-      "quickWins",
-      "trend_analysis",
-      "capacity_outlook",
-      "benchmarking",
-      "overall_risk"
-    ],
-    "properties": {
-      "system_metadata": {
-        "type": "object",
-        "required": ["system_id", "report_date", "analysis_period"],
-        "properties": {
-          "system_id": { "type": "string", "description": "The SAP System ID (SID)." },
-          "report_date": { "type": "string", "format": "date", "description": "The date the EWA report was generated." },
-          "analysis_period": { "type": "string", "description": "The date range the report covers." }
-        }
-      },
-      "system_health_overview": {
-        "type": "object",
-        "properties": {
-          "performance": { "type": "string", "enum": ["Good", "Fair", "Poor"] },
-          "security": { "type": "string", "enum": ["Good", "Fair", "Poor"] },
-          "stability": { "type": "string", "enum": ["Good", "Fair", "Poor"] },
-          "configuration": { "type": "string", "enum": ["Good", "Fair", "Poor"] }
-        }
-      },
-      "executive_summary": {
-        "type": "string",
-        "description": "A concise summary for a C-level audience, focusing on business risk and key actions."
-      },
-      "positive_findings": {
-        "type": "array",
-        "items": {
-          "type": "object",
-          "required": ["area", "description"],
-          "properties": {
-            "Area": { "type": "string" },
-            "Description": { "type": "string" }
-          }
-        }
-      },
-      "key_findings": {
-        "type": "array",
-        "items": {
-          "type": "object",
-          "required": ["area", "finding", "impact", "businessImpact", "severity"],
-          "properties": {
-            "Area": { "type": "string" },
-            "Finding": { "type": "string" },
-            "Impact": { "type": "string", "description": "The potential technical impact." },
-            "Business Impact": { "type": "string", "description": "The potential risk to business operations." },
-            "Severity": { "type": "string", "enum": ["Low", "Medium", "High"] }
-          }
-        }
-      },
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://example.com/schemas/god_level_ewa_analysis/v1.1.json",
+  "title": "GodLevelEWAAnalysis",
+  "description": "Structured, actionable analysis of an SAP EarlyWatch Alert report.",
+  "type": "object",
+  "properties": {
+    "schema_version": {
+      "type": "string",
+      "const": "1.1"
+    },
 
-      "recommendations": {
-        "type": "array",
-        "description": "A full list of detailed, actionable recommendations.",
-        "items": {
-          "type": "object",
-          "required": ["Recommendation Id", "Priority", "Estimated Effort", "Responsible Area", "Action", "Preventative Action"],
-          "properties": {
-            "Recommendation Id": { "type": "string", "pattern": "^REC-[0-9]{3}$" },
-            "Priority": { "type": "string", "enum": ["High", "Medium", "Low"] },
-            "Estimated Effort": {
-              "type": "object",
-              "required": ["Analysis", "Implementation"],
-              "properties": {
-                "Analysis": { "type": "string", "enum": ["Low", "Medium", "High"] },
-                "Implementation": { "type": "string", "enum": ["Low", "Medium", "High"] }
-              }
-            },
-            "Responsible Area": { "type": "string" },
-            "Linked Issue Id": { "type": "string", "description": "The ID of the critical issue this recommendation addresses." },
-            "Action": { "type": "string", "description": "The specific, detailed action to be taken." },
-            "Preventative Action": { "type": "string", "description": "A step to prevent this issue from recurring." }
-          }
+    "system_metadata": {
+      "type": "object",
+      "required": ["system_id", "report_date", "analysis_period"],
+      "properties": {
+        "system_id": {
+          "type": "string",
+          "description": "The SAP System ID (SID)."
+        },
+        "report_date": {
+          "type": "string",
+          "format": "date",
+          "description": "Date the EWA report was generated."
+        },
+        "analysis_period": {
+          "type": "string",
+          "description": "Date range the report covers (e.g. 2024-05-01 / 2024-05-31)."
         }
-      },
-      "parameters": {
-        "type": "array",
-        "description": "All relevant SAP system parameters identified in the report, for BASIS consultants.",
-        "items": {
-          "type": "object",
-          "required": ["name", "area", "current_value", "recommended_value", "description"],
-          "properties": {
-            "Name": { "type": "string", "description": "Parameter name" },
-            "Area": { "type": "string", "description": "Functional/system area" },
-            "Current Value": { "type": "string", "description": "Current parameter value" },
-            "Recommended Value": { "type": "string", "description": "Recommended value (if any)" },
-            "Description": { "type": "string", "description": "Purpose or notes about the parameter" }
-          }
-        }
-      },
-      "quickWins": {
-        "type": "array",
-        "description": "High-impact, low-effort recommendations for immediate action.",
-        "items": { "$ref": "#/properties/recommendations/items" }
-      },
-      "trend_analysis": {
+      }
+    },
+
+    "system_health_overview": {
+      "type": "object",
+      "properties": {
+        "performance": { "type": "string", "enum": ["Good", "Fair", "Poor"] },
+        "security":    { "type": "string", "enum": ["Good", "Fair", "Poor"] },
+        "stability":   { "type": "string", "enum": ["Good", "Fair", "Poor"] },
+        "configuration": { "type": "string", "enum": ["Good", "Fair", "Poor"] }
+      }
+    },
+
+    "executive_summary": {
+      "type": "string",
+      "description": "Concise bullet-point summary for a C-level audience."
+    },
+
+    "positive_findings": {
+      "type": "array",
+      "items": {
         "type": "object",
+        "required": ["area", "description"],
         "properties": {
-          "KPI Trends": {
-            "type": "array",
-            "items": {
-              "type": "object",
-              "properties": {
-                "KPI Name": { "type": "string" },
-                "Previous Value": { "type": "string" },
-                "Current Value": { "type": "string" },
-                "Change Percentage": { "type": "number" }
-              }
+          "area":        { "type": "string" },
+          "description": { "type": "string" }
+        }
+      }
+    },
+
+    "key_findings": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["id", "area", "finding", "impact", "business_impact", "severity"],
+        "properties": {
+          "id": {
+            "type": "string",
+            "pattern": "^KF-[0-9]{3}$",
+            "description": "Unique key finding identifier."
+          },
+          "area":            { "type": "string" },
+          "finding":         { "type": "string" },
+          "impact":          { "type": "string", "description": "Potential technical impact." },
+          "business_impact": { "type": "string", "description": "Translated business risk." },
+          "severity":        { "type": "string", "enum": ["Low", "Medium", "High", "Critical"] }
+        }
+      }
+    },
+
+    "recommendations": {
+      "type": "array",
+      "description": "Detailed, actionable recommendations.",
+      "items": {
+        "type": "object",
+        "required": [
+          "recommendation_id",
+          "priority",
+          "estimated_effort",
+          "responsible_area",
+          "action",
+          "validation_step",
+          "preventative_action"
+        ],
+        "properties": {
+          "recommendation_id": {
+            "type": "string",
+            "pattern": "^REC-[0-9]{3}$"
+          },
+          "priority": { "type": "string", "enum": ["High", "Medium", "Low"] },
+
+          "estimated_effort": {
+            "type": "object",
+            "required": ["analysis", "implementation"],
+            "properties": {
+              "analysis":      { "type": "string", "enum": ["Low", "Medium", "High"] },
+              "implementation":{ "type": "string", "enum": ["Low", "Medium", "High"] }
             }
           },
-          "Performance Trend": { "type": "string", "enum": ["Improving", "Stable", "Degrading"] },
-          "Stability Trend": { "type": "string", "enum": ["Improving", "Stable", "Degrading"] },
-          "Summary": { "type": "string" }
+
+          "responsible_area": { "type": "string" },
+          "linked_issue_id": {
+            "type": "string",
+            "pattern": "^KF-[0-9]{3}$",
+            "description": "Key finding this recommendation addresses."
+          },
+          "action":             { "type": "string", "description": "Specific steps to execute." },
+          "validation_step":    { "type": "string", "description": "How to confirm the fix was effective." },
+          "preventative_action":{ "type": "string", "description": "Measure to prevent recurrence." }
         }
-      },
-      "Capacity Outlook": {
+      }
+    },
+
+    "parameters": {
+      "type": "array",
+      "description": "Relevant SAP profile parameters.",
+      "items": {
         "type": "object",
+        "required": ["name", "area", "current_value", "recommended_value", "description"],
         "properties": {
-          "Database Growth": { "type": "string" },
-          "CPU Utilization": { "type": "string" },
-          "Memory Utilization": { "type": "string" },
-          "Summary": { "type": "string" }
+          "name":              { "type": "string" },
+          "area":              { "type": "string" },
+          "current_value":     { "type": "string" },
+          "recommended_value": { "type": "string" },
+          "description":       { "type": "string" }
         }
-      },
-      "benchmarking": {
-        "type": "object",
-        "description": "Compares system metrics against industry standards.",
-        "properties": {
-          "Comparison": { "type": "string", "description": "A statement comparing a key metric (e.g., response time) to a known benchmark." },
-          "Summary": { "type": "string", "description": "An overall assessment of how the system stacks up against peers." }
-        }
-      },
-      "Overall Risk": {
-        "type": "string",
-        "enum": ["Low", "Medium", "High", "Critical"]
+      }
+    },
+
+
+    "trend_analysis": {
+      "type": "object",
+      "properties": {
+        "kpi_trends": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "properties": {
+              "kpi_name":         { "type": "string" },
+              "previous_value":   { "type": "string" },
+              "current_value":    { "type": "string" },
+              "change_percentage":{ "type": "number" }
+            }
+          }
+        },
+        "performance_trend": { "type": "string", "enum": ["Improving", "Stable", "Degrading"] },
+        "stability_trend":   { "type": "string", "enum": ["Improving", "Stable", "Degrading"] },
+        "summary":           { "type": "string" }
+      }
+    },
+
+    "capacity_outlook": {
+      "type": "object",
+      "properties": {
+        "database_growth":   { "type": "string" },
+        "cpu_utilization":   { "type": "string" },
+        "memory_utilization":{ "type": "string" },
+        "summary":           { "type": "string" }
+      }
+    },
+
+    "benchmarking": {
+      "type": "object",
+      "description": "Comparison versus industry norms.",
+      "properties": {
+        "comparison": { "type": "string" },
+        "summary":    { "type": "string" }
+      }
+    },
+
+    "overall_risk": {
+      "type": "string",
+      "enum": ["Low", "Medium", "High", "Critical"]
+    }
+  },
+
+  "required": [
+    "schema_version",
+    "system_metadata",
+    "executive_summary",
+    "system_health_overview",
+    "positive_findings",
+    "key_findings",
+    "recommendations",
+    "parameters",
+
+    "trend_analysis",
+    "capacity_outlook",
+    "benchmarking",
+    "overall_risk"
+  ],
+
+  "$defs": {
+    "recommendation_item": {
+      "type": "object",
+      "required": [
+        "recommendation_id",
+        "priority",
+        "estimated_effort",
+        "responsible_area",
+        "action",
+        "validation_step",
+        "preventative_action"
+      ],
+      "properties": {
+        "recommendation_id": { "type": "string", "pattern": "^REC-[0-9]{3}$" },
+        "priority": { "type": "string", "enum": ["High", "Medium", "Low"] },
+        "estimated_effort": {
+          "type": "object",
+          "required": ["analysis", "implementation"],
+          "properties": {
+            "analysis":      { "type": "string", "enum": ["Low", "Medium", "High"] },
+            "implementation":{ "type": "string", "enum": ["Low", "Medium", "High"] }
+          }
+        },
+        "responsible_area":  { "type": "string" },
+        "linked_issue_id":   { "type": "string", "pattern": "^KF-[0-9]{3}$" },
+        "action":            { "type": "string" },
+        "validation_step":   { "type": "string" },
+        "preventative_action":{ "type": "string" }
       }
     }
   }
+}

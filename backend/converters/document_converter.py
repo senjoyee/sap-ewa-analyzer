@@ -48,9 +48,13 @@ def convert_document_to_markdown(blob_name: str) -> dict:
     if blob_name.lower().endswith('.pdf'):
         # Use PDF converter
         result = pdf_markdown_converter.convert_pdf_to_markdown(blob_name)
-    elif blob_name.lower().endswith('.docx') or blob_name.lower().endswith('.doc'):
+    elif blob_name.lower().endswith('.docx'):
         # Use DOCX converter
         result = docx_markdown_converter.convert_docx_to_markdown(blob_name)
+    elif blob_name.lower().endswith('.doc'):
+        # Use DOC converter (Pandoc-based)
+        from converters import doc_markdown_converter
+        result = doc_markdown_converter.convert_doc_to_markdown(blob_name)
     else:
         # Unsupported file type
         result = {

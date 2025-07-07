@@ -1,62 +1,96 @@
-"""Utility functions for converting EWA summary JSON into Markdown for human-friendly viewing."""
+"""
+Utility functions for converting a validated EWA summary JSON
+(schema v1.1, god_level_ewa_analysis) into human-friendly Markdown.
+"""
 from typing import Dict, Any, List
 
 __all__ = ["json_to_markdown"]
 
+
+# ────────────────────────────────────────────────────────────────────────────────
+# Helper functions
+# ────────────────────────────────────────────────────────────────────────────────
 def _format_table(headers: List[str], rows: List[List[str]]) -> List[str]:
-    """Helper to format a Markdown table."""
-    md = []
+    """Return a list of Markdown lines that render a table."""
+    md: List[str] = []
     md.append(f"| {' | '.join(headers)} |")
     md.append(f"|{'|'.join(['---'] * len(headers))}|")
     for row in rows:
-        # Ensure all items in a row are strings and handle None gracefully
         md.append(f"| {' | '.join(str(x) if x is not None else 'N/A' for x in row)} |")
     return md
 
-def _array_to_markdown_table(array: List[Dict[str, Any]], section_name: str = None) -> List[str]:
-    md = []
+
+def _array_to_markdown_table(
+    array: List[Dict[str, Any]], section_name: str | None = None
+) -> List[str]:
+    """
+    Generic helper to turn an array of dicts into a Markdown table.
+
+    • Flattens nested dicts that match {'analysis','implementation'}.
+    • If the array is empty, prints an informational line instead.
+    """
+    md: List[str] = []
     if section_name:
         md.append(f"## {section_name}")
+
     if not array:
         md.append(f"No {section_name.lower() if section_name else 'data'} provided.")
         return md
-    # Collect all unique keys from all items for header
-    all_keys = set()
+
+    # Build deterministic header order
+    headers = sorted({k for item in array for k in item.keys()})
+    rows: List[List[str]] = []
+
     for item in array:
-        all_keys.update(item.keys())
-    headers = [str(k) for k in all_keys]
-    rows = []
-    for item in array:
-        row = []
+        row: List[str] = []
         for k in headers:
-            v = item.get(k, 'N/A')
+            v = item.get(k, "N/A")
             if isinstance(v, dict):
-                if set(v.keys()) == {'analysis', 'implementation'}:
-                    v = f"Analysis: {v.get('analysis', 'N/A')}, Implementation: {v.get('implementation', 'N/A')}"
+                # Special-case estimated_effort
+                if set(v.keys()) == {"analysis", "implementation"}:
+                    v = (
+                        f"Analysis: {v.get('analysis', 'N/A')}, "
+                        f"Implementation: {v.get('implementation', 'N/A')}"
+                    )
                 else:
-                    v = ', '.join(f"{k}: {val}" for k, val in v.items()) if v else 'N/A'
+                    v = ", ".join(f"{dk}: {dv}" for dk, dv in v.items()) if v else "N/A"
             elif isinstance(v, list):
-                v = ', '.join(str(x) for x in v) if v else 'N/A'
+                v = ", ".join(str(x) for x in v) if v else "N/A"
             row.append(str(v))
         rows.append(row)
+
     md.extend(_format_table(headers, rows))
     md.append("")
     return md
 
+
+# ────────────────────────────────────────────────────────────────────────────────
+# Public API
+# ────────────────────────────────────────────────────────────────────────────────
 def json_to_markdown(data: Dict[str, Any]) -> str:
-    """Converts the validated EWA summary JSON (v2.0) to a Markdown string."""
-    md = []
-    meta = data.get('system_metadata', {})
-    md.append(f"# EWA Analysis for {meta.get('system_id', 'N/A')} ({meta.get('report_date', 'N/A')})")
+    """
+    Convert an EWA JSON document (validated against schema v1.1)
+    into a Markdown report suitable for rendering in the UI.
+    """
+    md: List[str] = []
+
+    # ── Metadata & Header ───────────────────────────────────────────────────────
+    meta = data.get("system_metadata", {})
+    md.append(
+        f"# EWA Analysis for {meta.get('system_id', 'N/A')} "
+        f"({meta.get('report_date', 'N/A')})"
+    )
     md.append(f"**Analysis Period:** {meta.get('analysis_period', 'N/A')}")
     md.append(f"**Overall Risk Assessment:** `{data.get('overall_risk', 'N/A')}`")
     md.append("\n---\n")
 
-    # --- System Health Overview ---
+    # ── System Health Overview ────────────────────────────────────────────────
     md.append("## System Health Overview")
-    health = data.get('system_health_overview', {})
+    health = data.get("system_health_overview", {})
     if health:
-        rows = [[k.capitalize(), v] for k, v in health.items() if v is not None]
+        rows = [
+            [k.replace("_", " ").title(), v] for k, v in health.items() if v is not None
+        ]
         if rows:
             md.extend(_format_table(["Area", "Status"], rows))
         else:
@@ -65,111 +99,92 @@ def json_to_markdown(data: Dict[str, Any]) -> str:
         md.append("No health overview provided.")
     md.append("\n---\n")
 
-    # --- Executive Summary ---
+    # ── Executive Summary ──────────────────────────────────────────────────────
     md.append("## Executive Summary")
-    md.append(data.get('executive_summary', 'No summary provided.'))
+    md.append(data.get("executive_summary", "No summary provided."))
     md.append("\n---\n")
 
-    # --- Positive Findings ---
-    md.extend(_array_to_markdown_table(data.get('positive_findings', []), 'Positive Findings'))
+    # ── Positive Findings ─────────────────────────────────────────────────────
+    md.extend(_array_to_markdown_table(data.get("positive_findings", []), "Positive Findings"))
     md.append("\n---\n")
 
-    # --- Key Findings ---
+    # ── Key Findings ──────────────────────────────────────────────────────────
     md.append("## Key Findings")
-    key_findings = data.get('key_findings', [])
+    key_findings = data.get("key_findings", [])
     if key_findings:
-        headers = ["Area", "Finding", "Impact", "Business Impact", "Severity"]
-        rows = []
-        for f_item in key_findings:
-            rows.append([
-                f_item.get('Area', 'N/A'),
-                f_item.get('Finding', 'N/A'),
-                f_item.get('Impact', 'N/A'),
-                f_item.get('Business Impact', 'N/A'),
-                f_item.get('Severity', 'N/A')
-            ])
-        md.extend(_format_table(headers, rows))
+        headers = ["id", "area", "finding", "impact", "business_impact", "severity"]
+        rows = [[kf.get(h, "N/A") for h in headers] for kf in key_findings]
+        md.extend(
+            _format_table(
+                [h.replace("_", " ").title() for h in headers],
+                rows,
+            )
+        )
     else:
         md.append("No key findings reported.")
     md.append("\n---\n")
 
-    # --- Recommendations ---
-    md.extend(_array_to_markdown_table(data.get('recommendations', []), 'Recommendations'))
+    # ── Recommendations ───────────────────────────────────────────────────────
+    md.extend(_array_to_markdown_table(data.get("recommendations", []), "Recommendations"))
 
-    # --- Parameters Table (custom columns) ---
-    parameters = data.get('parameters', [])
+    # ── Parameters ────────────────────────────────────────────────────────────
     md.append("## Parameters")
+    parameters = data.get("parameters", [])
     if parameters:
-        headers = [
-            "Name",
-            "Area",
-            "Current Value",
-            "Recommended Value",
-            "Description"
-        ]
-        rows = []
-        for p in parameters:
-            rows.append([
-                p.get('Name', 'N/A'),
-                p.get('Area', 'N/A'),
-                p.get('Current Value', 'N/A'),
-                p.get('Recommended Value', 'N/A'),
-                p.get('Description', 'N/A')
-            ])
-        md.extend(_format_table(headers, rows))
+        headers = ["name", "area", "current_value", "recommended_value", "description"]
+        rows = [[p.get(h, "N/A") for h in headers] for p in parameters]
+        md.extend(_format_table([h.replace("_", " ").title() for h in headers], rows))
         md.append("")
     else:
         md.append("No parameters provided.")
         md.append("")
     md.append("\n---\n")
 
-    # --- Quick Wins ---
-    md.extend(_array_to_markdown_table(data.get('quickWins', []), 'Quick Wins'))
 
-    # --- Trend Analysis ---
+    # ── Trend Analysis ────────────────────────────────────────────────────────
     md.append("## Trend Analysis")
-    trends = data.get('Trend Analysis', {}) or data.get('trend_analysis', {})
+    trends = data.get("trend_analysis", {})
     if trends:
-        kpi_trends = trends.get('KPI Trends', [])
+        # KPI sub-table
+        kpi_trends = trends.get("kpi_trends", [])
         if kpi_trends:
             md.append("### KPI Trends")
-            headers = ["KPI Name", "Previous Value", "Current Value", "Change Percentage"]
-            rows = []
-            for kpi_item in kpi_trends:
-                rows.append([
-                    kpi_item.get('KPI Name', 'N/A'),
-                    kpi_item.get('Previous Value', 'N/A'),
-                    kpi_item.get('Current Value', 'N/A'),
-                    str(kpi_item.get('Change Percentage', 'N/A'))
-                ])
-            md.extend(_format_table(headers, rows))
+            headers = ["kpi_name", "previous_value", "current_value", "change_percentage"]
+            rows = [[kpi.get(h, "N/A") for h in headers] for kpi in kpi_trends]
+            md.extend(
+                _format_table(
+                    [h.replace("_", " ").title() for h in headers],
+                    rows,
+                )
+            )
             md.append("")
-        md.append(f"- **Overall Performance Trend:** `{trends.get('Performance Trend', 'N/A')}`")
-        md.append(f"- **Overall Stability Trend:** `{trends.get('Stability Trend', 'N/A')}`")
-        md.append(f"- **Trend Summary:** {trends.get('Summary', 'N/A')}")
+        md.append(f"- **Overall Performance Trend:** `{trends.get('performance_trend', 'N/A')}`")
+        md.append(f"- **Overall Stability Trend:** `{trends.get('stability_trend', 'N/A')}`")
+        md.append(f"- **Trend Summary:** {trends.get('summary', 'N/A')}")
     else:
         md.append("No trend analysis data provided.")
     md.append("\n---\n")
 
-    # --- Capacity Outlook ---
+    # ── Capacity Outlook ──────────────────────────────────────────────────────
     md.append("## Capacity Outlook")
-    capacity = data.get('Capacity Outlook', {})
+    capacity = data.get("capacity_outlook", {})
     if capacity:
-        md.append(f"- **Database Growth:** {capacity.get('Database Growth', 'N/A')}")
-        md.append(f"- **CPU Utilization:** {capacity.get('CPU Utilization', 'N/A')}")
-        md.append(f"- **Memory Utilization:** {capacity.get('Memory Utilization', 'N/A')}")
-        md.append(f"- **Capacity Summary:** {capacity.get('Summary', 'N/A')}")
+        md.append(f"- **Database Growth:** {capacity.get('database_growth', 'N/A')}")
+        md.append(f"- **CPU Utilization:** {capacity.get('cpu_utilization', 'N/A')}")
+        md.append(f"- **Memory Utilization:** {capacity.get('memory_utilization', 'N/A')}")
+        md.append(f"- **Capacity Summary:** {capacity.get('summary', 'N/A')}")
     else:
         md.append("No capacity outlook data provided.")
     md.append("\n---\n")
 
-    # --- Benchmarking ---
+    # ── Benchmarking ─────────────────────────────────────────────────────────
     md.append("## Benchmarking")
-    benchmarking = data.get('Benchmarking', {})
+    benchmarking = data.get("benchmarking", {})
     if benchmarking:
-        md.append(f"- **Comparison:** {benchmarking.get('Comparison', 'N/A')}")
-        md.append(f"- **Summary:** {benchmarking.get('Summary', 'N/A')}")
+        md.append(f"- **Comparison:** {benchmarking.get('comparison', 'N/A')}")
+        md.append(f"- **Summary:** {benchmarking.get('summary', 'N/A')}")
     else:
         md.append("No benchmarking data provided.")
 
+    # ── Done ─────────────────────────────────────────────────────────────────
     return "\n".join(md)

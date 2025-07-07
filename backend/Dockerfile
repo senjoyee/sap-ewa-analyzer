@@ -4,6 +4,7 @@ FROM python:3.12-slim
 RUN apt-get update && apt-get install -y \
     build-essential \
     libpango-1.0-0 libpangoft2-1.0-0 libpangocairo-1.0-0 libcairo2 libgdk-pixbuf2.0-0 \
+    libreoffice pandoc \
     && rm -rf /var/lib/apt/lists/*
 
 RUN pip install uv

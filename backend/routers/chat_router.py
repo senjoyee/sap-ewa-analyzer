@@ -78,9 +78,9 @@ async def chat_with_document(request: ChatRequest):
             response = client.chat.completions.create(
                 model=model_name,
                 messages=messages,
-                max_tokens=2000,
-                temperature=0.2,
-                top_p=0.95,
+                max_tokens=8192,
+                temperature=0.0,
+                top_p=0.0,
             )
             ai_response = response.choices[0].message.content
             return {"response": ai_response}
