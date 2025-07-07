@@ -11,9 +11,10 @@ This is a straight extraction; functionality is unchanged so existing frontend c
 from __future__ import annotations
 
 import os
-from typing import Dict, Any
+from typing import Dict, Any, List
 
-from fastapi import APIRouter, UploadFile, File, HTTPException, Form, Response
+from fastapi import APIRouter, UploadFile, File, HTTPException, Form, Response, Body
+from pydantic import BaseModel
 from azure.storage.blob import BlobServiceClient
 from dotenv import load_dotenv
 
@@ -146,6 +147,65 @@ async def list_files():
     except Exception as e:
         print(f"Error listing files: {e}")
         raise HTTPException(status_code=500, detail=f"Could not list files: {str(e)}")
+
+
+# ------------------------- Delete Analysis endpoint ------------------------- #
+
+class DeleteAnalysisRequest(BaseModel):
+    fileName: str
+    baseName: str
+
+class DeleteAnalysisResponse(BaseModel):
+    message: str
+    deleted_files: List[str]
+    errors: List[str]
+
+@router.delete("/delete-analysis", response_model=DeleteAnalysisResponse)
+async def delete_analysis(request_data: DeleteAnalysisRequest):
+    """Delete an analysis and all related files from Azure Blob Storage."""
+    
+    if not blob_service_client:
+        raise HTTPException(status_code=500, detail="Azure Blob Service client not initialized.")
+    
+    try:
+        file_name = request_data.fileName
+        base_name = request_data.baseName
+        
+        if not file_name or not base_name:
+            raise HTTPException(status_code=400, detail="File name or base name not provided")
+            
+        container_client = blob_service_client.get_container_client(AZURE_STORAGE_CONTAINER_NAME)
+        
+        # List of file patterns to delete
+        file_patterns = [
+            f"{base_name}_AI.md",      # AI analysis markdown
+            f"{base_name}_AI.pdf",     # AI analysis PDF if exported
+            f"{base_name}.md",         # Original markdown
+            f"{base_name}.pdf"         # Original PDF if exported
+        ]
+        
+        deleted_files = []
+        errors = []
+        
+        # Delete each related file if it exists
+        for pattern in file_patterns:
+            try:
+                blob_client = container_client.get_blob_client(pattern)
+                if blob_client.exists():
+                    blob_client.delete_blob()
+                    deleted_files.append(pattern)
+            except Exception as e:
+                errors.append(f"Failed to delete {pattern}: {str(e)}")
+        
+        return {
+            "message": f"Analysis for {file_name} deletion processed",
+            "deleted_files": deleted_files,
+            "errors": errors
+        }
+        
+    except Exception as e:
+        print(f"Error deleting analysis for {request_data.get('fileName', 'unknown file')}: {e}")
+        raise HTTPException(status_code=500, detail=f"Could not delete analysis files: {str(e)}")
 
 
 # ------------------------- Download endpoint ------------------------- #

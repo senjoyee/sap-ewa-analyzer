@@ -43,6 +43,7 @@ import CheckCircleIcon from '@mui/icons-material/CheckCircle';
 import PendingIcon from '@mui/icons-material/Pending';
 import VisibilityIcon from '@mui/icons-material/Visibility';
 import RefreshIcon from '@mui/icons-material/Refresh';
+import DeleteIcon from '@mui/icons-material/Delete';
 
 // Initialise weekOfYear plugin after all imports
 dayjs.extend(weekOfYear);
@@ -333,16 +334,54 @@ const FileList = ({ onFileSelect, refreshTrigger, selectedFile }) => {
     }
   };
 
-  // Function to export Markdown (or AI analysis) to PDF via backend endpoint
-  const handleExportPDF = async (file) => {
+  // PDF export functionality moved to FilePreview component
+
+  // Function to handle deletion of an analysis and all related files
+  const handleDeleteAnalysis = async (file) => {
+    // Confirm before deletion
+    const confirmDelete = window.confirm(`Are you sure you want to delete the analysis for ${file.name}? This action cannot be undone.`);
+    
+    if (!confirmDelete) {
+      return; // User cancelled the deletion
+    }
+    
     try {
       const baseName = file.name.split('.').slice(0, -1).join('.');
-      const mdFileName = file.ai_analyzed ? `${baseName}_AI.md` : `${baseName}.md`;
-      const url = `http://localhost:8001/api/export-pdf?blob_name=${encodeURIComponent(mdFileName)}`;
-      window.open(url, '_blank');
-    } catch (err) {
-      console.error(`Error exporting PDF for ${file.name}:`, err);
-      alert(`Failed to export PDF: ${err.message}`);
+      
+      // Determine API base URL
+      const API_BASE = (process.env.REACT_APP_API_BASE || window.__ENV__?.REACT_APP_API_BASE || 'http://localhost:8001').replace(/\/$/, '');
+      
+      // Call the backend to delete all related files from blob storage
+      const response = await fetch(`${API_BASE}/api/delete-analysis`, {
+        method: 'DELETE',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          fileName: file.name,
+          baseName: baseName
+        })
+      });
+      
+      if (!response.ok) {
+        throw new Error(`Server responded with ${response.status}: ${await response.text()}`);
+      }
+      
+      // Update the UI after successful deletion
+      setFiles(prevFiles => prevFiles.map(f => {
+        if (f.id === file.id || f.name === file.name) {
+          // Reset the AI analysis flag
+          return { ...f, ai_analyzed: false };
+        }
+        return f;
+      }));
+      
+      // Show success message
+      alert(`Successfully deleted analysis for ${file.name}`);
+      
+    } catch (error) {
+      console.error(`Error deleting analysis for ${file.name}:`, error);
+      alert(`Failed to delete analysis: ${error.message}`);
     }
   };
 
@@ -779,17 +818,6 @@ const FileList = ({ onFileSelect, refreshTrigger, selectedFile }) => {
                                     </Box>
                                   ) : (
                                     <>
-                                      <Tooltip title="Export PDF">
-                                        <Button
-                                          variant="contained"
-                                          size="small"
-                                          color="warning"
-                                          onClick={() => handleExportPDF(file)}
-                                          sx={{ textTransform: 'none', minWidth: '32px', width: '32px', height: '32px', p: 0 }}
-                                        >
-                                          <PictureAsPdfIcon fontSize="small" />
-                                        </Button>
-                                      </Tooltip>
                                       <Tooltip title="Display AI Analysis">
                                         <Button
                                           variant="contained"
@@ -810,6 +838,17 @@ const FileList = ({ onFileSelect, refreshTrigger, selectedFile }) => {
                                           sx={{ textTransform: 'none', minWidth: '32px', width: '32px', height: '32px', p: 0 }}
                                         >
                                           <RefreshIcon fontSize="small" />
+                                        </Button>
+                                      </Tooltip>
+                                      <Tooltip title="Delete Analysis">
+                                        <Button
+                                          variant="contained"
+                                          size="small"
+                                          color="error"
+                                          onClick={() => handleDeleteAnalysis(file)}
+                                          sx={{ textTransform: 'none', minWidth: '32px', width: '32px', height: '32px', p: 0 }}
+                                        >
+                                          <DeleteIcon fontSize="small" />
                                         </Button>
                                       </Tooltip>
                                     </>

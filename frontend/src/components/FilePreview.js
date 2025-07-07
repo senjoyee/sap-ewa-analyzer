@@ -20,6 +20,9 @@ import SmartToyIcon from '@mui/icons-material/SmartToy';
 import EqualizerIcon from '@mui/icons-material/Equalizer';
 import AssessmentIcon from '@mui/icons-material/Assessment';
 import TuneIcon from '@mui/icons-material/Tune';
+import PictureAsPdfOutlinedIcon from '@mui/icons-material/PictureAsPdfOutlined';
+import Tooltip from '@mui/material/Tooltip';
+import IconButton from '@mui/material/IconButton';
 import Table from '@mui/material/Table';
 import TableBody from '@mui/material/TableBody';
 import TableCell from '@mui/material/TableCell';
@@ -32,6 +35,9 @@ import { useTheme } from '../contexts/ThemeContext';
 // import MetricsTable from './MetricsTable';
 // import ParametersTable from './ParametersTable';
 import DocumentChat from './DocumentChat';
+
+// Import the SAP logo
+import sapLogo from '../logo/sap-3.svg';
 
 // Helper function to get appropriate file type label and icon
 const getFileTypeInfo = (fileName) => {
@@ -571,6 +577,21 @@ const FilePreview = ({ selectedFile }) => {
   const [error, setError] = useState(null);
   const [originalContent, setOriginalContent] = useState('');
   
+  // Function to export Markdown to PDF via backend endpoint
+  const handleExportPDF = async (file) => {
+    try {
+      const baseName = file.name.split('.').slice(0, -1).join('.');
+      const mdFileName = file.ai_analyzed ? `${baseName}_AI.md` : `${baseName}.md`;
+      // Determine API base URL: env var or same-origin
+      const API_BASE = (process.env.REACT_APP_API_BASE || window.__ENV__?.REACT_APP_API_BASE || window.location.origin).replace(/\/$/, '');
+      const url = `${API_BASE}/api/export-pdf?blob_name=${encodeURIComponent(mdFileName)}`;
+      window.open(url, '_blank');
+    } catch (err) {
+      console.error(`Error exporting PDF for ${file.name}:`, err);
+      alert(`Failed to export PDF: ${err.message}`);
+    }
+  };
+  
   // Check if we're displaying AI analysis
   const isAnalysisView = selectedFile?.displayType === 'analysis' && selectedFile?.analysisContent;
   
@@ -737,14 +758,50 @@ const mdFileName = `${baseName}.md`;
           {isAnalysisView ? 'AI Analysis' : 'File Preview'}
         </Typography>
         {selectedFile && (
-          <Chip
-            icon={isAnalysisView ? <SmartToyIcon /> : fileTypeInfo?.icon}
-            label={isAnalysisView ? 'AI ANALYSIS' : fileTypeInfo?.label}
-            size="small"
-            color={isAnalysisView ? 'secondary' : fileTypeInfo?.color}
-            variant="outlined"
-            sx={{ borderRadius: 1 }}
-          />
+          <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+            {selectedFile && selectedFile.name && (
+              <Tooltip title="Export to PDF">
+                <IconButton 
+                  size="small"
+                  onClick={() => handleExportPDF(selectedFile)}
+                  sx={{ 
+                    color: isDark ? 'rgba(255, 255, 255, 0.7)' : 'rgba(0, 0, 0, 0.7)',
+                    '&:hover': {
+                      color: '#F44336',
+                      backgroundColor: isDark ? 'rgba(244, 67, 54, 0.08)' : 'rgba(244, 67, 54, 0.04)'
+                    }
+                  }}
+                >
+                  <PictureAsPdfOutlinedIcon fontSize="small" />
+                </IconButton>
+              </Tooltip>
+            )}
+            <Chip
+              icon={isAnalysisView ? 
+                <Box component="img" 
+                  src={sapLogo} 
+                  alt="SAP Logo"
+                  sx={{ 
+                    height: 28, 
+                    width: 28, 
+                    objectFit: 'contain',
+                    marginRight: '2px'
+                  }} 
+                /> : fileTypeInfo?.icon
+              }
+              label={isAnalysisView ? '' : fileTypeInfo?.label}
+              size={isAnalysisView ? "medium" : "small"}
+              color={isAnalysisView ? 'info' : fileTypeInfo?.color}
+              variant="outlined"
+              sx={{ 
+                borderRadius: 1,
+                height: isAnalysisView ? 36 : 'auto',
+                '& .MuiChip-icon': { 
+                  marginLeft: isAnalysisView ? '8px' : '5px' 
+                }
+              }}
+            />
+          </Box>
         )}
       </Box>
       
