@@ -584,7 +584,7 @@ const FilePreview = ({ selectedFile }) => {
       const mdFileName = file.ai_analyzed ? `${baseName}_AI.md` : `${baseName}.md`;
       // Determine API base URL: env var or same-origin
       const API_BASE = (process.env.REACT_APP_API_BASE || window.__ENV__?.REACT_APP_API_BASE || window.location.origin).replace(/\/$/, '');
-      const url = `${API_BASE}/api/export-pdf?blob_name=${encodeURIComponent(mdFileName)}`;
+      const url = `${API_BASE}/api/export-pdf?blob_name=${encodeURIComponent(mdFileName)}&page_size=A3`;
       window.open(url, '_blank');
     } catch (err) {
       console.error(`Error exporting PDF for ${file.name}:`, err);

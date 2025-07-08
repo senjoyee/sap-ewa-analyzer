@@ -26,7 +26,11 @@ router = APIRouter(prefix="/api", tags=["export"])
 
 
 @router.get("/export-pdf")
-async def export_markdown_to_pdf(blob_name: str, landscape: bool = Query(True, description="Render PDF in landscape orientation (default: true)")):
+async def export_markdown_to_pdf(
+    blob_name: str,
+    landscape: bool = Query(True, description="Render PDF in landscape orientation (default: true)"),
+    page_size: str = Query("A4", description="Page size for PDF (e.g., A4, A3, Letter). Default: A4"),
+):
     """Convert a Markdown blob stored in Azure Blob Storage to a PDF using WeasyPrint."""
     if not blob_service_client:
         raise HTTPException(status_code=500, detail="Azure Blob Service client not initialized")
@@ -50,14 +54,16 @@ async def export_markdown_to_pdf(blob_name: str, landscape: bool = Query(True, d
         # Enable GitHub-style tables and fenced code blocks for proper rendering
         body_html = markdown(markdown_text, extras=["tables", "fenced-code-blocks"])
 
+        # Base CSS styles; table-layout fixed to prevent overflow
         styles = """
             body { font-family: Arial, Helvetica, sans-serif; }
-            table { border-collapse: collapse; width:100%; font-size:10pt; }
+            table { border-collapse: collapse; width: 100%; font-size: 9pt; table-layout: fixed; word-wrap: break-word; }
             th, td { border: 1px solid #ddd; padding: 6px; text-align: left; }
             th { background-color: #f2f2f2; }
         """
-        if landscape:
-            styles = "@page { size: A4 landscape; margin: 15mm; }\n" + styles
+        # Build @page rule dynamically based on params
+        orientation = " landscape" if landscape else ""
+        styles = f"@page {{ size: {page_size}{orientation}; margin: 15mm; }}\n" + styles
         full_html = f"<html><head><meta charset='utf-8'><style>{styles}</style></head><body>{body_html}</body></html>"
 
         pdf_bytes = HTML(string=full_html, base_url=".").write_pdf()
