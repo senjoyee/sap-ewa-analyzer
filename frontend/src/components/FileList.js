@@ -15,6 +15,7 @@ import Chip from '@mui/material/Chip';
 import Button from '@mui/material/Button';
 import IconButton from '@mui/material/IconButton';
 import Tooltip from '@mui/material/Tooltip';
+import Checkbox from '@mui/material/Checkbox';
 import Accordion from '@mui/material/Accordion';
 import AccordionSummary from '@mui/material/AccordionSummary';
 import AccordionDetails from '@mui/material/AccordionDetails';
@@ -100,9 +101,157 @@ const FileList = ({ onFileSelect, refreshTrigger, selectedFile }) => {
   const [aiAnalyzing, setAiAnalyzing] = useState({}); // Track AI analysis status for each file
   const [combinedProcessingStatus, setCombinedProcessingStatus] = useState({}); // Track combined processing & AI analysis status
   const [reprocessingFiles, setReprocessingFiles] = useState({}); // Track reprocessing status for each file
+  const [selectedFiles, setSelectedFiles] = useState([]);
   const pollingIntervalsRef = useRef({});
   const { theme } = useTheme();
   const isDark = theme === 'dark';
+  
+  // Function to handle file selection with checkbox
+  const handleFileSelection = (file, event) => {
+    // Stop event propagation to prevent triggering row click
+    if (event) {
+      event.stopPropagation();
+    }
+    
+    setSelectedFiles(prev => {
+      const fileId = file.id || file.name;
+      if (prev.some(f => (f.id || f.name) === fileId)) {
+        // If file is already selected, remove it
+        return prev.filter(f => (f.id || f.name) !== fileId);
+      } else {
+        // Otherwise add it to selection
+        return [...prev, file];
+      }
+    });
+  };
+  
+  // Check if a file is selected
+  const isFileSelected = (file) => {
+    const fileId = file.id || file.name;
+    return selectedFiles.some(f => (f.id || f.name) === fileId);
+  };
+  
+  // Handle select all files
+  const handleSelectAllFiles = () => {
+    setSelectedFiles([...files]);
+  };
+  
+  // Handle deselect all files
+  const handleDeselectAllFiles = () => {
+    setSelectedFiles([]);
+  };
+  
+  // Calculate if any files are selected and how many are analyzed
+  const selectedCount = selectedFiles.length;
+  const selectedAnalyzedCount = selectedFiles.filter(file => file.ai_analyzed).length;
+  
+  // Handle batch delete of selected analyzed files
+  const handleBatchDelete = async () => {
+    const analyzedFiles = selectedFiles.filter(file => file.ai_analyzed);
+    
+    if (analyzedFiles.length === 0) {
+      alert('No analyzed files selected for deletion.');
+      return;
+    }
+    
+    const confirmDelete = window.confirm(
+      `Are you sure you want to delete analysis for ${analyzedFiles.length} file(s)? This action cannot be undone.`
+    );
+    
+    if (!confirmDelete) {
+      return;
+    }
+    
+    let successCount = 0;
+    let errorCount = 0;
+    
+    // Process each file sequentially
+    for (const file of analyzedFiles) {
+      try {
+        const baseName = file.name.split('.').slice(0, -1).join('.');
+        const API_BASE = (process.env.REACT_APP_API_BASE || window.__ENV__?.REACT_APP_API_BASE || 'http://localhost:8001').replace(/\/$/, '');
+        
+        const response = await fetch(`${API_BASE}/api/delete-analysis`, {
+          method: 'DELETE',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({
+            fileName: file.name,
+            baseName: baseName
+          })
+        });
+        
+        if (!response.ok) {
+          throw new Error(`Server responded with ${response.status}`);
+        }
+        
+        successCount++;
+      } catch (error) {
+        console.error(`Error deleting analysis for ${file.name}:`, error);
+        errorCount++;
+      }
+    }
+    
+    // Update UI after all deletions are processed
+    setFiles(prevFiles => prevFiles.map(f => {
+      if (selectedFiles.some(selected => (selected.id || selected.name) === (f.id || f.name)) && f.ai_analyzed) {
+        // Reset the AI analysis flag for selected files
+        return { ...f, ai_analyzed: false };
+      }
+      return f;
+    }));
+    
+    // Clear selection after operation
+    setSelectedFiles([]);
+    
+    // Show summary of operation
+    alert(`Operation completed: ${successCount} analyses deleted, ${errorCount} errors encountered.`);
+  };
+  
+  // Handle batch reprocess of selected files
+  const handleBatchReprocess = async () => {
+    const filesToReprocess = selectedFiles.filter(file => file.ai_analyzed);
+    
+    if (filesToReprocess.length === 0) {
+      alert('No analyzed files selected for reprocessing.');
+      return;
+    }
+    
+    const confirmReprocess = window.confirm(
+      `Are you sure you want to reprocess ${filesToReprocess.length} file(s)?`
+    );
+    
+    if (!confirmReprocess) {
+      return;
+    }
+    
+    // Update UI to show reprocessing state
+    const newReprocessingState = {};
+    filesToReprocess.forEach(file => {
+      newReprocessingState[file.id || file.name] = true;
+    });
+    
+    setReprocessingFiles(prev => ({
+      ...prev,
+      ...newReprocessingState
+    }));
+    
+    // Process each file sequentially
+    for (const file of filesToReprocess) {
+      try {
+        await handleReprocessAI(file, false); // Pass false to prevent alerts for each file
+      } catch (error) {
+        console.error(`Error reprocessing file ${file.name}:`, error);
+      }
+    }
+    
+    // Clear selection after operation
+    setSelectedFiles([]);
+    
+    // Show completion message
+    alert(`Reprocessing initiated for ${filesToReprocess.length} file(s).`);
+  };
   
   // Group files by customer
   const groupByCustomer = (files) => {
@@ -248,11 +397,11 @@ const FileList = ({ onFileSelect, refreshTrigger, selectedFile }) => {
   };
 
   // Function to handle reprocessing of AI analysis
-  const handleReprocessAI = async (file) => {
+  const handleReprocessAI = async (file, showAlerts = true) => {
     console.log(`Reprocessing AI analysis for file: ${file.name}`);
     
-    // Confirm reprocessing with the user
-    if (!window.confirm(`This will delete the existing AI analysis for "${file.name}" and create a new one. Continue?`)) {
+    // Confirm reprocessing with the user (skip if in batch mode)
+    if (showAlerts && !window.confirm(`This will delete the existing AI analysis for "${file.name}" and create a new one. Continue?`)) {
       return; // User cancelled
     }
     
@@ -286,8 +435,10 @@ const FileList = ({ onFileSelect, refreshTrigger, selectedFile }) => {
         [file.id || file.name]: false
       }));
       
-      // Show success message
-      alert(`AI Reprocessing completed successfully! Analysis has been updated.`);
+      // Show success message (if not in batch mode)
+      if (showAlerts) {
+        alert(`Reprocessing of ${file.name} started successfully.`);
+      }
       
     } catch (error) {
       console.error(`Error in AI reprocessing for file ${file.name}:`, error);
@@ -296,7 +447,11 @@ const FileList = ({ onFileSelect, refreshTrigger, selectedFile }) => {
         ...prev,
         [file.id || file.name]: false
       }));
-      alert(`Error in AI reprocessing: ${error.message}`);
+      
+      // Show error message if not in batch mode
+      if (showAlerts) {
+        alert(`Error in AI reprocessing: ${error.message}`);
+      }
     }
   };
 
@@ -337,12 +492,14 @@ const FileList = ({ onFileSelect, refreshTrigger, selectedFile }) => {
   // PDF export functionality moved to FilePreview component
 
   // Function to handle deletion of an analysis and all related files
-  const handleDeleteAnalysis = async (file) => {
-    // Confirm before deletion
-    const confirmDelete = window.confirm(`Are you sure you want to delete the analysis for ${file.name}? This action cannot be undone.`);
-    
-    if (!confirmDelete) {
-      return; // User cancelled the deletion
+  const handleDeleteAnalysis = async (file, showAlerts = true) => {
+    // Confirm before deletion (skip if in batch mode)
+    if (showAlerts) {
+      const confirmDelete = window.confirm(`Are you sure you want to delete the analysis for ${file.name}? This action cannot be undone.`);
+      
+      if (!confirmDelete) {
+        return; // User cancelled the deletion
+      }
     }
     
     try {
@@ -376,12 +533,16 @@ const FileList = ({ onFileSelect, refreshTrigger, selectedFile }) => {
         return f;
       }));
       
-      // Show success message
-      alert(`Successfully deleted analysis for ${file.name}`);
+      // Show success message (if not in batch mode)
+      if (showAlerts) {
+        alert(`Successfully deleted analysis for ${file.name}`);
+      }
       
     } catch (error) {
       console.error(`Error deleting analysis for ${file.name}:`, error);
-      alert(`Failed to delete analysis: ${error.message}`);
+      if (showAlerts) {
+        alert(`Failed to delete analysis: ${error.message}`);
+      }
     }
   };
 
@@ -748,7 +909,12 @@ const FileList = ({ onFileSelect, refreshTrigger, selectedFile }) => {
                             }}
                           >
                             <ListItemButton 
-                              onClick={() => onFileSelect(file)}
+                              onClick={(e) => {
+                                // Don't select if clicking checkbox
+                                if (e.target.tagName !== 'INPUT' && !e.target.closest('.MuiCheckbox-root')) {
+                                  onFileSelect(file);
+                                }
+                              }}
                               selected={isSelected}
                               sx={{
                                 pr: 16, // Standard padding for secondary action
@@ -771,7 +937,20 @@ const FileList = ({ onFileSelect, refreshTrigger, selectedFile }) => {
                                 }
                               }}
                             >
-                              <ListItemIcon sx={{ minWidth: 40 }}>
+                              <ListItemIcon sx={{ minWidth: 40, display: 'flex', alignItems: 'center' }}>
+                                <Checkbox 
+                                  checked={isFileSelected(file)}
+                                  onChange={(e) => {
+                                    e.stopPropagation();
+                                    handleFileSelection(file, e);
+                                  }}
+                                  size="small"
+                                  sx={{ 
+                                    p: 0.5,
+                                    color: '#60a5fa',
+                                    mr: 1
+                                  }}
+                                />
                                 {getFileIcon(file.name)}
                               </ListItemIcon>
                               <Tooltip title={file.name} placement="top-start">
@@ -823,32 +1002,13 @@ const FileList = ({ onFileSelect, refreshTrigger, selectedFile }) => {
                                           variant="contained"
                                           size="small"
                                           color="success"
-                                          onClick={() => handleDisplayAnalysis(file)}
+                                          onClick={(e) => {
+                                            e.stopPropagation();
+                                            handleDisplayAnalysis(file);
+                                          }}
                                           sx={{ textTransform: 'none', minWidth: '32px', width: '32px', height: '32px', p: 0 }}
                                         >
                                           <VisibilityIcon fontSize="small" />
-                                        </Button>
-                                      </Tooltip>
-                                      <Tooltip title="Reprocess AI Analysis">
-                                        <Button
-                                          variant="contained"
-                                          size="small"
-                                          color="primary"
-                                          onClick={() => handleReprocessAI(file)}
-                                          sx={{ textTransform: 'none', minWidth: '32px', width: '32px', height: '32px', p: 0 }}
-                                        >
-                                          <RefreshIcon fontSize="small" />
-                                        </Button>
-                                      </Tooltip>
-                                      <Tooltip title="Delete Analysis">
-                                        <Button
-                                          variant="contained"
-                                          size="small"
-                                          color="error"
-                                          onClick={() => handleDeleteAnalysis(file)}
-                                          sx={{ textTransform: 'none', minWidth: '32px', width: '32px', height: '32px', p: 0 }}
-                                        >
-                                          <DeleteIcon fontSize="small" />
                                         </Button>
                                       </Tooltip>
                                     </>
@@ -968,6 +1128,102 @@ const FileList = ({ onFileSelect, refreshTrigger, selectedFile }) => {
             COLLAPSE ALL
           </Button>
         </Box>
+      </Box>
+      <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1, mb: 1 }}>
+        {/* Selection info and controls */}
+        <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+          <Typography variant="body2" sx={{ color: '#cccccc' }}>
+            {selectedCount} selected ({selectedAnalyzedCount} analyzed)
+          </Typography>
+          <Box sx={{ display: 'flex', gap: 0.5 }}>
+            <Button
+              size="small"
+              onClick={() => handleSelectAllFiles()}
+              sx={{ 
+                fontSize: '0.75rem',
+                textTransform: 'none',
+                color: '#666',
+                minWidth: 'auto',
+                px: 1,
+                '&:hover': {
+                  backgroundColor: 'rgba(0,0,0,0.04)',
+                }
+              }}
+            >
+              SELECT ALL
+            </Button>
+            <Button
+              size="small"
+              onClick={() => handleDeselectAllFiles()}
+              sx={{ 
+                fontSize: '0.75rem',
+                textTransform: 'none',
+                color: '#666',
+                minWidth: 'auto',
+                px: 1,
+                '&:hover': {
+                  backgroundColor: 'rgba(0,0,0,0.04)',
+                }
+              }}
+            >
+              DESELECT ALL
+            </Button>
+          </Box>
+        </Box>
+        
+        {/* Batch action buttons */}
+        {selectedCount > 0 && (
+          <Box sx={{ display: 'flex', gap: 1, justifyContent: 'flex-end' }}>
+            {selectedAnalyzedCount > 0 && (
+              <Button
+                variant="contained"
+                color="error"
+                size="small"
+                startIcon={<DeleteIcon fontSize="small" />}
+                onClick={handleBatchDelete}
+                sx={{ 
+                  textTransform: 'none',
+                  fontSize: '0.8125rem',
+                  py: 0.6,
+                  px: 1.5,
+                  borderRadius: 1.5,
+                  boxShadow: '0 2px 8px rgba(220, 38, 38, 0.25)',
+                  background: 'linear-gradient(to right bottom, #ef4444, #dc2626)',
+                  '&:hover': {
+                    boxShadow: '0 4px 12px rgba(220, 38, 38, 0.4)',
+                    background: 'linear-gradient(to right bottom, #dc2626, #b91c1c)',
+                  },
+                  transition: 'all 0.2s ease-in-out',
+                }}
+              >
+                Delete Selected
+              </Button>
+            )}
+            <Button
+              variant="contained"
+              color="primary"
+              size="small"
+              startIcon={<RefreshIcon fontSize="small" />}
+              onClick={handleBatchReprocess}
+              sx={{ 
+                textTransform: 'none',
+                fontSize: '0.8125rem',
+                py: 0.6,
+                px: 1.5,
+                borderRadius: 1.5,
+                boxShadow: '0 2px 8px rgba(37, 99, 235, 0.25)',
+                background: 'linear-gradient(to right bottom, #3b82f6, #2563eb)',
+                '&:hover': {
+                  boxShadow: '0 4px 12px rgba(37, 99, 235, 0.4)',
+                  background: 'linear-gradient(to right bottom, #2563eb, #1d4ed8)',
+                },
+                transition: 'all 0.2s ease-in-out',
+              }}
+            >
+              Reprocess Selected
+            </Button>
+          </Box>
+        )}
       </Box>
       <Paper 
         elevation={0} 
