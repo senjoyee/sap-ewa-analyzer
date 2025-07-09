@@ -1,0 +1,37 @@
+name: Build and Push Docker Images to ACR
+
+on:
+  push:
+    branches:
+      - main  # Set to your default branch if different
+
+jobs:
+  build-and-push:
+    runs-on: ubuntu-latest
+    env:
+      REGISTRY: sapservicesuk.azurecr.io
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Azure Login
+        uses: azure/login@v2
+        with:
+          creds: ${{ secrets.AZURE_CREDENTIALS }}
+
+      - name: Docker login to ACR
+        uses: azure/docker-login@v2
+        with:
+          login-server: ${{ env.REGISTRY }}
+          username: ${{ secrets.AZURE_CLIENT_ID }}
+          password: ${{ secrets.AZURE_CLIENT_SECRET }}
+
+      - name: Build and Push Backend
+        run: |
+          docker build -t $REGISTRY/ewa-backend:latest ./backend
+          docker push $REGISTRY/ewa-backend:latest
+
+      - name: Build and Push Frontend
+        run: |
+          docker build -t $REGISTRY/ewa-frontend:latest ./frontend
+          docker push $REGISTRY/ewa-frontend:latest
