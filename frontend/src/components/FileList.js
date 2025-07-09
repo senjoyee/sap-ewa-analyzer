@@ -171,7 +171,6 @@ const FileList = ({ onFileSelect, refreshTrigger, selectedFile }) => {
     for (const file of analyzedFiles) {
       try {
         const baseName = file.name.split('.').slice(0, -1).join('.');
-        const API_BASE = (process.env.REACT_APP_API_BASE || window.__ENV__?.REACT_APP_API_BASE || 'http://localhost:8001').replace(/\/$/, '');
         
         const response = await fetch(`${API_BASE}/api/delete-analysis`, {
           method: 'DELETE',
