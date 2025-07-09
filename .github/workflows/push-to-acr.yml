@@ -9,7 +9,7 @@ jobs:
   build-and-push:
     runs-on: ubuntu-latest
     env:
-      REGISTRY: sapservicesuk.azurecr.io
+      REGISTRY: sapservicesuk-g8b0edb8fthrbpgj.azurecr.io
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
