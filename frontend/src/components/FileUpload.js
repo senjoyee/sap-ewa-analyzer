@@ -69,7 +69,7 @@ const formatFileSize = (sizeInBytes) => {
   }
 };
 
-const API_BASE = process.env.REACT_APP_API_BASE || 'http://localhost:8001';
+const API_BASE = 'https://sap-ewa-analyzer-backend.azurewebsites.net/';
 
 
 const FileUpload = ({ onUploadSuccess }) => {
