@@ -91,6 +91,8 @@ const formatFileSize = (sizeInBytes) => {
   }
 };
 
+const API_BASE = process.env.REACT_APP_API_BASE || 'http://localhost:8001';
+
 const FileList = ({ onFileSelect, refreshTrigger, selectedFile }) => {
   const [files, setFiles] = useState([]);
   const [isLoading, setIsLoading] = useState(true);
@@ -321,7 +323,7 @@ const FileList = ({ onFileSelect, refreshTrigger, selectedFile }) => {
     
     try {
       // Make API call to start analysis
-      const response = await fetch('http://localhost:8001/api/analyze', {
+      const response = await fetch(`${API_BASE}/api/analyze`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -360,7 +362,7 @@ const FileList = ({ onFileSelect, refreshTrigger, selectedFile }) => {
     
     try {
       // Make API call to start AI analysis
-      const response = await fetch('http://localhost:8001/api/analyze-ai', {
+      const response = await fetch(`${API_BASE}/api/analyze-ai`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -413,7 +415,7 @@ const FileList = ({ onFileSelect, refreshTrigger, selectedFile }) => {
     
     try {
       // Make API call to reprocess with AI
-      const response = await fetch('http://localhost:8001/api/reprocess-ai', {
+      const response = await fetch(`${API_BASE}/api/reprocess-ai`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -465,7 +467,7 @@ const FileList = ({ onFileSelect, refreshTrigger, selectedFile }) => {
       const aiFileName = `${baseName}_AI.md`;
       
       // Make API call to fetch the AI analysis content
-      const response = await fetch(`http://localhost:8001/api/download/${aiFileName}`, {
+      const response = await fetch(`${API_BASE}/api/download/${aiFileName}`, {
         method: 'GET',
       });
       
@@ -555,7 +557,7 @@ const FileList = ({ onFileSelect, refreshTrigger, selectedFile }) => {
     }));
 
     try {
-      const response = await fetch('http://localhost:8001/api/process-and-analyze', {
+      const response = await fetch(`${API_BASE}/api/process-and-analyze`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -620,7 +622,7 @@ const FileList = ({ onFileSelect, refreshTrigger, selectedFile }) => {
     pollingIntervalsRef.current[fileName] = setInterval(async () => {
       try {
         // Make API call to check status
-        const response = await fetch(`http://localhost:8001/api/analysis-status/${encodeURIComponent(fileName)}`);
+        const response = await fetch(`${API_BASE}/api/analysis-status/${encodeURIComponent(fileName)}`);
         
         if (!response.ok) {
           if (response.status === 404) {
@@ -683,7 +685,7 @@ const FileList = ({ onFileSelect, refreshTrigger, selectedFile }) => {
     setIsLoading(true);
     setError(null);
     try {
-      const response = await fetch('http://localhost:8001/api/files');
+      const response = await fetch(`${API_BASE}/api/files`);
       if (!response.ok) {
         const errData = await response.json();
         throw new Error(errData.detail || `Failed to fetch files: ${response.status}`);

@@ -40,6 +40,7 @@ import DocumentChat from './DocumentChat';
 import sapLogo from '../logo/sap-3.svg';
 
 // Helper function to get appropriate file type label and icon
+const API_BASE = process.env.REACT_APP_API_BASE || 'http://localhost:8001';
 const getFileTypeInfo = (fileName) => {
   if (!fileName || typeof fileName !== 'string') {
     return { icon: <InsertDriveFileOutlinedIcon />, label: 'UNKNOWN', color: 'default' };
@@ -583,7 +584,6 @@ const FilePreview = ({ selectedFile }) => {
       const baseName = file.name.split('.').slice(0, -1).join('.');
       const mdFileName = file.ai_analyzed ? `${baseName}_AI.md` : `${baseName}.md`;
       // Determine API base URL: env var or same-origin
-      const API_BASE = (process.env.REACT_APP_API_BASE || window.__ENV__?.REACT_APP_API_BASE || window.location.origin).replace(/\/$/, '');
       const url = `${API_BASE}/api/export-pdf?blob_name=${encodeURIComponent(mdFileName)}&page_size=A3`;
       window.open(url, '_blank');
     } catch (err) {
@@ -615,7 +615,6 @@ const FilePreview = ({ selectedFile }) => {
         // 1. ALWAYS use the original markdown file as primary source for chat context
         const baseName = selectedFile.name.replace(/\.[^/.]+$/, "");
         // Determine API base URL: env var or same-origin
-const API_BASE = (process.env.REACT_APP_API_BASE || window.__ENV__?.REACT_APP_API_BASE || window.location.origin).replace(/\/$/, '');
 
 const mdFileName = `${baseName}.md`;
         console.log(`Loading original markdown file for context: ${mdFileName}`);

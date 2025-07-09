@@ -69,6 +69,9 @@ const formatFileSize = (sizeInBytes) => {
   }
 };
 
+const API_BASE = process.env.REACT_APP_API_BASE || 'http://localhost:8001';
+
+
 const FileUpload = ({ onUploadSuccess }) => {
   const [uploadingFilesInfo, setUploadingFilesInfo] = useState([]); // To track multiple uploads
   const { theme } = useTheme();
@@ -208,7 +211,7 @@ const FileUpload = ({ onUploadSuccess }) => {
           index === i ? { ...f, progress: 50 } : f // Simulate mid-upload
         ));
 
-        const response = await fetch('http://localhost:8001/api/upload', {
+        const response = await fetch(`${API_BASE}/api/upload`, {
           method: 'POST',
           body: formData,
         });
