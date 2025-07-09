@@ -29,5 +29,5 @@ jobs:
 
       - name: Build and Push Frontend
         run: |
-          docker build -t $REGISTRY/ewa-frontend:latest ./frontend
+          docker build --build-arg REACT_APP_API_BASE=https://sap-ewa-analyzer-backend.azurewebsites.net/ -t $REGISTRY/ewa-frontend:latest ./frontend
           docker push $REGISTRY/ewa-frontend:latest
