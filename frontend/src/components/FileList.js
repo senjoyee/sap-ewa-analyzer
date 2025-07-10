@@ -824,8 +824,8 @@ const FileList = ({ onFileSelect, refreshTrigger, selectedFile }) => {
             elevation={0}
             sx={{ 
               mb: 1,
-              backgroundColor: '#1a1a1a',
-              border: '1px solid #333333',
+              backgroundColor: '#ffffff',
+              border: '1px solid #e5e5e5',
               borderRadius: '8px !important',
               overflow: 'hidden',
               '&:before': {
@@ -837,11 +837,11 @@ const FileList = ({ onFileSelect, refreshTrigger, selectedFile }) => {
             }}
           >
             <AccordionSummary 
-              expandIcon={<ExpandMoreIcon sx={{ color: '#ffffff' }} />}
+              expandIcon={<ExpandMoreIcon sx={{ color: '#0070b1' }} />}
               sx={{ 
                 minHeight: 48,
-                backgroundColor: '#2a2a2a',
-                borderBottom: '1px solid #333333',
+                backgroundColor: '#f7f7f7',
+                borderBottom: '1px solid #e5e5e5',
                 '&.Mui-expanded': {
                   minHeight: 48,
                 },
@@ -857,12 +857,12 @@ const FileList = ({ onFileSelect, refreshTrigger, selectedFile }) => {
                 <BusinessIcon sx={{ 
                   mr: 1.5, 
                   fontSize: 20,
-                  color: '#60a5fa'
+                  color: '#0070b1'
                 }} />
                 <Typography sx={{ 
                   fontWeight: 500,
                   fontSize: '0.9rem',
-                  color: '#ffffff'
+                  color: '#32363a'
                 }}>
                   {customer}
                 </Typography>
@@ -876,14 +876,14 @@ const FileList = ({ onFileSelect, refreshTrigger, selectedFile }) => {
                     minWidth: 20,
                     fontSize: '0.7rem',
                     fontWeight: 600,
-                    backgroundColor: '#333333',
-                    color: '#60a5fa',
-                    border: '1px solid #60a5fa',
+                    backgroundColor: '#f0f8ff',
+                    color: '#0070b1',
+                    border: '1px solid #0070b1',
                   }}
                 />
               </Box>
             </AccordionSummary>
-            <AccordionDetails sx={{ p: 1, backgroundColor: '#1a1a1a' }}>
+            <AccordionDetails sx={{ p: 1, backgroundColor: '#ffffff' }}>
               <List sx={{ py: 0 }}>
                 {Object.entries(groupByMonth(filesByCustomer[customer]))
                   .sort(([aKey],[bKey]) => {
@@ -894,7 +894,7 @@ const FileList = ({ onFileSelect, refreshTrigger, selectedFile }) => {
                   .map(([monthKey, monthFiles]) => {
                     return (
                       <React.Fragment key={monthKey}>
-                      <ListSubheader component="div" sx={{ backgroundColor: '#1a1a1a', color: '#60a5fa' }}>
+                      <ListSubheader component="div" sx={{ backgroundColor: '#f7f7f7', color: '#0070b1', borderTop: '1px solid #e5e5e5', borderBottom: '1px solid #e5e5e5' }}>
                         {monthKey === 'Unknown' ? 'Unknown' : dayjs(monthKey + '-01').format('MMMM YYYY')}
                       </ListSubheader>
                       {monthFiles.map((file) => {
@@ -923,18 +923,18 @@ const FileList = ({ onFileSelect, refreshTrigger, selectedFile }) => {
                                 borderRadius: 1,
                                 minHeight: 64,
                                 transition: 'all 0.2s',
-                                backgroundColor: '#242424',
-                                border: '1px solid transparent',
+                                backgroundColor: '#ffffff',
+                                border: '1px solid #e5e5e5',
                                 '&.Mui-selected': {
-                                  backgroundColor: '#333333',
-                                  borderColor: '#60a5fa',
+                                  backgroundColor: '#eaf3fa',
+                                  borderColor: '#0070b1',
                                   '&:hover': {
-                                    backgroundColor: '#404040',
+                                    backgroundColor: '#d8e9f5',
                                   }
                                 },
                                 '&:hover': {
-                                  backgroundColor: '#2a2a2a',
-                                  borderColor: '#444444',
+                                  backgroundColor: '#f7f7f7',
+                                  borderColor: '#d0d0d0',
                                 }
                               }}
                             >
@@ -948,7 +948,7 @@ const FileList = ({ onFileSelect, refreshTrigger, selectedFile }) => {
                                   size="small"
                                   sx={{ 
                                     p: 0.5,
-                                    color: '#60a5fa',
+                                    color: '#0070b1',
                                     mr: 1
                                   }}
                                 />
@@ -960,7 +960,7 @@ const FileList = ({ onFileSelect, refreshTrigger, selectedFile }) => {
                                     <Typography sx={{ 
                                       fontSize: '0.875rem',
                                       fontWeight: 500,
-                                      color: '#ffffff',
+                                      color: '#32363a',
                                       overflow: 'hidden',
                                       textOverflow: 'ellipsis',
                                       whiteSpace: 'nowrap'
@@ -970,11 +970,11 @@ const FileList = ({ onFileSelect, refreshTrigger, selectedFile }) => {
                                   }
                                   secondary={
                                     <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5, mt: 0.5 }}>
-                                      <Typography variant="caption" sx={{ color: '#cccccc' }}>
+                                      <Typography variant="caption" sx={{ color: '#6a6d70' }}>
                                         {formatFileSize(file.size)}
                                       </Typography>
                                       {file.customer_name && (
-                                        <Typography variant="caption" sx={{ color: '#cccccc' }}>
+                                        <Typography variant="caption" sx={{ color: '#6a6d70' }}>
                                           • {file.customer_name}
                                         </Typography>
                                       )}
@@ -1062,14 +1062,14 @@ const FileList = ({ onFileSelect, refreshTrigger, selectedFile }) => {
           variant="subtitle1" 
           sx={{ 
             fontWeight: 600,
-            color: '#ffffff',
+            color: '#32363a',
             fontSize: '0.95rem',
             display: 'flex',
             alignItems: 'center',
             gap: 1
           }}
         >
-          <FolderIcon sx={{ fontSize: 20, color: '#60a5fa' }} />
+          <FolderIcon sx={{ fontSize: 20, color: '#0070b1' }} />
           Uploaded Files
           {files.length > 0 && (
             <Chip 
@@ -1081,9 +1081,9 @@ const FileList = ({ onFileSelect, refreshTrigger, selectedFile }) => {
                 minWidth: 20,
                 fontSize: '0.7rem',
                 fontWeight: 600,
-                backgroundColor: '#333333',
-                color: '#60a5fa',
-                border: '1px solid #60a5fa',
+                backgroundColor: '#f0f8ff',
+                color: '#0070b1',
+                border: '1px solid #0070b1',
               }}
             />
           )}
@@ -1133,7 +1133,7 @@ const FileList = ({ onFileSelect, refreshTrigger, selectedFile }) => {
       <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1, mb: 1 }}>
         {/* Selection info and controls */}
         <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-          <Typography variant="body2" sx={{ color: '#cccccc' }}>
+          <Typography variant="body2" sx={{ color: '#6a6d70' }}>
             {selectedCount} selected ({selectedAnalyzedCount} analyzed)
           </Typography>
           <Box sx={{ display: 'flex', gap: 0.5 }}>
