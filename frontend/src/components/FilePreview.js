@@ -786,13 +786,18 @@ const mdFileName = `${baseName}.md`;
               label={isAnalysisView ? '' : fileTypeInfo?.label}
               size={isAnalysisView ? "medium" : "small"}
               color={isAnalysisView ? 'info' : fileTypeInfo?.color}
-              variant={isAnalysisView ? "filled" : "outlined"}
+              variant={isAnalysisView ? "default" : "outlined"}
               sx={{ 
                 borderRadius: 1,
                 height: isAnalysisView ? 36 : 'auto',
                 '& .MuiChip-icon': { 
                   marginLeft: isAnalysisView ? '8px' : '5px' 
-                }
+                },
+                ...(isAnalysisView && {
+                  backgroundColor: 'transparent',
+                  border: 'none',
+                  boxShadow: 'none'
+                })
               }}
             />
           </Box>
