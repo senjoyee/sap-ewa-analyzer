@@ -786,7 +786,7 @@ const mdFileName = `${baseName}.md`;
               label={isAnalysisView ? '' : fileTypeInfo?.label}
               size={isAnalysisView ? "medium" : "small"}
               color={isAnalysisView ? 'info' : fileTypeInfo?.color}
-              variant="outlined"
+              variant={isAnalysisView ? "filled" : "outlined"}
               sx={{ 
                 borderRadius: 1,
                 height: isAnalysisView ? 36 : 'auto',
