@@ -776,8 +776,8 @@ const mdFileName = `${baseName}.md`;
                   src={sapLogo} 
                   alt="SAP Logo"
                   sx={{ 
-                    height: 28, 
-                    width: 28, 
+                    height: 35, 
+                    width: 35, 
                     objectFit: 'contain',
                     marginRight: '2px'
                   }} 
