@@ -264,33 +264,25 @@ const FileUpload = ({ onUploadSuccess }) => {
   };
 
   return (
-    <Paper 
-      elevation={0}
-      sx={{ 
-        p: 2.5,
-        background: '#1a1a1a',
-        border: '2px dashed #333333',
-        borderRadius: 2,
-        transition: 'all 0.3s ease',
-        '&:hover': {
-          borderColor: '#60a5fa',
-          background: '#242424',
-        }
-      }}
-    >
+    <Paper elevation={2} sx={{ 
+        padding: 3,
+        borderRadius: 1,
+        backgroundColor: '#ffffff',
+        border: '1px solid #e5e5e5'
+      }}>
       <Box sx={{ textAlign: 'center' }}>
         <CloudUploadIcon sx={{ 
           fontSize: 48, 
-          color: '#60a5fa',
+          color: '#0070b1', // SAP Belize primary blue
           mb: 1,
-          opacity: 0.8
+          opacity: 0.9
         }} />
         <Typography 
           variant="h6" 
           sx={{ 
             mb: 0.5,
-            fontWeight: 500,
-            color: '#ffffff'
+            fontWeight: 400,
+            color: '#32363a'
           }}
         >
           Upload Files
@@ -298,7 +290,7 @@ const FileUpload = ({ onUploadSuccess }) => {
         <Typography 
           variant="body2" 
           sx={{ 
-            color: '#cccccc',
+            color: '#6a6d70',
             mb: 2
           }}
         >
@@ -319,7 +311,7 @@ const FileUpload = ({ onUploadSuccess }) => {
           startIcon={<AddIcon />}
           onClick={handleAddClick}
           sx={{
-            background: 'linear-gradient(45deg, #1a1a1a 30%, #333333 90%)',
+            backgroundColor: '#0070b1', // SAP Belize primary blue
             color: 'white',
             px: 3,
             py: 1,

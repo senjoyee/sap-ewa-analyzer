@@ -3,9 +3,9 @@ import React, { createContext, useContext } from 'react';
 // Create the theme context
 const ThemeContext = createContext();
 
-// Theme provider component - simplified to only use light theme
+// Theme provider component - using SAP Belize theme (light)
 export const ThemeProvider = ({ children }) => {
-  // Fixed light theme
+  // Fixed light theme for SAP Belize
   const theme = 'light';
   
   // For backwards compatibility, providing empty functions

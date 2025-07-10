@@ -73,14 +73,14 @@ const AppContent = () => {
           position="fixed" 
           sx={{ 
             zIndex: (muiTheme) => muiTheme.zIndex.drawer + 1,
-            background: 'linear-gradient(to right, #1a1a1a, #333333)',
-            borderBottom: '1px solid rgba(255, 255, 255, 0.1)'
+            background: '#0070b1', // SAP Belize blue
+            borderBottom: '1px solid rgba(0, 0, 0, 0.1)'
           }}
         >
           <Toolbar>
             <Box sx={{ display: 'flex', alignItems: 'center' }}>
               <DescriptionIcon sx={{ mr: 1.5, color: '#ffffff' }} />
-              <Typography variant="h6" noWrap component="div" sx={{ color: '#ffffff' }}>
+              <Typography variant="h6" noWrap component="div" sx={{ color: '#ffffff', fontWeight: 400 }}>
                 EWA Analyzer
               </Typography>
             </Box>
@@ -108,12 +108,12 @@ const AppContent = () => {
             [`& .MuiDrawer-paper`]: {
               width: sidebarCollapsed ? collapsedDrawerWidth : drawerWidth,
               boxSizing: 'border-box',
-              background: '#121212',
-              borderRight: '1px solid #333333',
+              background: '#ffffff', // SAP Belize light background
+              borderRight: '1px solid #e5e5e5', // Lighter border for Belize theme
               transition: 'width 225ms cubic-bezier(0.4, 0, 0.6, 1) 0ms',
               overflow: 'hidden',
-              boxShadow: '2px 0 8px rgba(0, 0, 0, 0.3)',
-              color: '#ffffff',
+              boxShadow: '0 1px 4px rgba(0, 0, 0, 0.1)', // Lighter shadow for Belize theme
+              color: '#32363a', // SAP Belize text color
             },
           }}
         >
@@ -128,8 +128,8 @@ const AppContent = () => {
             pb: 1
           }}>
             <Typography variant="h6" sx={{ 
-              fontWeight: 600,
-              color: '#ffffff',
+              fontWeight: 500,
+              color: '#32363a',
               fontSize: '1.1rem'
             }}>
               File Management
@@ -138,12 +138,11 @@ const AppContent = () => {
               onClick={() => setSidebarCollapsed(true)}
               size="small"
               sx={{
-                color: '#ffffff',
+                color: '#6a6d70', // SAP Belize neutral gray
                 '&:hover': {
-                  backgroundColor: 'rgba(255,255,255,0.1)',
+                  backgroundColor: 'rgba(0,112,177,0.08)', // Light blue hover
                 }
-              }}
-            >
+              }}>
               <ChevronLeftIcon fontSize="small" />
             </IconButton>
           </Box>
@@ -154,7 +153,7 @@ const AppContent = () => {
             display: 'flex', 
             flexDirection: 'column', 
             gap: 3,
-            background: '#121212',
+            background: '#ffffff',
             '&::-webkit-scrollbar': {
               width: '6px',
             },

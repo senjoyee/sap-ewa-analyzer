@@ -1,58 +1,60 @@
 import { createTheme } from '@mui/material/styles';
 
-// Dark/Black Theme configuration
+// SAP Belize Theme configuration
 export const appTheme = createTheme({
   palette: {
-    mode: 'dark',
+    mode: 'light',
     primary: {
-      main: '#ffffff',
-      light: '#f5f5f5',
-      dark: '#e0e0e0',
+      main: '#0070b1', // SAP Belize primary blue
+      light: '#408ac7',
+      dark: '#004a80',
     },
     secondary: {
-      main: '#bb86fc',
-      light: '#d4a8ff',
-      dark: '#a266ff',
+      main: '#6a6d70', // SAP neutral gray
+      light: '#899395',
+      dark: '#32363a',
     },
     background: {
-      default: '#000000',
-      paper: '#121212',
+      default: '#f5f5f5', // SAP light background
+      paper: '#ffffff',
     },
     text: {
-      primary: '#ffffff',
-      secondary: 'rgba(255, 255, 255, 0.7)',
-      disabled: 'rgba(255, 255, 255, 0.38)',
+      primary: '#32363a', // SAP text color
+      secondary: '#6a6d70',
+      disabled: 'rgba(0, 0, 0, 0.38)',
     },
-    divider: 'rgba(255, 255, 255, 0.12)',
+    divider: 'rgba(0, 0, 0, 0.12)',
   },
   shape: {
-    borderRadius: 8,
+    borderRadius: 4, // SAP uses less rounded corners
   },
   typography: {
-    fontFamily: '"Noto Sans", -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif',
-    h1: { fontWeight: 500, color: '#ffffff' },
-    h2: { fontWeight: 500, color: '#ffffff' },
-    h3: { fontWeight: 500, color: '#ffffff' },
-    h4: { fontWeight: 500, color: '#ffffff' },
-    h5: { fontWeight: 500, color: '#ffffff' },
-    h6: { fontWeight: 500, color: '#ffffff' },
-    button: { fontWeight: 500 },
+    fontFamily: '"72", "72-Regular", "Noto Sans", -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif',
+    fontSize: 14,
+    h1: { fontWeight: 400, color: '#32363a' },
+    h2: { fontWeight: 400, color: '#32363a' },
+    h3: { fontWeight: 400, color: '#32363a' },
+    h4: { fontWeight: 400, color: '#32363a' },
+    h5: { fontWeight: 400, color: '#32363a' },
+    h6: { fontWeight: 400, color: '#32363a' },
+    button: { fontWeight: 400 },
   },
   components: {
     MuiTableCell: {
       styleOverrides: {
         root: {
-          fontFamily: '"Noto Sans", -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif',
-          color: '#ffffff',
-          borderColor: 'rgba(255, 255, 255, 0.12)',
+          fontFamily: '"72", "72-Regular", "Noto Sans", -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif',
+          color: '#32363a',
+          borderColor: '#e5e5e5',
         }
       }
     },
     MuiAppBar: {
       styleOverrides: {
         root: {
-          backgroundImage: 'linear-gradient(to right, #1a1a1a, #333333)',
-          backgroundColor: '#000000',
+          backgroundImage: 'none',
+          backgroundColor: '#0070b1', // SAP blue header
+          boxShadow: '0 1px 3px rgba(0,0,0,0.12)',
         },
       },
     },
@@ -60,17 +62,25 @@ export const appTheme = createTheme({
       styleOverrides: {
         root: {
           backgroundImage: 'none',
-          backgroundColor: '#121212',
+          backgroundColor: '#ffffff',
         },
       },
     },
     MuiButton: {
       styleOverrides: {
         root: {
+          textTransform: 'none', // SAP buttons don't use all caps
+          borderRadius: 4,
           '&:hover': {
-            backgroundColor: 'rgba(255, 255, 255, 0.08)',
+            backgroundColor: 'rgba(0, 112, 177, 0.08)', // Light blue hover
           },
         },
+        contained: {
+          boxShadow: 'none', // SAP buttons have minimal/no shadows
+          '&:hover': {
+            boxShadow: '0 1px 3px rgba(0,0,0,0.12)',
+          }
+        }
       },
     },
   },
