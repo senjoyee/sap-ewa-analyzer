@@ -766,7 +766,7 @@ const mdFileName = `${baseName}.md`;
                     }
                   }}
                 >
-                  <PictureAsPdfOutlinedIcon fontSize="small" />
+                  <PictureAsPdfOutlinedIcon fontSize="medium" />
                 </IconButton>
               </Tooltip>
             )}
@@ -776,8 +776,8 @@ const mdFileName = `${baseName}.md`;
                   src={sapLogo} 
                   alt="SAP Logo"
                   sx={{ 
-                    height: 35, 
-                    width: 35, 
+                    height: 40,
+                    width: 40,
                     objectFit: 'contain',
                     marginRight: '2px'
                   }} 

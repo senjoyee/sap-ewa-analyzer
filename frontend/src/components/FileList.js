@@ -1231,20 +1231,20 @@ const FileList = ({ onFileSelect, refreshTrigger, selectedFile }) => {
         sx={{ 
           flex: 1,
           overflow: 'auto',
-          backgroundColor: '#1a1a1a',
-          border: '1px solid #333333',
+          backgroundColor: '#f5f5f5',
+          border: '1px solid #e5e5e5',
           borderRadius: 2,
           '&::-webkit-scrollbar': {
             width: '6px',
           },
           '&::-webkit-scrollbar-track': {
-            background: '#1a1a1a',
+            background: '#f5f5f5',
           },
           '&::-webkit-scrollbar-thumb': {
-            background: '#333333',
+            background: '#d0d0d0',
             borderRadius: '3px',
             '&:hover': {
-              background: '#444444',
+              background: '#b0b0b0',
             },
           },
         }}
