@@ -176,26 +176,21 @@ async def delete_analysis(request_data: DeleteAnalysisRequest):
             
         container_client = blob_service_client.get_container_client(AZURE_STORAGE_CONTAINER_NAME)
         
-        # List of file patterns to delete
-        file_patterns = [
-            f"{base_name}_AI.md",      # AI analysis markdown
-            f"{base_name}_AI.pdf",     # AI analysis PDF if exported
-            f"{base_name}.md",         # Original markdown
-            f"{base_name}.pdf"         # Original PDF if exported
-        ]
-        
+        # Delete all blobs whose names start with the base_name (remove all traces)
         deleted_files = []
         errors = []
-        
-        # Delete each related file if it exists
-        for pattern in file_patterns:
-            try:
-                blob_client = container_client.get_blob_client(pattern)
-                if blob_client.exists():
-                    blob_client.delete_blob()
-                    deleted_files.append(pattern)
-            except Exception as e:
-                errors.append(f"Failed to delete {pattern}: {str(e)}")
+        try:
+            blob_list = container_client.list_blobs()
+            for blob in blob_list:
+                if blob.name.startswith(base_name):
+                    try:
+                        blob_client = container_client.get_blob_client(blob.name)
+                        blob_client.delete_blob()
+                        deleted_files.append(blob.name)
+                    except Exception as e:
+                        errors.append(f"Failed to delete {blob.name}: {str(e)}")
+        except Exception as e:
+            errors.append(f"Failed to list blobs: {str(e)}")
         
         return {
             "message": f"Analysis for {file_name} deletion processed",
