@@ -574,7 +574,7 @@ const JsonCodeBlockRenderer = ({ node, inline, className, children, ...props }) 
 const FilePreview = ({ selectedFile }) => {
   const fileTypeInfo = selectedFile ? getFileTypeInfo(selectedFile.name) : null;
   const { theme } = useTheme();
-  const isDark = true; // Force dark mode to true since we switched to black theme
+  const isDark = false; // Using SAP Belize light theme
   const [error, setError] = useState(null);
   const [originalContent, setOriginalContent] = useState('');
   
@@ -727,31 +727,26 @@ const mdFileName = `${baseName}.md`;
   
   return (
     <Paper
-      elevation={3}
+      elevation={2}
       sx={{
         padding: 0,
-        background: isDark 
-          ? 'linear-gradient(145deg, #161616, #1E1E1E)'
-          : 'linear-gradient(145deg, #f8f9fa, #ffffff)',
-        borderRadius: 3,
+        background: '#ffffff', // SAP Belize theme uses flat white backgrounds
+        borderRadius: 2,
         height: '100%',
         width: '100%',
         display: 'flex',
         flexDirection: 'column',
         overflow: 'hidden',
-        border: isDark 
-          ? '1px solid rgba(255, 255, 255, 0.05)'
-          : '1px solid rgba(0, 0, 0, 0.05)',
+        border: '1px solid #e5e5e5', // Light border for SAP Belize theme
       }}
     >
       <Box sx={{ 
         px: 2, 
         py: 1.5, 
-        borderBottom: isDark
-          ? '1px solid rgba(255, 255, 255, 0.05)'
-          : '1px solid rgba(0, 0, 0, 0.05)',
+        borderBottom: '1px solid #e5e5e5',
         display: 'flex',
         alignItems: 'center',
+        backgroundColor: '#f7f7f7', // SAP Belize light header background
       }}>
         <Typography variant="h6" component="div" sx={{ flexGrow: 1, fontWeight: 500 }}>
           {isAnalysisView ? 'AI Analysis' : 'File Preview'}
@@ -810,7 +805,7 @@ const mdFileName = `${baseName}.md`;
         alignItems: isAnalysisView ? 'flex-start' : 'center',
         justifyContent: isAnalysisView ? 'flex-start' : 'center',
         p: isAnalysisView ? 0 : 3,
-        background: isAnalysisView ? 'transparent' : 'rgba(0, 0, 0, 0.2)',
+        background: isAnalysisView ? 'transparent' : 'rgba(0, 0, 0, 0.03)', // Light gray background for SAP Belize
         overflow: 'auto'
       }}>
         {selectedFile ? (
@@ -833,21 +828,14 @@ const mdFileName = `${baseName}.md`;
                       overflowX: 'auto', 
                       mb: 3,
                       mt: 2,
-                      borderRadius: 3,
+                      borderRadius: 2,
                       overflow: 'hidden',
-                      background: isDark 
-                        ? 'linear-gradient(145deg, #1a1a1a 0%, #0a0a0a 100%)'
-                        : 'linear-gradient(145deg, #ffffff 0%, #f5f5f5 100%)',
-                      boxShadow: isDark
-                        ? '0 8px 32px 0 rgba(0, 0, 0, 0.5), 0 2px 8px 0 rgba(0, 0, 0, 0.3)'
-                        : '0 8px 32px 0 rgba(31, 38, 135, 0.15), 0 2px 8px 0 rgba(31, 38, 135, 0.08)',
-                      border: `1px solid ${isDark ? 'rgba(255, 255, 255, 0.1)' : 'rgba(0, 0, 0, 0.08)'}`,
-                      transition: 'all 0.3s cubic-bezier(0.4, 0, 0.2, 1)',
+                      background: '#ffffff',
+                      border: '1px solid #e5e5e5',
+                      boxShadow: '0 1px 4px rgba(0, 0, 0, 0.1)',
+                      transition: 'all 0.2s ease-in-out',
                       '&:hover': {
-                        transform: 'translateY(-2px)',
-                        boxShadow: isDark
-                          ? '0 12px 40px 0 rgba(0, 0, 0, 0.6), 0 4px 12px 0 rgba(0, 0, 0, 0.4)'
-                          : '0 12px 40px 0 rgba(31, 38, 135, 0.2), 0 4px 12px 0 rgba(31, 38, 135, 0.1)',
+                        boxShadow: '0 2px 8px rgba(0, 0, 0, 0.15)',
                       },
                       '& table': {
                         width: '100%',
@@ -859,18 +847,18 @@ const mdFileName = `${baseName}.md`;
                         MozOsxFontSmoothing: 'grayscale',
                       },
                       '&::-webkit-scrollbar': {
-                        height: '10px',
+                        height: '8px',
                       },
                       '&::-webkit-scrollbar-track': {
-                        background: isDark ? '#1a1a1a' : '#f5f5f5',
-                        borderRadius: '5px',
+                        background: '#f5f5f5',
+                        borderRadius: '4px',
                       },
                       '&::-webkit-scrollbar-thumb': {
-                        background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
-                        borderRadius: '5px',
+                        background: '#bfbfbf',
+                        borderRadius: '4px',
                         '&:hover': {
-                          background: 'linear-gradient(135deg, #764ba2 0%, #667eea 100%)',
-                        }
+                          background: '#9e9e9e',
+                        },
                       }
                     }}>
                       <table>{children}</table>
@@ -878,7 +866,8 @@ const mdFileName = `${baseName}.md`;
                   ),
                   thead: ({ children }) => (
                     <thead style={{ 
-                      background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
+                      background: '#f0f0f0',
+                      borderBottom: '2px solid #e0e0e0'
                     }}>
                       {children}
                     </thead>
@@ -888,27 +877,15 @@ const mdFileName = `${baseName}.md`;
                     const isEven = index % 2 === 0;
                     return (
                       <tr style={{ 
-                        transition: 'all 0.2s cubic-bezier(0.4, 0, 0.2, 1)',
-                        backgroundColor: isEven ? 
-                          (isDark ? 'rgba(102, 126, 234, 0.03)' : 'rgba(102, 126, 234, 0.02)') : 
-                          'transparent',
-                        cursor: 'pointer',
+                        transition: 'all 0.2s ease-in-out',
+                        backgroundColor: isEven ? '#f7f7f7' : '#ffffff',
+                        borderBottom: '1px solid #e5e5e5',
                       }}
                       onMouseEnter={(e) => {
-                        e.currentTarget.style.backgroundColor = isDark 
-                          ? 'rgba(102, 126, 234, 0.12)' 
-                          : 'rgba(102, 126, 234, 0.08)';
-                        e.currentTarget.style.transform = 'scale(1.01)';
-                        e.currentTarget.style.boxShadow = isDark
-                          ? '0 4px 12px rgba(102, 126, 234, 0.2)'
-                          : '0 4px 12px rgba(102, 126, 234, 0.15)';
+                        e.currentTarget.style.backgroundColor = '#eaf3fa';
                       }}
                       onMouseLeave={(e) => {
-                        e.currentTarget.style.backgroundColor = isEven ? 
-                          (isDark ? 'rgba(102, 126, 234, 0.03)' : 'rgba(102, 126, 234, 0.02)') : 
-                          'transparent';
-                        e.currentTarget.style.transform = 'scale(1)';
-                        e.currentTarget.style.boxShadow = 'none';
+                        e.currentTarget.style.backgroundColor = isEven ? '#f7f7f7' : '#ffffff';
                       }}
                       >
                         {children}
@@ -917,20 +894,16 @@ const mdFileName = `${baseName}.md`;
                   },
                   th: ({ children }) => (
                     <th style={{ 
-                      padding: '16px 12px', 
-                      textAlign: 'center', 
+                      padding: '12px 16px', 
+                      textAlign: 'left', 
                       fontWeight: 600,
                       fontSize: '0.8125rem',
                       fontFamily: '"Noto Sans", "Noto Sans", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif',
-                      color: '#ffffff',
-                      textTransform: 'uppercase',
-                      letterSpacing: '0.08em',
+                      color: '#333333',
                       position: 'relative',
-                      borderBottom: '2px solid transparent',
-                      borderImage: 'linear-gradient(90deg, #667eea 0%, #764ba2 100%) 1',
-                      borderRight: '1px solid rgba(255, 255, 255, 0.1)',
+                      borderBottom: '2px solid #e0e0e0',
+                      borderRight: '1px solid #e0e0e0',
                       whiteSpace: 'nowrap',
-                      textShadow: '0 1px 2px rgba(0,0,0,0.3)',
                       WebkitFontSmoothing: 'antialiased',
                       MozOsxFontSmoothing: 'grayscale',
                     }}>
@@ -951,7 +924,7 @@ const mdFileName = `${baseName}.md`;
                                     content.includes('GB') ||
                                     content.includes('MHz');
                     
-                    let textColor = isDark ? '#e2e8f0' : '#4a5568';
+                    let textColor = '#32363a';
                     let fontWeight = '400';
                     let fontSize = '0.8125rem';
                     let fontFamily = '"Noto Sans", "Noto Sans", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif';
@@ -971,16 +944,16 @@ const mdFileName = `${baseName}.md`;
                     
                     return (
                       <td style={{ 
-                        padding: '14px 12px',
+                        padding: '12px 16px',
                         fontSize: fontSize,
                         fontWeight: fontWeight,
                         fontFamily: fontFamily,
                         color: textColor,
                         verticalAlign: 'middle',
                         textAlign: hasStatusIcon ? 'center' : 'left',
-                        borderBottom: '1px solid rgba(102, 126, 234, 0.06)',
-                        borderRight: '1px solid rgba(102, 126, 234, 0.04)',
-                        transition: 'background-color 0.2s ease, color 0.2s ease',
+                        borderBottom: '1px solid #e5e5e5',
+                        borderRight: '1px solid #f0f0f0',
+                        transition: 'background-color 0.2s ease',
                         WebkitFontSmoothing: 'antialiased',
                         MozOsxFontSmoothing: 'grayscale',
                         lineHeight: 1.5,
