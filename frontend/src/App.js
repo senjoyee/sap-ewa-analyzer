@@ -210,7 +210,7 @@ const AppContent = () => {
             width: `calc(100% - ${sidebarCollapsed ? collapsedDrawerWidth : drawerWidth}px)`,
             display: 'flex',
             flexDirection: 'column',
-            background: '#000000',
+            background: '#f5f5f5', // SAP Belize light background
             transition: 'width 225ms cubic-bezier(0.4, 0, 0.6, 1) 0ms, margin 225ms cubic-bezier(0.4, 0, 0.6, 1) 0ms',
           }}
         >
