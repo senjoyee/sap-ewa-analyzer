@@ -84,7 +84,8 @@ const FileUpload = ({ onUploadSuccess }) => {
     'Eviosys',
     'BSW',
     'Asahi',
-    'Corex'
+    'Corex',
+    'Shoosmiths'
   ]); // Predefined customer list
   const fileInputRef = useRef(null);
   
