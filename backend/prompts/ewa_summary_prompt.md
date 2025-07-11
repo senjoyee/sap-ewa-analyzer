@@ -4,9 +4,16 @@ Important compliance rules
 • The JSON MUST validate against schema version 1.1 (god_level_ewa_analysis/v1.1.json).  
 • The first property must be: "schema_version": "1.1".  
 • Use the exact property names and snake-case spelling shown below.  
+• Use ONLY data that appears verbatim in the supplied Markdown. Copy numbers exactly; do not round or change units.  
+• If a required value is absent in the input, set it to null. Do NOT guess.  
+• Before emitting the JSON, internally cross-check every numeric value against the source text.  
 • Do not output any text outside the JSON object.
 
-Follow these instructions:
+Follow these instructions. Work in two internal stages:
+
+• Stage A (Extraction) – Compile an internal list of every numeric value along with the full sentence it appears in. Do **NOT** output this list.  
+• Stage B (Generation) – Populate the JSON below using only values from Stage A.
+
 
 1. system_metadata → Extract **system_id**, **report_date** (ISO date), and **analysis_period** (YYYY-MM-DD / YYYY-MM-DD).
 2. system_health_overview → Rate **performance**, **security**, **stability**, **configuration** as *Good / Fair / Poor*.
