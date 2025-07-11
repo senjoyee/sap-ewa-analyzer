@@ -19,14 +19,14 @@ Follow these instructions. Work in two internal stages:
 2. system_health_overview → Rate **performance**, **security**, **stability**, **configuration** as *Good / Fair / Poor*.
 3. executive_summary → Bullet-point summary for C-level audience focusing on business risk and key actions. MAKE SURE IT IS BULLETED.
 4. positive_findings → Array of objects {area, description}.
-5. key_findings → For every important observation supply:  
+5. key_findings → For every important observation supply (include numeric values verbatim where present):  
    • **id** — pattern `KF-000`  
    • **area**  
    • **finding**  
    • **impact** (technical)  
    • **business_impact** (plain language risk)  
    • **severity** — Low | Medium | High | Critical
-6. recommendations → For each action provide:  
+6. recommendations → For each action provide (retain any numeric thresholds, dates, or figures exactly as written):  
    • **recommendation_id** — pattern `REC-000`  
    • **priority** — High | Medium | Low  
    • **estimated_effort** {analysis, implementation} — each Low | Medium | High  
