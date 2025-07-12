@@ -141,28 +141,14 @@ def json_to_markdown(data: Dict[str, Any]) -> str:
     md.append("\n---\n")
 
 
-    # ── Trend Analysis ────────────────────────────────────────────────────────
-    md.append("## Trend Analysis")
-    trends = data.get("trend_analysis", {})
-    if trends:
-        # KPI sub-table
-        kpi_trends = trends.get("kpi_trends", [])
-        if kpi_trends:
-            md.append("### KPI Trends")
-            headers = ["kpi_name", "previous_value", "current_value", "change_percentage"]
-            rows = [[kpi.get(h, "N/A") for h in headers] for kpi in kpi_trends]
-            md.extend(
-                _format_table(
-                    [h.replace("_", " ").title() for h in headers],
-                    rows,
-                )
-            )
-            md.append("")
-        md.append(f"- **Overall Performance Trend:** `{trends.get('performance_trend', 'N/A')}`")
-        md.append(f"- **Overall Stability Trend:** `{trends.get('stability_trend', 'N/A')}`")
-        md.append(f"- **Trend Summary:** {trends.get('summary', 'N/A')}")
+    # ── Key Performance Indicators ────────────────────────────────────────────
+    md.append("## Key Performance Indicators")
+    kpis = data.get("kpis", [])
+    if kpis:
+        for kpi in kpis:
+            md.append(f"- {kpi}")
     else:
-        md.append("No trend analysis data provided.")
+        md.append("No KPIs provided.")
     md.append("\n---\n")
 
     # ── Capacity Outlook ──────────────────────────────────────────────────────

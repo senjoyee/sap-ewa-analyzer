@@ -137,24 +137,12 @@
     },
 
 
-    "trend_analysis": {
-      "type": "object",
-      "properties": {
-        "kpi_trends": {
-          "type": "array",
-          "items": {
-            "type": "object",
-            "properties": {
-              "kpi_name":         { "type": "string" },
-              "previous_value":   { "type": "string" },
-              "current_value":    { "type": "string" },
-              "change_percentage":{ "type": "number" }
-            }
-          }
-        },
-        "performance_trend": { "type": "string", "enum": ["Improving", "Stable", "Degrading"] },
-        "stability_trend":   { "type": "string", "enum": ["Improving", "Stable", "Degrading"] },
-        "summary":           { "type": "string" }
+    "kpis": {
+      "type": "array",
+      "description": "A list of key performance indicators (KPIs) and their current values.",
+      "items": {
+        "type": "string",
+        "description": "A single KPI, e.g., 'Database Response Time: 25ms'."
       }
     },
 
@@ -193,7 +181,7 @@
     "recommendations",
     "parameters",
 
-    "trend_analysis",
+    "kpis",
     "capacity_outlook",
     "benchmarking",
     "overall_risk"

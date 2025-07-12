@@ -35,7 +35,7 @@ Follow these instructions. Work in two internal stages:
    • **action** — concrete steps  
    • **validation_step** — how to prove success  
    • **preventative_action** — measure to stop recurrence
-7. trend_analysis → For every KPI trend you find provide kpi_name, previous_value, current_value, change_percentage. Conclude with **performance_trend** and **stability_trend** (Improving | Stable | Degrading) and a narrative **summary**.
+7. kpis → Create a list of key performance indicator strings. Each string should contain the KPI name and its current value, for example: "Dialog Response Time: 450ms".
 8. capacity_outlook → Summarise **database_growth**, **cpu_utilization**, **memory_utilization**, plus a narrative **summary** of future capacity needs.
 9. parameters → List every relevant profile parameter across the stack. Use objects {name, area, current_value, recommended_value, description}. MAKE SURE EVERY PROFILE PARAMETER ACROSS THE DOCUMENT IS CAPTURED.
 10. benchmarking → Provide **comparison** and **summary** versus typical systems.
