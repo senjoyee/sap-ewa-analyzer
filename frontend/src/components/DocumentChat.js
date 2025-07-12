@@ -268,7 +268,8 @@ const DocumentChat = ({ fileName, documentContent }) => {
   }, [fileName, documentContent]);
 
   // Determine API base URL: env var or same-origin
-const API_BASE = (process.env.REACT_APP_API_BASE || window.__ENV__?.REACT_APP_API_BASE || window.location.origin).replace(/\/$/, '');
+// Backend base URL (no trailing slash)
+const API_BASE = 'https://sap-ewa-analyzer-backend.azurewebsites.net';
 
 const handleSendMessage = async () => {
     if (!inputValue.trim() || loading) return;
