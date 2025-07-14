@@ -161,16 +161,7 @@ def json_to_markdown(data: Dict[str, Any]) -> str:
         md.append(f"- **Capacity Summary:** {capacity.get('summary', 'N/A')}")
     else:
         md.append("No capacity outlook data provided.")
-    md.append("\n---\n")
 
-    # ── Benchmarking ─────────────────────────────────────────────────────────
-    md.append("## Benchmarking")
-    benchmarking = data.get("benchmarking", {})
-    if benchmarking:
-        md.append(f"- **Comparison:** {benchmarking.get('comparison', 'N/A')}")
-        md.append(f"- **Summary:** {benchmarking.get('summary', 'N/A')}")
-    else:
-        md.append("No benchmarking data provided.")
 
     # ── Done ─────────────────────────────────────────────────────────────────
     return "\n".join(md)

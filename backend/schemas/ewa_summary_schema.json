@@ -156,14 +156,7 @@
       }
     },
 
-    "benchmarking": {
-      "type": "object",
-      "description": "Comparison versus industry norms.",
-      "properties": {
-        "comparison": { "type": "string" },
-        "summary":    { "type": "string" }
-      }
-    },
+
 
     "overall_risk": {
       "type": "string",
@@ -183,7 +176,6 @@
 
     "kpis",
     "capacity_outlook",
-    "benchmarking",
     "overall_risk"
   ],
 

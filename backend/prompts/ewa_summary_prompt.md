@@ -80,11 +80,6 @@ For each action provide (retain any numeric thresholds, dates, or figures exactl
 - Format as array of objects: `{name, area, current_value, recommended_value, description}`
 - Capture ALL parameters across the document.
 
-### benchmarking
-- `comparison` — how the system compares to typical systems
-- `summary` — analysis of the comparison
-- Only include if explicit benchmarks are present in the input; otherwise set to `null`
-
 ### overall_risk
 - Single value: `low` | `medium` | `high` | `critical` (use lowercase)
 
