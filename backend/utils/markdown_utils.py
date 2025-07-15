@@ -37,10 +37,39 @@ def _array_to_markdown_table(
         md.append(f"No {section_name.lower() if section_name else 'data'} provided.")
         return md
 
-    # Build deterministic header order
+    # Custom header order and wording for Recommendations
+    if section_name == "Recommendations":
+        headers = [
+            "action",
+            "estimated_effort",
+            "linked_issue_id",
+            "preventative_action",
+            "priority",
+            "recommendation_id",
+            "responsible_area",
+            "validation_step",
+        ]
+        header_labels = [
+            "Action",
+            "Estimated Effort",
+            "Linked Issue ID",
+            "Preventative Action",
+            "Priority",
+            "Recommendation ID",
+            "Responsible Area",
+            "Validation Step",
+        ]
+        rows: List[List[str]] = []
+        for item in array:
+            row = [str(item.get(h, "N/A")) for h in headers]
+            rows.append(row)
+        md.extend(_format_table(header_labels, rows))
+        md.append("")
+        return md
+
+    # Default: Build deterministic header order
     headers = sorted({k for item in array for k in item.keys()})
     rows: List[List[str]] = []
-
     for item in array:
         row: List[str] = []
         for k in headers:
