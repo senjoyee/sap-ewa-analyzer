@@ -76,9 +76,15 @@ For each action provide (retain any numeric thresholds, dates, or figures exactl
 - `summary` — narrative of future capacity needs
 
 ### parameters
-- List every parameter mentioned in configuration, security, or performance sections.
-- Format as array of objects: `{name, area, current_value, recommended_value, description}`
-- Capture ALL parameters across the document.
+For each configuration parameter mentioned in the document:
+
+- `name` — parameter identifier
+- `area` — component category (ABAP, JAVA, HANA, ORACLE, etc.)
+- `current_value` — existing setting
+- `recommended_value` — suggested optimal value
+- `description` — purpose and impact explanation
+
+Capture ALL profile parameters across the document, especially those in configuration, security, performance, and database sections.
 
 ### overall_risk
 - Single value: `low` | `medium` | `high` | `critical` (use lowercase)
