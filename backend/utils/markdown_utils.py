@@ -61,7 +61,19 @@ def _array_to_markdown_table(
         ]
         rows: List[List[str]] = []
         for item in array:
-            row = [str(item.get(h, "N/A")) for h in headers]
+            row: List[str] = []
+            for h in headers:
+                v = item.get(h, "N/A")
+                if h == "estimated_effort" and isinstance(v, dict):
+                    v = (
+                        f"Analysis: {v.get('analysis', 'N/A')}, "
+                        f"Implementation: {v.get('implementation', 'N/A')}"
+                    )
+                elif isinstance(v, dict):
+                    v = ", ".join(f"{dk}: {dv}" for dk, dv in v.items()) if v else "N/A"
+                elif isinstance(v, list):
+                    v = ", ".join(str(x) for x in v) if v else "N/A"
+                row.append(str(v))
             rows.append(row)
         md.extend(_format_table(header_labels, rows))
         md.append("")
