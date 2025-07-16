@@ -79,7 +79,7 @@ For each action provide (retain any numeric thresholds, dates, or figures exactl
 For each configuration parameter mentioned in the document:
 
 - `name` — parameter identifier
-- `area` — component category (ABAP, JAVA, HANA, ORACLE, etc.)
+- `area` — component category (ABAP, JAVA, HANA, ORACLE, etc.). Write in uppercase.
 - `current_value` — existing setting
 - `recommended_value` — suggested optimal value
 - `description` — purpose and impact explanation
