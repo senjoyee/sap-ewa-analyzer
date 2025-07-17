@@ -68,7 +68,22 @@
             "pattern": "^KF-[0-9]{2}$",
             "description": "Unique key finding identifier."
           },
-          "area":            { "type": "string" },
+          "area":            { "type": "string", "enum": [
+              "Hardware",
+              "Operating System",
+              "Database",
+              "SAP Kernel / Basis",
+              "ABAP Stack",
+              "Java Stack",
+              "SAP HANA",
+              "Performance & Workload",
+              "Security & Compliance",
+              "Configuration & House-keeping",
+              "Interfaces / Connectivity",
+              "Backup & Recovery",
+              "Upgrade / Patch Management",
+              "Capacity & Sizing"
+            ] },
           "finding":         { "type": "string" },
           "impact":          { "type": "string", "description": "Potential technical impact." },
           "business_impact": { "type": "string", "description": "Translated business risk." },
@@ -107,7 +122,18 @@
             }
           },
 
-          "responsible_area": { "type": "string" },
+          "responsible_area": { "type": "string", "enum": [
+              "SAP Basis Team",
+              "Database Administration",
+              "Operating System Administration",
+              "Network & Connectivity",
+              "Security / Compliance Team",
+              "Application Development",
+              "Functional / Business Process Owner",
+              "Infrastructure / Hardware Team",
+              "Third-Party Vendor",
+              "Project / Change Management"
+            ] },
           "linked_issue_id": {
             "type": "string",
             "pattern": "^KF-[0-9]{2}$",

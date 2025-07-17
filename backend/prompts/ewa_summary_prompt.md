@@ -40,7 +40,8 @@ Populate the JSON below using only values from Stage A.
 For every amber/red-rated or high-impact observation supply (include numeric values verbatim where present):
 
 - `id` — pattern `KF-00`
-- `area` — category of the finding
+- `area` — category of the finding (must be **exactly one** of:
+  `Hardware`, `Operating System`, `Database`, `SAP Kernel / Basis`, `ABAP Stack`, `Java Stack`, `SAP HANA`, `Performance & Workload`, `Security & Compliance`, `Configuration & House-keeping`, `Interfaces / Connectivity`, `Backup & Recovery`, `Upgrade / Patch Management`, `Capacity & Sizing`)
 - `finding` — detailed, self-contained sentence or short paragraph including:
   - Numeric evidence
   - Specific entities (e.g., table or component names)
@@ -58,7 +59,8 @@ For each action provide (retain any numeric thresholds, dates, or figures exactl
 - `estimated_effort` — object with:
   - `analysis`: `low` | `medium` | `high`
   - `implementation`: `low` | `medium` | `high`
-- `responsible_area` — team or department responsible
+- `responsible_area` — team or department responsible (choose **exactly one** of:
+  `SAP Basis Team`, `Database Administration`, `Operating System Administration`, `Network & Connectivity`, `Security / Compliance Team`, `Application Development`, `Functional / Business Process Owner`, `Infrastructure / Hardware Team`, `Third-Party Vendor`, `Project / Change Management`)
 - `linked_issue_id` — the related KF id, if any
 - `action` — concrete steps to implement
 - `validation_step` — how to verify the fix was successful
