@@ -22,12 +22,20 @@ jobs:
           password: ${{ secrets.REGISTRY_PASSWORD }}
 
 
-      - name: Build and Push Backend
-        run: |
-          docker build -t $REGISTRY/ewa-backend:latest ./backend
-          docker push $REGISTRY/ewa-backend:latest
+      - name: Build and push backend with cache
+        uses: docker/build-push-action@v5
+        with:
+          context: ./backend
+          push: true
+          tags: ${{ env.REGISTRY }}/ewa-backend:latest
+          cache-from: type=registry,ref=${{ env.REGISTRY }}/ewa-backend:buildcache
+          cache-to: type=registry,ref=${{ env.REGISTRY }}/ewa-backend:buildcache,mode=max
 
-      - name: Build and Push Frontend
-        run: |
-          docker build -t $REGISTRY/ewa-frontend:latest ./frontend
-          docker push $REGISTRY/ewa-frontend:latest
+      - name: Build and push frontend with cache
+        uses: docker/build-push-action@v5
+        with:
+          context: ./frontend
+          push: true
+          tags: ${{ env.REGISTRY }}/ewa-frontend:latest
+          cache-from: type=registry,ref=${{ env.REGISTRY }}/ewa-frontend:buildcache
+          cache-to: type=registry,ref=${{ env.REGISTRY }}/ewa-frontend:buildcache,mode=max
