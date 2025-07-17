@@ -14,7 +14,7 @@ def _format_table(headers: List[str], rows: List[List[str]]) -> List[str]:
     """Return a list of Markdown lines that render a table."""
     md: List[str] = []
     md.append(f"| {' | '.join(headers)} |")
-    md.append(f"|{'|'.join(['---'] * len(headers))}|")
+    md.append(f"| {'|'.join(['---'] * len(headers))} |")
     for row in rows:
         md.append(f"| {' | '.join(str(x) if x is not None else 'N/A' for x in row)} |")
     return md
