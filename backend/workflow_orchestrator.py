@@ -26,7 +26,10 @@ from azure.storage.blob import BlobServiceClient
 from openai import AzureOpenAI
 from dotenv import load_dotenv
 from agent.ewa_agent import EWAAgent
+from agent.chapter_extraction_agent import ChapterExtractionAgent
 from utils.markdown_utils import json_to_markdown
+from utils.document_chunker import DocumentChunker
+from utils.json_merger import JSONMerger, ChapterExtraction
 from converters import document_converter # Added for combined workflow
 
 # Load environment variables
@@ -258,22 +261,62 @@ class EWAWorkflowOrchestrator:
     # The extract_metrics_step and extract_parameters_step methods have been removed as they are no longer used
 
     async def run_dual_agent_step(self, state: WorkflowState) -> WorkflowState:
-        """Step 2: Two-pass summary workflow: fast extraction then deep refine."""
+        """Step 2: Enhanced two-pass workflow with chapter-by-chapter extraction."""
         try:
             import os
             fast_model = os.getenv("AZURE_OPENAI_FAST_MODEL", "gpt-4.1-mini")
             reasoning_model = os.getenv("AZURE_OPENAI_REASONING_MODEL", "o4-mini")
 
-            print(f"[STEP 2a] Running EWAAgent (fast model: {fast_model}) for {state.blob_name}")
-            fast_agent = EWAAgent(client=self.client, model=fast_model, summary_prompt=SUMMARY_PROMPT)
-            draft_json = await fast_agent.run(state.markdown_content)
-
-            print(f"[STEP 2b] Running EWAAgent.refine (reasoning model: {reasoning_model}) for {state.blob_name}")
+            print(f"[STEP 2] Starting chapter-by-chapter extraction for {state.blob_name}")
+            
+            # Step 2a: Chunk the document into chapters
+            print(f"[STEP 2a] Chunking document into chapters")
+            chunker = DocumentChunker(min_chunk_size=200, max_chunk_size=8000)
+            chunks = chunker.chunk_document(state.markdown_content)
+            
+            chunking_summary = chunker.get_chunking_summary(chunks)
+            print(f"[STEP 2a] Created {chunking_summary['total_chunks']} chunks, avg {chunking_summary['average_words_per_chunk']} words each")
+            
+            # Step 2b: Extract from each chapter using fast model
+            print(f"[STEP 2b] Running chapter extraction (fast model: {fast_model})")
+            chapter_agent = ChapterExtractionAgent(client=self.client, model=fast_model)
+            extraction_results = await chapter_agent.extract_from_chapters(chunks)
+            
+            # Convert extraction results to ChapterExtraction objects
+            chapter_extractions = []
+            for result in extraction_results:
+                chapter_extraction = ChapterExtraction(
+                    chapter_title=result.chapter_title,
+                    chapter_number=result.chapter_number,
+                    extraction_json=result.extraction_json,
+                    extraction_success=result.success,
+                    error_message=result.error_message
+                )
+                chapter_extractions.append(chapter_extraction)
+            
+            # Step 2c: Merge chapter extractions into unified JSON
+            print(f"[STEP 2c] Merging {len(chapter_extractions)} chapter extractions")
+            merger = JSONMerger()
+            draft_json = merger.merge_chapter_extractions(chapter_extractions)
+            
+            merge_summary = merger.get_merge_summary(chapter_extractions)
+            print(f"[STEP 2c] Merge completed: {merge_summary['success_rate']} success rate")
+            
+            # Step 2d: Refine with reasoning model
+            print(f"[STEP 2d] Running refinement (reasoning model: {reasoning_model})")
             deep_agent = EWAAgent(client=self.client, model=reasoning_model, summary_prompt=SUMMARY_PROMPT)
             final_json = await deep_agent.refine(state.markdown_content, draft_json)
 
             state.summary_json = final_json
             state.summary_result = json_to_markdown(final_json)
+            
+            # Add extraction metadata to the state
+            state.extraction_metadata = {
+                'chunking_summary': chunking_summary,
+                'extraction_summary': chapter_agent.get_extraction_summary(extraction_results),
+                'merge_summary': merge_summary
+            }
+            
             return state
         except Exception as e:
             state.error = str(e)
