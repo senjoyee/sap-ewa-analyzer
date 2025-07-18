@@ -4,6 +4,7 @@ on:
   push:
     branches:
       - main  # Set to your default branch if different
+      - break-extract
 
 jobs:
   build-and-push:
