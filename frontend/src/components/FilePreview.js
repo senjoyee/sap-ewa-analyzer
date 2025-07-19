@@ -237,8 +237,9 @@ const JsonCodeBlockRenderer = ({ node, inline, className, children, ...props }) 
                             transform: 'translateY(-1px)',
                             textShadow: '0 2px 4px rgba(0,0,0,0.4)',
                           },
-                          // Make ID and name columns less wide
-                          ...(header.toLowerCase().includes('id') && { maxWidth: '120px' }),
+                          // Specific column width adjustments
+                          ...(header.toLowerCase() === 'id' && { width: '65px', minWidth: '65px' }),
+                          ...(header.toLowerCase().includes('finding') && { maxWidth: '300px' }),
                           ...(header.toLowerCase().includes('name') && { maxWidth: '200px' }),
                           // Make numeric columns narrower
                           ...(isNumericHeader && { width: 'fit-content', minWidth: '90px' }),

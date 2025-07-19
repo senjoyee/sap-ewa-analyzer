@@ -379,18 +379,37 @@ const FileUpload = ({ onUploadSuccess }) => {
                   error={!!fileData.error}
                   required
                   startAdornment={<BusinessIcon sx={{ mr: 1, color: 'text.secondary' }} />}
+                  MenuProps={{
+                    PaperProps: {
+                      sx: {
+                        bgcolor: '#121212',
+                        color: '#ffffff',
+                        borderRadius: 1,
+                        border: '1px solid #333333',
+                        '& .MuiMenuItem-root': {
+                          fontSize: '0.875rem',
+                          '&:hover': {
+                            bgcolor: '#1a1a1a'
+                          },
+                          '&.Mui-selected': {
+                            bgcolor: '#333333'
+                          }
+                        }
+                      }
+                    }
+                  }}
                   sx={{
                     borderRadius: 8,
                     bgcolor: '#222',
                     fontFamily: "'Inter', 'Roboto', 'Arial', sans-serif",
-                    fontSize: '0.75rem',
+                    fontSize: '0.875rem',
                     fontWeight: 400,
                     color: '#fff',
                     minHeight: 40,
                     '& .MuiSelect-select': {
                       color: '#fff',
                       fontFamily: "'Inter', 'Roboto', 'Arial', sans-serif",
-                      fontSize: '0.75rem',
+                      fontSize: '0.875rem',
                       fontWeight: 400,
                       background: 'none',
                     },
@@ -402,20 +421,6 @@ const FileUpload = ({ onUploadSuccess }) => {
                     },
                     '&.Mui-focused .MuiOutlinedInput-notchedOutline': {
                       borderColor: '#60a5fa',
-                    },
-                  }}
-                  MenuProps={{
-                    PaperProps: {
-                      sx: {
-                        bgcolor: '#222',
-                        color: '#fff',
-                        fontFamily: "'Inter', 'Roboto', 'Arial', sans-serif",
-                        fontSize: '0.75rem',
-                        borderRadius: 2,
-                        '& .MuiMenuItem-root': {
-                          fontSize: '0.75rem',
-                        },
-                      },
                     },
                   }}
                   displayEmpty
