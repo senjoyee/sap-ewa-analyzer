@@ -74,10 +74,13 @@ async def chat_with_document(request: ChatRequest):
             messages.append({"role": role, "content": msg.get("text", "")})
         messages.append({"role": "user", "content": request.message})
 
+        from utils.openai_utils import call_openai_chat
         try:
-            response = client.chat.completions.create(
-                model=model_name,
-                messages=messages,
+            chat_model = os.getenv("AZURE_OPENAI_CHAT_MODEL", model_name)
+            response = await call_openai_chat(
+                client,
+                chat_model,
+                messages,
                 max_tokens=8192,
                 temperature=0.0,
                 top_p=0.0,
@@ -87,7 +90,7 @@ async def chat_with_document(request: ChatRequest):
         except Exception as api_err:
             print("OpenAI API error:", api_err)
             print(traceback.format_exc())
-            err_text = _humanize_openai_error(api_err, model_name)
+            err_text = _humanize_openai_error(api_err, chat_model)
             return {"response": f"Error: {err_text}", "error": True}
 
     except HTTPException:

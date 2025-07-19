@@ -77,14 +77,14 @@ For each action provide (retain any numeric thresholds, dates, or figures exactl
 - `memory_utilization` — current and projected memory usage
 - `summary` — narrative of future capacity needs
 
-### parameters
+### Profile parameters
 For each configuration parameter mentioned in the document:
 
 - `name` — parameter identifier
 - `area` — component category (ABAP, JAVA, HANA, ORACLE, etc.). Write in uppercase.
-- `current_value` — existing setting
-- `recommended_value` — suggested optimal value
-- `description` — purpose and impact explanation
+- `current_value` — existing setting, according to the source text
+- `recommended_value` — Value to be set, according to the source text
+- `description` — purpose and impact explanation, according to the source text
 
 Capture ALL profile parameters across the document, especially those in configuration, security, performance, and database sections.
 

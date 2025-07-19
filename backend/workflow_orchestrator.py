@@ -48,9 +48,12 @@ AZURE_STORAGE_CONNECTION_STRING = os.getenv("AZURE_STORAGE_CONNECTION_STRING")
 AZURE_STORAGE_CONTAINER_NAME = os.getenv("AZURE_STORAGE_CONTAINER_NAME")
 
 # System prompts for each workflow
-# System prompts for each workflow
 def load_summary_prompt():
-    """Loads the summary system prompt from the prompts directory."""
+    """
+    Loads the summary system prompt from the prompts directory.
+    Used to provide consistent, schema-aligned instructions to the AI for summary and extraction tasks.
+    Retrieves the prompt file from the local file system, ensuring the AI receives standardized input.
+    """
     # Construct the absolute path to the prompts directory
     # __file__ is the path to the current script (workflow_orchestrator.py)
     # os.path.dirname(__file__) gives the directory of the current script (backend)
@@ -75,7 +78,10 @@ SUMMARY_PROMPT = load_summary_prompt()
 
 @dataclass
 class WorkflowState:
-    """State object for workflow execution"""
+    """
+    Holds all relevant state for a single EWA analysis workflow run.
+    Used to pass document content, results, and errors between workflow steps.
+    """
     blob_name: str
     markdown_content: str = ""
     summary_result: str = ""
@@ -83,15 +89,25 @@ class WorkflowState:
     error: str = ""
 
 class EWAWorkflowOrchestrator:
-    """Custom orchestrator for EWA analysis workflows"""
+    """
+    Main orchestrator for the SAP EWA Analyzer backend.
+    Manages the end-to-end workflow: from document retrieval and conversion,
+    through AI-powered extraction and reasoning, to result persistence.
+    """
     
     def __init__(self):
+        """
+        Initializes the orchestrator and its required service clients (Azure OpenAI, Blob Storage).
+        """
         self.client = None
         self.blob_service_client = None
         self._initialize_clients()
     
     def _initialize_clients(self):
-        """Initialize Azure OpenAI and Blob Storage clients"""
+        """
+        Sets up Azure OpenAI and Azure Blob Storage clients using environment variables.
+        Ensures the orchestrator can access both AI and document storage services.
+        """
         try:
             # Initialize Azure OpenAI client
             self.client = AzureOpenAI(
@@ -112,7 +128,10 @@ class EWAWorkflowOrchestrator:
             raise
     
     async def download_markdown_from_blob(self, blob_name: str) -> str:
-        """Download markdown content from Azure Blob Storage"""
+        """
+        Downloads the Markdown version of an EWA report from Azure Blob Storage.
+        Used as the first step in the AI analysis pipeline to obtain the source document.
+        """
         try:
             # Convert original filename to .md format
             base_name = os.path.splitext(blob_name)[0]
@@ -138,7 +157,10 @@ class EWAWorkflowOrchestrator:
             raise Exception(error_message)
     
     async def upload_to_blob(self, blob_name: str, content: str, content_type: str = "text/markdown") -> str:
-        """Upload content to Azure Blob Storage"""
+        """
+        Uploads content (Markdown or JSON) to Azure Blob Storage.
+        Used to persist analysis results and intermediate files for later retrieval.
+        """
         try:
             blob_client = self.blob_service_client.get_blob_client(
                 container=AZURE_STORAGE_CONTAINER_NAME, 
@@ -166,74 +188,13 @@ class EWAWorkflowOrchestrator:
             print(error_message)
             raise Exception(error_message)
     
-    async def call_openai(self, prompt: str, content: str, model: str, max_tokens: int = 8000) -> str:
-        """Make a call to Azure OpenAI with specified model"""
-        try:
-            # Create messages array (common for all models)
-            messages = [
-                {"role": "system", "content": prompt},
-                {"role": "user", "content": f"Please analyze this EWA document:\n\n{content}"}
-            ]
-            
-            # Handle model-specific parameters
-            if "o4-mini" in model:
-                # o4-mini parameters
-                params = {
-                    "model": model,
-                    "messages": messages,
-                    "max_completion_tokens": 32768,
-                    "reasoning_effort": "medium"
-                }
-                print(f"[MODEL INFO] Using model: {model} with max_completion_tokens=32768")
-                print(f"[MODEL PARAMS] Using reasoning_effort=medium with {model} model")
-            elif "gpt-4.1-mini" in model:
-                # gpt-4.1-mini expects max_tokens, not max_completion_tokens
-                params = {
-                    "model": model,
-                    "messages": messages,
-                    "temperature": 0.0,
-                    "top_p": 0.0,
-                    "max_tokens": max_tokens,
-                    "frequency_penalty": 0,
-                    "presence_penalty": 0
-                }
-                print(f"[MODEL INFO] Using model: {model} with max_tokens={max_tokens}")
-            else:
-                # Parameters for other models
-                params = {
-                    "model": model,
-                    "messages": messages,
-                    "temperature": 0.0,
-                    "top_p": 0.0,
-                    "max_tokens": max_tokens,
-                    "frequency_penalty": 0,
-                    "presence_penalty": 0
-                }
-                print(f"[MODEL INFO] Using model: {model} with max_tokens={max_tokens}")
-            
-            response = self.client.chat.completions.create(**params)
-            
-            # Extract and log token usage information
-            if hasattr(response, 'usage') and response.usage is not None:
-                prompt_tokens = response.usage.prompt_tokens
-                completion_tokens = response.usage.completion_tokens
-                total_tokens = response.usage.total_tokens
-                
-                print(f"[TOKEN USAGE] Prompt: {prompt_tokens} | Completion: {completion_tokens} | Total: {total_tokens}")
-                print(f"[TOKEN USAGE] Completion tokens used: {completion_tokens}/{32000 if 'o4-mini' in model else max_tokens} ({(completion_tokens / (32000 if 'o4-mini' in model else max_tokens) * 100):.1f}%)")
-            else:
-                print("[TOKEN USAGE] Token usage information not available in the response")
-            
-            return response.choices[0].message.content
-            
-        except Exception as e:
-            error_message = f"Error calling Azure OpenAI: {str(e)}"
-            print(error_message)
-            raise Exception(error_message)
-    
+
     # Workflow step functions
     async def download_content_step(self, state: WorkflowState) -> WorkflowState:
-        """Step 1: Download markdown content from blob storage"""
+        """
+        Workflow Step 1: Downloads the Markdown content for the current document from blob storage.
+        Populates the workflow state with the source content for downstream analysis.
+        """
         try:
             print(f"[STEP 1] Downloading content for {state.blob_name}")
             state.markdown_content = await self.download_markdown_from_blob(state.blob_name)
@@ -242,26 +203,17 @@ class EWAWorkflowOrchestrator:
             state.error = str(e)
             return state
     
-    async def generate_summary_step(self, state: WorkflowState) -> WorkflowState:
-        """Step 2: Generate executive summary (no metrics/parameters)"""
-        try:
-            # model_to_use = AZURE_OPENAI_SUMMARY_MODEL # This variable is not strictly needed if passed directly
-            print(f"[STEP 2] Generating summary for {state.blob_name} using model: {AZURE_OPENAI_SUMMARY_MODEL}")
-            state.summary_result = await self.call_openai(
-                SUMMARY_PROMPT, 
-                state.markdown_content,
-                model=AZURE_OPENAI_SUMMARY_MODEL, # Pass the model name directly
-                max_tokens=16000 # As per the original apparent arguments
-            )
-            return state
-        except Exception as e:
-            state.error = str(e)
-            return state
-    
     # The extract_metrics_step and extract_parameters_step methods have been removed as they are no longer used
 
     async def run_dual_agent_step(self, state: WorkflowState) -> WorkflowState:
-        """Step 2: Enhanced two-pass workflow with chapter-by-chapter extraction."""
+        """
+        Workflow Step 2: Runs the advanced two-model, chapter-by-chapter extraction and reasoning workflow.
+        - Splits document into chapters
+        - Extracts structured data from each chapter using a fast model
+        - Merges partial results
+        - Refines the merged draft with a reasoning model for holistic analysis
+        Updates the workflow state with final results and extraction metadata.
+        """
         try:
             import os
             fast_model = os.getenv("AZURE_OPENAI_FAST_MODEL", "gpt-4.1-mini")
@@ -324,7 +276,10 @@ class EWAWorkflowOrchestrator:
 
     
     async def save_results_step(self, state: WorkflowState) -> WorkflowState:
-        """Step 5: Save all results to blob storage"""
+        """
+        Workflow Step 5: Saves the summary Markdown and structured JSON results to Azure Blob Storage.
+        Also sets report date metadata for improved search and organization in downstream applications.
+        """
         try:
             print(f"[STEP 5] Saving results for {state.blob_name}")
             base_name = os.path.splitext(state.blob_name)[0]
@@ -364,8 +319,11 @@ class EWAWorkflowOrchestrator:
     
     async def process_and_analyze_ewa(self, original_blob_name: str) -> dict:
         """
-        Orchestrates the combined workflow of converting a document to markdown and then performing AI analysis.
-        It calls the existing self.execute_workflow for the AI analysis part after successful conversion.
+        Top-level orchestration method for the full EWA Analyzer pipeline.
+        - Initiates document conversion to Markdown
+        - Polls for conversion completion
+        - Triggers the main AI analysis workflow (extraction, reasoning, saving)
+        Returns a unified success/error response for the entire process.
         """
         try:
             print(f"Starting combined processing and analysis for: {original_blob_name}")
@@ -444,7 +402,13 @@ class EWAWorkflowOrchestrator:
             return {"success": False, "message": error_msg, "blob_name": original_blob_name}
 
     async def execute_workflow(self, blob_name: str) -> Dict[str, Any]:
-        """Execute the complete workflow"""
+        """
+        Core AI analysis workflow for a single EWA document.
+        - Downloads Markdown content
+        - Runs chapter-by-chapter dual-agent extraction and reasoning
+        - Saves results and returns output file info and preview
+        Used by higher-level orchestration methods and API endpoints.
+        """
         try:
             print(f"Starting workflow for {blob_name}")
             
@@ -500,12 +464,8 @@ ewa_orchestrator = EWAWorkflowOrchestrator()
 
 async def execute_ewa_analysis(blob_name: str) -> Dict[str, Any]:
     """
-    Convenience function to execute EWA analysis workflow
-    
-    Args:
-        blob_name: Name of the file to analyze
-    
-    Returns:
-        dict: Analysis result
+    Convenience function for external callers (e.g., API endpoints) to run the EWA analysis workflow.
+    Wraps the orchestrator's execute_workflow method for a given blob name.
+    Returns the analysis result dictionary.
     """
     return await ewa_orchestrator.execute_workflow(blob_name)

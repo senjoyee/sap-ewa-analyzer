@@ -6,6 +6,7 @@ import json
 import asyncio
 from typing import Dict, Any
 from jsonschema import validate, ValidationError
+from utils.openai_utils import call_openai_chat
 
 # Fallback prompt if not supplied
 DEFAULT_PROMPT = """You are a world-class SAP Technical Quality Manager and strategic EWA analyst with 20 years of experience. Your task is to analyze the provided SAP EarlyWatch Alert (EWA) report markdown and generate a comprehensive, structured, and actionable executive summary in JSON format. Your analysis must be deep, insightful, and practical, focusing on business risk and proactive quality management.
@@ -98,38 +99,25 @@ class EWAAgent:
         return json.loads(response.choices[0].message.function_call.arguments)
 
     async def _async_openai(self, messages):
-        loop = asyncio.get_running_loop()
-        def call():
-            if any(x in self.model for x in ["o4-mini", "o3"]):
-                return self.client.chat.completions.create(
-                    model=self.model,
-                    messages=messages,
-                    max_completion_tokens=32768,
-                    reasoning_effort="high",
-                    functions=[self.function_def],
-                    function_call={"name": "create_ewa_summary"},
-                )
-            else:
-                return self.client.chat.completions.create(
-                    model=self.model,
-                    messages=messages,
-                    max_tokens=16384,
-                    functions=[self.function_def],
-                    function_call={"name": "create_ewa_summary"},
-                    temperature=0.0,
-                )
-        import traceback
+        """
+        Unified async OpenAI chat completion for EWAAgent using reasoning model.
+        """
+        model = os.getenv("AZURE_OPENAI_REASONING_MODEL", self.model)
         try:
-            response = await loop.run_in_executor(None, call)
-            # Print token usage if available
-            if hasattr(response, 'usage') and response.usage is not None:
-                prompt_tokens = getattr(response.usage, 'prompt_tokens', None)
-                completion_tokens = getattr(response.usage, 'completion_tokens', None)
-                total_tokens = getattr(response.usage, 'total_tokens', None)
-                print(f"[TOKEN USAGE] Prompt: {prompt_tokens} | Completion: {completion_tokens} | Total: {total_tokens}")
+            response = await call_openai_chat(
+                self.client,
+                model,
+                messages,
+                functions=[self.function_def],
+                function_call={"name": "create_ewa_summary"},
+                reasoning_effort="high" if any(x in model for x in ["o4-mini", "o3", "o4"]) else None,
+                max_tokens=32768 if any(x in model for x in ["o4-mini", "o3", "o4"]) else 16384,
+                temperature=0.0
+            )
             return response
         except Exception as e:
             print("[EWAAgent._async_openai] Exception occurred:")
+            import traceback
             traceback.print_exc()
             raise
 

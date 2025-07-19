@@ -42,56 +42,23 @@ class ChapterExtractionAgent:
             client: Azure OpenAI client
             model: Model name to use for extraction
         """
+        import os
         self.client = client
-        self.model = model
+        # Always use env var for fast model, fallback to provided model
+        self.model = os.getenv("AZURE_OPENAI_FAST_MODEL", model)
         
         # Chapter-specific prompt template
         self.chapter_prompt = self._create_chapter_prompt()
         
         # Initialize the base EWA agent for schema validation
-        self.base_agent = EWAAgent(client=client, model=model)
+        self.base_agent = EWAAgent(client=client, model=self.model)
     
     def _create_chapter_prompt(self) -> str:
-        """Create a chapter-specific extraction prompt."""
-        return """# SAP EWA Chapter Analysis Prompt
-
-You are a world-class SAP Technical Quality Manager analyzing a SINGLE CHAPTER from an SAP EarlyWatch Alert (EWA) report. Your task is to extract structured information from this chapter only.
-
-## Important Rules
-
-- Process ONLY the content provided in this chapter
-- Extract information that appears in THIS CHAPTER ONLY
-- If a required field has no data in this chapter, set it to `null`
-- Use exact numbers and values as they appear in the text
-- Focus on chapter-specific findings rather than overall system assessment
-- The JSON MUST validate against the EWA schema
-
-## Chapter Context
-
-You are analyzing: **{chapter_title}**
-
-This is chapter {chapter_number} of a larger EWA report. Focus on extracting:
-
-1. **Key Findings** relevant to this chapter's content
-2. **Recommendations** specific to issues found in this chapter  
-3. **KPIs and metrics** mentioned in this chapter
-4. **Parameters** listed in this chapter
-5. **Capacity information** if present in this chapter
-
-## Extraction Guidelines
-
-- **Key Findings**: Only include findings that are explicitly mentioned in this chapter
-- **Recommendations**: Focus on actions related to this chapter's content
-- **System Health**: Rate only aspects covered in this chapter (set others to null)
-- **Executive Summary**: Summarize only what's covered in this chapter
-- **Parameters**: Include only parameters mentioned in this chapter's content
-
-## JSON Structure
-
-Return a JSON object that follows the standard EWA schema but populated only with information from this specific chapter. Use `null` for sections not covered in this chapter.
-
-Focus on accuracy and completeness for the content that IS present rather than trying to fill all schema fields.
-"""
+        """Load the chapter extraction prompt from an external .md file."""
+        import os
+        prompt_path = os.path.join(os.path.dirname(os.path.abspath(__file__)), "..", "prompts", "chapter_extraction_prompt.md")
+        with open(prompt_path, "r", encoding="utf-8") as f:
+            return f.read()
     
     async def extract_from_chapter(self, chunk: DocumentChunk) -> ChapterExtractionResult:
         """
