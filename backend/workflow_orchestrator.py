@@ -258,19 +258,24 @@ class EWAWorkflowOrchestrator:
     # The extract_metrics_step and extract_parameters_step methods have been removed as they are no longer used
 
     async def run_dual_agent_step(self, state: WorkflowState) -> WorkflowState:
-        """Step 2: Two-pass summary workflow: fast extraction then deep refine."""
+        """Step 2: Two-pass summary workflow: fast extraction then quality control refinement.
+        
+        Uses a division of labor approach:
+        1. Fast model (GPT-4.1) for initial comprehensive extraction
+        2. Reasoning model (o4-mini) for quality control, filtering, and validation
+        """
         try:
             import os
             fast_model = os.getenv("AZURE_OPENAI_FAST_MODEL", "gpt-4.1-mini")
             reasoning_model = os.getenv("AZURE_OPENAI_REASONING_MODEL", "o4-mini")
 
-            print(f"[STEP 2a] Running EWAAgent (fast model: {fast_model}) for {state.blob_name}")
+            print(f"[STEP 2a] Running fast extraction (model: {fast_model}) for {state.blob_name}")
             fast_agent = EWAAgent(client=self.client, model=fast_model, summary_prompt=SUMMARY_PROMPT)
             draft_json = await fast_agent.run(state.markdown_content)
 
-            print(f"[STEP 2b] Running EWAAgent.refine (reasoning model: {reasoning_model}) for {state.blob_name}")
-            deep_agent = EWAAgent(client=self.client, model=reasoning_model, summary_prompt=SUMMARY_PROMPT)
-            final_json = await deep_agent.refine(state.markdown_content, draft_json)
+            print(f"[STEP 2b] Running quality control refinement (model: {reasoning_model}) for {state.blob_name}")
+            reasoning_agent = EWAAgent(client=self.client, model=reasoning_model, summary_prompt=SUMMARY_PROMPT)
+            final_json = await reasoning_agent.quality_control_refine(draft_json)
 
             state.summary_json = final_json
             state.summary_result = json_to_markdown(final_json)

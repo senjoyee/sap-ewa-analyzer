@@ -79,6 +79,71 @@ class EWAAgent:
         response = await self._async_openai(messages)
         return json.loads(response.choices[0].message.function_call.arguments)
 
+    async def quality_control_refine(self, draft_json: dict) -> dict:
+        """Apply quality control filtering and validation to first-pass JSON output.
+        
+        This method implements a reasoning model approach that:
+        1. Filters Executive Summary for C-level appropriateness
+        2. Reviews and validates Positive Findings
+        3. Validates Key Findings and filters by severity (Critical/High/Medium only)
+        4. Validates Recommendations and filters by severity (Critical/High/Medium only)
+        5. Validates Capacity Outlook
+        6. Returns everything else as-is
+        """
+        quality_control_prompt = """
+You are a senior SAP Quality Assurance specialist and C-level advisor. Your task is to review and refine the provided EWA analysis JSON output from a first-pass analysis.
+
+Your responsibilities are:
+
+1. **Executive Summary Review**: 
+   - Analyze each bullet point in the Executive Summary
+   - Keep only items that are appropriate for a C-level audience (strategic, business-critical, high-impact)
+   - Remove technical jargon or low-level operational details
+   - Ensure each point clearly communicates business risk or opportunity
+
+2. **Positive Findings Validation**:
+   - Review each positive finding for relevance and accuracy
+   - Reword items that are too technical for business stakeholders
+   - Remove findings that are routine or not noteworthy
+   - Ensure findings highlight genuine business value or risk mitigation
+
+3. **Key Findings Quality Control**:
+   - Validate that Impact sections accurately describe technical consequences
+   - Verify Business Impact translations are meaningful and specific
+   - Confirm Severity ratings are appropriate (Critical/High/Medium/Low)
+   - **FILTER OUT all Low severity findings - retain only Critical, High, and Medium**
+   - Correct any inaccuracies in impact assessment or severity rating
+
+4. **Recommendations Validation**:
+   - Verify each recommendation's Action is clear and actionable
+   - Validate Estimated Effort assessments are realistic
+   - Ensure Preventative Actions will prevent recurrence
+   - Confirm Validation Steps will verify fix completion
+   - **FILTER OUT all Low priority recommendations - retain only Critical, High, and Medium**
+
+5. **Capacity Outlook Review**:
+   - Validate capacity projections are reasonable and well-supported
+   - Ensure outlook statements are clear and actionable
+   - Correct any inconsistencies in capacity analysis
+
+**IMPORTANT**: 
+- You have access ONLY to the first-pass JSON output - no external data
+- Return the complete JSON structure with all original sections
+- Only modify the sections specified above
+- All other sections (System Metadata, Trend Analysis, Profile Parameters, etc.) should be returned unchanged
+- Maintain the exact JSON schema structure
+
+Return ONLY the refined JSON object.
+"""
+
+        messages = [
+            {"role": "system", "content": quality_control_prompt},
+            {"role": "user", "content": f"Please review and refine this EWA analysis JSON:\n\n{json.dumps(draft_json, indent=2)}"}
+        ]
+        
+        response = await self._async_openai(messages)
+        return json.loads(response.choices[0].message.function_call.arguments)
+
     async def _call_openai(self, markdown: str) -> Dict[str, Any]:
         messages = [
             {"role": "system", "content": self.summary_prompt},
