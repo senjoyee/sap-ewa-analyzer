@@ -254,6 +254,11 @@ class EWAWorkflowOrchestrator:
             merge_summary = merger.get_merge_summary(chapter_extractions)
             print(f"[STEP 2c] Merge completed: {merge_summary['success_rate']} success rate")
             
+            # Save draft_json to blob for debugging
+            base_name = os.path.splitext(state.blob_name)[0]
+            draft_json_blob_name = f"{base_name}_AI_draft.json"
+            await self.upload_to_blob(draft_json_blob_name, json.dumps(draft_json, indent=2), "application/json")
+
             # Step 2d: Refine with reasoning model
             print(f"[STEP 2d] Running refinement (reasoning model: {reasoning_model})")
             deep_agent = EWAAgent(client=self.client, model=reasoning_model, summary_prompt=SUMMARY_PROMPT)
