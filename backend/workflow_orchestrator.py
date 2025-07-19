@@ -257,8 +257,10 @@ class EWAWorkflowOrchestrator:
             # Save draft_json to blob for debugging
             base_name = os.path.splitext(state.blob_name)[0]
             draft_json_blob_name = f"{base_name}_AI_draft.json"
+            print(f"[DEBUG] Attempting to upload draft JSON to {draft_json_blob_name}")
             await self.upload_to_blob(draft_json_blob_name, json.dumps(draft_json, indent=2), "application/json")
-
+            print(f"[DEBUG] Draft JSON upload complete: {draft_json_blob_name}")
+            
             # Step 2d: Refine with reasoning model
             print(f"[STEP 2d] Running refinement (reasoning model: {reasoning_model})")
             deep_agent = EWAAgent(client=self.client, model=reasoning_model, summary_prompt=SUMMARY_PROMPT)
