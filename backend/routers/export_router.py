@@ -115,6 +115,11 @@ def _enhanced_markdown_to_html(markdown_text: str) -> str:
             margin-bottom: 6px;
         }
         
+        /* Section page breaks - ensure major tables start on new pages */
+        .page-break-before {
+            page-break-before: always;
+        }
+        
         /* Enhanced tables */
         table {
             width: 100%;
@@ -307,6 +312,12 @@ def _enhanced_markdown_to_html(markdown_text: str) -> str:
 
 def _post_process_html(html_content: str) -> str:
     """Apply additional HTML enhancements and risk level styling."""
+    
+    # Add page breaks before major table sections
+    for section_name in ['Positive Findings', 'Key Findings', 'Recommendations', 'Parameters']:
+        pattern = fr'(<h\d[^>]*>)({section_name})(</h\d>)'
+        replacement = fr'\1<span class="page-break-before">\2</span>\3'
+        html_content = re.sub(pattern, replacement, html_content, flags=re.IGNORECASE)
     
     # Add risk level classes to severity indicators
     html_content = re.sub(
