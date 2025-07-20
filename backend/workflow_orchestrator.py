@@ -283,6 +283,33 @@ class EWAWorkflowOrchestrator:
         except Exception as e:
             state.error = str(e)
             return state
+    
+    async def run_enhanced_single_agent_step(self, state: WorkflowState) -> WorkflowState:
+        """Step 2: Enhanced single-agent workflow with structured chain-of-thought reasoning.
+        
+        Uses GPT-4.1 with enhanced prompting that includes:
+        1. Systematic document analysis phase
+        2. Risk assessment with business translation
+        3. Built-in quality control validation
+        4. Executive-focused communication optimization
+        
+        This approach eliminates the need for separate reasoning model while maintaining
+        high-quality output through structured reasoning built into the prompt.
+        """
+        try:
+            # Use the same model configuration as other parts of the system for consistency
+            model = AZURE_OPENAI_SUMMARY_MODEL
+            
+            print(f"[STEP 2] Running enhanced single-agent analysis (model: {model}) for {state.blob_name}")
+            agent = EWAAgent(client=self.client, model=model, summary_prompt=SUMMARY_PROMPT)
+            final_json = await agent.run_enhanced_single_agent(state.markdown_content)
+            
+            state.summary_json = final_json
+            state.summary_result = json_to_markdown(final_json)
+            return state
+        except Exception as e:
+            state.error = str(e)
+            return state
 
     
     async def save_results_step(self, state: WorkflowState) -> WorkflowState:
@@ -418,8 +445,8 @@ class EWAWorkflowOrchestrator:
             if state.error:
                 raise Exception(state.error)
             
-            # Run the two-pass agentic structured summary workflow
-            summary_state = await self.run_dual_agent_step(state)
+            # Run the enhanced single-agent workflow with structured reasoning
+            summary_state = await self.run_enhanced_single_agent_step(state)
             
             # Check for errors
             if summary_state.error:

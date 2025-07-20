@@ -62,6 +62,23 @@ class EWAAgent:
         summary_json = await self._repair(markdown, summary_json)
         # Either returns valid JSON or last attempt regardless of validity
         return summary_json
+    
+    async def run_enhanced_single_agent(self, markdown: str) -> Dict[str, Any]:
+        """Enhanced single-agent approach using structured chain-of-thought reasoning.
+        
+        This method leverages GPT-4.1's strengths in instruction following and agentic workflows
+        by providing explicit reasoning strategy and quality control steps within the prompt.
+        Eliminates the need for a separate reasoning model for quality control.
+        """
+        # The enhanced reasoning strategy is now built into the prompt itself
+        # No need for separate reasoning steps - GPT-4.1 will follow the structured approach
+        summary_json = await self._call_openai(markdown)
+        if self._is_valid(summary_json):
+            return summary_json
+
+        # Try once to repair if validation fails
+        summary_json = await self._repair(markdown, summary_json)
+        return summary_json
 
     # ----------------------------- Internal helpers ----------------------------- #
 
