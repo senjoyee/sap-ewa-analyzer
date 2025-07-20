@@ -382,17 +382,20 @@ const FileUpload = ({ onUploadSuccess }) => {
                   MenuProps={{
                     PaperProps: {
                       sx: {
-                        bgcolor: '#121212',
-                        color: '#ffffff',
+                        bgcolor: '#ffffff',
+                        color: '#000000',
                         borderRadius: 1,
-                        border: '1px solid #333333',
+                        border: '1px solid #e0e0e0',
+                        boxShadow: '0 4px 8px rgba(0, 0, 0, 0.1)',
                         '& .MuiMenuItem-root': {
                           fontSize: '0.875rem',
+                          color: '#000000',
                           '&:hover': {
-                            bgcolor: '#1a1a1a'
+                            bgcolor: '#f5f5f5'
                           },
                           '&.Mui-selected': {
-                            bgcolor: '#333333'
+                            bgcolor: '#e3f2fd',
+                            color: '#1976d2'
                           }
                         }
                       }
@@ -400,14 +403,12 @@ const FileUpload = ({ onUploadSuccess }) => {
                   }}
                   sx={{
                     borderRadius: 8,
-                    bgcolor: '#222',
+                    bgcolor: 'background.paper',
                     fontFamily: "'Inter', 'Roboto', 'Arial', sans-serif",
                     fontSize: '0.875rem',
                     fontWeight: 400,
-                    color: '#fff',
                     minHeight: 40,
                     '& .MuiSelect-select': {
-                      color: '#fff',
                       fontFamily: "'Inter', 'Roboto', 'Arial', sans-serif",
                       fontSize: '0.875rem',
                       fontWeight: 400,
