@@ -593,8 +593,8 @@ const FilePreview = ({ selectedFile }) => {
     }
   };
   
-  // Check if we're displaying AI analysis - show analysis view for AI analyzed files
-  const isAnalysisView = selectedFile?.ai_analyzed || (selectedFile?.displayType === 'analysis' && selectedFile?.analysisContent);
+  // Check if we're displaying AI analysis
+  const isAnalysisView = selectedFile?.displayType === 'analysis' && selectedFile?.analysisContent;
   
   // Use metrics and parameters data passed directly from parent component
   const metricsData = selectedFile?.metricsData;

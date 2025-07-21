@@ -398,11 +398,11 @@ const FileList = ({ onFileSelect, refreshTrigger, selectedFile }) => {
   };
 
   // Function to handle reprocessing of AI analysis
-  const handleReprocessAI = async (file, showAlerts = true) => {
+  const handleReprocessAI = async (file, showAlert = true) => {
     console.log(`Reprocessing AI analysis for file: ${file.name}`);
     
     // Confirm reprocessing with the user (skip if in batch mode)
-    if (showAlerts && !window.confirm(`This will delete the existing AI analysis for "${file.name}" and create a new one. Continue?`)) {
+    if (showAlert && !window.confirm(`This will delete the existing AI analysis for "${file.name}" and create a new one. Continue?`)) {
       return; // User cancelled
     }
     
@@ -904,7 +904,8 @@ const FileList = ({ onFileSelect, refreshTrigger, selectedFile }) => {
                         onClick={(e) => {
                           // Don't select if clicking checkbox
                           if (!e.target.closest('.MuiCheckbox-root')) {
-                            onFileSelect(file);
+                            // Use the display handler like the original Display button
+                            handleDisplayAnalysis(file);
                           }
                         }}
                         selected={isSelected}
