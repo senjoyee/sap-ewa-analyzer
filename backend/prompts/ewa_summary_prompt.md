@@ -124,7 +124,7 @@ For each action, provide (retain any numeric thresholds, dates, or figures exact
 For each configuration parameter mentioned in the document:
 
 - `name`: parameter identifier.
-- `area`: component category (SAP ABAP, SAP JAVA, HANA DB, ORACLE DB, MSSQL DB, DB2 DB, SAP ASE DB etc.). Write in uppercase.
+- `area`: component category (SAP ABAP, SAP JAVA, HANA DB, ORACLE DB, MSSQL DB, DB2 DB, SAP ASE DB, etc.). Write in uppercase.
 - `current_value`: existing setting.
 - `recommended_value`: suggested optimal value.
 - `description`: purpose and impact explanation.
