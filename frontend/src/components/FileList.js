@@ -399,9 +399,6 @@ const FileList = ({ onFileSelect, refreshTrigger, selectedFile }) => {
 
   // Function to handle displaying AI analysis - replaces Display button logic
   const handleDisplayAnalysis = async (file) => {
-    console.log('=== handleDisplayAnalysis CALLED ===');
-    console.log(`Displaying AI analysis for file: ${file.name}`);
-    console.log('File object:', file);
     
     try {
       // Only proceed if the file is AI analyzed

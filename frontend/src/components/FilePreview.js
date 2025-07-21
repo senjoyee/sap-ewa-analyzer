@@ -238,11 +238,11 @@ const JsonCodeBlockRenderer = ({ node, inline, className, children, ...props }) 
                             textShadow: '0 2px 4px rgba(0,0,0,0.4)',
                           },
                           // Specific column width adjustments
-                          ...(header.toLowerCase() === 'id' && { width: '120px', minWidth: '120px' }),
-                          ...(header.toLowerCase().includes('finding') && { maxWidth: '200px', width: '200px' }),
-                          ...(header.toLowerCase().includes('name') && { maxWidth: '200px' }),
+                          // ...(header.toLowerCase() === 'id' && { width: '120px', minWidth: '120px' }),
+                          // ...(header.toLowerCase().includes('finding') && { maxWidth: '200px', width: '200px' }),
+                          // ...(header.toLowerCase().includes('name') && { maxWidth: '200px' }),
                           // Make numeric columns narrower
-                          ...(isNumericHeader && { width: 'fit-content', minWidth: '90px' }),
+                          // ...(isNumericHeader && { width: 'fit-content', minWidth: '90px' }),
                           '&::after': {
                             content: '""',
                             position: 'absolute',
@@ -595,15 +595,6 @@ const FilePreview = ({ selectedFile }) => {
   
   // Check if we're displaying AI analysis
   const isAnalysisView = selectedFile?.displayType === 'analysis' && selectedFile?.analysisContent;
-  
-  // Debug logging to see what FilePreview receives
-  console.log('FilePreview Debug:', {
-    selectedFileName: selectedFile?.name,
-    displayType: selectedFile?.displayType,
-    hasAnalysisContent: !!selectedFile?.analysisContent,
-    analysisContentLength: selectedFile?.analysisContent?.length,
-    isAnalysisView: isAnalysisView
-  });
   
   // Use metrics and parameters data passed directly from parent component
   const metricsData = selectedFile?.metricsData;
