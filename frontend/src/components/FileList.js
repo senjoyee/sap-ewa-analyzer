@@ -482,7 +482,7 @@ const FileList = ({ onFileSelect, refreshTrigger, selectedFile }) => {
       }));
       
       // Show success message (if not in batch mode)
-      if (showAlerts) {
+      if (showAlert) {
         alert(`Reprocessing of ${file.name} started successfully.`);
       }
       
@@ -495,7 +495,7 @@ const FileList = ({ onFileSelect, refreshTrigger, selectedFile }) => {
       }));
       
       // Show error message if not in batch mode
-      if (showAlerts) {
+      if (showAlert) {
         alert(`Error in AI reprocessing: ${error.message}`);
       }
     }
