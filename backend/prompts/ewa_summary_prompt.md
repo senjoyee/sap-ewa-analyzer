@@ -48,13 +48,32 @@ Now proceed with your systematic analysis following this reasoning strategy.
 - Before emitting the JSON, internally cross-check every numeric value against the source text.
 - Do not output any text outside the JSON object.
 
-## Processing Stages
+## Thinking Process
 
-### Stage A: Extraction
-Compile an internal list of every numeric value along with the full sentence it appears in and the nearest chapter heading or section title where it appears. Do NOT output this list.
+### Internal Scratchpad
+Before generating the final JSON, use this internal scratchpad to think through your analysis systematically. Do NOT include this scratchpad in your final output - it's for your internal reasoning only.
 
-### Stage B: Generation
-Populate the JSON below using only values from Stage A.
+**Step 1: Document Scan**
+- What are the key numeric values and thresholds I see?
+- Which sections contain critical alerts or warnings?
+- What system metadata can I extract (SID, dates, periods)?
+
+**Step 2: Risk Analysis** 
+- For each significant finding, what is the technical impact?
+- How does this translate to business risk based on my SAP expertise?
+- What severity level is appropriate (critical/high/medium/low)?
+
+**Step 3: Executive Translation**
+- Which findings would a C-level executive care about?
+- How can I express technical issues in business terms?
+- What are the key action items and business risks?
+
+**Step 4: Validation Check**
+- Are all my numeric values exact from the source?
+- Are my findings self-contained with proper justification?
+- Have I filtered to only medium/high/critical severity items?
+
+After completing your internal scratchpad analysis above, proceed directly to generate the clean JSON output below. Remember: do not include your scratchpad thinking in the final response - only output the structured JSON.
 
 ## JSON Structure
 

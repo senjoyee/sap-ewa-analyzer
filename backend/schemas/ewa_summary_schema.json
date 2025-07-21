@@ -33,10 +33,10 @@
     "system_health_overview": {
       "type": "object",
       "properties": {
-        "performance": { "type": "string", "enum": ["Good", "Fair", "Poor"] },
-        "security":    { "type": "string", "enum": ["Good", "Fair", "Poor"] },
-        "stability":   { "type": "string", "enum": ["Good", "Fair", "Poor"] },
-        "configuration": { "type": "string", "enum": ["Good", "Fair", "Poor"] }
+        "performance": { "type": "string", "enum": ["good", "fair", "poor"] },
+        "security":    { "type": "string", "enum": ["good", "fair", "poor"] },
+        "stability":   { "type": "string", "enum": ["good", "fair", "poor"] },
+        "configuration": { "type": "string", "enum": ["good", "fair", "poor"] }
       }
     },
 
@@ -87,7 +87,7 @@
           "finding":         { "type": "string" },
           "impact":          { "type": "string", "description": "Potential technical impact." },
           "business_impact": { "type": "string", "description": "Translated business risk." },
-          "severity":        { "type": "string", "enum": ["Low", "Medium", "High", "Critical"] }
+          "severity":        { "type": "string", "enum": ["low", "medium", "high", "critical"] }
         }
       }
     },
@@ -111,14 +111,14 @@
             "type": "string",
             "pattern": "^REC-[0-9]{2}$"
           },
-          "priority": { "type": "string", "enum": ["High", "Medium", "Low"] },
+          "priority": { "type": "string", "enum": ["high", "medium", "low"] },
 
           "estimated_effort": {
             "type": "object",
             "required": ["analysis", "implementation"],
             "properties": {
-              "analysis":      { "type": "string", "enum": ["Low", "Medium", "High"] },
-              "implementation":{ "type": "string", "enum": ["Low", "Medium", "High"] }
+              "analysis":      { "type": "string", "enum": ["low", "medium", "high"] },
+              "implementation":{ "type": "string", "enum": ["low", "medium", "high"] }
             }
           },
 
@@ -186,7 +186,7 @@
 
     "overall_risk": {
       "type": "string",
-      "enum": ["Low", "Medium", "High", "Critical"]
+      "enum": ["low", "medium", "high", "critical"]
     }
   },
 
@@ -219,13 +219,13 @@
       ],
       "properties": {
         "recommendation_id": { "type": "string", "pattern": "^REC-[0-9]{2}$" },
-        "priority": { "type": "string", "enum": ["High", "Medium", "Low"] },
+        "priority": { "type": "string", "enum": ["high", "medium", "low"] },
         "estimated_effort": {
           "type": "object",
           "required": ["analysis", "implementation"],
           "properties": {
-            "analysis":      { "type": "string", "enum": ["Low", "Medium", "High"] },
-            "implementation":{ "type": "string", "enum": ["Low", "Medium", "High"] }
+            "analysis":      { "type": "string", "enum": ["low", "medium", "high"] },
+            "implementation":{ "type": "string", "enum": ["low", "medium", "high"] }
           }
         },
         "responsible_area":  { "type": "string" },
