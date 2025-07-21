@@ -397,6 +397,49 @@ const FileList = ({ onFileSelect, refreshTrigger, selectedFile }) => {
     }
   };
 
+  // Function to handle displaying AI analysis - replaces Display button logic
+  const handleDisplayAnalysis = async (file) => {
+    console.log(`Displaying AI analysis for file: ${file.name}`);
+    
+    try {
+      // Only proceed if the file is AI analyzed
+      if (!file.ai_analyzed) {
+        console.log('File not AI analyzed, selecting normally');
+        onFileSelect(file);
+        return;
+      }
+
+      // Construct the AI analysis file name
+      const baseName = file.name.split('.').slice(0, -1).join('.');
+      const aiFileName = `${baseName}_AI.md`;
+      
+      // Fetch the AI analysis content
+      const response = await fetch(`${API_BASE}/api/download/${aiFileName}`);
+      
+      if (!response.ok) {
+        throw new Error(`Failed to fetch AI analysis: ${response.status}`);
+      }
+      
+      const analysisContent = await response.text();
+      console.log(`Loaded analysis content: ${analysisContent.length} characters`);
+      
+      // Create enriched file object with analysis data
+      const enrichedFile = {
+        ...file,
+        analysisContent: analysisContent,
+        displayType: 'analysis' // This tells FilePreview to show analysis view
+      };
+      
+      // Pass enriched file to preview
+      onFileSelect(enrichedFile);
+      
+    } catch (error) {
+      console.error(`Error displaying analysis for ${file.name}:`, error);
+      // Fallback to basic file selection
+      onFileSelect(file);
+    }
+  };
+
   // Function to handle reprocessing of AI analysis
   const handleReprocessAI = async (file, showAlert = true) => {
     console.log(`Reprocessing AI analysis for file: ${file.name}`);
@@ -453,40 +496,6 @@ const FileList = ({ onFileSelect, refreshTrigger, selectedFile }) => {
       if (showAlerts) {
         alert(`Error in AI reprocessing: ${error.message}`);
       }
-    }
-  };
-
-  // Function to handle displaying AI analysis
-  const handleDisplayAnalysis = async (file) => {
-    console.log(`Displaying AI analysis for file: ${file.name}`);
-    
-    try {
-      // Construct the AI analysis file name
-      const baseName = file.name.split('.').slice(0, -1).join('.');
-      const aiFileName = `${baseName}_AI.md`;
-      
-      // Make API call to fetch the AI analysis content
-      const response = await fetch(`${API_BASE}/api/download/${aiFileName}`, {
-        method: 'GET',
-      });
-      
-      if (!response.ok) {
-        throw new Error(`Failed to fetch AI analysis: ${response.status}`);
-      }
-      
-      const analysisContent = await response.text();
-      
-      // Call onFileSelect with just the analysis content and type
-      // No longer fetching metrics or parameters as these are no longer generated
-      onFileSelect({
-        ...file,
-        analysisContent,
-        displayType: 'analysis'
-      });
-      
-    } catch (error) {
-      console.error(`Error fetching AI analysis for file ${file.name}:`, error);
-      alert(`Error fetching AI analysis: ${error.message}`);
     }
   };
 
