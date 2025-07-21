@@ -824,8 +824,8 @@ const FileList = ({ onFileSelect, refreshTrigger, selectedFile }) => {
             elevation={0}
             sx={{ 
               mb: 1,
-              backgroundColor: '#1a1a1a',
-              border: '1px solid #333333',
+              backgroundColor: '#ffffff',
+              border: '1px solid #e5e5e5',
               borderRadius: '12px !important',
               overflow: 'hidden',
               '&:before': {
@@ -840,8 +840,8 @@ const FileList = ({ onFileSelect, refreshTrigger, selectedFile }) => {
               expandIcon={<ExpandMoreIcon sx={{ color: '#60a5fa' }} />}
               sx={{ 
                 minHeight: 44,
-                backgroundColor: '#1a1a1a',
-                borderBottom: '1px solid #333333',
+                backgroundColor: '#f8f9fa',
+                borderBottom: '1px solid #e5e5e5',
                 '&.Mui-expanded': {
                   minHeight: 44,
                 },
@@ -852,7 +852,7 @@ const FileList = ({ onFileSelect, refreshTrigger, selectedFile }) => {
                   }
                 },
                 '&:hover': {
-                  backgroundColor: '#262626',
+                  backgroundColor: '#f0f0f0',
                 }
               }}
             >
@@ -865,7 +865,7 @@ const FileList = ({ onFileSelect, refreshTrigger, selectedFile }) => {
                 <Typography sx={{ 
                   fontWeight: 500,
                   fontSize: '0.875rem',
-                  color: '#ffffff'
+                  color: '#32363a'
                 }}>
                   {customer}
                 </Typography>
@@ -886,7 +886,7 @@ const FileList = ({ onFileSelect, refreshTrigger, selectedFile }) => {
                 />
               </Box>
             </AccordionSummary>
-            <AccordionDetails sx={{ p: 0.5, backgroundColor: '#121212' }}>
+            <AccordionDetails sx={{ p: 0.5, backgroundColor: '#ffffff' }}>
               <List sx={{ py: 0 }}>
                 {filesByCustomer[customer].map((file) => {
                   const isSelected = selectedFile && (selectedFile.id === file.id || selectedFile.name === file.name);
@@ -926,7 +926,7 @@ const FileList = ({ onFileSelect, refreshTrigger, selectedFile }) => {
                             }
                           },
                           '&:hover': {
-                            backgroundColor: 'rgba(255, 255, 255, 0.05)',
+                            backgroundColor: 'rgba(0, 0, 0, 0.04)',
                           }
                         }}
                       >
@@ -955,17 +955,13 @@ const FileList = ({ onFileSelect, refreshTrigger, selectedFile }) => {
                             flex: 1,
                             cursor: 'pointer'
                           }}
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            onFileSelect(file);
-                          }}
                         >
                           {getFileIcon(file.name)}
                           <Tooltip title={file.name} placement="top-start">
                             <Typography sx={{ 
                               fontSize: '0.875rem',
                               fontWeight: 400,
-                              color: '#ffffff',
+                              color: '#32363a',
                               overflow: 'hidden',
                               textOverflow: 'ellipsis',
                               whiteSpace: 'nowrap',
@@ -1042,7 +1038,7 @@ const FileList = ({ onFileSelect, refreshTrigger, selectedFile }) => {
           variant="subtitle1" 
           sx={{ 
             fontWeight: 600,
-            color: '#ffffff',
+            color: '#32363a',
             fontSize: '0.85rem',
             display: 'flex',
             alignItems: 'center',
@@ -1082,11 +1078,11 @@ const FileList = ({ onFileSelect, refreshTrigger, selectedFile }) => {
             sx={{ 
               fontSize: '0.7rem',
               textTransform: 'none',
-              color: '#888',
+              color: '#666',
               minWidth: 'auto',
               px: 1,
               '&:hover': {
-                backgroundColor: 'rgba(255,255,255,0.05)',
+                backgroundColor: 'rgba(0,0,0,0.04)',
               }
             }}
           >
@@ -1098,11 +1094,11 @@ const FileList = ({ onFileSelect, refreshTrigger, selectedFile }) => {
             sx={{ 
               fontSize: '0.7rem',
               textTransform: 'none',
-              color: '#888',
+              color: '#666',
               minWidth: 'auto',
               px: 1,
               '&:hover': {
-                backgroundColor: 'rgba(255,255,255,0.05)',
+                backgroundColor: 'rgba(0,0,0,0.04)',
               }
             }}
           >

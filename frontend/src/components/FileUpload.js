@@ -268,8 +268,8 @@ const FileUpload = ({ onUploadSuccess }) => {
     <Paper elevation={2} sx={{ 
         padding: 3,
         borderRadius: 2,
-        backgroundColor: '#121212',
-        border: '1px solid #333333'
+        backgroundColor: '#ffffff',
+        border: '1px solid #e5e5e5'
       }}>
       <Box sx={{ textAlign: 'center' }}>
         <CloudUploadIcon sx={{ 
