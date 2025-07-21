@@ -902,12 +902,13 @@ const FileList = ({ onFileSelect, refreshTrigger, selectedFile }) => {
                     >
                       <ListItemButton 
                         onClick={(e) => {
-                          // Don't select if clicking checkbox or action buttons
-                          if (e.target.tagName !== 'INPUT' && 
-                              !e.target.closest('.MuiCheckbox-root') && 
-                              !e.target.closest('.MuiButton-root') &&
-                              !e.target.closest('.MuiIconButton-root')) {
+                          console.log('ListItemButton clicked', file.name, file);
+                          // Don't select if clicking checkbox
+                          if (!e.target.closest('.MuiCheckbox-root')) {
+                            console.log('Calling onFileSelect with file:', file);
                             onFileSelect(file);
+                          } else {
+                            console.log('Click blocked - checkbox clicked');
                           }
                         }}
                         selected={isSelected}
