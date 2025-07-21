@@ -267,16 +267,16 @@ const FileUpload = ({ onUploadSuccess }) => {
   return (
     <Paper elevation={2} sx={{ 
         padding: 3,
-        borderRadius: 1,
-        backgroundColor: '#ffffff',
-        border: '1px solid #e5e5e5'
+        borderRadius: 2,
+        backgroundColor: '#121212',
+        border: '1px solid #333333'
       }}>
       <Box sx={{ textAlign: 'center' }}>
         <CloudUploadIcon sx={{ 
-          fontSize: 48, 
-          color: '#0070b1', // SAP Belize primary blue
-          mb: 1,
-          opacity: 0.9
+          fontSize: 44, 
+          color: '#60a5fa',
+          mb: 1.5,
+          opacity: 0.8
         }} />
         <Typography 
           variant="h6" 

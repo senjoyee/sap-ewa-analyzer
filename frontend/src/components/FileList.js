@@ -824,9 +824,9 @@ const FileList = ({ onFileSelect, refreshTrigger, selectedFile }) => {
             elevation={0}
             sx={{ 
               mb: 1,
-              backgroundColor: '#ffffff',
-              border: '1px solid #e5e5e5',
-              borderRadius: '8px !important',
+              backgroundColor: '#1a1a1a',
+              border: '1px solid #333333',
+              borderRadius: '12px !important',
               overflow: 'hidden',
               '&:before': {
                 display: 'none',
@@ -837,32 +837,35 @@ const FileList = ({ onFileSelect, refreshTrigger, selectedFile }) => {
             }}
           >
             <AccordionSummary 
-              expandIcon={<ExpandMoreIcon sx={{ color: '#0070b1' }} />}
+              expandIcon={<ExpandMoreIcon sx={{ color: '#60a5fa' }} />}
               sx={{ 
-                minHeight: 48,
-                backgroundColor: '#f7f7f7',
-                borderBottom: '1px solid #e5e5e5',
+                minHeight: 44,
+                backgroundColor: '#1a1a1a',
+                borderBottom: '1px solid #333333',
                 '&.Mui-expanded': {
-                  minHeight: 48,
+                  minHeight: 44,
                 },
                 '& .MuiAccordionSummary-content': {
-                  margin: '12px 0',
+                  margin: '10px 0',
                   '&.Mui-expanded': {
-                    margin: '12px 0',
+                    margin: '10px 0',
                   }
+                },
+                '&:hover': {
+                  backgroundColor: '#262626',
                 }
               }}
             >
               <Box sx={{ display: 'flex', alignItems: 'center', width: '100%' }}>
                 <BusinessIcon sx={{ 
                   mr: 1.5, 
-                  fontSize: 20,
-                  color: '#0070b1'
+                  fontSize: 18,
+                  color: '#60a5fa'
                 }} />
                 <Typography sx={{ 
                   fontWeight: 500,
-                  fontSize: '0.9rem',
-                  color: '#32363a'
+                  fontSize: '0.875rem',
+                  color: '#ffffff'
                 }}>
                   {customer}
                 </Typography>
@@ -872,169 +875,146 @@ const FileList = ({ onFileSelect, refreshTrigger, selectedFile }) => {
                   sx={{ 
                     ml: 'auto',
                     mr: 1,
-                    height: 20,
-                    minWidth: 20,
-                    fontSize: '0.7rem',
+                    height: 18,
+                    minWidth: 18,
+                    fontSize: '0.65rem',
                     fontWeight: 600,
-                    backgroundColor: '#f0f8ff',
-                    color: '#0070b1',
-                    border: '1px solid #0070b1',
+                    backgroundColor: 'rgba(96, 165, 250, 0.1)',
+                    color: '#60a5fa',
+                    border: '1px solid rgba(96, 165, 250, 0.3)',
                   }}
                 />
               </Box>
             </AccordionSummary>
-            <AccordionDetails sx={{ p: 1, backgroundColor: '#ffffff' }}>
+            <AccordionDetails sx={{ p: 0.5, backgroundColor: '#121212' }}>
               <List sx={{ py: 0 }}>
-                {Object.entries(groupByMonth(filesByCustomer[customer]))
-                  .sort(([aKey],[bKey]) => {
-                    if (aKey === 'Unknown') return 1;
-                    if (bKey === 'Unknown') return -1;
-                    return dayjs(aKey + '-01').isBefore(dayjs(bKey + '-01')) ? -1 : 1;
-                  })
-                  .map(([monthKey, monthFiles]) => {
-                    return (
-                      <React.Fragment key={monthKey}>
-                      <ListSubheader component="div" sx={{ backgroundColor: '#f7f7f7', color: '#0070b1', borderTop: '1px solid #e5e5e5', borderBottom: '1px solid #e5e5e5' }}>
-                        {monthKey === 'Unknown' ? 'Unknown' : dayjs(monthKey + '-01').format('MMMM YYYY')}
-                      </ListSubheader>
-                      {monthFiles.map((file) => {
-                        const isSelected = selectedFile && (selectedFile.id === file.id || selectedFile.name === file.name);
-                        return (
-                          <ListItem 
-                            key={file.id || file.name} 
-                            disablePadding 
-                            sx={{ 
-                              position: 'relative', 
-                              mb: 0.5,
-                              '&:last-child': { mb: 0 }
+                {filesByCustomer[customer].map((file) => {
+                  const isSelected = selectedFile && (selectedFile.id === file.id || selectedFile.name === file.name);
+                  return (
+                    <ListItem 
+                      key={file.id || file.name} 
+                      disablePadding 
+                      sx={{ 
+                        position: 'relative', 
+                        mb: 0.5,
+                        '&:last-child': { mb: 0 }
+                      }}
+                    >
+                      <ListItemButton 
+                        onClick={(e) => {
+                          // Don't select if clicking checkbox or action buttons
+                          if (e.target.tagName !== 'INPUT' && 
+                              !e.target.closest('.MuiCheckbox-root') && 
+                              !e.target.closest('.MuiButton-root') &&
+                              !e.target.closest('.MuiIconButton-root')) {
+                            onFileSelect(file);
+                          }
+                        }}
+                        selected={isSelected}
+                        sx={{
+                          pr: 12, // Reduced padding for secondary action
+                          mx: 0.5,
+                          borderRadius: '8px',
+                          minHeight: 48, // Reduced height for sleeker look
+                          transition: 'all 0.2s ease',
+                          backgroundColor: 'transparent',
+                          border: 'none',
+                          '&.Mui-selected': {
+                            backgroundColor: 'rgba(96, 165, 250, 0.1)',
+                            '&:hover': {
+                              backgroundColor: 'rgba(96, 165, 250, 0.15)',
+                            }
+                          },
+                          '&:hover': {
+                            backgroundColor: 'rgba(255, 255, 255, 0.05)',
+                          }
+                        }}
+                      >
+                        <ListItemIcon sx={{ minWidth: 36, display: 'flex', alignItems: 'center' }}>
+                          <Checkbox 
+                            checked={isFileSelected(file)}
+                            onChange={(e) => {
+                              e.stopPropagation();
+                              handleFileSelection(file, e);
                             }}
-                          >
-                            <ListItemButton 
+                            size="small"
+                            sx={{ 
+                              p: 0.5,
+                              color: '#60a5fa',
+                              '&.Mui-checked': {
+                                color: '#60a5fa',
+                              }
+                            }}
+                          />
+                        </ListItemIcon>
+                        <Box 
+                          sx={{ 
+                            display: 'flex', 
+                            alignItems: 'center', 
+                            gap: 1.5, 
+                            flex: 1,
+                            cursor: 'pointer'
+                          }}
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            onFileSelect(file);
+                          }}
+                        >
+                          {getFileIcon(file.name)}
+                          <Tooltip title={file.name} placement="top-start">
+                            <Typography sx={{ 
+                              fontSize: '0.875rem',
+                              fontWeight: 400,
+                              color: '#ffffff',
+                              overflow: 'hidden',
+                              textOverflow: 'ellipsis',
+                              whiteSpace: 'nowrap',
+                              flex: 1,
+                              '&:hover': {
+                                color: '#60a5fa'
+                              }
+                            }}>
+                              {file.name}
+                            </Typography>
+                          </Tooltip>
+                        </Box>
+                      </ListItemButton>
+                      <ListItemSecondaryAction sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}>
+                        {combinedProcessingStatus[file.id || file.name] === 'processing' ? (
+                          <CircularProgress size={16} thickness={4} sx={{ color: '#60a5fa' }} />
+                        ) : reprocessingFiles[file.id || file.name] ? (
+                          <CircularProgress size={16} thickness={4} sx={{ color: '#60a5fa' }} />
+                        ) : (combinedProcessingStatus[file.id || file.name] === 'completed' || file.ai_analyzed) ? (
+                          <Box sx={{ 
+                            width: 8, 
+                            height: 8, 
+                            borderRadius: '50%', 
+                            backgroundColor: '#10b981',
+                            flexShrink: 0
+                          }} />
+                        ) : (
+                          <Tooltip title={combinedProcessingStatus[file.id || file.name] === 'error' ? "Retry Processing" : "Process Document"}>
+                            <IconButton
+                              size="small"
                               onClick={(e) => {
-                                // Don't select if clicking checkbox
-                                if (e.target.tagName !== 'INPUT' && !e.target.closest('.MuiCheckbox-root')) {
-                                  onFileSelect(file);
-                                }
+                                e.stopPropagation();
+                                handleProcessAndAnalyze(file);
                               }}
-                              selected={isSelected}
-                              sx={{
-                                pr: 16, // Standard padding for secondary action
-                                mx: 0.5,
-                                borderRadius: 1,
-                                minHeight: 64,
-                                transition: 'all 0.2s',
-                                backgroundColor: '#ffffff',
-                                border: '1px solid #e5e5e5',
-                                '&.Mui-selected': {
-                                  backgroundColor: '#eaf3fa',
-                                  borderColor: '#0070b1',
-                                  '&:hover': {
-                                    backgroundColor: '#d8e9f5',
-                                  }
-                                },
+                              sx={{ 
+                                width: 24, 
+                                height: 24,
+                                color: combinedProcessingStatus[file.id || file.name] === 'error' ? '#ef4444' : '#60a5fa',
                                 '&:hover': {
-                                  backgroundColor: '#f7f7f7',
-                                  borderColor: '#d0d0d0',
+                                  backgroundColor: 'rgba(96, 165, 250, 0.1)'
                                 }
                               }}
                             >
-                              <ListItemIcon sx={{ minWidth: 40, display: 'flex', alignItems: 'center' }}>
-                                <Checkbox 
-                                  checked={isFileSelected(file)}
-                                  onChange={(e) => {
-                                    e.stopPropagation();
-                                    handleFileSelection(file, e);
-                                  }}
-                                  size="small"
-                                  sx={{ 
-                                    p: 0.5,
-                                    color: '#0070b1',
-                                    mr: 1
-                                  }}
-                                />
-                                {getFileIcon(file.name)}
-                              </ListItemIcon>
-                              <Tooltip title={file.name} placement="top-start">
-                                <ListItemText 
-                                  primary={
-                                    <Typography sx={{ 
-                                      fontSize: '0.875rem',
-                                      fontWeight: 500,
-                                      color: '#32363a',
-                                      overflow: 'hidden',
-                                      textOverflow: 'ellipsis',
-                                      whiteSpace: 'nowrap'
-                                    }}>
-                                      {file.name}
-                                    </Typography>
-                                  }
-                                  secondary={
-                                    <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5, mt: 0.5 }}>
-                                      <Typography variant="caption" sx={{ color: '#6a6d70' }}>
-                                        {formatFileSize(file.size)}
-                                      </Typography>
-                                      {file.customer_name && (
-                                        <Typography variant="caption" sx={{ color: '#6a6d70' }}>
-                                          • {file.customer_name}
-                                        </Typography>
-                                      )}
-                                    </Box>
-                                  }
-                                />
-                              </Tooltip>
-                            </ListItemButton>
-                            <ListItemSecondaryAction sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-                              {combinedProcessingStatus[file.id || file.name] === 'processing' ? (
-                                <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, minWidth: 100, justifyContent: 'center' }}>
-                                  <CircularProgress size={20} thickness={4} color="primary" />
-                                  <Typography variant="caption" color="text.secondary">Processing...</Typography>
-                                </Box>
-                              ) : (combinedProcessingStatus[file.id || file.name] === 'completed' || file.ai_analyzed) ? (
-                                <Box sx={{ display: 'flex', gap: 0.5 }}>
-                                  {reprocessingFiles[file.id || file.name] ? (
-                                    <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-                                      <CircularProgress size={16} thickness={4} color="primary" />
-                                      <Typography variant="caption" color="text.secondary">Reprocessing...</Typography>
-                                    </Box>
-                                  ) : (
-                                    <>
-                                      <Tooltip title="Display AI Analysis">
-                                        <Button
-                                          variant="contained"
-                                          size="small"
-                                          color="success"
-                                          onClick={(e) => {
-                                            e.stopPropagation();
-                                            handleDisplayAnalysis(file);
-                                          }}
-                                          sx={{ textTransform: 'none', minWidth: '32px', width: '32px', height: '32px', p: 0 }}
-                                        >
-                                          <VisibilityIcon fontSize="small" />
-                                        </Button>
-                                      </Tooltip>
-                                    </>
-                                  )}
-                                </Box>
-                              ) : (
-                                /* Covers 'idle', 'error', or undefined states for combinedProcessingStatus and file not ai_analyzed */
-                                <Tooltip title={combinedProcessingStatus[file.id || file.name] === 'error' ? "Retry Processing and Analysis" : "Process and Analyze Document"}>
-                                  <Button
-                                    variant="contained"
-                                    size="small"
-                                    color={combinedProcessingStatus[file.id || file.name] === 'error' ? "error" : "primary"}
-                                    startIcon={<PlayArrowIcon fontSize="small" />}
-                                    onClick={() => handleProcessAndAnalyze(file)}
-                                    sx={{ textTransform: 'none', fontSize: '0.75rem', py: 0.5, px:1, minWidth: 'auto' }}
-                                  >
-                                    {combinedProcessingStatus[file.id || file.name] === 'error' ? "Retry" : "Process"}
-                                  </Button>
-                                </Tooltip>
-                              )}
-                            </ListItemSecondaryAction>
-                          </ListItem>
-                        );
-                      })}
-                    </React.Fragment>
+                              <PlayArrowIcon sx={{ fontSize: 16 }} />
+                            </IconButton>
+                          </Tooltip>
+                        )}
+                      </ListItemSecondaryAction>
+                    </ListItem>
                   );
                 })}
               </List>
@@ -1062,14 +1042,14 @@ const FileList = ({ onFileSelect, refreshTrigger, selectedFile }) => {
           variant="subtitle1" 
           sx={{ 
             fontWeight: 600,
-            color: '#32363a',
-            fontSize: '0.95rem',
+            color: '#ffffff',
+            fontSize: '0.85rem',
             display: 'flex',
             alignItems: 'center',
             gap: 1
           }}
         >
-          <FolderIcon sx={{ fontSize: 20, color: '#0070b1' }} />
+          <FolderIcon sx={{ fontSize: 18, color: '#60a5fa' }} />
           Uploaded Files
           {files.length > 0 && (
             <Chip 
@@ -1077,13 +1057,13 @@ const FileList = ({ onFileSelect, refreshTrigger, selectedFile }) => {
               size="small" 
               sx={{ 
                 ml: 0.5,
-                height: 20,
-                minWidth: 20,
-                fontSize: '0.7rem',
+                height: 18,
+                minWidth: 18,
+                fontSize: '0.65rem',
                 fontWeight: 600,
-                backgroundColor: '#f0f8ff',
-                color: '#0070b1',
-                border: '1px solid #0070b1',
+                backgroundColor: 'rgba(96, 165, 250, 0.1)',
+                color: '#60a5fa',
+                border: '1px solid rgba(96, 165, 250, 0.3)',
               }}
             />
           )}
@@ -1100,13 +1080,13 @@ const FileList = ({ onFileSelect, refreshTrigger, selectedFile }) => {
               setExpandedCustomers(allExpanded);
             }}
             sx={{ 
-              fontSize: '0.75rem',
+              fontSize: '0.7rem',
               textTransform: 'none',
-              color: '#666',
+              color: '#888',
               minWidth: 'auto',
               px: 1,
               '&:hover': {
-                backgroundColor: 'rgba(0,0,0,0.04)',
+                backgroundColor: 'rgba(255,255,255,0.05)',
               }
             }}
           >
@@ -1116,13 +1096,13 @@ const FileList = ({ onFileSelect, refreshTrigger, selectedFile }) => {
             size="small"
             onClick={() => setExpandedCustomers({})}
             sx={{ 
-              fontSize: '0.75rem',
+              fontSize: '0.7rem',
               textTransform: 'none',
-              color: '#666',
+              color: '#888',
               minWidth: 'auto',
               px: 1,
               '&:hover': {
-                backgroundColor: 'rgba(0,0,0,0.04)',
+                backgroundColor: 'rgba(255,255,255,0.05)',
               }
             }}
           >
@@ -1157,13 +1137,13 @@ const FileList = ({ onFileSelect, refreshTrigger, selectedFile }) => {
               size="small"
               onClick={() => handleDeselectAllFiles()}
               sx={{ 
-                fontSize: '0.75rem',
+                fontSize: '0.7rem',
                 textTransform: 'none',
-                color: '#666',
+                color: '#888',
                 minWidth: 'auto',
                 px: 1,
                 '&:hover': {
-                  backgroundColor: 'rgba(0,0,0,0.04)',
+                  backgroundColor: 'rgba(255,255,255,0.05)',
                 }
               }}
             >
@@ -1177,51 +1157,53 @@ const FileList = ({ onFileSelect, refreshTrigger, selectedFile }) => {
           <Box sx={{ display: 'flex', gap: 1, justifyContent: 'flex-end' }}>
             {selectedAnalyzedCount > 0 && (
               <Button
-                variant="contained"
-                color="error"
+                variant="outlined"
                 size="small"
-                startIcon={<DeleteIcon fontSize="small" />}
+                startIcon={<DeleteIcon sx={{ fontSize: 14 }} />}
                 onClick={handleBatchDelete}
                 sx={{ 
                   textTransform: 'none',
-                  fontSize: '0.8125rem',
-                  py: 0.6,
-                  px: 1.5,
-                  borderRadius: 1.5,
-                  boxShadow: '0 2px 8px rgba(220, 38, 38, 0.25)',
-                  background: 'linear-gradient(to right bottom, #ef4444, #dc2626)',
+                  fontSize: '0.75rem',
+                  py: 0.5,
+                  px: 1.2,
+                  borderRadius: '8px',
+                  color: '#ef4444',
+                  borderColor: 'rgba(239, 68, 68, 0.3)',
+                  backgroundColor: 'rgba(239, 68, 68, 0.05)',
                   '&:hover': {
-                    boxShadow: '0 4px 12px rgba(220, 38, 38, 0.4)',
-                    background: 'linear-gradient(to right bottom, #dc2626, #b91c1c)',
+                    backgroundColor: 'rgba(239, 68, 68, 0.1)',
+                    borderColor: 'rgba(239, 68, 68, 0.5)',
                   },
-                  transition: 'all 0.2s ease-in-out',
+                  transition: 'all 0.2s ease',
+                  minWidth: 'auto'
                 }}
               >
-                Delete Selected
+                Delete ({selectedAnalyzedCount})
               </Button>
             )}
             <Button
-              variant="contained"
-              color="primary"
+              variant="outlined"
               size="small"
-              startIcon={<RefreshIcon fontSize="small" />}
+              startIcon={<RefreshIcon sx={{ fontSize: 14 }} />}
               onClick={handleBatchReprocess}
               sx={{ 
                 textTransform: 'none',
-                fontSize: '0.8125rem',
-                py: 0.6,
-                px: 1.5,
-                borderRadius: 1.5,
-                boxShadow: '0 2px 8px rgba(37, 99, 235, 0.25)',
-                background: 'linear-gradient(to right bottom, #3b82f6, #2563eb)',
+                fontSize: '0.75rem',
+                py: 0.5,
+                px: 1.2,
+                borderRadius: '8px',
+                color: '#60a5fa',
+                borderColor: 'rgba(96, 165, 250, 0.3)',
+                backgroundColor: 'rgba(96, 165, 250, 0.05)',
                 '&:hover': {
-                  boxShadow: '0 4px 12px rgba(37, 99, 235, 0.4)',
-                  background: 'linear-gradient(to right bottom, #2563eb, #1d4ed8)',
+                  backgroundColor: 'rgba(96, 165, 250, 0.1)',
+                  borderColor: 'rgba(96, 165, 250, 0.5)',
                 },
-                transition: 'all 0.2s ease-in-out',
+                transition: 'all 0.2s ease',
+                minWidth: 'auto'
               }}
             >
-              Reprocess Selected
+              Reprocess ({selectedCount})
             </Button>
           </Box>
         )}
