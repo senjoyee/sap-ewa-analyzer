@@ -129,7 +129,9 @@ For each configuration parameter mentioned in the document:
 - `recommended_value`: suggested optimal value.
 - `description`: purpose and impact explanation.
 
-- **Skip** any profile parameters that are listed as deviating from default.
+- Ensure that you take note of Current Value and Recommended Value for each parameter.
+- **Skip** any profile parameters that are listed under "SAP HANA PARAMETERS DEVIATING FROM DEFAULT" section.
+- **If the current value is not available**, set `current_value` to `Not Set`.
 - **Capture all** other profile parameters across the document, especially those in configuration, security, performance, and database sections.
 
 ### overall_risk
