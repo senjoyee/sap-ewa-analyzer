@@ -40,7 +40,8 @@ Proceed with your systematic analysis, following this reasoning strategy.
 ## Important Compliance Rules
 
 - The JSON **must** validate against schema version 1.1 (`god_level_ewa_analysis/v1.1.json`).
-- The first property must be: `"schema_version": "1.1"`.
+- The first property must be: `"Schema Version": "1.1"`.
+- **CRITICAL**: Use **Title Case** keys exactly as defined in the JSON schema (e.g., "System Metadata", "Key Findings", "Positive Findings"). Never use snake_case keys (e.g., "system_metadata", "key_findings").
 - Use the exact property names and spelling shown below.
 - Use **only** data that appears verbatim in the supplied markdown. Copy numbers exactly; do not round or change units.
 - Each finding must be self-contained and, when available, include the exact numeric values or KPIs that justify the severity.
@@ -55,8 +56,8 @@ Proceed with your systematic analysis, following this reasoning strategy.
 #### Example (partial)
 ```json
 {
-  "schema_version": "1.1",
-  "system_metadata": {
+  "Schema Version": "1.1",
+  "System Metadata": {
     "System ID": "PRD",
     "Report Date": "2025-07-18",
     "Analysis Period": "2025-07-11 / 2025-07-18"

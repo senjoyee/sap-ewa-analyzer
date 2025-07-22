@@ -100,11 +100,11 @@
         "required": [
           "Recommendation ID",
           "Priority",
-          "Estimated effort",
+          "Estimated Effort",
           "Responsible Area",
           "Action",
           "Validation step",
-          "preventative_action"
+          "Preventative Action"
         ],
         "properties": {
           "Recommendation ID": {
@@ -113,7 +113,7 @@
           },
           "Priority": { "type": "string", "enum": ["high", "medium", "low"] },
 
-          "Estimated effort": {
+          "Estimated Effort": {
             "type": "object",
             "required": ["analysis", "implementation"],
             "properties": {
@@ -140,8 +140,8 @@
             "description": "Key finding this recommendation addresses."
           },
           "Action":             { "type": "string", "description": "Specific steps to execute." },
-          "Validation step":    { "type": "string", "description": "How to confirm the fix was effective." },
-          "Preventative action":{ "type": "string", "description": "Measure to prevent recurrence." }
+          "Validation Step":    { "type": "string", "description": "How to confirm the fix was effective." },
+          "Preventative Action":{ "type": "string", "description": "Measure to prevent recurrence." }
         }
       }
     },
@@ -151,7 +151,7 @@
       "description": "Relevant SAP profile parameters.",
       "items": {
         "type": "object",
-        "required": ["name", "area", "current_value", "recommended_value", "description"],
+        "required": ["Name", "Area", "Current Value", "Recommended Value", "Description"],
         "properties": {
           "Name":              { "type": "string" },
           "Area":              { "type": "string" },
@@ -199,7 +199,6 @@
     "key_findings",
     "recommendations",
     "parameters",
-
     "kpis",
     "capacity_outlook",
     "overall_risk"
@@ -211,16 +210,16 @@
       "required": [
         "Recommendation ID",
         "Priority",
-        "Estimated effort",
+        "Estimated Effort",
         "Responsible Area",
         "Action",
-        "Validation step",
-        "Preventative action"
+        "Validation Step",
+        "Preventative Action"
       ],
       "properties": {
         "Recommendation ID": { "type": "string", "pattern": "^REC-[0-9]{2}$" },
         "Priority": { "type": "string", "enum": ["high", "medium", "low"] },
-        "Estimated effort": {
+        "Estimated Effort": {
           "type": "object",
           "required": ["analysis", "implementation"],
           "properties": {
@@ -231,8 +230,8 @@
         "Responsible Area":  { "type": "string" },
         "Linked issue ID":   { "type": "string", "pattern": "^KF-[0-9]{2}$" },
         "Action":            { "type": "string" },
-        "Validation step":   { "type": "string" },
-        "Preventative action":{ "type": "string" }
+        "Validation Step":   { "type": "string" },
+        "Preventative Action":{ "type": "string" }
       }
     }
   }
