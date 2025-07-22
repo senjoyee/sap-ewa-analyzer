@@ -93,21 +93,21 @@ def json_to_markdown(data: Dict[str, Any]) -> str:
     md: List[str] = []
 
     # ── Metadata & Header ───────────────────────────────────────────────────────
-    meta = data.get("system_metadata", {})
+    meta = data.get("System Metadata", {})
     md.append(
-        f"# EWA Analysis for {meta.get('system_id', 'N/A')} "
-        f"({meta.get('report_date', 'N/A')})"
+        f"# EWA Analysis for {meta.get('System ID', 'N/A')} "
+        f"({meta.get('Report Date', 'N/A')})"
     )
-    md.append(f"**Analysis Period:** {meta.get('analysis_period', 'N/A')}")
-    md.append(f"**Overall Risk Assessment:** `{data.get('overall_risk', 'N/A')}`")
+    md.append(f"**Analysis Period:** {meta.get('Analysis Period', 'N/A')}")
+    md.append(f"**Overall Risk Assessment:** `{data.get('Overall Risk', 'N/A')}`")
     md.append("\n---\n")
 
     # ── System Health Overview ────────────────────────────────────────────────
     md.append("## System Health Overview")
-    health = data.get("system_health_overview", {})
+    health = data.get("System Health Overview", {})
     if health:
         rows = [
-            [k.replace("_", " ").title(), v] for k, v in health.items() if v is not None
+            [k, v] for k, v in health.items() if v is not None
         ]
         if rows:
             md.extend(_format_table(["Area", "Status"], rows))
@@ -119,39 +119,29 @@ def json_to_markdown(data: Dict[str, Any]) -> str:
 
     # ── Executive Summary ──────────────────────────────────────────────────────
     md.append("## Executive Summary")
-    md.append(data.get("executive_summary", "No summary provided."))
+    md.append(data.get("Executive Summary", "No summary provided."))
     md.append("\n---\n")
 
     # ── Positive Findings ─────────────────────────────────────────────────────
-    md.extend(_array_to_markdown_table(data.get("positive_findings", []), "Positive Findings"))
+    md.extend(_array_to_markdown_table(data.get("Positive Findings", []), "Positive Findings"))
     md.append("\n---\n")
 
     # ── Key Findings ──────────────────────────────────────────────────────────
     md.append("## Key Findings")
-    key_findings = data.get("key_findings", [])
-    if key_findings:
-        headers = ["id", "area", "finding", "impact", "business_impact", "severity"]
-        rows = [[kf.get(h, "N/A") for h in headers] for kf in key_findings]
-        md.extend(
-            _format_table(
-                [h.replace("_", " ").title() for h in headers],
-                rows,
-            )
-        )
-    else:
-        md.append("No key findings reported.")
+    md.extend(_array_to_markdown_table(data.get("Key Findings", []), "Key Findings"))
     md.append("\n---\n")
 
+
     # ── Recommendations ───────────────────────────────────────────────────────
-    md.extend(_array_to_markdown_table(data.get("recommendations", []), "Recommendations"))
+    md.extend(_array_to_markdown_table(data.get("Recommendations", []), "Recommendations"))
 
     # ── Parameters ────────────────────────────────────────────────────────────
     md.append("## Parameters")
-    parameters = data.get("parameters", [])
+    parameters = data.get("Parameters", [])
     if parameters:
-        headers = ["name", "area", "current_value", "recommended_value", "description"]
+        headers = ["Name", "Area", "Current Value", "Recommended Value", "Description"]
         rows = [[p.get(h, "N/A") for h in headers] for p in parameters]
-        md.extend(_format_table([h.replace("_", " ").title() for h in headers], rows))
+        md.extend(_format_table(headers, rows))
         md.append("")
     else:
         md.append("No parameters provided.")
@@ -161,7 +151,7 @@ def json_to_markdown(data: Dict[str, Any]) -> str:
 
     # ── Key Performance Indicators ────────────────────────────────────────────
     md.append("## Key Performance Indicators")
-    kpis = data.get("kpis", [])
+    kpis = data.get("KPIs", [])
     if kpis:
         for kpi in kpis:
             md.append(f"- {kpi}")
@@ -171,12 +161,12 @@ def json_to_markdown(data: Dict[str, Any]) -> str:
 
     # ── Capacity Outlook ──────────────────────────────────────────────────────
     md.append("## Capacity Outlook")
-    capacity = data.get("capacity_outlook", {})
+    capacity = data.get("Capacity Outlook", {})
     if capacity:
-        md.append(f"- **Database Growth:** {capacity.get('database_growth', 'N/A')}")
-        md.append(f"- **CPU Utilization:** {capacity.get('cpu_utilization', 'N/A')}")
-        md.append(f"- **Memory Utilization:** {capacity.get('memory_utilization', 'N/A')}")
-        md.append(f"- **Capacity Summary:** {capacity.get('summary', 'N/A')}")
+        md.append(f"- **Database Growth:** {capacity.get('Database Growth', 'N/A')}")
+        md.append(f"- **CPU Utilization:** {capacity.get('CPU Utilization', 'N/A')}")
+        md.append(f"- **Memory Utilization:** {capacity.get('Memory Utilization', 'N/A')}")
+        md.append(f"- **Capacity Summary:** {capacity.get('Summary', 'N/A')}")
     else:
         md.append("No capacity outlook data provided.")
 

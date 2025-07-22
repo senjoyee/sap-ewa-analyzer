@@ -5,47 +5,47 @@
   "description": "Structured, actionable analysis of an SAP EarlyWatch Alert report.",
   "type": "object",
   "properties": {
-    "schema_version": {
+    "Schema Version": {
       "type": "string",
       "const": "1.1"
     },
 
-    "system_metadata": {
+    "System Metadata": {
       "type": "object",
-      "required": ["system_id", "report_date", "analysis_period"],
+      "required": ["System ID", "Report Date", "Analysis Period"],
       "properties": {
-        "system_id": {
+        "System ID": {
           "type": "string",
           "description": "The SAP System ID (SID)."
         },
-        "report_date": {
+        "Report Date": {
           "type": "string",
           "format": "date",
           "description": "Date the EWA report was generated."
         },
-        "analysis_period": {
+        "Analysis Period": {
           "type": "string",
           "description": "Date range the report covers (e.g. 2024-05-01 / 2024-05-31)."
         }
       }
     },
 
-    "system_health_overview": {
+    "System Health Overview": {
       "type": "object",
       "properties": {
-        "performance": { "type": "string", "enum": ["good", "fair", "poor"] },
-        "security":    { "type": "string", "enum": ["good", "fair", "poor"] },
-        "stability":   { "type": "string", "enum": ["good", "fair", "poor"] },
+        "Performance": { "type": "string", "enum": ["good", "fair", "poor"] },
+        "Security":    { "type": "string", "enum": ["good", "fair", "poor"] },
+        "Stability":   { "type": "string", "enum": ["good", "fair", "poor"] },
         "configuration": { "type": "string", "enum": ["good", "fair", "poor"] }
       }
     },
 
-    "executive_summary": {
+    "Executive Summary": {
       "type": "string",
       "description": "Concise bullet-point summary for a C-level audience."
     },
 
-    "positive_findings": {
+    "Positive Findings": {
       "type": "array",
       "items": {
         "type": "object",
@@ -57,13 +57,13 @@
       }
     },
 
-    "key_findings": {
+    "Key Findings": {
       "type": "array",
       "items": {
         "type": "object",
-        "required": ["Issue id", "Area", "Finding", "Impact", "Business impact", "Severity"],
+        "required": ["Issue ID", "Area", "Finding", "Impact", "Business impact", "Severity"],
         "properties": {
-          "Issue id": {
+          "Issue ID": {
             "type": "string",
             "pattern": "^KF-[0-9]{2}$",
             "description": "Unique key finding identifier."
@@ -92,22 +92,22 @@
       }
     },
 
-    "recommendations": {
+    "Recommendations": {
       "type": "array",
       "description": "Detailed, actionable recommendations.",
       "items": {
         "type": "object",
         "required": [
-          "Recommendation id",
+          "Recommendation ID",
           "Priority",
           "Estimated effort",
-          "Responsible area",
+          "Responsible Area",
           "Action",
           "Validation step",
           "preventative_action"
         ],
         "properties": {
-          "Recommendation id": {
+          "Recommendation ID": {
             "type": "string",
             "pattern": "^REC-[0-9]{2}$"
           },
@@ -122,7 +122,7 @@
             }
           },
 
-          "Responsible area": { "type": "string", "enum": [
+          "Responsible Area": { "type": "string", "enum": [
               "SAP Basis Team",
               "Database Administration",
               "Operating System Administration",
@@ -134,7 +134,7 @@
               "Third-Party Vendor",
               "Project / Change Management"
             ] },
-          "Linked issue id": {
+          "Linked issue ID": {
             "type": "string",
             "pattern": "^KF-[0-9]{2}$",
             "description": "Key finding this recommendation addresses."
@@ -146,24 +146,24 @@
       }
     },
 
-    "parameters": {
+    "Parameters": {
       "type": "array",
       "description": "Relevant SAP profile parameters.",
       "items": {
         "type": "object",
         "required": ["name", "area", "current_value", "recommended_value", "description"],
         "properties": {
-          "name":              { "type": "string" },
-          "area":              { "type": "string" },
-          "current_value":     { "type": "string" },
-          "recommended_value": { "type": "string" },
-          "description":       { "type": "string" }
+          "Name":              { "type": "string" },
+          "Area":              { "type": "string" },
+          "Current Value":     { "type": "string" },
+          "Recommended Value": { "type": "string" },
+          "Description":       { "type": "string" }
         }
       }
     },
 
 
-    "kpis": {
+    "KPIs": {
       "type": "array",
       "description": "A list of key performance indicators (KPIs) and their current values.",
       "items": {
@@ -175,10 +175,10 @@
     "capacity_outlook": {
       "type": "object",
       "properties": {
-        "database_growth":   { "type": "string" },
-        "cpu_utilization":   { "type": "string" },
-        "memory_utilization":{ "type": "string" },
-        "summary":           { "type": "string" }
+        "Database Growth":   { "type": "string" },
+        "CPU Utilization":   { "type": "string" },
+        "Memory Utilization":{ "type": "string" },
+        "Summary":           { "type": "string" }
       }
     },
 
@@ -209,16 +209,16 @@
     "recommendation_item": {
       "type": "object",
       "required": [
-        "Recommendation id",
+        "Recommendation ID",
         "Priority",
         "Estimated effort",
-        "Responsible area",
+        "Responsible Area",
         "Action",
         "Validation step",
         "Preventative action"
       ],
       "properties": {
-        "Recommendation id": { "type": "string", "pattern": "^REC-[0-9]{2}$" },
+        "Recommendation ID": { "type": "string", "pattern": "^REC-[0-9]{2}$" },
         "Priority": { "type": "string", "enum": ["high", "medium", "low"] },
         "Estimated effort": {
           "type": "object",
@@ -228,8 +228,8 @@
             "implementation":{ "type": "string", "enum": ["low", "medium", "high"] }
           }
         },
-        "Responsible area":  { "type": "string" },
-        "Linked issue id":   { "type": "string", "pattern": "^KF-[0-9]{2}$" },
+        "Responsible Area":  { "type": "string" },
+        "Linked issue ID":   { "type": "string", "pattern": "^KF-[0-9]{2}$" },
         "Action":            { "type": "string" },
         "Validation step":   { "type": "string" },
         "Preventative action":{ "type": "string" }
