@@ -37,50 +37,27 @@ def _array_to_markdown_table(
         md.append(f"No {section_name.lower() if section_name else 'data'} provided.")
         return md
 
-    # Custom header order and wording for Recommendations
-    if section_name == "Recommendations":
-        headers = [
-            "action",
-            "estimated_effort",
-            "linked_issue_id",
-            "preventative_action",
-            "priority",
-            "recommendation_id",
-            "responsible_area",
-            "validation_step",
-        ]
-        header_labels = [
-            "Action",
-            "Estimated Effort",
-            "Linked Issue ID",
-            "Preventative Action",
-            "Priority",
-            "Recommendation ID",
-            "Responsible Area",
-            "Validation Step",
-        ]
-        rows: List[List[str]] = []
-        for item in array:
-            row: List[str] = []
-            for h in headers:
-                v = item.get(h, "N/A")
-                if h == "estimated_effort" and isinstance(v, dict):
-                    v = (
-                        f"Analysis: {v.get('analysis', 'N/A')}, "
-                        f"Implementation: {v.get('implementation', 'N/A')}"
-                    )
-                elif isinstance(v, dict):
-                    v = ", ".join(f"{dk}: {dv}" for dk, dv in v.items()) if v else "N/A"
-                elif isinstance(v, list):
-                    v = ", ".join(str(x) for x in v) if v else "N/A"
-                row.append(str(v))
-            rows.append(row)
-        md.extend(_format_table(header_labels, rows))
-        md.append("")
+    # Render columns in the order they appear in the first JSON object for all sections, including Recommendations.
+    if not array:
+        md.append(f"No {section_name.lower() if section_name else 'data'} provided.")
         return md
 
-    # Default: Build deterministic header order
-    headers = sorted({k for item in array for k in item.keys()})
+    headers = list(array[0].keys())
+    rows: List[List[str]] = []
+    for item in array:
+        row: List[str] = []
+        for k in headers:
+            v = item.get(k, "N/A")
+            if isinstance(v, dict):
+                v = ", ".join(f"{dk}: {dv}" for dk, dv in v.items()) if v else "N/A"
+            elif isinstance(v, list):
+                v = ", ".join(str(x) for x in v) if v else "N/A"
+            row.append(str(v))
+        rows.append(row)
+    md.extend(_format_table(headers, rows))
+    md.append("")
+    return md
+
     rows: List[List[str]] = []
     for item in array:
         row: List[str] = []
