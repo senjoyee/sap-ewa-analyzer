@@ -41,7 +41,7 @@ Proceed with your systematic analysis, following this reasoning strategy.
 
 - The JSON **must** validate against schema version 1.1 (`god_level_ewa_analysis/v1.1.json`).
 - The first property must be: `"schema_version": "1.1"`.
-- Use the exact property names and snake-case spelling shown below.
+- Use the exact property names and spelling shown below.
 - Use **only** data that appears verbatim in the supplied markdown. Copy numbers exactly; do not round or change units.
 - Each finding must be self-contained and, when available, include the exact numeric values or KPIs that justify the severity.
 - If a required value is absent in the input, set it to `null`. Do **not** guess.
@@ -57,84 +57,84 @@ Proceed with your systematic analysis, following this reasoning strategy.
 {
   "schema_version": "1.1",
   "system_metadata": {
-    "system_id": "PRD",
-    "report_date": "2025-07-18",
-    "analysis_period": "2025-07-11 / 2025-07-18"
+    "System ID": "PRD",
+    "Report Date": "2025-07-18",
+    "Analysis Period": "2025-07-11 / 2025-07-18"
   },
-  "executive_summary": "- Database growth of 18% YoY threatens HANA license limits\n- CPU spikes risk month-end close performance"
+  "Executive Summary": "- Database growth of 18% YoY threatens HANA license limits\n- CPU spikes risk month-end close performance"
 }
 ```
 
 
-### system_metadata
-- Extract `system_id`, `report_date` (ISO date), and `analysis_period` (YYYY-MM-DD / YYYY-MM-DD).
+### System Metadata
+- Extract `System ID`, `Report Date` (ISO date), and `Analysis Period` (YYYY-MM-DD / YYYY-MM-DD).
 
-### system_health_overview
-- Rate `performance`, `security`, `stability`, and `configuration` as `good`, `fair`, or `poor` (use lowercase).
+### System Health Overview
+- Rate `Performance`, `Security`, `Stability`, and `Configuration` as `good`, `fair`, or `poor` (use lowercase).
 
-### executive_summary
+### Executive Summary
 - Single string with a bullet-point summary for a C-level audience, focusing on business risk and key actions.
 - Format as markdown (e.g., `"- Point 1\n- Point 2"`).
 
-### positive_findings
-- Array of objects: `{area, description}`.
+### Positive Findings
+- Array of objects: `{Area, Description}`.
 
-### key_findings
+### Key Findings
 For every amber/red-rated or high-impact observation, supply (include numeric values verbatim where present):
 
-- `id`: pattern `KF-00`.
-- `area`: category of the finding (**choose exactly one**):
+- `Issue ID`: pattern `KF-00`.
+- `Area`: category of the finding (**choose exactly one**):
   - `Hardware`, `Operating System`, `Database`, `SAP Kernel / Basis`, `ABAP Stack`, `Java Stack`, `SAP HANA`, `Performance & Workload`, `Security & Compliance`, `Configuration & House-keeping`, `Interfaces / Connectivity`, `Backup & Recovery`, `Upgrade / Patch Management`, `Capacity & Sizing`.
-- `finding`: detailed, self-contained sentence or short paragraph including:
+- `Finding`: detailed, self-contained sentence or short paragraph including:
   - Numeric evidence.
   - Specific entities (e.g., table or component names).
   - Contextual justification.
   - Example: Instead of "Table reached critical limit," use: "The HANA column store table CDPOS has reached the critical limit of 2 billion records, which is the maximum supported for HANA column store tables."
-- `impact`: technical consequences.
-- `business_impact`: plain language risk explanation.
-- `severity`: `low`, `medium`, `high`, or `critical` (use lowercase).
+- `Impact`: technical consequences.
+- `Business Impact`: plain language risk explanation.
+- `Severity`: `low`, `medium`, `high`, or `critical` (use lowercase).
 
-### recommendations
+### Recommendations
 For each action, provide (retain any numeric thresholds, dates, or figures exactly as written):
 
-- `recommendation_id`: pattern `REC-00`.
-- `priority`: `high`, `medium`, or `low` (use lowercase).
-- `estimated_effort`: object with:
-  - `analysis`: `low`, `medium`, or `high`.
-  - `implementation`: `low`, `medium`, or `high`.
-- `responsible_area`: team or department responsible (**choose exactly one**):
+- `Recommendation ID`: pattern `REC-00`.
+- `Priority`: `high`, `medium`, or `low` (use lowercase).
+- `Estimated Effort`: object with:
+  - `Analysis`: `low`, `medium`, or `high`.
+  - `Implementation`: `low`, `medium`, or `high`.
+- `Responsible Area`: team or department responsible (**choose exactly one**):
   - `SAP Basis Team`, `Database Administration`, `Operating System Administration`, `Network & Connectivity`, `Security / Compliance Team`, `Application Development`, `Functional / Business Process Owner`, `Infrastructure / Hardware Team`, `Third-Party Vendor`, `Project / Change Management`.
-- `linked_issue_id`: the related KF id, if any.
-- `action`: concrete steps to implement.
-- `validation_step`: how to verify the fix was successful.
-- `preventative_action`: measures to prevent recurrence.
+- `Linked Issue ID`: the related KF id, if any.
+- `Action`: concrete steps to implement.
+- `Validation Step`: how to verify the fix was successful.
+- `Preventative Action`: measures to prevent recurrence.
 
-### kpis
+### KPIs
 - Create a list of key performance indicator strings.
 - Each string should contain the KPI name and its current value.
 - Example: `"Dialog Response Time: 450ms"`
 
-### capacity_outlook
-- `database_growth`: summary of database growth trends.
-- `cpu_utilization`: current and projected CPU usage.
-- `memory_utilization`: current and projected memory usage.
-- `summary`: narrative of future capacity needs.
+### Capacity Outlook
+- `Database Growth`: summary of database growth trends.
+- `CPU Utilization`: current and projected CPU usage.
+- `Memory Utilization`: current and projected memory usage.
+- `Summary`: narrative of future capacity needs.
 
-### parameters
+### Parameters
 For each configuration parameter mentioned in the document:
 
-- `name`: parameter identifier.
-- `area`: component category (SAP ABAP, SAP JAVA, HANA DB, ORACLE DB, MSSQL DB, DB2 DB, SAP ASE DB, etc.). Write in uppercase.
-- `current_value`: existing setting.
-- `recommended_value`: suggested optimal value.
-- `description`: purpose and impact explanation.
+- `Name`: parameter identifier.
+- `Area`: component category (SAP ABAP, SAP JAVA, HANA DB, ORACLE DB, MSSQL DB, DB2 DB, SAP ASE DB, etc.). Write in uppercase.
+- `Current Value`: existing setting.
+- `Recommended Value`: suggested optimal value.
+- `Description`: purpose and impact explanation.
 
 - Ensure that you take note of Current Value and Recommended Value for each parameter.
 - **Skip** any profile parameters that are listed under "SAP HANA PARAMETERS DEVIATING FROM DEFAULT" section.
 - **If the current value is not available**, set `current_value` to `Not Set`.
 - **Capture all** other profile parameters across the document, especially those in configuration, security, performance, and database sections.
 
-### overall_risk
+### Overall Risk
 - Single value: `low`, `medium`, `high`, or `critical` (use lowercase).
 
 ## Output
