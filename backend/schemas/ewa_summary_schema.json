@@ -49,10 +49,10 @@
       "type": "array",
       "items": {
         "type": "object",
-        "required": ["area", "description"],
+        "required": ["Area", "Description"],
         "properties": {
-          "area":        { "type": "string" },
-          "description": { "type": "string" }
+          "Area":        { "type": "string" },
+          "Description": { "type": "string" }
         }
       }
     },
@@ -61,14 +61,14 @@
       "type": "array",
       "items": {
         "type": "object",
-        "required": ["id", "area", "finding", "impact", "business_impact", "severity"],
+        "required": ["Issue id", "Area", "Finding", "Impact", "Business impact", "Severity"],
         "properties": {
-          "id": {
+          "Issue id": {
             "type": "string",
             "pattern": "^KF-[0-9]{2}$",
             "description": "Unique key finding identifier."
           },
-          "area":            { "type": "string", "enum": [
+          "Area":            { "type": "string", "enum": [
               "Hardware",
               "Operating System",
               "Database",
@@ -84,10 +84,10 @@
               "Upgrade / Patch Management",
               "Capacity & Sizing"
             ] },
-          "finding":         { "type": "string" },
-          "impact":          { "type": "string", "description": "Potential technical impact." },
-          "business_impact": { "type": "string", "description": "Translated business risk." },
-          "severity":        { "type": "string", "enum": ["low", "medium", "high", "critical"] }
+          "Finding":         { "type": "string" },
+          "Impact":          { "type": "string", "description": "Potential technical impact." },
+          "Business impact": { "type": "string", "description": "Translated business risk." },
+          "Severity":        { "type": "string", "enum": ["low", "medium", "high", "critical"] }
         }
       }
     },
@@ -98,22 +98,22 @@
       "items": {
         "type": "object",
         "required": [
-          "recommendation_id",
-          "priority",
-          "estimated_effort",
-          "responsible_area",
-          "action",
-          "validation_step",
+          "Recommendation id",
+          "Priority",
+          "Estimated effort",
+          "Responsible area",
+          "Action",
+          "Validation step",
           "preventative_action"
         ],
         "properties": {
-          "recommendation_id": {
+          "Recommendation id": {
             "type": "string",
             "pattern": "^REC-[0-9]{2}$"
           },
-          "priority": { "type": "string", "enum": ["high", "medium", "low"] },
+          "Priority": { "type": "string", "enum": ["high", "medium", "low"] },
 
-          "estimated_effort": {
+          "Estimated effort": {
             "type": "object",
             "required": ["analysis", "implementation"],
             "properties": {
@@ -122,7 +122,7 @@
             }
           },
 
-          "responsible_area": { "type": "string", "enum": [
+          "Responsible area": { "type": "string", "enum": [
               "SAP Basis Team",
               "Database Administration",
               "Operating System Administration",
@@ -134,14 +134,14 @@
               "Third-Party Vendor",
               "Project / Change Management"
             ] },
-          "linked_issue_id": {
+          "Linked issue id": {
             "type": "string",
             "pattern": "^KF-[0-9]{2}$",
             "description": "Key finding this recommendation addresses."
           },
-          "action":             { "type": "string", "description": "Specific steps to execute." },
-          "validation_step":    { "type": "string", "description": "How to confirm the fix was effective." },
-          "preventative_action":{ "type": "string", "description": "Measure to prevent recurrence." }
+          "Action":             { "type": "string", "description": "Specific steps to execute." },
+          "Validation step":    { "type": "string", "description": "How to confirm the fix was effective." },
+          "Preventative action":{ "type": "string", "description": "Measure to prevent recurrence." }
         }
       }
     },
@@ -209,18 +209,18 @@
     "recommendation_item": {
       "type": "object",
       "required": [
-        "recommendation_id",
-        "priority",
-        "estimated_effort",
-        "responsible_area",
-        "action",
-        "validation_step",
-        "preventative_action"
+        "Recommendation id",
+        "Priority",
+        "Estimated effort",
+        "Responsible area",
+        "Action",
+        "Validation step",
+        "Preventative action"
       ],
       "properties": {
-        "recommendation_id": { "type": "string", "pattern": "^REC-[0-9]{2}$" },
-        "priority": { "type": "string", "enum": ["high", "medium", "low"] },
-        "estimated_effort": {
+        "Recommendation id": { "type": "string", "pattern": "^REC-[0-9]{2}$" },
+        "Priority": { "type": "string", "enum": ["high", "medium", "low"] },
+        "Estimated effort": {
           "type": "object",
           "required": ["analysis", "implementation"],
           "properties": {
@@ -228,11 +228,11 @@
             "implementation":{ "type": "string", "enum": ["low", "medium", "high"] }
           }
         },
-        "responsible_area":  { "type": "string" },
-        "linked_issue_id":   { "type": "string", "pattern": "^KF-[0-9]{2}$" },
-        "action":            { "type": "string" },
-        "validation_step":   { "type": "string" },
-        "preventative_action":{ "type": "string" }
+        "Responsible area":  { "type": "string" },
+        "Linked issue id":   { "type": "string", "pattern": "^KF-[0-9]{2}$" },
+        "Action":            { "type": "string" },
+        "Validation step":   { "type": "string" },
+        "Preventative action":{ "type": "string" }
       }
     }
   }
