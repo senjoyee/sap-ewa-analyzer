@@ -99,7 +99,7 @@ def json_to_markdown(data: Dict[str, Any]) -> str:
         f"({meta.get('Report Date', 'N/A')})"
     )
     md.append(f"**Analysis Period:** {meta.get('Analysis Period', 'N/A')}")
-    md.append(f"**Overall Risk Assessment:** `{data.get('Overall Risk', 'N/A')}`")
+    md.append(f"**Overall Risk Assessment:** `{data.get('Overall Risk', data.get('overall_risk', 'N/A'))}`")
     md.append("\n---\n")
 
     # ── System Health Overview ────────────────────────────────────────────────
@@ -127,7 +127,6 @@ def json_to_markdown(data: Dict[str, Any]) -> str:
     md.append("\n---\n")
 
     # ── Key Findings ──────────────────────────────────────────────────────────
-    md.append("## Key Findings")
     md.extend(_array_to_markdown_table(data.get("Key Findings", []), "Key Findings"))
     md.append("\n---\n")
 
