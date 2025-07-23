@@ -99,7 +99,6 @@
         "type": "object",
         "required": [
           "Recommendation ID",
-          "Priority",
           "Estimated Effort",
           "Responsible Area",
           "Action",
@@ -111,7 +110,7 @@
             "type": "string",
             "pattern": "^REC-[0-9]{2}$"
           },
-          "Priority": { "type": "string", "enum": ["high", "medium", "low"] },
+
 
           "Estimated Effort": {
             "type": "object",

@@ -99,7 +99,6 @@ For every amber/red-rated or high-impact observation, supply (include numeric va
 For each action, provide (retain any numeric thresholds, dates, or figures exactly as written):
 
 - `Recommendation ID`: pattern `REC-00`.
-- `Priority`: `high`, `medium`, or `low` (use lowercase).
 - `Estimated Effort`: object with:
   - `Analysis`: `low`, `medium`, or `high`.
   - `Implementation`: `low`, `medium`, or `high`.
