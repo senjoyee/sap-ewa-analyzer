@@ -28,12 +28,10 @@ Before finalizing each section, validate:
 - Filter findings to retain only medium, high, or critical severity items (remove low severity).
 - Confirm that recommendations have clear validation steps and preventive actions.
 
-### 4. Executive Communication Phase
-Craft content specifically for a C-level audience:
-- Focus on business risk and strategic impact, not technical implementation details.
-- Use bullet points that highlight financial, operational, or compliance risks.
-- Ensure each point answers: "Why should an executive care about this?"
-- Translate technical jargon into business language.
+### 4. Technical Communication Phase
+Craft content specifically for a technical audience:
+- Focus on technical implementation details.
+- Ensure each point answers: "Why should a basis architect care about this?"
 
 Proceed with your systematic analysis, following this reasoning strategy.
 
@@ -74,7 +72,7 @@ Proceed with your systematic analysis, following this reasoning strategy.
 - Rate `Performance`, `Security`, `Stability`, and `Configuration` as `good`, `fair`, or `poor` (use lowercase).
 
 ### Executive Summary
-- Single string with a bullet-point summary for a C-level audience, focusing on business risk and key actions.
+- Single string with a bullet-point summary for a technical audience, focusing on technical implementation details & key actions.
 - Format as markdown (e.g., `"- Point 1\n- Point 2"`).
 
 ### Positive Findings
