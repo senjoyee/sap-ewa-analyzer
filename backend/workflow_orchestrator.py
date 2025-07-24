@@ -7,7 +7,7 @@ using Azure OpenAI services. It manages the workflow for generating comprehensiv
 1. Summary Workflow - Generates an executive summary with findings and recommendations
 
 Key Functionality:
-- Orchestrating AI analysis workflow
+- Orchestrating AI analysis workflow using single enhanced GPT-4.1 agent
 - Specialized prompting for comprehensive information extraction
 - Integration with Azure Blob Storage for document persistence
 - Error handling and status reporting
@@ -67,7 +67,7 @@ def load_summary_prompt():
 
 SUMMARY_PROMPT = load_summary_prompt()
 
-# The metrics and parameters extraction prompts have been removed as they are no longer used
+
 
 
 @dataclass
@@ -166,47 +166,24 @@ class EWAWorkflowOrchestrator:
     async def call_openai(self, prompt: str, content: str, model: str, max_tokens: int = 8000) -> str:
         """Make a call to Azure OpenAI with specified model"""
         try:
-            # Create messages array (common for all models)
+            # Create messages array
             messages = [
                 {"role": "system", "content": prompt},
                 {"role": "user", "content": f"Please analyze this EWA document:\n\n{content}"}
             ]
             
-            # Handle model-specific parameters
-            if "o4-mini" in model:
-                # o4-mini parameters
-                params = {
-                    "model": model,
-                    "messages": messages,
-                    "max_completion_tokens": 32768,
-                    "reasoning_effort": "medium"
-                }
-                print(f"[MODEL INFO] Using model: {model} with max_completion_tokens=32768")
-                print(f"[MODEL PARAMS] Using reasoning_effort=medium with {model} model")
-            elif "gpt-4.1-mini" in model:
-                # gpt-4.1-mini expects max_tokens, not max_completion_tokens
-                params = {
-                    "model": model,
-                    "messages": messages,
-                    "temperature": 0.0,
-                    "top_p": 0.0,
-                    "max_tokens": max_tokens,
-                    "frequency_penalty": 0,
-                    "presence_penalty": 0
-                }
-                print(f"[MODEL INFO] Using model: {model} with max_tokens={max_tokens}")
-            else:
-                # Parameters for other models
-                params = {
-                    "model": model,
-                    "messages": messages,
-                    "temperature": 0.0,
-                    "top_p": 0.0,
-                    "max_tokens": max_tokens,
-                    "frequency_penalty": 0,
-                    "presence_penalty": 0
-                }
-                print(f"[MODEL INFO] Using model: {model} with max_tokens={max_tokens}")
+            # Standard parameters for GPT-4.1
+            params = {
+                "model": model,
+                "messages": messages,
+                "temperature": 0.0,
+                "top_p": 0.0,
+                "max_tokens": max_tokens,
+                "frequency_penalty": 0,
+                "presence_penalty": 0
+            }
+            
+            print(f"[MODEL INFO] Using model: {model} with max_tokens={max_tokens}")
             
             response = self.client.chat.completions.create(**params)
             
@@ -217,7 +194,7 @@ class EWAWorkflowOrchestrator:
                 total_tokens = response.usage.total_tokens
                 
                 print(f"[TOKEN USAGE] Prompt: {prompt_tokens} | Completion: {completion_tokens} | Total: {total_tokens}")
-                print(f"[TOKEN USAGE] Completion tokens used: {completion_tokens}/{32000 if 'o4-mini' in model else max_tokens} ({(completion_tokens / (32000 if 'o4-mini' in model else max_tokens) * 100):.1f}%)")
+                print(f"[TOKEN USAGE] Completion tokens used: {completion_tokens}/{max_tokens} ({(completion_tokens / max_tokens * 100):.1f}%)")
             else:
                 print("[TOKEN USAGE] Token usage information not available in the response")
             
@@ -239,70 +216,13 @@ class EWAWorkflowOrchestrator:
             state.error = str(e)
             return state
     
-    async def generate_summary_step(self, state: WorkflowState) -> WorkflowState:
-        """Step 2: Generate executive summary (no metrics/parameters)"""
+
+    async def run_analysis_step(self, state: WorkflowState) -> WorkflowState:
+        """Step 2: Generate comprehensive EWA analysis using single enhanced agent"""
         try:
-            # model_to_use = AZURE_OPENAI_SUMMARY_MODEL # This variable is not strictly needed if passed directly
-            print(f"[STEP 2] Generating summary for {state.blob_name} using model: {AZURE_OPENAI_SUMMARY_MODEL}")
-            state.summary_result = await self.call_openai(
-                SUMMARY_PROMPT, 
-                state.markdown_content,
-                model=AZURE_OPENAI_SUMMARY_MODEL, # Pass the model name directly
-                max_tokens=16000 # As per the original apparent arguments
-            )
-            return state
-        except Exception as e:
-            state.error = str(e)
-            return state
-    
-    # The extract_metrics_step and extract_parameters_step methods have been removed as they are no longer used
-
-    async def run_dual_agent_step(self, state: WorkflowState) -> WorkflowState:
-        """Step 2: Two-pass summary workflow: fast extraction then quality control refinement.
-        
-        Uses a division of labor approach:
-        1. Fast model (GPT-4.1) for initial comprehensive extraction
-        2. Reasoning model (o4-mini) for quality control, filtering, and validation
-        """
-        try:
-            import os
-            fast_model = os.getenv("AZURE_OPENAI_FAST_MODEL", "gpt-4.1-mini")
-            reasoning_model = os.getenv("AZURE_OPENAI_REASONING_MODEL", "o4-mini")
-
-            print(f"[STEP 2a] Running fast extraction (model: {fast_model}) for {state.blob_name}")
-            fast_agent = EWAAgent(client=self.client, model=fast_model, summary_prompt=SUMMARY_PROMPT)
-            draft_json = await fast_agent.run(state.markdown_content)
-
-            print(f"[STEP 2b] Running quality control refinement (model: {reasoning_model}) for {state.blob_name}")
-            reasoning_agent = EWAAgent(client=self.client, model=reasoning_model, summary_prompt=SUMMARY_PROMPT)
-            final_json = await reasoning_agent.quality_control_refine(draft_json)
-
-            state.summary_json = final_json
-            state.summary_result = json_to_markdown(final_json)
-            return state
-        except Exception as e:
-            state.error = str(e)
-            return state
-    
-    async def run_enhanced_single_agent_step(self, state: WorkflowState) -> WorkflowState:
-        """Step 2: Enhanced single-agent workflow with structured chain-of-thought reasoning.
-        
-        Uses GPT-4.1 with enhanced prompting that includes:
-        1. Systematic document analysis phase
-        2. Risk assessment with business translation
-        3. Built-in quality control validation
-        4. Executive-focused communication optimization
-        
-        This approach eliminates the need for separate reasoning model while maintaining
-        high-quality output through structured reasoning built into the prompt.
-        """
-        try:
-            # Use the same model configuration as other parts of the system for consistency
-            model = AZURE_OPENAI_SUMMARY_MODEL
-            
-            print(f"[STEP 2] Running enhanced single-agent analysis (model: {model}) for {state.blob_name}")
-            agent = EWAAgent(client=self.client, model=model, summary_prompt=SUMMARY_PROMPT)
-            final_json = await agent.run_enhanced_single_agent(state.markdown_content)
+            print(f"[STEP 2] Running EWA analysis for {state.blob_name}")
+            agent = EWAAgent(client=self.client, model=AZURE_OPENAI_SUMMARY_MODEL, summary_prompt=SUMMARY_PROMPT)
+            final_json = await agent.run(state.markdown_content)
             
             state.summary_json = final_json
             state.summary_result = json_to_markdown(final_json)
@@ -445,8 +365,8 @@ class EWAWorkflowOrchestrator:
             if state.error:
                 raise Exception(state.error)
             
-            # Run the enhanced single-agent workflow with structured reasoning
-            summary_state = await self.run_enhanced_single_agent_step(state)
+            # Run the EWA analysis using single enhanced agent
+            summary_state = await self.run_analysis_step(state)
             
             # Check for errors
             if summary_state.error:
