@@ -102,7 +102,6 @@
           "Estimated Effort",
           "Responsible Area",
           "Action",
-          "Validation Step",
           "Preventative Action"
         ],
         "properties": {
@@ -139,7 +138,6 @@
             "description": "Key finding this recommendation addresses."
           },
           "Action":             { "type": "string", "description": "Specific steps to execute." },
-          "Validation Step":    { "type": "string", "description": "How to confirm the fix was effective." },
           "Preventative Action":{ "type": "string", "description": "Measure to prevent recurrence." }
         }
       }

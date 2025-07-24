@@ -103,8 +103,7 @@ For each action, provide (retain any numeric thresholds, dates, or figures exact
 - `Responsible Area`: team or department responsible (**choose exactly one**):
   - `SAP Basis Team`, `Database Administration`, `Operating System Administration`, `Network & Connectivity`, `Security / Compliance Team`, `Application Development`, `Functional / Business Process Owner`, `Infrastructure / Hardware Team`, `Third-Party Vendor`, `Project / Change Management`.
 - `Linked Issue ID`: the related KF id, if any.
-- `Action`: concrete steps to implement.
-- `Validation Step`: how to verify the fix was successful.
+- `Action`: concrete steps to implement. Refer to any SAP notes, SAP help, or other documentation and include links or related information, from the source document, if any.
 - `Preventative Action`: measures to prevent recurrence.
 
 ### KPIs
