@@ -131,14 +131,16 @@ const JsonCodeBlockRenderer = ({ node, inline, className, children, ...props }) 
                       width: '40%', 
                       fontSize: '0.9rem',
                       borderBottom: (theme) => `2px solid ${theme.palette.primary.main}`,
-                      paddingLeft: 2
+                      textAlign: 'center',
+                      padding: '12px 8px'
                     }}>Parameter</TableCell>
                     <TableCell sx={{ 
                       fontWeight: 'bold', 
                       width: '60%', 
                       fontSize: '0.9rem',
                       borderBottom: (theme) => `2px solid ${theme.palette.primary.main}`,
-                      paddingLeft: 2
+                      textAlign: 'center',
+                      padding: '12px 8px'
                     }}>Value</TableCell>
                   </TableRow>
                 </TableHead>
