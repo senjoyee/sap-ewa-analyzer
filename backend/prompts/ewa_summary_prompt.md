@@ -32,18 +32,20 @@ For each finding, systematically evaluate:
 - **SAP Best Practice Alignment**: Deviation from SAP standard recommendations
 
 ### 3. Technical Validation Phase
-Before finalizing, validate:
-- Cross-reference all technical values against SAP documentation
-- Verify parameter settings against SAP standard values
-- Confirm technical thresholds align with SAP sizing guidelines
-- Ensure technical recommendations include specific SAP notes or documentation references
+Before finalizing, validate against **SAP standards embedded within the EWA report**:
+- Cross-reference technical values against SAP standard recommendations **mentioned in the document**
+- Verify parameter settings against SAP optimal values **provided in the EWA**
+- Confirm technical thresholds align with SAP sizing guidelines **referenced in the report**
+- Document specific SAP notes or recommendations **explicitly mentioned in the EWA content**
+
+**Note**: The AI validates using only SAP documentation and standards **contained within the provided EWA report**. No external SAP documentation access is required.
 
 ### 4. Technical Communication Strategy
 Craft content specifically for technical teams:
 - **Focus on technical implementation** rather than business justification
 - **Include specific technical details**: exact parameter values, table names, transaction codes
 - **Provide actionable technical guidance**: specific commands, configuration changes, monitoring approaches
-- **Reference SAP documentation**: include relevant SAP notes, OSS notes, or official documentation links
+- **Reference SAP documentation**: include SAP notes, OSS notes, or recommendations **explicitly mentioned within the EWA report**
 
 Proceed with your systematic analysis, following this reasoning strategy.
 
@@ -74,9 +76,9 @@ Before finalizing each section:
 
 
 
-## Technical JSON Structure with Examples
+## JSON Structure with Examples
 
-### Complete Technical Example
+### Complete Executive Example
 ```json
 {
   "Schema Version": "1.1",
@@ -85,7 +87,7 @@ Before finalizing each section:
     "Report Date": "2025-07-18",
     "Analysis Period": "2025-07-11 / 2025-07-18"
   },
-  "Technical Summary": "- Critical: HANA table CDPOS at 1.8B records (limit 2B) - immediate archiving via SWNC_COLLECTOR_FOR_PERFMON required\n- High: Dialog response time 847ms (threshold 1000ms) - investigate expensive SQL statements\n- Medium: CPU utilization 87% during peak - consider workload optimization or scaling",
+  "Executive Summary": "- Critical: HANA table growth at 90% capacity threatens month-end processing\n- High: 847ms response times risk customer service SLA breaches\n- Medium: 87% CPU utilization during peak impacts operational continuity",
   "System Health Overview": {
     "Performance": "poor",
     "Security": "good", 
@@ -96,19 +98,19 @@ Before finalizing each section:
     {
       "Issue ID": "KF-01",
       "Area": "SAP HANA",
-      "Finding": "HANA column store table CDPOS has reached 1.8 billion records, approaching the 2 billion record limit for column store tables",
-      "Impact": "System stability risk - table growth approaching hard limit",
-      "Business Impact": "Potential system freeze during peak operations",
+      "Finding": "HANA column store table CDPOS has reached the critical limit of 2 billion records",
+      "Impact": "System stability risk approaching hard technical limit",
+      "Business Impact": "Month-end processing delays affecting financial reporting deadlines",
       "Severity": "critical"
     }
   ]
 }
 ```
 
-### Technical Extraction Examples
-- **Parameter**: `"Name": "rdisp/max_wprun_time", "Current Value": "600", "Recommended Value": "900"`
-- **Table**: `"Finding": "Table VBUK contains 45 million records with 89% fragmentation"`
-- **Performance**: `"KPIs": ["Dialog Response Time: 847ms", "CPU Utilization: 87%"]
+### Business Translation Examples
+- **Technical**: "HANA table CDPOS at 1.8B records" → **Business**: "Database capacity at 90% threatens month-end processing"
+- **Technical**: "847ms dialog response time" → **Business**: "User experience degradation affecting customer service SLAs"
+- **Technical**: "87% CPU utilization" → **Business**: "System performance impacting operational continuity"
 
 
 ### System Metadata
@@ -117,27 +119,30 @@ Before finalizing each section:
 ### System Health Overview
 - Rate `Performance`, `Security`, `Stability`, and `Configuration` as `good`, `fair`, or `poor` (use lowercase).
 
-### Technical Summary
-- Single string with bullet-point technical summary focusing on system-critical issues and immediate technical actions required.
-- Format as markdown with technical specificity: `"- Critical: HANA table CDPOS at 1.8B records (limit 2B) - immediate archiving required\n- High: CPU utilization 87% during peak - investigate workload optimization"`
+### Executive Summary
+- Single string with a bullet-point summary for a C-level audience, focusing on business risk and key actions.
+- Format as markdown (e.g., `"- Point 1\n- Point 2"`).
+- **Business Translation**: Convert technical findings to business impact language
+- **Risk Focus**: Emphasize financial, operational, and compliance risks
+- **Action Items**: Highlight immediate business actions required
 
 ### Positive Findings
 - Array of objects: `{Area, Description}`.
 
 ### Key Findings
-For every amber/red-rated or high-impact technical observation, supply exact technical details:
+For every amber/red-rated or high-impact observation, supply (include numeric values verbatim where present):
 
 - `Issue ID`: pattern `KF-00`.
-- `Area`: technical category (**choose exactly one**):
+- `Area`: category of the finding (**choose exactly one**):
   - `Hardware`, `Operating System`, `Database`, `SAP Kernel / Basis`, `ABAP Stack`, `Java Stack`, `SAP HANA`, `Performance & Workload`, `Security & Compliance`, `Configuration & House-keeping`, `Interfaces / Connectivity`, `Backup & Recovery`, `Upgrade / Patch Management`, `Capacity & Sizing`.
-- `Finding`: technically precise description including:
-  - **Exact numeric values** with units (e.g., "HANA table CDHDR at 1.8 billion records vs 2B limit")
-  - **Specific system components** (table names, parameter names, instance names)
-  - **Technical threshold breach** (SAP standard vs actual value)
-  - **Example**: "HANA column store table CDPOS has reached 1.8 billion records, approaching the 2 billion record limit for column store tables"
-- `Impact`: specific technical consequences (performance degradation, system stability, resource exhaustion)
-- `Business Impact`: technical risk translated to operational impact
-- `Severity`: `low`, `medium`, `high`, or `critical` based on technical urgency
+- `Finding`: detailed, self-contained sentence or short paragraph including:
+  - Numeric evidence.
+  - Specific entities (e.g., table or component names).
+  - Contextual justification.
+  - Example: Instead of "Table reached critical limit," use: "The HANA column store table CDPOS has reached the critical limit of 2 billion records, which is the maximum supported for HANA column store tables."
+- `Impact`: technical consequences.
+- `Business Impact`: business risk explanation focusing on operational, financial, or compliance impact
+- `Severity`: `low`, `medium`, `high`, or `critical` (use lowercase).
 
 ### Recommendations
 For each action, provide (retain any numeric thresholds, dates, or figures exactly as written):
@@ -167,7 +172,7 @@ For each action, provide (retain any numeric thresholds, dates, or figures exact
 For each configuration parameter mentioned in the document:
 
 - `Name`: exact parameter name as it appears (e.g., `rdisp/max_wprun_time`, `ztta/max_memreq_MB`)
-- `Area`: technical component category in uppercase (SAP ABAP, SAP JAVA, HANA DB, ORACLE DB, MSSQL DB, DB2 DB, SAP ASE DB)
+- `Area`: technical component category in uppercase (e.g,`SAP ABAP`, `SAP JAVA`, `HANA DB`, `ORACLE DB`, `MSSQL DB`, `DB2 DB`, `SAP ASE DB`, `SUSE LINUX OS`, `WINDOWS OS`)
 - `Current Value`: exact existing setting as reported
 - `Recommended Value`: SAP standard or optimal value as specified in documentation
 - `Description`: technical impact explanation including specific system behavior changes
@@ -198,11 +203,35 @@ Before final output, verify:
 - [ ] Recommendations include specific technical actions
 - [ ] JSON structure validates against schema version 1.1
 
-<!-- Technical Analysis Framework (internal use only):
-1. Systematically extract technical details
-2. Validate against SAP technical standards
-3. Translate technical risks to operational impact
-4. Structure for technical team consumption
-5. Cross-reference with SAP documentation -->
+## Output
+
+Output only the JSON object—nothing else.
+
+<!-- SCRATCHPAD (internal thinking - not included in final output):
+**Phase 1: Systematic Technical Analysis**
+- Extract all technical parameters, thresholds, and values from the EWA
+- Identify SAP components, table names, and configuration parameters
+- Note exact numeric values with units
+
+**Phase 2: SAP Standards Validation**
+- Cross-reference extracted values against SAP standards mentioned in the EWA
+- Verify parameter settings against SAP recommendations provided in the document
+- Validate technical thresholds against SAP sizing guidelines stated in the report
+
+**Phase 3: Technical Risk Translation**
+- Translate technical findings into operational risks for technical teams
+- Convert technical parameters into business impact language for C-level audience
+- Structure actionable technical recommendations
+
+**Phase 4: JSON Schema Compliance**
+- Ensure all required fields are populated with exact values from EWA
+- Validate JSON structure against schema version 1.1
+- Cross-check all technical details for accuracy
+
+**Phase 5: Final Quality Assurance**
+- Verify all SAP component names and parameter names are spelled correctly
+- Confirm technical thresholds align with SAP standards provided in the EWA
+- Ensure recommendations include specific technical actions mentioned in the document
+-->
 
 Output only the JSON object—nothing else.
