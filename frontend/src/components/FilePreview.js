@@ -226,8 +226,7 @@ const JsonCodeBlockRenderer = ({ node, inline, className, children, ...props }) 
                           background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
                           borderBottom: '2px solid transparent',
                           borderImage: 'linear-gradient(90deg, #667eea 0%, #764ba2 100%) 1',
-                          textAlign: isNumericHeader ? 'center' : 'left',
-                          paddingLeft: isNumericHeader ? 0 : 2,
+                          textAlign: 'center',
                           padding: '16px 12px',
                           textTransform: 'uppercase',
                           letterSpacing: '0.08em',
@@ -239,12 +238,6 @@ const JsonCodeBlockRenderer = ({ node, inline, className, children, ...props }) 
                             transform: 'translateY(-1px)',
                             textShadow: '0 2px 4px rgba(0,0,0,0.4)',
                           },
-                          // Specific column width adjustments
-                          // ...(header.toLowerCase() === 'id' && { width: '120px', minWidth: '120px' }),
-                          // ...(header.toLowerCase().includes('finding') && { maxWidth: '200px', width: '200px' }),
-                          // ...(header.toLowerCase().includes('name') && { maxWidth: '200px' }),
-                          // Make numeric columns narrower
-                          // ...(isNumericHeader && { width: 'fit-content', minWidth: '90px' }),
                           '&::after': {
                             content: '""',
                             position: 'absolute',
@@ -298,15 +291,19 @@ const JsonCodeBlockRenderer = ({ node, inline, className, children, ...props }) 
                         return (
                           <TableCell key={cellIndex} sx={{
                             ...(cellIndex === 0 && { fontWeight: 500 }),
-                            textAlign: isNumeric ? 'center' : 'left',
-                            paddingLeft: isNumeric ? 0 : 2,
-                            // Truncate very long text
-                            ...(cellValue.length > 50 && {
-                              maxWidth: '300px',
-                              overflow: 'hidden',
-                              textOverflow: 'ellipsis',
-                              whiteSpace: 'nowrap'
-                            })
+                            textAlign: 'center',
+                            padding: '8px 12px',
+                            fontSize: '0.875rem',
+                            lineHeight: 1.5,
+                            borderBottom: (theme) => `1px solid ${theme.palette.divider}`,
+                            whiteSpace: 'pre-wrap',
+                            wordBreak: 'break-word',
+                            color: (theme) => theme.palette.mode === 'dark' ? '#ffffff' : '#2d3748',
+                            backgroundColor: 'transparent',
+                            transition: 'all 0.2s ease',
+                            '&:hover': {
+                              backgroundColor: (theme) => theme.palette.mode === 'dark' ? 'rgba(255, 255, 255, 0.08)' : 'rgba(0, 0, 0, 0.04)'
+                            }
                           }}>{cellValue}</TableCell>
                         );
                       })}
