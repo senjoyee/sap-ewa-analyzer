@@ -202,6 +202,7 @@ Before final output, verify:
 - [ ] Technical thresholds validated against SAP standard documentation
 - [ ] Recommendations include specific technical actions
 - [ ] JSON structure validates against schema version 1.1
+- [ ] All profile parameter recommendations are captured
 
 ## Output
 
@@ -232,6 +233,7 @@ Output only the JSON object—nothing else.
 - Verify all SAP component names and parameter names are spelled correctly
 - Confirm technical thresholds align with SAP standards provided in the EWA
 - Ensure recommendations include specific technical actions mentioned in the document
+- Ensure that all profile parameter recommendations are captured
 -->
 
 Output only the JSON object—nothing else.
