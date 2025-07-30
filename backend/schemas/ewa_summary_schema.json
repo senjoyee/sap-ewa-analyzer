@@ -162,10 +162,35 @@
 
     "KPIs": {
       "type": "array",
-      "description": "A list of key performance indicators (KPIs) and their current values.",
+      "description": "A list of key performance indicators (KPIs) and their current values with trend information. KPI names should be consistent across runs for the same system and customer.",
       "items": {
-        "type": "string",
-        "description": "A single KPI, e.g., 'Database Response Time: 25ms'."
+        "type": "object",
+        "required": ["name", "current_value", "trend"],
+        "properties": {
+          "name": {
+            "type": "string",
+            "description": "The name of the KPI, e.g., 'Database Response Time'. Should be consistent across runs for the same system and customer."
+          },
+          "current_value": {
+            "type": "string",
+            "description": "The current value of the KPI with units, e.g., '25ms'."
+          },
+          "trend": {
+            "type": "object",
+            "required": ["direction"],
+            "properties": {
+              "direction": {
+                "type": "string",
+                "enum": ["up", "down", "flat"],
+                "description": "The direction of the trend compared to the previous run."
+              },
+              "percent_change": {
+                "type": "number",
+                "description": "The percentage change compared to the previous run, if available."
+              }
+            }
+          }
+        }
       }
     },
 

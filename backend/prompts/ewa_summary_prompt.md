@@ -158,9 +158,26 @@ For each action, provide (retain any numeric thresholds, dates, or figures exact
 - `Preventative Action`: measures to prevent recurrence.
 
 ### KPIs
-- Create a list of key performance indicator strings.
-- Each string should contain the KPI name and its current value.
-- Example: `"Dialog Response Time: 450ms"`
+- Create a list of key performance indicator objects with trend information.
+- Each KPI object must contain:
+  - `name`: The KPI name (must exactly match canonical KPI names if provided)
+  - `current_value`: The current value with units
+  - `trend`: An object with:
+    - `direction`: "up", "down", or "flat" compared to previous run
+    - `percent_change`: Percentage change compared to previous run (if available)
+- If canonical KPI names are provided, you MUST use only those names and not invent new ones.
+- If you identify a new KPI that is not in the canonical list, add it to a separate `additional_kpis` section.
+- Example: 
+```json
+{
+  "name": "Dialog Response Time",
+  "current_value": "450ms",
+  "trend": {
+    "direction": "down",
+    "percent_change": 15.2
+  }
+}
+```
 
 ### Capacity Outlook
 - `Database Growth`: summary of database growth trends.

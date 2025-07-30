@@ -52,14 +52,23 @@ class EWAAgent:
         }
 
     # ----------------------------- Public API ----------------------------- #
-    async def run(self, markdown: str) -> Dict[str, Any]:
+    async def run(self, markdown: str, previous_kpis: List[Dict] = None, canonical_kpi_names: List[str] = None) -> Dict[str, Any]:
         """Return a validated summary JSON object. May attempt a single self-repair."""
-        summary_json = await self._call_openai(markdown)
+        # Modify the prompt to include previous KPI data and canonical KPI names
+        enhanced_prompt = self.summary_prompt
+        
+        if previous_kpis:
+            enhanced_prompt += f"\n\nPrevious KPI data for trend analysis:\n{json.dumps(previous_kpis, indent=2)}"
+        
+        if canonical_kpi_names:
+            enhanced_prompt += f"\n\nCanonical KPI names (you MUST use only these names):\n{json.dumps(canonical_kpi_names, indent=2)}"
+        
+        summary_json = await self._call_openai(markdown, enhanced_prompt)
         if self._is_valid(summary_json):
             return summary_json
 
         # Try once to repair
-        summary_json = await self._repair(markdown, summary_json)
+        summary_json = await self._repair(markdown, summary_json, enhanced_prompt)
         # Either returns valid JSON or last attempt regardless of validity
         return summary_json
     
@@ -67,18 +76,20 @@ class EWAAgent:
     # ----------------------------- Internal helpers ----------------------------- #
 
 
-    async def _call_openai(self, markdown: str) -> Dict[str, Any]:
+    async def _call_openai(self, markdown: str, enhanced_prompt: str = None) -> Dict[str, Any]:
+        prompt_to_use = enhanced_prompt if enhanced_prompt is not None else self.summary_prompt
         messages = [
-            {"role": "system", "content": self.summary_prompt},
+            {"role": "system", "content": prompt_to_use},
             {"role": "user", "content": markdown},
         ]
         response = await self._async_openai(messages)
         return json.loads(response.choices[0].message.function_call.arguments)
 
-    async def _repair(self, markdown: str, previous_json: Dict[str, Any]) -> Dict[str, Any]:
+    async def _repair(self, markdown: str, previous_json: Dict[str, Any], enhanced_prompt: str = None) -> Dict[str, Any]:
+        prompt_to_use = enhanced_prompt if enhanced_prompt is not None else self.summary_prompt
         repair_prompt = "The JSON you produced did not validate against the schema. Fix the issues and return ONLY the corrected JSON object."
         messages = [
-            {"role": "system", "content": self.summary_prompt},
+            {"role": "system", "content": prompt_to_use},
             {"role": "assistant", "content": json.dumps(previous_json)},
             {"role": "user", "content": repair_prompt},
         ]
