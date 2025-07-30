@@ -162,18 +162,22 @@
 
     "KPIs": {
       "type": "array",
-      "description": "A list of key performance indicators (KPIs) and their current values with trend information. KPI names should be consistent across runs for the same system and customer.",
+      "description": "A list of key performance indicators (KPIs) with current values, targets, and trend information.",
       "items": {
         "type": "object",
         "required": ["name", "current_value", "trend"],
         "properties": {
           "name": {
             "type": "string",
-            "description": "The name of the KPI, e.g., 'Database Response Time'. Should be consistent across runs for the same system and customer."
+            "description": "Name of the KPI (e.g., 'Database Response Time', 'CPU Utilization')"
           },
           "current_value": {
             "type": "string",
-            "description": "The current value of the KPI with units, e.g., '25ms'."
+            "description": "Current value with units (e.g., '25ms', '85%', '2.3GB')"
+          },
+          "target_value": {
+            "type": "string",
+            "description": "Target or recommended value with units (optional)"
           },
           "trend": {
             "type": "object",
@@ -182,11 +186,15 @@
               "direction": {
                 "type": "string",
                 "enum": ["up", "down", "flat"],
-                "description": "The direction of the trend compared to the previous run."
+                "description": "Trend direction compared to previous report"
               },
               "percent_change": {
                 "type": "number",
-                "description": "The percentage change compared to the previous run, if available."
+                "description": "Percentage change from previous report (optional)"
+              },
+              "description": {
+                "type": "string",
+                "description": "Brief explanation of the trend (optional)"
               }
             }
           }

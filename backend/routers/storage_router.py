@@ -17,6 +17,69 @@ from fastapi import APIRouter, UploadFile, File, HTTPException, Form, Response, 
 from pydantic import BaseModel
 from azure.storage.blob import BlobServiceClient
 from dotenv import load_dotenv
+import json
+import os
+import re
+from azure.core.exceptions import ResourceNotFoundError
+from datetime import datetime
+
+from ..document_converter import convert_document_to_markdown, get_conversion_status
+from ..workflow_orchestrator import EWAWorkflowOrchestrator
+
+# ---------------------------------------------------------------------------
+# Filename validation and metadata extraction
+# ---------------------------------------------------------------------------
+
+def validate_filename_and_extract_metadata(filename: str) -> Dict[str, Any]:
+    """
+    Validate filename format and extract system ID and report date.
+    Expected format: <SID>_ddmmyy.pdf (e.g., ERP_090625.pdf)
+    
+    Returns:
+        Dict with 'system_id', 'report_date', and 'report_date_str'
+    
+    Raises:
+        ValueError: If filename doesn't match expected format
+    """
+    # Remove extension and check format
+    name_without_ext = os.path.splitext(filename)[0]
+    
+    # Pattern: SID_ddmmyy
+    pattern = r'^([A-Z0-9]+)_(\d{6})$'
+    match = re.match(pattern, name_without_ext)
+    
+    if not match:
+        raise ValueError(
+            f"Filename '{filename}' must follow format <SID>_ddmmyy.pdf (e.g., ERP_090625.pdf). "
+            f"SID should be alphanumeric uppercase, date should be 6 digits (ddmmyy)."
+        )
+    
+    system_id = match.group(1)
+    date_str = match.group(2)
+    
+    # Parse date: ddmmyy
+    try:
+        day = int(date_str[:2])
+        month = int(date_str[2:4])
+        year = int(date_str[4:6])
+        
+        # Assume years 00-30 are 2000s, 31-99 are 1900s
+        if year <= 30:
+            year += 2000
+        else:
+            year += 1900
+            
+        report_date = datetime(year, month, day)
+        report_date_str = report_date.strftime("%d.%m.%Y")
+        
+    except ValueError as e:
+        raise ValueError(f"Invalid date in filename '{filename}': {date_str}. Error: {str(e)}")
+    
+    return {
+        "system_id": system_id,
+        "report_date": report_date,
+        "report_date_str": report_date_str
+    }
 
 # ---------------------------------------------------------------------------
 # Azure Blob setup (duplicated from main for now – we will unify later)
@@ -50,15 +113,23 @@ router = APIRouter(prefix="/api", tags=["storage"])
 
 @router.post("/upload")
 async def upload_file(file: UploadFile = File(...), customer_name: str = Form(...)):
-    """Upload a document file to Azure Blob Storage."""
+    """Upload a document file to Azure Blob Storage with filename validation and metadata extraction."""
 
     if not blob_service_client:
         raise HTTPException(status_code=500, detail="Azure Blob Service client not initialized. Check server logs and .env configuration.")
     if not file:
         raise HTTPException(status_code=400, detail="No file sent.")
+    if not file.filename:
+        raise HTTPException(status_code=400, detail="Filename is required.")
 
     try:
-        blob_name = file.filename  # In production you might generate a unique name
+        # Validate filename format and extract metadata
+        try:
+            file_metadata = validate_filename_and_extract_metadata(file.filename)
+        except ValueError as e:
+            raise HTTPException(status_code=400, detail=str(e))
+            
+        blob_name = file.filename
         blob_client = blob_service_client.get_blob_client(
             container=AZURE_STORAGE_CONTAINER_NAME, blob=blob_name
         )
@@ -66,20 +137,31 @@ async def upload_file(file: UploadFile = File(...), customer_name: str = Form(..
         print(
             f"Uploading {file.filename} to Azure Blob Storage in container {AZURE_STORAGE_CONTAINER_NAME} as blob {blob_name}..."
         )
+        print(
+            f"Extracted metadata - System ID: {file_metadata['system_id']}, Report Date: {file_metadata['report_date_str']}, Customer: {customer_name}"
+        )
 
         contents = await file.read()
 
-        metadata: Dict[str, Any] = {"customer_name": customer_name}
+        # Create comprehensive metadata
+        metadata: Dict[str, Any] = {
+            "customer_name": customer_name,
+            "system_id": file_metadata["system_id"],
+            "report_date": file_metadata["report_date"].isoformat(),
+            "report_date_str": file_metadata["report_date_str"]
+        }
 
         blob_client.upload_blob(contents, overwrite=True, metadata=metadata)
 
         print(
-            f"Successfully uploaded {file.filename} to {blob_name} with customer: {customer_name}."
+            f"Successfully uploaded {file.filename} to {blob_name} with metadata: {metadata}"
         )
         return {
             "filename": file.filename,
             "customer_name": customer_name,
-            "message": "File uploaded successfully to Azure Blob Storage.",
+            "system_id": file_metadata["system_id"],
+            "report_date": file_metadata["report_date_str"],
+            "message": "File uploaded successfully to Azure Blob Storage with extracted metadata.",
         }
 
     except Exception as e:

@@ -20,6 +20,7 @@ import json
 import re
 import asyncio
 import traceback # Added for exception logging
+from datetime import datetime
 from typing import Dict, Any, List
 from dataclasses import dataclass
 from azure.storage.blob import BlobServiceClient
@@ -134,26 +135,27 @@ class EWAWorkflowOrchestrator:
             print(error_message)
             raise Exception(error_message)
     
-    async def upload_to_blob(self, blob_name: str, content: str, content_type: str = "text/markdown") -> str:
-        """Upload content to Azure Blob Storage"""
+    async def upload_to_blob(self, blob_name: str, content: str, content_type: str = "text/markdown", metadata: dict = None) -> str:
+        """Upload content to Azure Blob Storage with optional metadata"""
         try:
             blob_client = self.blob_service_client.get_blob_client(
                 container=AZURE_STORAGE_CONTAINER_NAME, 
                 blob=blob_name
             )
             
-            if content_type == "application/json":
-                blob_client.upload_blob(
-                    content.encode('utf-8'), 
-                    overwrite=True,
-                    content_type=content_type
-                )
-            else:
-                blob_client.upload_blob(
-                    content.encode('utf-8'), 
-                    overwrite=True,
-                    content_type=content_type
-                )
+            # Prepare upload parameters
+            upload_params = {
+                "data": content.encode('utf-8'),
+                "overwrite": True,
+                "content_type": content_type
+            }
+            
+            # Add metadata if provided
+            if metadata:
+                upload_params["metadata"] = metadata
+                print(f"Uploading {blob_name} with metadata: {metadata}")
+            
+            blob_client.upload_blob(**upload_params)
             
             print(f"Successfully uploaded content to {blob_name}")
             return blob_name
@@ -162,6 +164,125 @@ class EWAWorkflowOrchestrator:
             error_message = f"Error uploading to blob storage: {str(e)}"
             print(error_message)
             raise Exception(error_message)
+    
+    async def get_blob_metadata(self, blob_name: str) -> dict:
+        """Retrieve metadata from a blob"""
+        try:
+            blob_client = self.blob_service_client.get_blob_client(
+                container=AZURE_STORAGE_CONTAINER_NAME, 
+                blob=blob_name
+            )
+            
+            properties = blob_client.get_blob_properties()
+            return properties.metadata or {}
+            
+        except Exception as e:
+            print(f"Error retrieving metadata for {blob_name}: {str(e)}")
+            return {}
+    
+    async def get_canonical_kpi_blob_name(self, customer_name: str, system_id: str) -> str:
+        """Generate canonical KPI blob name for customer + system"""
+        # Sanitize names for blob storage
+        safe_customer = re.sub(r'[^a-zA-Z0-9]', '_', customer_name.lower())
+        safe_system = re.sub(r'[^a-zA-Z0-9]', '_', system_id.lower())
+        return f"canonical_kpis/{safe_customer}_{safe_system}_kpis.json"
+    
+    async def get_canonical_kpi_list(self, customer_name: str, system_id: str) -> dict:
+        """Retrieve canonical KPI list for customer + system combination"""
+        try:
+            canonical_blob_name = await self.get_canonical_kpi_blob_name(customer_name, system_id)
+            blob_client = self.blob_service_client.get_blob_client(
+                container=AZURE_STORAGE_CONTAINER_NAME, 
+                blob=canonical_blob_name
+            )
+            
+            # Check if canonical KPI list exists
+            if blob_client.exists():
+                content = blob_client.download_blob().readall().decode('utf-8')
+                return json.loads(content)
+            else:
+                print(f"No canonical KPI list found for {customer_name}/{system_id}")
+                return None
+                
+        except Exception as e:
+            print(f"Error retrieving canonical KPI list for {customer_name}/{system_id}: {str(e)}")
+            return None
+    
+    async def save_canonical_kpi_list(self, customer_name: str, system_id: str, kpi_list: list) -> bool:
+        """Save canonical KPI list for customer + system combination"""
+        try:
+            canonical_blob_name = await self.get_canonical_kpi_blob_name(customer_name, system_id)
+            
+            canonical_data = {
+                "customer_name": customer_name,
+                "system_id": system_id,
+                "created_date": datetime.utcnow().isoformat(),
+                "kpi_list": kpi_list
+            }
+            
+            # Create metadata for canonical KPI file
+            metadata = {
+                "customer_name": customer_name,
+                "system_id": system_id,
+                "file_type": "canonical_kpis"
+            }
+            
+            await self.upload_to_blob(
+                canonical_blob_name, 
+                json.dumps(canonical_data, indent=2), 
+                "application/json", 
+                metadata
+            )
+            
+            print(f"Saved canonical KPI list for {customer_name}/{system_id} with {len(kpi_list)} KPIs")
+            return True
+            
+        except Exception as e:
+            print(f"Error saving canonical KPI list for {customer_name}/{system_id}: {str(e)}")
+            return False
+    
+    async def get_previous_analysis_kpis(self, customer_name: str, system_id: str, current_report_date: str) -> list:
+        """Get KPIs from the most recent previous analysis for trend calculation"""
+        try:
+            # List all blobs and find matching analyses
+            container_client = self.blob_service_client.get_container_client(AZURE_STORAGE_CONTAINER_NAME)
+            matching_analyses = []
+            
+            async for blob in container_client.list_blobs(include=['metadata']):
+                if blob.name.endswith('_AI.json') and blob.metadata:
+                    blob_customer = blob.metadata.get('customer_name', '')
+                    blob_system = blob.metadata.get('system_id', '')
+                    blob_date = blob.metadata.get('report_date_str', '')
+                    
+                    if (blob_customer == customer_name and 
+                        blob_system == system_id and 
+                        blob_date != current_report_date):
+                        matching_analyses.append((blob.name, blob_date, blob.metadata.get('report_date', '')))
+            
+            if not matching_analyses:
+                print(f"No previous analyses found for {customer_name}/{system_id}")
+                return []
+            
+            # Sort by report_date (ISO format) and get the most recent
+            matching_analyses.sort(key=lambda x: x[2], reverse=True)
+            most_recent_blob = matching_analyses[0][0]
+            
+            print(f"Found previous analysis: {most_recent_blob}")
+            
+            # Download and extract KPIs
+            blob_client = self.blob_service_client.get_blob_client(
+                container=AZURE_STORAGE_CONTAINER_NAME, 
+                blob=most_recent_blob
+            )
+            
+            content = blob_client.download_blob().readall().decode('utf-8')
+            analysis_data = json.loads(content)
+            
+            return analysis_data.get('key_performance_indicators', [])
+            
+        except Exception as e:
+            print(f"Error retrieving previous analysis KPIs for {customer_name}/{system_id}: {str(e)}")
+            return []
     
     async def call_openai(self, prompt: str, content: str, model: str, max_tokens: int = 8000) -> str:
         """Make a call to Azure OpenAI with specified model"""
@@ -218,160 +339,98 @@ class EWAWorkflowOrchestrator:
     
 
     async def run_analysis_step(self, state: WorkflowState) -> WorkflowState:
-        """Step 2: Generate comprehensive EWA analysis using single enhanced agent"""
+        """Step 2: Generate comprehensive EWA analysis with KPI trend and consistency management"""
         try:
             print(f"[STEP 2] Running EWA analysis for {state.blob_name}")
             
-            # Extract customer and system information
-            from utils.kpi_utils import extract_customer_system_from_blob_name, get_previous_kpi_data
-            customer, system = extract_customer_system_from_blob_name(state.blob_name, self.blob_service_client)
+            # Get metadata from original blob for KPI management
+            original_metadata = await self.get_blob_metadata(state.blob_name)
+            customer_name = original_metadata.get('customer_name', '')
+            system_id = original_metadata.get('system_id', '')
+            report_date_str = original_metadata.get('report_date_str', '')
             
-            # Get previous KPI data and canonical KPI names
-            previous_kpis, canonical_kpi_names = get_previous_kpi_data(customer, system, state.blob_name, self.blob_service_client)
+            print(f"KPI Management - Customer: {customer_name}, System: {system_id}, Report Date: {report_date_str}")
             
-            # Pass previous KPI data to the agent
-            agent = EWAAgent(client=self.client, model=AZURE_OPENAI_SUMMARY_MODEL, summary_prompt=SUMMARY_PROMPT)
-            final_json = await agent.run(state.markdown_content, previous_kpis, canonical_kpi_names)
+            # Prepare additional prompt variables for KPI management
+            canonical_kpis = ""
+            previous_kpis = ""
+            
+            if customer_name and system_id:
+                # Try to get canonical KPI list
+                canonical_data = await self.get_canonical_kpi_list(customer_name, system_id)
+                if canonical_data:
+                    canonical_kpis = json.dumps(canonical_data.get('kpi_list', []), indent=2)
+                    print(f"Found canonical KPI list with {len(canonical_data.get('kpi_list', []))} KPIs")
+                
+                # Try to get previous KPIs for trend calculation
+                if report_date_str:
+                    prev_kpis = await self.get_previous_analysis_kpis(customer_name, system_id, report_date_str)
+                    if prev_kpis:
+                        previous_kpis = json.dumps(prev_kpis, indent=2)
+                        print(f"Found previous KPIs for trend calculation with {len(prev_kpis)} KPIs")
+            
+            # Create enhanced prompt with variable substitution
+            enhanced_prompt = SUMMARY_PROMPT
+            if canonical_kpis or previous_kpis:
+                enhanced_prompt += "\n\n## KPI Management Variables\n\n"
+                if canonical_kpis:
+                    enhanced_prompt += f"### Canonical KPIs\n{canonical_kpis}\n\n"
+                if previous_kpis:
+                    enhanced_prompt += f"### Previous KPIs for Trend Calculation\n{previous_kpis}\n\n"
+            
+            # Run analysis with enhanced context
+            agent = EWAAgent(client=self.client, model=AZURE_OPENAI_SUMMARY_MODEL, summary_prompt=enhanced_prompt)
+            
+            # Run standard analysis
+            final_json = await agent.run(state.markdown_content)
+            
+            # Handle canonical KPI list management
+            if customer_name and system_id and final_json and 'KPIs' in final_json:
+                current_kpis = final_json['KPIs']
+                
+                # If no canonical list exists, create one from first analysis
+                if not canonical_data:
+                    print(f"Creating canonical KPI list for {customer_name}/{system_id}")
+                    await self.save_canonical_kpi_list(customer_name, system_id, current_kpis)
+                else:
+                    # TODO: Implement logic for updating canonical KPI list with new KPIs
+                    # This could be done with explicit approval or automatic addition based on rules
+                    print(f"Canonical KPI list already exists for {customer_name}/{system_id}")
             
             state.summary_json = final_json
             state.summary_result = json_to_markdown(final_json)
             return state
         except Exception as e:
             state.error = str(e)
-            return state
-    
-    async def kpi_quality_control_step(self, state: WorkflowState) -> WorkflowState:
-        """Step 3: Quality control for KPIs - enforce consistency and handle additional KPIs"""
-        try:
-            print(f"[STEP 3] Running KPI quality control for {state.blob_name}")
-            
-            if state.summary_json is None:
-                return state
-            
-            # Extract customer and system information
-            from utils.kpi_utils import extract_customer_system_from_blob_name, get_previous_kpi_data
-            customer, system = extract_customer_system_from_blob_name(state.blob_name)
-            
-            # Get canonical KPI names
-            _, canonical_kpi_names = get_previous_kpi_data(customer, system, state.blob_name)
-            
-            # Get KPIs from the analysis
-            kpis = state.summary_json.get('kpis', [])
-            
-            # Check for any additional KPIs
-            additional_kpis = state.summary_json.get('additional_kpis', [])
-            
-            # Enforce KPI name consistency
-            if canonical_kpi_names:
-                # Check if all KPIs use canonical names
-                non_canonical_kpis = [kpi for kpi in kpis if kpi['name'] not in canonical_kpi_names]
-                
-                if non_canonical_kpis:
-                    print(f"Warning: Found {len(non_canonical_kpis)} non-canonical KPIs")
-                    # For now, we'll just log them - in a production system, you might want to handle this differently
-                    
-                # Add any additional KPIs to the main KPI list
-                if additional_kpis:
-                    print(f"Found {len(additional_kpis)} additional KPIs")
-                    kpis.extend(additional_kpis)
-                    # Remove additional_kpis from the JSON
-                    state.summary_json.pop('additional_kpis', None)
-                    
-                # Update the KPIs in the JSON
-                state.summary_json['kpis'] = kpis
-            
-            state.summary_result = json_to_markdown(state.summary_json)
-            return state
-        except Exception as e:
-            state.error = str(e)
+            print(f"Error in run_analysis_step: {str(e)}")
+            traceback.print_exc()
             return state
 
     
     async def save_results_step(self, state: WorkflowState) -> WorkflowState:
-        """Step 5: Save all results to blob storage"""
+        """Step 5: Save all results to blob storage with metadata propagation"""
         try:
             print(f"[STEP 5] Saving results for {state.blob_name}")
             base_name = os.path.splitext(state.blob_name)[0]
             
-            # Save summary markdown
-            summary_blob_name = f"{base_name}_AI.md"
-            await self.upload_to_blob(summary_blob_name, state.summary_result, "text/markdown")
+            # Retrieve metadata from original blob
+            original_metadata = await self.get_blob_metadata(state.blob_name)
+            print(f"Retrieved original metadata: {original_metadata}")
             
-            # Save structured JSON as well
+            # Save summary markdown with metadata
+            summary_blob_name = f"{base_name}_AI.md"
+            await self.upload_to_blob(summary_blob_name, state.summary_result, "text/markdown", original_metadata)
+            
+            # Save structured JSON as well with metadata
             summary_json_blob_name = f"{base_name}_AI.json"
             if state.summary_json is not None:
-                await self.upload_to_blob(summary_json_blob_name, json.dumps(state.summary_json, indent=2), "application/json")
+                await self.upload_to_blob(summary_json_blob_name, json.dumps(state.summary_json, indent=2), "application/json", original_metadata)
 
-                # Handle canonical KPI list updates
-                from utils.kpi_utils import extract_customer_system_from_blob_name, save_canonical_kpis, get_canonical_kpi_blob_name
-                customer, system = extract_customer_system_from_blob_name(state.blob_name)
-                
-                # Check if canonical KPI list already exists
-                canonical_kpi_names = []
-                try:
-                    canonical_blob_name = get_canonical_kpi_blob_name(customer, system)
-                    canonical_blob_client = self.blob_service_client.get_blob_client(
-                        container=AZURE_STORAGE_CONTAINER_NAME, 
-                        blob=canonical_blob_name
-                    )
-                    # Try to download - if this fails, it means it doesn't exist
-                    canonical_data = canonical_blob_client.download_blob().readall().decode('utf-8')
-                    canonical_kpis = json.loads(canonical_data)
-                    canonical_kpi_names = [kpi['name'] for kpi in canonical_kpis]
-                    print(f"Canonical KPI list already exists for {customer}_{system}")
-                except Exception:
-                    # Canonical KPI list doesn't exist, save it
-                    kpis = state.summary_json.get('kpis', [])
-                    if kpis:
-                        # Extract just the KPI names and basic info for canonical list
-                        canonical_kpis = [{'name': kpi['name'], 'current_value': kpi['current_value']} for kpi in kpis]
-                        save_canonical_kpis(customer, system, canonical_kpis)
-                        canonical_kpi_names = [kpi['name'] for kpi in canonical_kpis]
-                        print(f"Saved canonical KPI list for {customer}_{system}")
-                    else:
-                        print(f"No KPIs found in analysis for {customer}_{system}")
-                
-                # Check for additional KPIs that should be added to canonical list
-                additional_kpis = state.summary_json.get('additional_kpis', [])
-                if additional_kpis:
-                    print(f"Found {len(additional_kpis)} additional KPIs")
-                    
-                    # Rule-based approval: Add all additional KPIs to canonical list
-                    # In a production system, you might want more sophisticated approval logic
-                    if canonical_kpi_names:
-                        # Load existing canonical KPIs
-                        try:
-                            canonical_blob_name = get_canonical_kpi_blob_name(customer, system)
-                            canonical_blob_client = self.blob_service_client.get_blob_client(
-                                container=AZURE_STORAGE_CONTAINER_NAME, 
-                                blob=canonical_blob_name
-                            )
-                            canonical_data = canonical_blob_client.download_blob().readall().decode('utf-8')
-                            existing_canonical_kpis = json.loads(canonical_data)
-                        except Exception as e:
-                            print(f"Error loading existing canonical KPIs: {e}")
-                            existing_canonical_kpis = []
-                        
-                        # Add new KPIs to canonical list
-                        for additional_kpi in additional_kpis:
-                            if additional_kpi['name'] not in canonical_kpi_names:
-                                existing_canonical_kpis.append({
-                                    'name': additional_kpi['name'],
-                                    'current_value': additional_kpi['current_value']
-                                })
-                        
-                        # Save updated canonical KPI list
-                        save_canonical_kpis(customer, system, existing_canonical_kpis)
-                        print(f"Updated canonical KPI list for {customer}_{system} with {len(additional_kpis)} new KPIs")
-
-                # Persist system metadata so that future analyses can use it for KPI tracking
-                system_metadata = state.summary_json.get("system_metadata", {})
+                # Persist report_date as blob metadata so that list_files can group by week/month
                 report_date = state.summary_json.get("report_date")
                 if report_date is None:
-                    report_date = system_metadata.get("report_date")
-                system_id = system_metadata.get("System ID")
-                
-                if report_date or system_id:
+                    report_date = state.summary_json.get("system_metadata", {}).get("report_date")
+                if report_date:
                     try:
                         orig_blob_client = self.blob_service_client.get_blob_client(
                             container=AZURE_STORAGE_CONTAINER_NAME,
@@ -379,15 +438,12 @@ class EWAWorkflowOrchestrator:
                         )
                         existing_metadata = orig_blob_client.get_blob_properties().metadata or {}
                         # Azure metadata keys must be lowercase
-                        if report_date:
-                            existing_metadata["report_date"] = report_date
-                        if system_id:
-                            existing_metadata["system_id"] = system_id
+                        existing_metadata["report_date"] = report_date
                         orig_blob_client.set_blob_metadata(existing_metadata)
-                        print(f"Set system metadata (report_date: {report_date}, system_id: {system_id}) on {state.blob_name}")
+                        print(f"Set report_date metadata ({report_date}) on {state.blob_name}")
                     except Exception as meta_e:
                         # Non-fatal; continue even if metadata update fails
-                        print(f"Warning: could not set system metadata for {state.blob_name}: {meta_e}")
+                        print(f"Warning: could not set report_date metadata for {state.blob_name}: {meta_e}")
             
             return state
         except Exception as e:
@@ -499,18 +555,6 @@ class EWAWorkflowOrchestrator:
             # Store the summary results
             state.summary_result = summary_state.summary_result
             state.summary_json = summary_state.summary_json
-            
-            # Run KPI quality control
-            kpi_state = await self.kpi_quality_control_step(state)
-            
-            # Check for errors
-            if kpi_state.error:
-                errors = [f"KPI quality control failed: {kpi_state.error}"]
-                raise Exception(f"Workflow step failed: {'; '.join(errors)}")
-            
-            # Store the updated results
-            state.summary_result = kpi_state.summary_result
-            state.summary_json = kpi_state.summary_json
             
             # Save all results
             state = await self.save_results_step(state)
