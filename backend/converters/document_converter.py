@@ -17,8 +17,8 @@ making it easy to check the progress of any document conversion process.
 
 import os
 from datetime import datetime
-from converters import pdf_markdown_converter
-from converters import docx_markdown_converter
+from converters.pdf_markdown_converter import convert_pdf_to_markdown
+from converters.docx_markdown_converter import convert_docx_to_markdown
 
 # Dictionary to track the status of document conversion jobs across all file types
 # This is a global tracker for the unified converter
@@ -47,14 +47,14 @@ def convert_document_to_markdown(blob_name: str) -> dict:
     # Determine file type and use appropriate converter
     if blob_name.lower().endswith('.pdf'):
         # Use PDF converter
-        result = pdf_markdown_converter.convert_pdf_to_markdown(blob_name)
+        result = convert_pdf_to_markdown(blob_name)
     elif blob_name.lower().endswith('.docx'):
         # Use DOCX converter
-        result = docx_markdown_converter.convert_docx_to_markdown(blob_name)
+        result = convert_docx_to_markdown(blob_name)
     elif blob_name.lower().endswith('.doc'):
         # Use DOC converter (Pandoc-based)
-        from converters import doc_markdown_converter
-        result = doc_markdown_converter.convert_doc_to_markdown(blob_name)
+        from converters.doc_markdown_converter import convert_doc_to_markdown
+        result = convert_doc_to_markdown(blob_name)
     else:
         # Unsupported file type
         result = {

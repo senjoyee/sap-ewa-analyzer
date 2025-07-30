@@ -42,7 +42,7 @@ def convert_doc_to_markdown(blob_name: str) -> dict:
     Returns:
         A dictionary with status and output file info.
     """
-    from converters import docx_markdown_converter
+    from converters.docx_markdown_converter import convert_docx_to_markdown
     start_time = datetime.now()
     conversion_status_tracker[blob_name] = {
         "status": "processing",
@@ -83,7 +83,7 @@ def convert_doc_to_markdown(blob_name: str) -> dict:
                 content_settings=ContentSettings(content_type="application/vnd.openxmlformats-officedocument.wordprocessingml.document")
             )
         # Now call the docx converter
-        md_result = docx_markdown_converter.convert_docx_to_markdown(temp_docx_blob_name)
+        md_result = convert_docx_to_markdown(temp_docx_blob_name)
         # Clean up temp files and temp .docx blob
         os.remove(temp_doc_path)
         if os.path.exists(temp_docx_path):

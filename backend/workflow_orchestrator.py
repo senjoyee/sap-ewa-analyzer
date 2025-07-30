@@ -28,7 +28,7 @@ from openai import AzureOpenAI
 from dotenv import load_dotenv
 from agent.ewa_agent import EWAAgent
 from utils.markdown_utils import json_to_markdown
-from converters import document_converter # Added for combined workflow
+from converters.document_converter import convert_document_to_markdown, get_conversion_status # Added for combined workflow
 
 # Load environment variables
 load_dotenv()
@@ -459,7 +459,7 @@ class EWAWorkflowOrchestrator:
             print(f"Starting combined processing and analysis for: {original_blob_name}")
 
             # Step 1: Initiate document to markdown conversion
-            init_conversion_result = document_converter.convert_document_to_markdown(original_blob_name)
+            init_conversion_result = convert_document_to_markdown(original_blob_name)
 
             if init_conversion_result.get("error") or init_conversion_result.get("status") == "failed":
                 error_msg = f"Initial call to convert_document_to_markdown failed for {original_blob_name}: {init_conversion_result.get('message')}"
@@ -477,7 +477,7 @@ class EWAWorkflowOrchestrator:
 
             while retries < max_retries:
                 await asyncio.sleep(poll_interval_seconds)
-                status_result = document_converter.get_conversion_status(original_blob_name)
+                status_result = get_conversion_status(original_blob_name)
                 final_conversion_status_result = status_result # Store last status
                 current_status = status_result.get("status")
                 
