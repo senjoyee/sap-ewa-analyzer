@@ -23,8 +23,8 @@ import re
 from azure.core.exceptions import ResourceNotFoundError
 from datetime import datetime
 
-from ..document_converter import convert_document_to_markdown, get_conversion_status
-from ..workflow_orchestrator import EWAWorkflowOrchestrator
+from document_converter import convert_document_to_markdown, get_conversion_status
+from workflow_orchestrator import EWAWorkflowOrchestrator
 
 # ---------------------------------------------------------------------------
 # Filename validation and metadata extraction
