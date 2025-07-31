@@ -135,6 +135,9 @@ def json_to_markdown(data: Dict[str, Any]) -> str:
     md.extend(_array_to_markdown_table(data.get("Recommendations", []), "Recommendations"))
 
 
+    # ── Quick Wins ────────────────────────────────────────────────────────────
+    md.extend(_array_to_markdown_table(data.get("Quick Wins", data.get("quick_wins", [])), "Quick Wins"))
+    md.append("These are recommendations with low analysis and implementation effort that can be implemented quickly for immediate benefits.")
 
 
     # ── Key Performance Indicators ────────────────────────────────────────────

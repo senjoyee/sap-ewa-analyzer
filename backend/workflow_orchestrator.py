@@ -477,6 +477,21 @@ class EWAWorkflowOrchestrator:
                     else:
                         print(f"All KPIs match canonical list for {customer_name}/{system_id}")
             
+            # Add Quick Wins section: filter recommendations with both analysis and implementation effort = 'low'
+            if 'recommendations' in final_json:
+                quick_wins = []
+                for rec in final_json['recommendations']:
+                    # Check if Estimated Effort exists and both analysis and implementation are 'low'
+                    if ('Estimated Effort' in rec and 
+                        isinstance(rec['Estimated Effort'], dict) and
+                        rec['Estimated Effort'].get('analysis', '').lower() == 'low' and
+                        rec['Estimated Effort'].get('implementation', '').lower() == 'low'):
+                        quick_wins.append(rec)
+                
+                # Add Quick Wins section to final JSON
+                final_json['quick_wins'] = quick_wins
+                print(f"[QUICK WINS] Extracted {len(quick_wins)} quick wins from {len(final_json['recommendations'])} recommendations")
+            
             state.summary_json = final_json
             state.summary_result = json_to_markdown(final_json)
             return state
