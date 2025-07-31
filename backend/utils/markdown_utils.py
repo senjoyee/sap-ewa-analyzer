@@ -180,7 +180,8 @@ def json_to_markdown(data: Dict[str, Any]) -> str:
 
     # ── Capacity Outlook ──────────────────────────────────────────────────────
     md.append("## Capacity Outlook")
-    capacity = data.get("Capacity Outlook", {})
+    # Handle both key formats: "Capacity Outlook" and "capacity_outlook"
+    capacity = data.get("Capacity Outlook", data.get("capacity_outlook", {}))
     if capacity:
         md.append(f"- **Database Growth:** {capacity.get('Database Growth', 'N/A')}")
         md.append(f"- **CPU Utilization:** {capacity.get('CPU Utilization', 'N/A')}")

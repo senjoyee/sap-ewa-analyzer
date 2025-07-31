@@ -240,6 +240,7 @@ class KPIExtractor:
             formatted_kpi = {
                 'name': kpi['name'],
                 'current_value': kpi['current_value'],
+                'area': kpi.get('area', 'System Performance'),  # Default area if missing
                 'trend': kpi.get('trend', {
                     'direction': 'none',
                     'description': 'No trend data available'
