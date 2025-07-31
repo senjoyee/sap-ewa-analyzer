@@ -156,28 +156,26 @@ def json_to_markdown(data: Dict[str, Any]) -> str:
         # Check if KPIs have structured format with trend information
         if isinstance(kpis[0], dict):
             # Render structured KPIs with trends in table format
-            headers = ["KPI", "Current Value", "Trend", "Description"]
+            headers = ["Area", "KPI", "Current Value", "Trend"]
             rows = []
             for kpi in kpis:
+                area = kpi.get('area', 'N/A')
                 name = kpi.get('name', 'N/A')
                 current_value = kpi.get('current_value', 'N/A')
                 trend_info = kpi.get('trend', {})
                 trend_direction = trend_info.get('direction', 'N/A')
-                trend_description = trend_info.get('description', 'N/A')
                 
                 # Format trend direction with emoji
                 if trend_direction == 'none':
                     trend_display = 'No trend information available'
-                    trend_desc = 'No trend information available'
                 else:
                     trend_display = {
                         'up': '↗️ Up',
                         'down': '↘️ Down', 
                         'flat': '➡️ Flat'
                     }.get(trend_direction, trend_direction)
-                    trend_desc = trend_description
                 
-                rows.append([name, current_value, trend_display, trend_desc])
+                rows.append([area, name, current_value, trend_display])
             
             md.extend(_format_table(headers, rows))
         else:
