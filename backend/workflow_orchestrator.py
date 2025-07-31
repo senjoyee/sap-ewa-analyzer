@@ -249,7 +249,8 @@ class EWAWorkflowOrchestrator:
             container_client = self.blob_service_client.get_container_client(AZURE_STORAGE_CONTAINER_NAME)
             matching_analyses = []
             
-            async for blob in container_client.list_blobs(include=['metadata']):
+            # Use regular for loop since list_blobs() returns ItemPaged, not async iterable
+            for blob in container_client.list_blobs(include=['metadata']):
                 if blob.name.endswith('_AI.json') and blob.metadata:
                     blob_customer = blob.metadata.get('customer_name', '')
                     blob_system = blob.metadata.get('system_id', '')
@@ -454,7 +455,19 @@ class EWAWorkflowOrchestrator:
                     await self.save_canonical_kpi_list(customer_name, system_id, kpi_names)
                 else:
                     # Validate that current KPIs match canonical list
-                    canonical_names = set(canonical_data.get('kpi_list', []))
+                    # Handle case where canonical list contains dicts instead of strings
+                    canonical_kpi_list = canonical_data.get('kpi_list', [])
+                    canonical_names = set()
+                    
+                    for item in canonical_kpi_list:
+                        if isinstance(item, str):
+                            canonical_names.add(item)
+                        elif isinstance(item, dict) and 'name' in item:
+                            canonical_names.add(item['name'])
+                        elif isinstance(item, dict):
+                            # Skip malformed entries
+                            print(f"Warning: Skipping malformed canonical KPI entry: {item}")
+                    
                     current_names = set(kpi.get('name', '') for kpi in extracted_kpis if kpi.get('name'))
                     
                     new_kpis = current_names - canonical_names
