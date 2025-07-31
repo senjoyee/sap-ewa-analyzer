@@ -166,14 +166,18 @@ def json_to_markdown(data: Dict[str, Any]) -> str:
                 trend_description = trend_info.get('description', 'N/A')
                 
                 # Format trend direction with emoji
-                trend_display = {
-                    'up': '↗️ Up',
-                    'down': '↘️ Down', 
-                    'flat': '➡️ Flat',
-                    'none': '➖ None'
-                }.get(trend_direction, trend_direction)
+                if trend_direction == 'none':
+                    trend_display = 'No trend information available'
+                    trend_desc = 'No trend information available'
+                else:
+                    trend_display = {
+                        'up': '↗️ Up',
+                        'down': '↘️ Down', 
+                        'flat': '➡️ Flat'
+                    }.get(trend_direction, trend_direction)
+                    trend_desc = trend_description
                 
-                rows.append([name, current_value, trend_display, trend_description])
+                rows.append([name, current_value, trend_display, trend_desc])
             
             md.extend(_format_table(headers, rows))
         else:
