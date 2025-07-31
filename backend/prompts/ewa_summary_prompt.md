@@ -160,12 +160,15 @@ For each action, provide (retain any numeric thresholds, dates, or figures exact
 ### KPIs
 - Create a list of key performance indicator objects with structured format.
 - Each KPI object must include: `name`, `current_value`, and `trend` information.
-- **Canonical KPI Enforcement**: If `{{canonical_kpis}}` is provided, you MUST reuse exactly the KPI names from that list. Do not create new KPI names. For any KPI in the canonical list, include it in your output even if you need to estimate values.
-- **Trend Calculation**: If `{{previous_kpis}}` is provided, compare current values with previous values for trend analysis:
-  - `direction`: "up" if increased, "down" if decreased, "flat" if similar (±5%)
-  - `percent_change`: calculate percentage change from previous value (optional but recommended)
-  - `description`: brief explanation of the trend (optional)
-- **New KPIs**: If you identify important KPIs not in the canonical list, add them with trend direction "flat" and note in description "New KPI - no previous data"
+- **Canonical KPI Enforcement**: If canonical KPIs are provided below, you MUST reuse exactly those KPI names. Do not create new KPI names.
+- **Trend Calculation Rules**:
+  - **FIRST ANALYSIS**: If no previous KPI data is provided below, set ALL trend directions to "none" with description "First analysis - no previous data for comparison"
+  - **SUBSEQUENT ANALYSIS**: If previous KPI data is provided below, compare current values with previous values:
+    - Extract numeric values from both current and previous (ignore units like ms, %, GB)
+    - `direction`: "up" if current > previous (+5% threshold), "down" if current < previous (-5% threshold), "flat" if within ±5%
+    - `percent_change`: calculate exact percentage change: ((current - previous) / previous) × 100
+    - `description`: brief explanation with actual values (e.g., "Increased from 528ms to 629ms (+19%)")
+  - **New KPIs**: For KPIs not found in previous data, use trend direction "none" and note "New KPI - no previous data"
 - **Structure**: Each KPI object format:
   ```json
   {

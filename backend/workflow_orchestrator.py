@@ -28,6 +28,7 @@ from openai import AzureOpenAI
 from dotenv import load_dotenv
 from agent.ewa_agent import EWAAgent
 from utils.markdown_utils import json_to_markdown
+from utils.kpi_extractor import KPIExtractor
 from converters.document_converter import convert_document_to_markdown, get_conversion_status # Added for combined workflow
 
 # Load environment variables
@@ -284,6 +285,52 @@ class EWAWorkflowOrchestrator:
             print(f"Error retrieving previous analysis KPIs for {customer_name}/{system_id}: {str(e)}")
             return []
     
+    async def extract_kpis_deterministically(self, markdown_content: str, system_id: str, 
+                                           customer_name: str, report_date_str: str) -> List[Dict[str, Any]]:
+        """Extract KPIs using deterministic Python logic instead of AI"""
+        try:
+            print(f"[DETERMINISTIC KPI] Starting KPI extraction for {customer_name}/{system_id}")
+            
+            # Initialize KPI extractor
+            kpi_extractor = KPIExtractor()
+            
+            # Extract current KPIs from markdown
+            current_kpis = kpi_extractor.extract_kpis_from_markdown(markdown_content, system_id)
+            
+            if not current_kpis:
+                print(f"[DETERMINISTIC KPI] No KPIs found in Performance Indicators table")
+                return []
+            
+            print(f"[DETERMINISTIC KPI] Extracted {len(current_kpis)} KPIs from table")
+            
+            # Get previous KPIs for trend calculation
+            previous_kpis = []
+            if report_date_str:
+                prev_analysis_kpis = await self.get_previous_analysis_kpis(customer_name, system_id, report_date_str)
+                if prev_analysis_kpis:
+                    # Convert previous AI-generated KPIs to simple format for comparison
+                    previous_kpis = []
+                    for prev_kpi in prev_analysis_kpis:
+                        if isinstance(prev_kpi, dict):
+                            previous_kpis.append({
+                                'name': prev_kpi.get('name', ''),
+                                'current_value': prev_kpi.get('current_value', '')
+                            })
+                    print(f"[DETERMINISTIC KPI] Found {len(previous_kpis)} previous KPIs for trend comparison")
+            
+            # Calculate trends
+            kpis_with_trends = kpi_extractor.calculate_trend(current_kpis, previous_kpis)
+            
+            # Format for output
+            formatted_kpis = kpi_extractor.format_kpis_for_output(kpis_with_trends)
+            
+            print(f"[DETERMINISTIC KPI] Successfully processed {len(formatted_kpis)} KPIs with trends")
+            return formatted_kpis
+            
+        except Exception as e:
+            print(f"[DETERMINISTIC KPI] Error in deterministic KPI extraction: {str(e)}")
+            return []
+    
     async def call_openai(self, prompt: str, content: str, model: str, max_tokens: int = 8000) -> str:
         """Make a call to Azure OpenAI with specified model"""
         try:
@@ -349,53 +396,73 @@ class EWAWorkflowOrchestrator:
             system_id = original_metadata.get('system_id', '')
             report_date_str = original_metadata.get('report_date_str', '')
             
-            print(f"KPI Management - Customer: {customer_name}, System: {system_id}, Report Date: {report_date_str}")
+            print(f"Analysis - Customer: {customer_name}, System: {system_id}, Report Date: {report_date_str}")
             
-            # Prepare additional prompt variables for KPI management
-            canonical_kpis = ""
-            previous_kpis = ""
-            
+            # Step 1: Extract KPIs using deterministic Python logic
+            extracted_kpis = []
             if customer_name and system_id:
-                # Try to get canonical KPI list
+                extracted_kpis = await self.extract_kpis_deterministically(
+                    state.markdown_content, system_id, customer_name, report_date_str
+                )
+            
+            # Step 2: Run AI analysis for all other sections (excluding KPIs)
+            # Update prompt to exclude KPI extraction since we handle it separately
+            ai_prompt = SUMMARY_PROMPT.replace(
+                "### KPIs\n- Create a list of key performance indicator objects with structured format.\n- Each KPI object must include: `name`, `current_value`, and `trend` information.\n- **Canonical KPI Enforcement**: If canonical KPIs are provided below, you MUST reuse exactly those KPI names. Do not create new KPI names.\n- **Trend Calculation Rules**:\n  - **FIRST ANALYSIS**: If no previous KPI data is provided below, set ALL trend directions to \"none\" with description \"First analysis - no previous data for comparison\"\n  - **SUBSEQUENT ANALYSIS**: If previous KPI data is provided below, compare current values with previous values:\n    - Extract numeric values from both current and previous (ignore units like ms, %, GB)\n    - `direction`: \"up\" if current > previous (+5% threshold), \"down\" if current < previous (-5% threshold), \"flat\" if within ±5%\n    - `percent_change`: calculate exact percentage change: ((current - previous) / previous) × 100\n    - `description`: brief explanation with actual values (e.g., \"Increased from 528ms to 629ms (+19%)\")\n  - **New KPIs**: For KPIs not found in previous data, use trend direction \"none\" and note \"New KPI - no previous data\"",
+                "### KPIs\n- KPIs will be provided separately using deterministic extraction from Performance Indicators table. Do NOT include KPIs in your analysis output."
+            )
+            
+            # Run AI analysis for all sections except KPIs
+            agent = EWAAgent(client=self.client, model=AZURE_OPENAI_SUMMARY_MODEL, summary_prompt=ai_prompt)
+            
+            # Run AI analysis for non-KPI sections
+            ai_result = await agent.run(state.markdown_content)
+            
+            # Step 3: Combine AI results with deterministic KPIs
+            if ai_result and extracted_kpis:
+                # Replace AI-generated KPIs with deterministic ones
+                final_json = ai_result.copy()
+                final_json['key_performance_indicators'] = extracted_kpis
+                
+                print(f"[HYBRID ANALYSIS] Combined AI analysis with {len(extracted_kpis)} deterministic KPIs")
+            elif ai_result:
+                # No KPIs extracted, use AI result as-is
+                final_json = ai_result
+                print(f"[HYBRID ANALYSIS] Using AI analysis without KPI section")
+            else:
+                # Fallback - create minimal structure with KPIs only
+                final_json = {
+                    'key_performance_indicators': extracted_kpis,
+                    'executive_summary': 'Analysis completed with KPI extraction only',
+                    'system_metadata': {
+                        'system_id': system_id,
+                        'customer_name': customer_name,
+                        'report_date': report_date_str
+                    }
+                }
+                print(f"[HYBRID ANALYSIS] Created minimal analysis with {len(extracted_kpis)} KPIs")
+            
+            # Handle canonical KPI list management using deterministic KPIs
+            if customer_name and system_id and extracted_kpis:
+                # Check if canonical list exists
                 canonical_data = await self.get_canonical_kpi_list(customer_name, system_id)
-                if canonical_data:
-                    canonical_kpis = json.dumps(canonical_data.get('kpi_list', []), indent=2)
-                    print(f"Found canonical KPI list with {len(canonical_data.get('kpi_list', []))} KPIs")
                 
-                # Try to get previous KPIs for trend calculation
-                if report_date_str:
-                    prev_kpis = await self.get_previous_analysis_kpis(customer_name, system_id, report_date_str)
-                    if prev_kpis:
-                        previous_kpis = json.dumps(prev_kpis, indent=2)
-                        print(f"Found previous KPIs for trend calculation with {len(prev_kpis)} KPIs")
-            
-            # Create enhanced prompt with variable substitution
-            enhanced_prompt = SUMMARY_PROMPT
-            if canonical_kpis or previous_kpis:
-                enhanced_prompt += "\n\n## KPI Management Variables\n\n"
-                if canonical_kpis:
-                    enhanced_prompt += f"### Canonical KPIs\n{canonical_kpis}\n\n"
-                if previous_kpis:
-                    enhanced_prompt += f"### Previous KPIs for Trend Calculation\n{previous_kpis}\n\n"
-            
-            # Run analysis with enhanced context
-            agent = EWAAgent(client=self.client, model=AZURE_OPENAI_SUMMARY_MODEL, summary_prompt=enhanced_prompt)
-            
-            # Run standard analysis
-            final_json = await agent.run(state.markdown_content)
-            
-            # Handle canonical KPI list management
-            if customer_name and system_id and final_json and 'KPIs' in final_json:
-                current_kpis = final_json['KPIs']
-                
-                # If no canonical list exists, create one from first analysis
                 if not canonical_data:
-                    print(f"Creating canonical KPI list for {customer_name}/{system_id}")
-                    await self.save_canonical_kpi_list(customer_name, system_id, current_kpis)
+                    # Extract KPI names for canonical list
+                    kpi_names = [kpi.get('name', '') for kpi in extracted_kpis if kpi.get('name')]
+                    print(f"Creating canonical KPI list for {customer_name}/{system_id} with {len(kpi_names)} KPIs")
+                    await self.save_canonical_kpi_list(customer_name, system_id, kpi_names)
                 else:
-                    # TODO: Implement logic for updating canonical KPI list with new KPIs
-                    # This could be done with explicit approval or automatic addition based on rules
-                    print(f"Canonical KPI list already exists for {customer_name}/{system_id}")
+                    # Validate that current KPIs match canonical list
+                    canonical_names = set(canonical_data.get('kpi_list', []))
+                    current_names = set(kpi.get('name', '') for kpi in extracted_kpis if kpi.get('name'))
+                    
+                    new_kpis = current_names - canonical_names
+                    if new_kpis:
+                        print(f"Detected {len(new_kpis)} new KPIs not in canonical list: {list(new_kpis)}")
+                        print(f"TODO: Implement approval workflow for new KPIs")
+                    else:
+                        print(f"All KPIs match canonical list for {customer_name}/{system_id}")
             
             state.summary_json = final_json
             state.summary_result = json_to_markdown(final_json)
