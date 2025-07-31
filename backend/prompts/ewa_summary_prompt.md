@@ -184,26 +184,20 @@ For each action, provide (retain any numeric thresholds, dates, or figures exact
   ```
 
 ### Capacity Outlook
-- `Database Growth`: summary of database growth trends.
-- `CPU Utilization`: current and projected CPU usage.
-- `Memory Utilization`: current and projected memory usage.
-- `Summary`: narrative of future capacity needs.
+**Required Fields** (extract from capacity planning, database growth, resource utilization sections):
+- `Database Growth`: Extract database size trends with specific numbers (e.g., "Current: 3076.19 GB, Last Month Growth: 14.83 GB, Monthly Growth Rate: 0.48%")
+- `CPU Utilization`: Extract current and peak CPU usage with projections (e.g., "Current Peak: 34%, Average: 18%, Trend: Stable")
+- `Memory Utilization`: Extract memory consumption trends and projections (e.g., "HANA Memory: 2449 GB used, Growth Rate: 2.1% monthly")
+- `Summary`: Provide a technical summary of capacity risks and timeline for capacity expansion needs
 
-### Parameters
-For each configuration parameter mentioned in the document:
+**Extraction Rules:**
+- **ALWAYS provide this section** - extract from Performance Indicators, database sections, or system statistics
+- Include **specific numeric values** with units (GB, %, MB/month, etc.)
+- Focus on **growth trends** and **capacity planning** information
+- If specific capacity data is not available, analyze Performance Indicators table for resource utilization metrics
+- Provide **timeline estimates** for when capacity limits might be reached
 
-- `Name`: exact parameter name as it appears (e.g., `rdisp/max_wprun_time`, `ztta/max_memreq_MB`)
-- `Area`: technical component category in uppercase (e.g,`SAP ABAP`, `SAP JAVA`, `HANA DB`, `ORACLE DB`, `MSSQL DB`, `DB2 DB`, `SAP ASE DB`, `SUSE LINUX OS`, `WINDOWS OS`)
-- `Current Value`: exact existing setting as reported
-- `Recommended Value`: SAP standard or optimal value as specified in documentation
-- `Description`: technical impact explanation including specific system behavior changes
 
-**Technical Parameter Extraction Rules:**
-- Extract **all** profile parameters from configuration, security, performance, and database sections
-- Include **exact parameter values** with units (seconds, MB, GB, etc.)
-- Reference **specific SAP notes** or documentation when parameter recommendations are provided
-- **Skip** HANA parameters under "SAP HANA PARAMETERS DEVIATING FROM DEFAULT" section as instructed
-- **Include technical context**: which system component this parameter affects and why the change is needed
 
 ### Overall Risk
 - Single value: `low`, `medium`, `high`, or `critical` (use lowercase).
@@ -223,7 +217,7 @@ Before final output, verify:
 - [ ] Technical thresholds validated against SAP standard documentation
 - [ ] Recommendations include specific technical actions
 - [ ] JSON structure validates against schema version 1.1
-- [ ] All profile parameter recommendations are captured
+
 
 ## Output
 

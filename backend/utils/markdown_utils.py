@@ -134,18 +134,7 @@ def json_to_markdown(data: Dict[str, Any]) -> str:
     # ── Recommendations ───────────────────────────────────────────────────────
     md.extend(_array_to_markdown_table(data.get("Recommendations", []), "Recommendations"))
 
-    # ── Parameters ────────────────────────────────────────────────────────────
-    md.append("## Parameters")
-    parameters = data.get("Parameters", [])
-    if parameters:
-        headers = ["Name", "Area", "Current Value", "Recommended Value", "Description"]
-        rows = [[p.get(h, "N/A") for h in headers] for p in parameters]
-        md.extend(_format_table(headers, rows))
-        md.append("")
-    else:
-        md.append("No parameters provided.")
-        md.append("")
-    md.append("\n---\n")
+
 
 
     # ── Key Performance Indicators ────────────────────────────────────────────
