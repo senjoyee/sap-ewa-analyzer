@@ -150,10 +150,36 @@ def json_to_markdown(data: Dict[str, Any]) -> str:
 
     # ── Key Performance Indicators ────────────────────────────────────────────
     md.append("## Key Performance Indicators")
-    kpis = data.get("KPIs", [])
-    if kpis:
-        for kpi in kpis:
-            md.append(f"- {kpi}")
+    # Look for KPIs under correct key from deterministic extraction
+    kpis = data.get("key_performance_indicators", data.get("KPIs", []))
+    if kpis and isinstance(kpis, list) and len(kpis) > 0:
+        # Check if KPIs have structured format with trend information
+        if isinstance(kpis[0], dict):
+            # Render structured KPIs with trends in table format
+            headers = ["KPI", "Current Value", "Trend", "Description"]
+            rows = []
+            for kpi in kpis:
+                name = kpi.get('name', 'N/A')
+                current_value = kpi.get('current_value', 'N/A')
+                trend_info = kpi.get('trend', {})
+                trend_direction = trend_info.get('direction', 'N/A')
+                trend_description = trend_info.get('description', 'N/A')
+                
+                # Format trend direction with emoji
+                trend_display = {
+                    'up': '↗️ Up',
+                    'down': '↘️ Down', 
+                    'flat': '➡️ Flat',
+                    'none': '➖ None'
+                }.get(trend_direction, trend_direction)
+                
+                rows.append([name, current_value, trend_display, trend_description])
+            
+            md.extend(_format_table(headers, rows))
+        else:
+            # Fallback for simple string KPIs
+            for kpi in kpis:
+                md.append(f"- {kpi}")
     else:
         md.append("No KPIs provided.")
     md.append("\n---\n")
