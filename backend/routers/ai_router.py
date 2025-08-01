@@ -39,6 +39,39 @@ router = APIRouter(prefix="/api", tags=["ai-workflow"])
 
 
 # ---------------------------------------------------------------------------
+# Sequential processing for same customer/SID
+# ---------------------------------------------------------------------------
+
+class SequentialProcessRequest(BaseModel):
+    customer_name: str
+    system_id: str
+
+@router.post("/process-sequential")
+async def process_files_sequentially_endpoint(request: SequentialProcessRequest):
+    """Process multiple files with the same customer and SID in chronological order."""
+    if not blob_service_client:
+        raise HTTPException(status_code=500, detail="Azure Blob Service client not initialized.")
+    try:
+        results = await ewa_orchestrator.process_files_sequentially(request.customer_name, request.system_id)
+        
+        # Count successful and failed processing
+        successful = sum(1 for r in results if r.get('result', {}).get('success', False))
+        failed = len(results) - successful
+        
+        return {
+            "success": True,
+            "message": f"Sequential processing completed. {successful} files processed successfully, {failed} failed.",
+            "customer_name": request.customer_name,
+            "system_id": request.system_id,
+            "total_files": len(results),
+            "successful_files": successful,
+            "failed_files": failed,
+            "results": results
+        }
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Sequential processing failed: {str(e)}")
+
+# ---------------------------------------------------------------------------
 # Combined process + analyze
 # ---------------------------------------------------------------------------
 

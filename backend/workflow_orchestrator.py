@@ -545,6 +545,101 @@ class EWAWorkflowOrchestrator:
             state.error = str(e)
             return state
     
+    async def process_files_sequentially(self, customer_name: str, system_id: str) -> List[Dict[str, Any]]:
+        """
+        Find and process multiple files with the same customer and SID in chronological order.
+        This ensures proper trend analysis by processing files from oldest to newest.
+        
+        Args:
+            customer_name: Customer name to match
+            system_id: System ID to match
+            
+        Returns:
+            List of processing results for each file
+        """
+        try:
+            print(f"[SEQUENTIAL PROCESSING] Finding files for customer '{customer_name}' and SID '{system_id}'")
+            
+            if not self.blob_service_client:
+                raise Exception("Blob service client not initialized")
+            
+            container_client = self.blob_service_client.get_container_client(AZURE_STORAGE_CONTAINER_NAME)
+            blob_list = list(container_client.list_blobs())
+            
+            # Find matching files
+            matching_files = []
+            for blob in blob_list:
+                # Skip processed files (.md, .json)
+                if blob.name.lower().endswith(('.md', '.json')):
+                    continue
+                
+                try:
+                    blob_client = container_client.get_blob_client(blob.name)
+                    properties = blob_client.get_blob_properties()
+                    metadata = properties.metadata or {}
+                    
+                    # Check if this file matches our criteria
+                    if (metadata.get('customer_name') == customer_name and 
+                        metadata.get('system_id') == system_id):
+                        
+                        matching_files.append({
+                            'blob_name': blob.name,
+                            'report_date': metadata.get('report_date'),
+                            'report_date_str': metadata.get('report_date_str'),
+                            'last_modified': blob.last_modified
+                        })
+                        
+                except Exception as e:
+                    print(f"[SEQUENTIAL PROCESSING] Error reading metadata for {blob.name}: {e}")
+                    continue
+            
+            if not matching_files:
+                print(f"[SEQUENTIAL PROCESSING] No files found for customer '{customer_name}' and SID '{system_id}'")
+                return []
+            
+            # Sort by report date (chronological order: oldest first)
+            matching_files.sort(key=lambda f: f['report_date'] if f['report_date'] else f['last_modified'])
+            
+            print(f"[SEQUENTIAL PROCESSING] Found {len(matching_files)} files to process in order:")
+            for i, file_info in enumerate(matching_files):
+                print(f"  {i+1}. {file_info['blob_name']} (Date: {file_info['report_date_str']})")
+            
+            # Process files sequentially
+            results = []
+            for i, file_info in enumerate(matching_files):
+                blob_name = file_info['blob_name']
+                print(f"[SEQUENTIAL PROCESSING] Processing file {i+1}/{len(matching_files)}: {blob_name}")
+                
+                try:
+                    result = await self.process_and_analyze_ewa(blob_name)
+                    results.append({
+                        'blob_name': blob_name,
+                        'result': result,
+                        'order': i + 1
+                    })
+                    
+                    if result.get('success'):
+                        print(f"[SEQUENTIAL PROCESSING] Successfully processed {blob_name}")
+                    else:
+                        print(f"[SEQUENTIAL PROCESSING] Failed to process {blob_name}: {result.get('message')}")
+                        
+                except Exception as e:
+                    error_msg = f"Error processing {blob_name}: {str(e)}"
+                    print(f"[SEQUENTIAL PROCESSING] {error_msg}")
+                    results.append({
+                        'blob_name': blob_name,
+                        'result': {'success': False, 'message': error_msg},
+                        'order': i + 1
+                    })
+            
+            print(f"[SEQUENTIAL PROCESSING] Completed processing {len(results)} files")
+            return results
+            
+        except Exception as e:
+            error_msg = f"Error in sequential processing: {str(e)}"
+            print(f"[SEQUENTIAL PROCESSING] {error_msg}")
+            return [{'error': error_msg}]
+    
     async def process_and_analyze_ewa(self, original_blob_name: str) -> dict:
         """
         Orchestrates the combined workflow of converting a document to markdown and then performing AI analysis.
