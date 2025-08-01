@@ -173,7 +173,7 @@ async def upload_file(file: UploadFile = File(...), customer_name: str = Form(..
 
 @router.get("/files")
 async def list_files():
-    """List all files stored in Azure Blob Storage with their processing status."""
+    """List all files stored in Azure Blob Storage with their processing status and sequential processing opportunities."""
 
     if not blob_service_client:
         raise HTTPException(status_code=500, detail="Azure Blob Service client not initialized.")
@@ -202,6 +202,8 @@ async def list_files():
                     ai_analyzed_files[base_name[:-3]] = True
 
         files: list[dict[str, Any]] = []
+        file_groups: dict[str, list[dict[str, Any]]] = {}  # Group by customer+SID
+        
         for blob in blob_list:
             name_low = blob.name.lower()
             if name_low.endswith((".json", ".md")):
@@ -212,20 +214,67 @@ async def list_files():
             metadata = properties.metadata or {}
 
             base_name, _ = os.path.splitext(blob.name)
-            files.append(
-                {
-                    "name": blob.name,
-                    "last_modified": blob.last_modified,
-                    "size": blob.size,
-                    "report_date": metadata.get("report_date"),
-                    "customer_name": metadata.get("customer_name", "Unknown"),
-                    "processed": base_name in json_files or base_name in md_files,
-                    "ai_analyzed": base_name in ai_analyzed_files,
-                }
-            )
+            customer_name = metadata.get("customer_name", "Unknown")
+            system_id = metadata.get("system_id", "Unknown")
+            processed = base_name in json_files or base_name in md_files
+            ai_analyzed = base_name in ai_analyzed_files
+            
+            file_info = {
+                "name": blob.name,
+                "last_modified": blob.last_modified,
+                "size": blob.size,
+                "report_date": metadata.get("report_date"),
+                "report_date_str": metadata.get("report_date_str"),
+                "customer_name": customer_name,
+                "system_id": system_id,
+                "processed": processed,
+                "ai_analyzed": ai_analyzed,
+            }
+            
+            files.append(file_info)
+            
+            # Group files by customer+SID for sequential processing detection
+            group_key = f"{customer_name}|{system_id}"
+            if group_key not in file_groups:
+                file_groups[group_key] = []
+            file_groups[group_key].append(file_info)
+        
+        # Detect sequential processing opportunities
+        sequential_groups = []
+        for group_key, group_files in file_groups.items():
+            if len(group_files) > 1:
+                customer_name, system_id = group_key.split('|')
+                unprocessed_files = [f for f in group_files if not f['processed']]
+                
+                if len(unprocessed_files) > 1:
+                    # Sort by report date for proper ordering display
+                    unprocessed_files.sort(key=lambda f: f['report_date'] if f['report_date'] else f['last_modified'])
+                    
+                    sequential_groups.append({
+                        "customer_name": customer_name,
+                        "system_id": system_id,
+                        "total_files": len(group_files),
+                        "unprocessed_files": len(unprocessed_files),
+                        "files": unprocessed_files,
+                        "earliest_date": unprocessed_files[0]['report_date_str'],
+                        "latest_date": unprocessed_files[-1]['report_date_str']
+                    })
+        
+        # Add sequential processing metadata to individual files
+        for file_info in files:
+            group_key = f"{file_info['customer_name']}|{file_info['system_id']}"
+            group_files = file_groups.get(group_key, [])
+            unprocessed_in_group = [f for f in group_files if not f['processed']]
+            
+            file_info['sequential_processing_available'] = len(unprocessed_in_group) > 1
+            file_info['files_in_group'] = len(group_files)
+            file_info['unprocessed_in_group'] = len(unprocessed_in_group)
 
-        print(f"Returning {len(files)} files in the list")
-        return files
+        print(f"Returning {len(files)} files with {len(sequential_groups)} sequential processing opportunities")
+        return {
+            "files": files,
+            "sequential_groups": sequential_groups
+        }
     except Exception as e:
         print(f"Error listing files: {e}")
         raise HTTPException(status_code=500, detail=f"Could not list files: {str(e)}")

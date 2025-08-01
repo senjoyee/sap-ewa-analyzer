@@ -210,40 +210,115 @@ const FileList = ({ onFileSelect, refreshTrigger, selectedFile }) => {
     alert(`Operation completed: ${successCount} analyses deleted, ${errorCount} errors encountered.`);
   };
   
-  // Handle batch reprocess of selected files
-  const handleBatchReprocess = async () => {
-    const filesToReprocess = selectedFiles.filter(file => file.ai_analyzed);
-    
-    if (filesToReprocess.length === 0) {
-      alert('No analyzed files selected for reprocessing.');
+  // Handle batch process of selected files (both new and already processed)
+  const handleBatchProcess = async () => {
+    if (selectedFiles.length === 0) {
+      alert('No files selected for processing.');
       return;
     }
     
-    const confirmReprocess = window.confirm(
-      `Are you sure you want to reprocess ${filesToReprocess.length} file(s)?`
-    );
+    const newFiles = selectedFiles.filter(file => !file.ai_analyzed);
+    const processedFiles = selectedFiles.filter(file => file.ai_analyzed);
     
-    if (!confirmReprocess) {
+    let confirmMessage = '';
+    if (newFiles.length > 0 && processedFiles.length > 0) {
+      confirmMessage = `Process ${newFiles.length} new file(s) and reprocess ${processedFiles.length} already-processed file(s)?`;
+    } else if (newFiles.length > 0) {
+      confirmMessage = `Process ${newFiles.length} new file(s)?`;
+    } else {
+      confirmMessage = `Reprocess ${processedFiles.length} already-processed file(s)?`;
+    }
+    
+    const confirmProcess = window.confirm(confirmMessage);
+    
+    if (!confirmProcess) {
       return;
     }
     
-    // Update UI to show reprocessing state
-    const newReprocessingState = {};
-    filesToReprocess.forEach(file => {
-      newReprocessingState[file.id || file.name] = true;
+    // Update UI to show processing state
+    const newProcessingState = {};
+    selectedFiles.forEach(file => {
+      newProcessingState[file.id || file.name] = true;
     });
     
-    setReprocessingFiles(prev => ({
-      ...prev,
-      ...newReprocessingState
-    }));
+    if (processedFiles.length > 0) {
+      setReprocessingFiles(prev => ({
+        ...prev,
+        ...newProcessingState
+      }));
+    }
     
-    // Process each file sequentially
-    for (const file of filesToReprocess) {
-      try {
-        await handleReprocessAI(file, false); // Pass false to prevent alerts for each file
-      } catch (error) {
-        console.error(`Error reprocessing file ${file.name}:`, error);
+    if (newFiles.length > 0) {
+      setCombinedProcessingStatus(prev => {
+        const updated = { ...prev };
+        newFiles.forEach(file => {
+          updated[file.id || file.name] = 'processing';
+        });
+        return updated;
+      });
+    }
+    
+    // Process files sequentially (check if sequential processing is beneficial)
+    const groupedFiles = {};
+    selectedFiles.forEach(file => {
+      const key = `${file.customer_name}|${file.system_id}`;
+      if (!groupedFiles[key]) {
+        groupedFiles[key] = [];
+      }
+      groupedFiles[key].push(file);
+    });
+    
+    // Check if we have groups that would benefit from sequential processing
+    let useSequentialProcessing = false;
+    for (const [key, files] of Object.entries(groupedFiles)) {
+      if (files.length > 1) {
+        const [customer_name, system_id] = key.split('|');
+        // Use sequential processing for groups with multiple files
+        useSequentialProcessing = true;
+        try {
+          const response = await fetch(`${API_BASE}/api/process-sequential`, {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({
+              customer_name: customer_name,
+              system_id: system_id
+            })
+          });
+          
+          if (!response.ok) {
+            throw new Error(`Sequential processing failed: ${response.status}`);
+          }
+          
+          console.log(`Sequential processing initiated for ${files.length} files of ${customer_name}/${system_id}`);
+        } catch (error) {
+          console.error(`Error in sequential processing for ${customer_name}/${system_id}:`, error);
+          // Fall back to individual processing
+          for (const file of files) {
+            try {
+              if (file.ai_analyzed) {
+                await handleReprocessAI(file, false);
+              } else {
+                await handleProcessAndAnalyze(file, false);
+              }
+            } catch (fileError) {
+              console.error(`Error processing ${file.name}:`, fileError);
+            }
+          }
+        }
+      } else {
+        // Single file, process individually
+        const file = files[0];
+        try {
+          if (file.ai_analyzed) {
+            await handleReprocessAI(file, false);
+          } else {
+            await handleProcessAndAnalyze(file, false);
+          }
+        } catch (error) {
+          console.error(`Error processing ${file.name}:`, error);
+        }
       }
     }
     
@@ -251,7 +326,8 @@ const FileList = ({ onFileSelect, refreshTrigger, selectedFile }) => {
     setSelectedFiles([]);
     
     // Show completion message
-    alert(`Reprocessing initiated for ${filesToReprocess.length} file(s).`);
+    const totalFiles = selectedFiles.length;
+    alert(`Processing initiated for ${totalFiles} file(s).${useSequentialProcessing ? ' Sequential processing used where beneficial.' : ''}`);
   };
   
   // Group files by customer
@@ -994,26 +1070,22 @@ const FileList = ({ onFileSelect, refreshTrigger, selectedFile }) => {
                             backgroundColor: '#10b981',
                             flexShrink: 0
                           }} />
+                        ) : combinedProcessingStatus[file.id || file.name] === 'error' ? (
+                          <Box sx={{ 
+                            width: 8, 
+                            height: 8, 
+                            borderRadius: '50%', 
+                            backgroundColor: '#ef4444',
+                            flexShrink: 0
+                          }} />
                         ) : (
-                          <Tooltip title={combinedProcessingStatus[file.id || file.name] === 'error' ? "Retry Processing" : "Process Document"}>
-                            <IconButton
-                              size="small"
-                              onClick={(e) => {
-                                e.stopPropagation();
-                                handleProcessAndAnalyze(file);
-                              }}
-                              sx={{ 
-                                width: 24, 
-                                height: 24,
-                                color: combinedProcessingStatus[file.id || file.name] === 'error' ? '#ef4444' : '#60a5fa',
-                                '&:hover': {
-                                  backgroundColor: 'rgba(96, 165, 250, 0.1)'
-                                }
-                              }}
-                            >
-                              <PlayArrowIcon sx={{ fontSize: 16 }} />
-                            </IconButton>
-                          </Tooltip>
+                          <Box sx={{ 
+                            width: 8, 
+                            height: 8, 
+                            borderRadius: '50%', 
+                            backgroundColor: '#d1d5db',
+                            flexShrink: 0
+                          }} />
                         )}
                       </ListItemSecondaryAction>
                     </ListItem>
@@ -1186,8 +1258,8 @@ const FileList = ({ onFileSelect, refreshTrigger, selectedFile }) => {
             <Button
               variant="outlined"
               size="small"
-              startIcon={<RefreshIcon sx={{ fontSize: 14 }} />}
-              onClick={handleBatchReprocess}
+              startIcon={<PlayArrowIcon sx={{ fontSize: 14 }} />}
+              onClick={handleBatchProcess}
               sx={{ 
                 textTransform: 'none',
                 fontSize: '0.75rem',
@@ -1205,7 +1277,7 @@ const FileList = ({ onFileSelect, refreshTrigger, selectedFile }) => {
                 minWidth: 'auto'
               }}
             >
-              Reprocess ({selectedCount})
+              Process ({selectedCount})
             </Button>
           </Box>
         )}
