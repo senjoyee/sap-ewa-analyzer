@@ -778,8 +778,17 @@ const FileList = ({ onFileSelect, refreshTrigger, selectedFile }) => {
       // Log the raw data to check what the backend is sending
       console.log('Raw data from backend:', data);
       
+      // Handle new API response format: {files: [...], sequential_groups: [...]}
+      const filesList = Array.isArray(data) ? data : data.files || [];
+      const sequentialGroups = data.sequential_groups || [];
+      
+      // Log sequential processing opportunities
+      if (sequentialGroups.length > 0) {
+        console.log('Sequential processing opportunities:', sequentialGroups);
+      }
+      
       // Files should already be filtered by the backend
-      const filesWithIds = data.map(file => ({
+      const filesWithIds = filesList.map(file => ({
         ...file,
         id: file.name
       }));
