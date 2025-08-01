@@ -598,7 +598,19 @@ class EWAWorkflowOrchestrator:
                 return []
             
             # Sort by report date (chronological order: oldest first)
-            matching_files.sort(key=lambda f: f['report_date'] if f['report_date'] else f['last_modified'])
+            def get_sort_key(file_info):
+                try:
+                    if file_info.get('report_date'):
+                        # Parse ISO string back to datetime for proper comparison
+                        return datetime.fromisoformat(file_info['report_date'])
+                    else:
+                        # Fall back to last_modified if no report_date
+                        return file_info['last_modified']
+                except (ValueError, TypeError) as e:
+                    print(f"[SEQUENTIAL PROCESSING] Warning: Error parsing date for {file_info['blob_name']}: {e}")
+                    return file_info['last_modified']
+            
+            matching_files.sort(key=get_sort_key)
             
             print(f"[SEQUENTIAL PROCESSING] Found {len(matching_files)} files to process in order:")
             for i, file_info in enumerate(matching_files):
