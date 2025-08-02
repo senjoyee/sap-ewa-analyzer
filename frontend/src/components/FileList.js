@@ -451,7 +451,7 @@ const FileList = ({ onFileSelect, refreshTrigger, selectedFile }) => {
         ...prev,
         [file.id || file.name]: 'error'
       }));
-      alert(`Error analyzing file: ${error.message}`);
+      showSnackbar(`Error analyzing file: ${error.message}`, 'error');
     }
   };
 
@@ -490,7 +490,7 @@ const FileList = ({ onFileSelect, refreshTrigger, selectedFile }) => {
       }));
       
       // Show success message
-      alert(`AI Analysis completed successfully! Analysis saved as: ${result.analysis_file}`);
+      showSnackbar(`AI Analysis completed successfully! Analysis saved as: ${result.analysis_file}`, 'success');
       
     } catch (error) {
       console.error(`Error in AI analysis for file ${file.name}:`, error);
@@ -499,7 +499,7 @@ const FileList = ({ onFileSelect, refreshTrigger, selectedFile }) => {
         ...prev,
         [file.id || file.name]: 'error'
       }));
-      alert(`Error in AI analysis: ${error.message}`);
+      showSnackbar(`Error in AI analysis: ${error.message}`, 'error');
     }
   };
 
@@ -586,7 +586,7 @@ const FileList = ({ onFileSelect, refreshTrigger, selectedFile }) => {
       
       // Show success message (if not in batch mode)
       if (showAlert) {
-        alert(`Reprocessing of ${file.name} started successfully.`);
+        showSnackbar(`Reprocessing of ${file.name} started successfully.`, 'info');
       }
       
     } catch (error) {
@@ -599,7 +599,7 @@ const FileList = ({ onFileSelect, refreshTrigger, selectedFile }) => {
       
       // Show error message if not in batch mode
       if (showAlert) {
-        alert(`Error in AI reprocessing: ${error.message}`);
+        showSnackbar(`Error in AI reprocessing: ${error.message}`, 'error');
       }
     }
   };
@@ -650,13 +650,13 @@ const FileList = ({ onFileSelect, refreshTrigger, selectedFile }) => {
       
       // Show success message (if not in batch mode)
       if (showAlerts) {
-        alert(`Successfully deleted analysis for ${file.name}`);
+        showSnackbar(`Successfully deleted analysis for ${file.name}`, 'success');
       }
       
     } catch (error) {
       console.error(`Error deleting analysis for ${file.name}:`, error);
       if (showAlerts) {
-        alert(`Failed to delete analysis: ${error.message}`);
+        showSnackbar(`Failed to delete analysis: ${error.message}`, 'error');
       }
     }
   };
@@ -706,7 +706,7 @@ const FileList = ({ onFileSelect, refreshTrigger, selectedFile }) => {
       setAnalyzingFiles(prev => ({ ...prev, [file.id || file.name]: 'analyzed' }));
       setAiAnalyzing(prev => ({ ...prev, [file.id || file.name]: 'completed' }));
 
-      alert(`Processing and AI Analysis for ${file.name} completed successfully! Analysis saved as: ${result.summary_file}`);
+      showSnackbar(`Processing and AI Analysis for ${file.name} completed successfully! Analysis saved as: ${result.summary_file}`, 'success');
 
     } catch (error) {
       console.error(`Error in combined processing and AI analysis for file ${file.name}:`, error);
@@ -714,7 +714,7 @@ const FileList = ({ onFileSelect, refreshTrigger, selectedFile }) => {
         ...prev,
         [file.id || file.name]: 'error'
       }));
-      alert(`Error in combined processing and AI analysis for ${file.name}: ${error.message}`);
+      showSnackbar(`Error in combined processing and AI analysis for ${file.name}: ${error.message}`, 'error');
     }
   };
 
@@ -784,7 +784,7 @@ const FileList = ({ onFileSelect, refreshTrigger, selectedFile }) => {
           delete pollingIntervalsRef.current[fileName];
           
           console.error(`Analysis failed for ${fileName}:`, statusData.message);
-          alert(`Analysis failed: ${statusData.message}`);
+          showSnackbar(`Analysis failed: ${statusData.message}`, 'error');
         }
         // If status is 'pending' or 'processing', we continue polling
         
