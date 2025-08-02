@@ -113,7 +113,7 @@ router = APIRouter(prefix="/api", tags=["storage"])
 
 @router.post("/upload")
 async def upload_file(file: UploadFile = File(...), customer_name: str = Form(...)):
-    """Upload a document file to Azure Blob Storage with filename validation and metadata extraction."""
+    """Upload a document file to Azure Blob Storage with AI-based metadata extraction."""
 
     if not blob_service_client:
         raise HTTPException(status_code=500, detail="Azure Blob Service client not initialized. Check server logs and .env configuration.")
@@ -123,11 +123,21 @@ async def upload_file(file: UploadFile = File(...), customer_name: str = Form(..
         raise HTTPException(status_code=400, detail="Filename is required.")
 
     try:
-        # Validate filename format and extract metadata
+        contents = await file.read()
+        
+        # Try AI-based metadata extraction first
         try:
-            file_metadata = validate_filename_and_extract_metadata(file.filename)
-        except ValueError as e:
-            raise HTTPException(status_code=400, detail=str(e))
+            from utils.pdf_metadata_extractor import extract_metadata_with_ai
+            file_metadata = await extract_metadata_with_ai(contents)
+            print(f"AI extraction successful - System ID: {file_metadata['system_id']}, Report Date: {file_metadata['report_date_str']}")
+        except Exception as ai_error:
+            # If AI extraction fails, fall back to filename validation
+            print(f"AI extraction failed, falling back to filename validation: {str(ai_error)}")
+            try:
+                file_metadata = validate_filename_and_extract_metadata(file.filename)
+                print(f"Filename validation successful - System ID: {file_metadata['system_id']}, Report Date: {file_metadata['report_date_str']}")
+            except ValueError as filename_error:
+                raise HTTPException(status_code=400, detail=f"{str(ai_error)} | {str(filename_error)}")
             
         blob_name = file.filename
         blob_client = blob_service_client.get_blob_client(
@@ -141,14 +151,27 @@ async def upload_file(file: UploadFile = File(...), customer_name: str = Form(..
             f"Extracted metadata - System ID: {file_metadata['system_id']}, Report Date: {file_metadata['report_date_str']}, Customer: {customer_name}"
         )
 
-        contents = await file.read()
-
         # Create comprehensive metadata
+        # Handle both AI extraction (datetime object) and filename validation (already parsed) results
+        if isinstance(file_metadata["report_date"], datetime):
+            report_date_iso = file_metadata["report_date"].isoformat()
+            report_date_str = file_metadata["report_date_str"]
+        else:
+            # AI extraction returns string dates
+            try:
+                dt = datetime.strptime(file_metadata["report_date"], "%d.%m.%Y")
+                report_date_iso = dt.isoformat()
+                report_date_str = file_metadata["report_date"]
+            except ValueError:
+                # Fallback
+                report_date_iso = datetime.now().isoformat()
+                report_date_str = file_metadata.get("report_date_str", "Unknown")
+
         metadata: Dict[str, Any] = {
             "customer_name": customer_name,
             "system_id": file_metadata["system_id"],
-            "report_date": file_metadata["report_date"].isoformat(),
-            "report_date_str": file_metadata["report_date_str"]
+            "report_date": report_date_iso,
+            "report_date_str": report_date_str
         }
 
         blob_client.upload_blob(contents, overwrite=True, metadata=metadata)
@@ -160,10 +183,13 @@ async def upload_file(file: UploadFile = File(...), customer_name: str = Form(..
             "filename": file.filename,
             "customer_name": customer_name,
             "system_id": file_metadata["system_id"],
-            "report_date": file_metadata["report_date_str"],
+            "report_date": report_date_str,
             "message": "File uploaded successfully to Azure Blob Storage with extracted metadata.",
         }
 
+    except HTTPException:
+        # Re-raise HTTP exceptions
+        raise
     except Exception as e:
         print(f"Error uploading file {file.filename}: {e}")
         raise HTTPException(status_code=500, detail=f"Could not upload file: {str(e)}")
