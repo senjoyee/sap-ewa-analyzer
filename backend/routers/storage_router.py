@@ -30,6 +30,61 @@ from workflow_orchestrator import EWAWorkflowOrchestrator
 # Filename validation and metadata extraction
 # ---------------------------------------------------------------------------
 
+def generate_standardized_filename(file_metadata: Dict[str, Any], original_filename: str) -> str:
+    """
+    Generate standardized filename in format: <SID>_<DD>_<MON>_<YEAR>.pdf
+    Example: ERP_07_Jun_25.pdf
+    
+    Args:
+        file_metadata: Dict containing 'system_id' and 'report_date' or 'report_date_str'
+        original_filename: Original filename to extract extension from
+        
+    Returns:
+        Standardized filename string
+    """
+    try:
+        system_id = file_metadata['system_id']
+        
+        # Handle different date formats from AI vs filename extraction
+        if isinstance(file_metadata.get("report_date"), datetime):
+            # AI extraction returns datetime object
+            report_date = file_metadata["report_date"]
+        else:
+            # Try to parse from report_date_str or report_date
+            date_str = file_metadata.get("report_date_str") or file_metadata.get("report_date")
+            if date_str:
+                # Try different date formats
+                for fmt in ["%d.%m.%Y", "%d/%m/%Y", "%Y-%m-%d"]:
+                    try:
+                        report_date = datetime.strptime(date_str, fmt)
+                        break
+                    except ValueError:
+                        continue
+                else:
+                    # If all parsing fails, use current date
+                    report_date = datetime.now()
+            else:
+                report_date = datetime.now()
+        
+        # Get file extension from original filename
+        _, ext = os.path.splitext(original_filename)
+        if not ext:
+            ext = '.pdf'  # Default to PDF
+            
+        # Format: <SID>_<DD>_<MON>_<YEAR>
+        day = report_date.strftime("%d")
+        month = report_date.strftime("%b")  # Short month name (Jan, Feb, etc.)
+        year = report_date.strftime("%y")   # 2-digit year
+        
+        new_filename = f"{system_id}_{day}_{month}_{year}{ext}"
+        
+        print(f"Generated standardized filename: {original_filename} -> {new_filename}")
+        return new_filename
+        
+    except Exception as e:
+        print(f"Error generating standardized filename: {e}. Using original filename.")
+        return original_filename
+
 def validate_filename_and_extract_metadata(filename: str) -> Dict[str, Any]:
     """
     Validate filename format and extract system ID and report date.
@@ -139,7 +194,9 @@ async def upload_file(file: UploadFile = File(...), customer_name: str = Form(..
             except ValueError as filename_error:
                 raise HTTPException(status_code=400, detail=f"{str(ai_error)} | {str(filename_error)}")
             
-        blob_name = file.filename
+        # Generate new filename based on extracted metadata
+        new_filename = generate_standardized_filename(file_metadata, file.filename)
+        blob_name = new_filename
         blob_client = blob_service_client.get_blob_client(
             container=AZURE_STORAGE_CONTAINER_NAME, blob=blob_name
         )
@@ -180,11 +237,12 @@ async def upload_file(file: UploadFile = File(...), customer_name: str = Form(..
             f"Successfully uploaded {file.filename} to {blob_name} with metadata: {metadata}"
         )
         return {
-            "filename": file.filename,
+            "filename": blob_name,  # Return the new standardized filename
+            "original_filename": file.filename,  # Include original for reference
             "customer_name": customer_name,
             "system_id": file_metadata["system_id"],
             "report_date": report_date_str,
-            "message": "File uploaded successfully to Azure Blob Storage with extracted metadata.",
+            "message": "File uploaded successfully to Azure Blob Storage with extracted metadata and standardized filename.",
         }
 
     except HTTPException:
