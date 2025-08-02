@@ -22,6 +22,8 @@ import AccordionDetails from '@mui/material/AccordionDetails';
 import ExpandMoreIcon from '@mui/icons-material/ExpandMore';
 import FolderIcon from '@mui/icons-material/Folder';
 import BusinessIcon from '@mui/icons-material/Business';
+import Snackbar from '@mui/material/Snackbar';
+import MuiAlert from '@mui/material/Alert';
 import { useTheme } from '../contexts/ThemeContext';
 import dayjs from 'dayjs';
 import weekOfYear from 'dayjs/plugin/weekOfYear';
@@ -93,6 +95,11 @@ const formatFileSize = (sizeInBytes) => {
 
 const API_BASE = 'https://sap-ewa-analyzer-backend.azurewebsites.net/';
 
+// Snackbar Alert helper component
+const SnackbarAlert = React.forwardRef(function SnackbarAlert(props, ref) {
+  return <MuiAlert elevation={6} ref={ref} variant="filled" {...props} />;
+});
+
 const FileList = ({ onFileSelect, refreshTrigger, selectedFile }) => {
   const [files, setFiles] = useState([]);
   const [isLoading, setIsLoading] = useState(true);
@@ -107,6 +114,25 @@ const FileList = ({ onFileSelect, refreshTrigger, selectedFile }) => {
   const pollingIntervalsRef = useRef({});
   const { theme } = useTheme();
   const isDark = theme === 'dark';
+  
+  // Snackbar state
+  const [snackbar, setSnackbar] = useState({
+    open: false,
+    message: '',
+    severity: 'info' // 'success', 'error', 'warning', 'info'
+  });
+  
+  // Snackbar helper functions
+  const showSnackbar = (message, severity = 'info') => {
+    setSnackbar({ open: true, message, severity });
+  };
+  
+  const handleSnackbarClose = (event, reason) => {
+    if (reason === 'clickaway') {
+      return;
+    }
+    setSnackbar(prev => ({ ...prev, open: false }));
+  };
   
   // Function to handle file selection with checkbox
   const handleFileSelection = (file, event) => {
@@ -152,7 +178,7 @@ const FileList = ({ onFileSelect, refreshTrigger, selectedFile }) => {
     const analyzedFiles = selectedFiles.filter(file => file.ai_analyzed);
     
     if (analyzedFiles.length === 0) {
-      alert('No analyzed files selected for deletion.');
+      showSnackbar('No analyzed files selected for deletion.', 'warning');
       return;
     }
     
@@ -207,16 +233,20 @@ const FileList = ({ onFileSelect, refreshTrigger, selectedFile }) => {
     setSelectedFiles([]);
     
     // Show summary of operation
-    alert(`Operation completed: ${successCount} analyses deleted, ${errorCount} errors encountered.`);
+    const severity = errorCount > 0 ? 'warning' : 'success';
+    showSnackbar(`Operation completed: ${successCount} analyses deleted, ${errorCount} errors encountered.`, severity);
   };
   
   // Handle batch process of selected files (both new and already processed)
   const handleBatchProcess = async () => {
     if (selectedFiles.length === 0) {
-      alert('No files selected for processing.');
+      showSnackbar('No files selected for processing.', 'warning');
       return;
     }
-    
+
+    // Show initiation message IMMEDIATELY
+    showSnackbar(`Processing initiated for ${selectedFiles.length} file(s).`, 'info');
+
     const newFiles = selectedFiles.filter(file => !file.ai_analyzed);
     const processedFiles = selectedFiles.filter(file => file.ai_analyzed);
     
@@ -325,9 +355,9 @@ const FileList = ({ onFileSelect, refreshTrigger, selectedFile }) => {
     // Clear selection after operation
     setSelectedFiles([]);
     
-    // Show completion message
-    const totalFiles = selectedFiles.length;
-    alert(`Processing initiated for ${totalFiles} file(s).${useSequentialProcessing ? ' Sequential processing used where beneficial.' : ''}`);
+    // Show completion message (optional, can be removed if not needed)
+    // const totalFiles = selectedFiles.length;
+    // alert(`Processing initiated for ${totalFiles} file(s).${useSequentialProcessing ? ' Sequential processing used where beneficial.' : ''}`);
   };
   
   // Group files by customer
@@ -1316,6 +1346,22 @@ const FileList = ({ onFileSelect, refreshTrigger, selectedFile }) => {
       >
         {content}
       </Paper>
+      
+      {/* Snackbar for notifications */}
+      <Snackbar
+        open={snackbar.open}
+        autoHideDuration={4000}
+        onClose={handleSnackbarClose}
+        anchorOrigin={{ vertical: 'bottom', horizontal: 'center' }}
+      >
+        <SnackbarAlert
+          onClose={handleSnackbarClose}
+          severity={snackbar.severity}
+          sx={{ width: '100%' }}
+        >
+          {snackbar.message}
+        </SnackbarAlert>
+      </Snackbar>
     </Box>
   );
 };
