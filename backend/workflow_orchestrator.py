@@ -265,11 +265,27 @@ class EWAWorkflowOrchestrator:
                 print(f"No previous analyses found for {customer_name}/{system_id}")
                 return []
             
-            # Sort by report_date (ISO format) and get the most recent
-            matching_analyses.sort(key=lambda x: x[2], reverse=True)
-            most_recent_blob = matching_analyses[0][0]
+            # Sort by report_date and find the most recent one BEFORE current date
+            current_date_iso = datetime.strptime(current_report_date, "%d.%m.%Y").isoformat()
             
-            print(f"Found previous analysis: {most_recent_blob}")
+            # Filter for analyses before current report date, then get most recent
+            previous_analyses = [
+                (blob_name, blob_date_str, report_date_iso) 
+                for blob_name, blob_date_str, report_date_iso in matching_analyses 
+                if report_date_iso < current_date_iso
+            ]
+            
+            if not previous_analyses:
+                print(f"No previous analyses found before {current_report_date} for {customer_name}/{system_id}")
+                return []
+            
+            # Sort by report_date (ISO format) and get the most recent before current
+            previous_analyses.sort(key=lambda x: x[2], reverse=True)
+            most_recent_blob = previous_analyses[0][0]
+            
+            print(f"Found chronologically previous analysis: {most_recent_blob} (before {current_report_date})")
+            
+
             
             # Download and extract KPIs
             blob_client = self.blob_service_client.get_blob_client(
