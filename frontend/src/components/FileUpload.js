@@ -396,15 +396,7 @@ const FileUpload = ({ onUploadSuccess }) => {
                 </Box>
                 
                 <FormControl fullWidth error={!!fileData.error} required>
-                  <InputLabel 
-                    id={`customer-select-label-${index}`} 
-                    error={!!fileData.error}
-                    sx={{ fontSize: '0.875rem', fontWeight: 500 }}
-                  >
-                    Select Customer
-                  </InputLabel>
                   <Select
-                    labelId={`customer-select-label-${index}`}
                     value={fileData.customerName}
                     onChange={(e) => handleCustomerNameChange(index, e.target.value)}
                     size="small"
