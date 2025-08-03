@@ -220,14 +220,8 @@ const FileList = ({ onFileSelect, refreshTrigger, selectedFile }) => {
       }
     }
     
-    // Update UI after all deletions are processed
-    setFiles(prevFiles => prevFiles.map(f => {
-      if (selectedFiles.some(selected => (selected.id || selected.name) === (f.id || f.name)) && f.ai_analyzed) {
-        // Reset the AI analysis flag for selected files
-        return { ...f, ai_analyzed: false };
-      }
-      return f;
-    }));
+    // Refresh the file list to show updated files after deletion
+    await fetchFiles();
     
     // Clear selection after operation
     setSelectedFiles([]);
@@ -639,14 +633,8 @@ const FileList = ({ onFileSelect, refreshTrigger, selectedFile }) => {
         throw new Error(`Server responded with ${response.status}: ${await response.text()}`);
       }
       
-      // Update the UI after successful deletion
-      setFiles(prevFiles => prevFiles.map(f => {
-        if (f.id === file.id || f.name === file.name) {
-          // Reset the AI analysis flag
-          return { ...f, ai_analyzed: false };
-        }
-        return f;
-      }));
+      // Refresh the file list to show updated files after deletion
+      await fetchFiles();
       
       // Show success message (if not in batch mode)
       if (showAlerts) {
