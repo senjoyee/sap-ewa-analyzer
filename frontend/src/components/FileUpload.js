@@ -395,13 +395,16 @@ const FileUpload = ({ onUploadSuccess }) => {
                   </Box>
                 </Box>
                 
-                <FormControl fullWidth error={!!fileData.error} required>
+                <Box>
                   <Select
+                    fullWidth
                     value={fileData.customerName}
                     onChange={(e) => handleCustomerNameChange(index, e.target.value)}
                     size="small"
                     error={!!fileData.error}
                     required
+                    label=""
+                    notched={false}
                     MenuProps={{
                       PaperProps: {
                         sx: {
@@ -484,7 +487,7 @@ const FileUpload = ({ onUploadSuccess }) => {
                       {fileData.error}
                     </FormHelperText>
                   )}
-                </FormControl>
+                </Box>
               </Paper>
             ))}
           </Box>
