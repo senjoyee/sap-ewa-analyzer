@@ -402,9 +402,6 @@ const FileUpload = ({ onUploadSuccess }) => {
                     onChange={(e) => handleCustomerNameChange(index, e.target.value)}
                     size="small"
                     error={!!fileData.error}
-                    required
-                    label=""
-                    notched={false}
                     MenuProps={{
                       PaperProps: {
                         sx: {
