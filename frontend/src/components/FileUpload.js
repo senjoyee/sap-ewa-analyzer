@@ -334,117 +334,168 @@ const FileUpload = ({ onUploadSuccess }) => {
       {/* Customer name input fields - shown only after file selection */}
       {showCustomerFields && filesWithCustomers.length > 0 && (
         <Paper 
-          elevation={0} 
+          elevation={1} 
           sx={{ 
             p: 3,
             mb: 3,
-            bgcolor: isDark ? 'rgba(255, 255, 255, 0.05)' : 'rgba(0, 0, 0, 0.02)', 
-            borderRadius: 2,
-            border: isDark ? '1px solid rgba(255, 255, 255, 0.05)' : '1px solid rgba(0, 0, 0, 0.05)',
+            bgcolor: '#ffffff',
+            borderRadius: 3,
+            border: '1px solid #e3f2fd',
+            boxShadow: '0 2px 8px rgba(0, 0, 0, 0.08)',
           }}
         >
-          <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 3 }}>
-            <Typography variant="subtitle2" sx={{ fontWeight: 500, fontSize: '1rem' }}>
-              Enter Customer Information
+          <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 2 }}>
+            <Typography variant="h6" sx={{ fontWeight: 600, fontSize: '1.1rem', color: '#1976d2' }}>
+              📋 Customer Assignment
             </Typography>
-            <Badge badgeContent={filesWithCustomers.length} color="primary" sx={{ mr: 1 }}>
-              <CloudUploadIcon color="action" fontSize="small" />
-            </Badge>
+            <Chip 
+              label={`${filesWithCustomers.length} file${filesWithCustomers.length > 1 ? 's' : ''}`} 
+              size="small" 
+              color="primary" 
+              variant="outlined"
+              sx={{ fontWeight: 500 }}
+            />
           </Box>
           
-          <Divider sx={{ mb: 3 }} />
+          <Typography variant="body2" sx={{ color: '#666', mb: 3 }}>
+            Please select the appropriate customer for each file to ensure proper processing.
+          </Typography>
           
-          {/* Individual file entries with customer name fields */}
-          {filesWithCustomers.map((fileData, index) => (
-            <Box key={index} sx={{ mb: index < filesWithCustomers.length - 1 ? 4 : 0, py: 1 }}>
-              <Box sx={{ display: 'flex', alignItems: 'center', mb: 2 }}>
-                {getFileIcon(fileData.file.name)}
-                <Typography variant="body2" sx={{ ml: 1.5, fontWeight: 500 }} noWrap>
-                  {fileData.file.name}
-                </Typography>
-                <Typography variant="caption" sx={{ ml: 1.5, color: 'text.secondary' }}>
-                  ({formatFileSize(fileData.file.size)})
-                </Typography>
-              </Box>
-              
-              <FormControl fullWidth error={!!fileData.error} sx={{ mb: 2, mt: 1 }} required>
-                <InputLabel id={`customer-select-label-${index}`} error={!!fileData.error}>
-                  Select Customer for {fileData.file.name.substring(0, 15)}...
-                </InputLabel>
-                <Select
-                  labelId={`customer-select-label-${index}`}
-                  value={fileData.customerName}
-                  onChange={(e) => handleCustomerNameChange(index, e.target.value)}
-                  size="small"
-                  error={!!fileData.error}
-                  required
-                  startAdornment={<BusinessIcon sx={{ mr: 1, color: 'text.secondary' }} />}
-                  MenuProps={{
-                    PaperProps: {
-                      sx: {
-                        bgcolor: '#ffffff',
-                        color: '#000000',
-                        borderRadius: 1,
-                        border: '1px solid #e0e0e0',
-                        boxShadow: '0 4px 8px rgba(0, 0, 0, 0.1)',
-                        '& .MuiMenuItem-root': {
-                          fontSize: '0.875rem',
-                          color: '#000000',
-                          '&:hover': {
-                            bgcolor: '#f5f5f5'
-                          },
-                          '&.Mui-selected': {
-                            bgcolor: '#e3f2fd',
-                            color: '#1976d2'
+          {/* Compact grid layout for multiple files */}
+          <Box sx={{ 
+            display: 'grid',
+            gap: 2.5,
+            gridTemplateColumns: filesWithCustomers.length > 2 ? 'repeat(auto-fit, minmax(320px, 1fr))' : '1fr'
+          }}>
+            {filesWithCustomers.map((fileData, index) => (
+              <Paper
+                key={index}
+                elevation={0}
+                sx={{
+                  p: 2.5,
+                  bgcolor: '#fafafa',
+                  borderRadius: 2,
+                  border: '1px solid #e0e0e0',
+                  transition: 'all 0.2s ease',
+                  '&:hover': {
+                    boxShadow: '0 2px 4px rgba(0, 0, 0, 0.1)',
+                    borderColor: '#60a5fa'
+                  }
+                }}
+              >
+                <Box sx={{ display: 'flex', alignItems: 'center', mb: 2 }}>
+                  {getFileIcon(fileData.file.name)}
+                  <Box sx={{ ml: 1.5, flex: 1, minWidth: 0 }}>
+                    <Typography variant="body2" sx={{ fontWeight: 600, color: '#333' }} noWrap>
+                      {fileData.file.name}
+                    </Typography>
+                    <Typography variant="caption" sx={{ color: '#666' }}>
+                      {formatFileSize(fileData.file.size)}
+                    </Typography>
+                  </Box>
+                </Box>
+                
+                <FormControl fullWidth error={!!fileData.error} required>
+                  <InputLabel 
+                    id={`customer-select-label-${index}`} 
+                    error={!!fileData.error}
+                    sx={{ fontSize: '0.875rem', fontWeight: 500 }}
+                  >
+                    Select Customer
+                  </InputLabel>
+                  <Select
+                    labelId={`customer-select-label-${index}`}
+                    value={fileData.customerName}
+                    onChange={(e) => handleCustomerNameChange(index, e.target.value)}
+                    size="small"
+                    error={!!fileData.error}
+                    required
+                    MenuProps={{
+                      PaperProps: {
+                        sx: {
+                          bgcolor: '#ffffff',
+                          borderRadius: 2,
+                          border: '1px solid #e0e0e0',
+                          boxShadow: '0 8px 24px rgba(0, 0, 0, 0.12)',
+                          mt: 1,
+                          '& .MuiMenuItem-root': {
+                            fontSize: '0.875rem',
+                            fontWeight: 500,
+                            color: '#333',
+                            py: 1.5,
+                            px: 2,
+                            margin: '2px 4px',
+                            borderRadius: 1,
+                            '&:hover': {
+                              bgcolor: '#f0f7ff',
+                              color: '#1976d2'
+                            },
+                            '&.Mui-selected': {
+                              bgcolor: '#e3f2fd',
+                              color: '#1976d2',
+                              fontWeight: 600,
+                              '&:hover': {
+                                bgcolor: '#e3f2fd'
+                              }
+                            }
                           }
                         }
                       }
-                    }
-                  }}
-                  sx={{
-                    borderRadius: 8,
-                    bgcolor: 'background.paper',
-                    fontFamily: "'Inter', 'Roboto', 'Arial', sans-serif",
-                    fontSize: '0.875rem',
-                    fontWeight: 400,
-                    minHeight: 40,
-                    '& .MuiSelect-select': {
+                    }}
+                    sx={{
+                      borderRadius: 2,
+                      bgcolor: '#ffffff',
                       fontFamily: "'Inter', 'Roboto', 'Arial', sans-serif",
                       fontSize: '0.875rem',
-                      fontWeight: 400,
-                      background: 'none',
-                    },
-                    '& .MuiOutlinedInput-notchedOutline': {
-                      borderColor: '#333',
-                    },
-                    '&:hover .MuiOutlinedInput-notchedOutline': {
-                      borderColor: '#60a5fa',
-                    },
-                    '&.Mui-focused .MuiOutlinedInput-notchedOutline': {
-                      borderColor: '#60a5fa',
-                    },
-                  }}
-                  displayEmpty
-                >
-                  <MenuItem value="" disabled>
-                    <em>Select a customer (required)</em>
-                  </MenuItem>
-                  {customers.map((customer) => (
-                    <MenuItem key={customer} value={customer}>
-                      {customer}
+                      fontWeight: 500,
+                      '& .MuiSelect-select': {
+                        fontFamily: "'Inter', 'Roboto', 'Arial', sans-serif",
+                        fontSize: '0.875rem',
+                        fontWeight: 500,
+                        py: 1.5,
+                        px: 2,
+                        display: 'flex',
+                        alignItems: 'center',
+                        gap: 1
+                      },
+                      '& .MuiOutlinedInput-notchedOutline': {
+                        borderColor: '#d0d0d0',
+                        borderWidth: '1.5px'
+                      },
+                      '&:hover .MuiOutlinedInput-notchedOutline': {
+                        borderColor: '#60a5fa',
+                        borderWidth: '2px'
+                      },
+                      '&.Mui-focused .MuiOutlinedInput-notchedOutline': {
+                        borderColor: '#1976d2',
+                        borderWidth: '2px'
+                      },
+                      '&.Mui-error .MuiOutlinedInput-notchedOutline': {
+                        borderColor: '#d32f2f'
+                      }
+                    }}
+                    displayEmpty
+                  >
+                    <MenuItem value="" disabled sx={{ fontStyle: 'italic', opacity: 0.7 }}>
+                      <BusinessIcon sx={{ mr: 1, fontSize: '1rem', color: '#999' }} />
+                      Choose a customer...
                     </MenuItem>
-                  ))}
-                </Select>
-                {fileData.error && (
-                  <FormHelperText error>{fileData.error}</FormHelperText>
-                )}
-              </FormControl>
-              
-              {index < filesWithCustomers.length - 1 && (
-                <Divider sx={{ my: 3 }} />
-              )}
-            </Box>
-          ))}
+                    {customers.map((customer) => (
+                      <MenuItem key={customer} value={customer}>
+                        <BusinessIcon sx={{ mr: 1, fontSize: '1rem', color: '#1976d2' }} />
+                        {customer}
+                      </MenuItem>
+                    ))}
+                  </Select>
+                  {fileData.error && (
+                    <FormHelperText error sx={{ mt: 1, fontWeight: 500 }}>
+                      {fileData.error}
+                    </FormHelperText>
+                  )}
+                </FormControl>
+              </Paper>
+            ))}
+          </Box>
           
           <Box sx={{ display: 'flex', justifyContent: 'space-between', mt: 4, pt: 1 }}>
             <Button
