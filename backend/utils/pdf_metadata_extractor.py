@@ -16,11 +16,11 @@ from fastapi import HTTPException
 
 # AI extraction prompt
 def _get_extraction_prompt() -> str:
-    return """You are an extraction bot. Extract the System ID and Report Date from the provided text.
+    return """You are an extraction bot. Extract the System ID and Report End Date from the provided text.
 
 Instructions:
 1. Find the System ID - it's typically labeled as "System ID" followed by a short alphanumeric code
-2. Find the Report Date - it's typically in format dd.mm.yyyy, dd/mm/yyyy, or dd-mm-yyyy
+2. Find the Report End Date - Look for phrases like "Reporting Period", "Analysis Period", or "Period" and extract the end date. If multiple dates are present, choose the later date which represents when the report coverage ends.
 3. Return ONLY valid JSON with these exact keys: system_id, report_date
 4. Format the report_date as dd.mm.yyyy regardless of input format
 5. If you cannot find either value, return that key with an empty string
