@@ -483,8 +483,9 @@ const FileList = ({ onFileSelect, refreshTrigger, selectedFile }) => {
         [file.id || file.name]: 'completed'
       }));
       
-      // Show success message
-      showSnackbar(`AI Analysis completed successfully! Analysis saved as: ${result.analysis_file}`, 'success');
+      // Show success message with fallback for undefined analysis_file
+      const analysisFileName = result.analysis_file || `${file.name.split('.').slice(0, -1).join('.')}_AI.md`;
+      showSnackbar(`AI Analysis completed successfully! Analysis saved as: ${analysisFileName}`, 'success');
       
     } catch (error) {
       console.error(`Error in AI analysis for file ${file.name}:`, error);
@@ -694,7 +695,9 @@ const FileList = ({ onFileSelect, refreshTrigger, selectedFile }) => {
       setAnalyzingFiles(prev => ({ ...prev, [file.id || file.name]: 'analyzed' }));
       setAiAnalyzing(prev => ({ ...prev, [file.id || file.name]: 'completed' }));
 
-      showSnackbar(`Processing and AI Analysis for ${file.name} completed successfully! Analysis saved as: ${result.summary_file}`, 'success');
+      // Show success message with fallback for undefined summary_file
+      const summaryFileName = result.summary_file || `${file.name.split('.').slice(0, -1).join('.')}_AI.md`;
+      showSnackbar(`Processing and AI Analysis for ${file.name} completed successfully! Analysis saved as: ${summaryFileName}`, 'success');
 
     } catch (error) {
       console.error(`Error in combined processing and AI analysis for file ${file.name}:`, error);
