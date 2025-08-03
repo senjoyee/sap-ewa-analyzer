@@ -221,7 +221,13 @@ const FileList = ({ onFileSelect, refreshTrigger, selectedFile }) => {
     }
     
     // Refresh the file list to show updated files after deletion
-    await fetchFiles();
+    console.log('DEBUG: About to call fetchFiles() after batch deletion');
+    try {
+      await fetchFiles();
+      console.log('DEBUG: fetchFiles() completed successfully after batch deletion');
+    } catch (error) {
+      console.error('DEBUG: Error in fetchFiles() after batch deletion:', error);
+    }
     
     // Clear selection after operation
     setSelectedFiles([]);
@@ -634,7 +640,13 @@ const FileList = ({ onFileSelect, refreshTrigger, selectedFile }) => {
       }
       
       // Refresh the file list to show updated files after deletion
-      await fetchFiles();
+      console.log(`DEBUG: About to call fetchFiles() after deleting ${file.name}`);
+      try {
+        await fetchFiles();
+        console.log(`DEBUG: fetchFiles() completed successfully after deleting ${file.name}`);
+      } catch (error) {
+        console.error(`DEBUG: Error in fetchFiles() after deleting ${file.name}:`, error);
+      }
       
       // Show success message (if not in batch mode)
       if (showAlerts) {
