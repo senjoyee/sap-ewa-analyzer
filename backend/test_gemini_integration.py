@@ -46,6 +46,20 @@ async def test_gemini_client():
         json_response = client.generate_json_content(json_prompt)
         print(f"✅ JSON generation successful: {json_response}")
         
+        # Test PDF support (if test PDF exists)
+        test_pdf_path = "test_document.pdf"
+        if os.path.exists(test_pdf_path):
+            with open(test_pdf_path, "rb") as f:
+                pdf_data = f.read()
+            
+            pdf_response = client.generate_content(
+                "Summarize this document in one sentence.",
+                pdf_data=pdf_data
+            )
+            print(f"✅ PDF analysis successful: {pdf_response[:100]}...")
+        else:
+            print("⚠️  No test PDF found, skipping PDF test")
+        
         return True
         
     except Exception as e:

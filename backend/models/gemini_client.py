@@ -4,7 +4,8 @@ Google Gemini client wrapper for EWA Analyzer
 
 import os
 import json
-from typing import Dict, Any, Optional
+import base64
+from typing import Dict, Any, Optional, Union
 from google import genai
 from google.genai import types
 
@@ -27,13 +28,14 @@ class GeminiClient:
         self.model = model
         self.client = genai.Client(api_key=self.api_key)
     
-    def generate_content(self, prompt: str, system_prompt: str = None) -> str:
+    def generate_content(self, prompt: str, system_prompt: str = None, pdf_data: bytes = None) -> str:
         """
-        Generate content using Gemini API
+        Generate content using Gemini API with optional PDF input
         
         Args:
             prompt: User prompt/input text
             system_prompt: System prompt (will be prepended to user prompt)
+            pdf_data: Optional PDF file as bytes for multimodal analysis
             
         Returns:
             Generated content as string
@@ -44,13 +46,24 @@ class GeminiClient:
             if system_prompt:
                 full_prompt = f"{system_prompt}\n\n{prompt}"
             
+            # Create content parts
+            parts = [types.Part.from_text(text=full_prompt)]
+            
+            # Add PDF if provided
+            if pdf_data:
+                # Encode PDF as base64
+                pdf_base64 = base64.b64encode(pdf_data).decode('utf-8')
+                parts.append(types.Part.from_bytes(
+                    data=pdf_data,
+                    mime_type="application/pdf"
+                ))
+                print(f"Added PDF content ({len(pdf_data)} bytes) to Gemini request")
+            
             # Create content structure
             contents = [
                 types.Content(
                     role="user",
-                    parts=[
-                        types.Part.from_text(text=full_prompt),
-                    ],
+                    parts=parts,
                 ),
             ]
             
@@ -77,13 +90,14 @@ class GeminiClient:
             print(f"Error generating content with Gemini: {str(e)}")
             raise
     
-    def generate_json_content(self, prompt: str, system_prompt: str = None) -> Dict[str, Any]:
+    def generate_json_content(self, prompt: str, system_prompt: str = None, pdf_data: bytes = None) -> Dict[str, Any]:
         """
-        Generate JSON content using Gemini API
+        Generate JSON content using Gemini API with optional PDF input
         
         Args:
             prompt: User prompt/input text
             system_prompt: System prompt (will be prepended to user prompt)
+            pdf_data: Optional PDF file as bytes for multimodal analysis
             
         Returns:
             Parsed JSON response as dictionary
@@ -96,7 +110,7 @@ class GeminiClient:
             if system_prompt:
                 full_prompt = f"{system_prompt}\n\n{full_prompt}"
             
-            response_text = self.generate_content(full_prompt)
+            response_text = self.generate_content(full_prompt, pdf_data=pdf_data)
             
             # Clean response and extract JSON
             response_text = response_text.strip()

@@ -54,14 +54,14 @@ class EWAAgent:
         }
 
     # ----------------------------- Public API ----------------------------- #
-    async def run(self, markdown: str) -> Dict[str, Any]:
+    async def run(self, markdown: str, pdf_data: bytes = None) -> Dict[str, Any]:
         """Return a validated summary JSON object. May attempt a single self-repair."""
-        summary_json = await self._call_llm(markdown)
+        summary_json = await self._call_llm(markdown, pdf_data)
         if self._is_valid(summary_json):
             return summary_json
 
         # Try once to repair
-        summary_json = await self._repair(markdown, summary_json)
+        summary_json = await self._repair(markdown, summary_json, pdf_data)
         # Either returns valid JSON or last attempt regardless of validity
         return summary_json
     
@@ -69,10 +69,10 @@ class EWAAgent:
     # ----------------------------- Internal helpers ----------------------------- #
 
 
-    async def _call_llm(self, markdown: str) -> Dict[str, Any]:
+    async def _call_llm(self, markdown: str, pdf_data: bytes = None) -> Dict[str, Any]:
         """Call either OpenAI or Gemini based on model type"""
         if self.is_gemini:
-            return await self._call_gemini(markdown)
+            return await self._call_gemini(markdown, pdf_data)
         else:
             return await self._call_openai(markdown)
     
@@ -84,17 +84,25 @@ class EWAAgent:
         response = await self._async_openai(messages)
         return json.loads(response.choices[0].message.function_call.arguments)
     
-    async def _call_gemini(self, markdown: str) -> Dict[str, Any]:
-        """Call Gemini API for JSON generation"""
+    async def _call_gemini(self, markdown: str, pdf_data: bytes = None) -> Dict[str, Any]:
+        """Call Gemini API for JSON generation with optional PDF input"""
         try:
             # Add JSON schema to the prompt for Gemini
             schema_instruction = f"\n\nIMPORTANT: Your response must conform to this exact JSON schema:\n{json.dumps(self.schema, indent=2)}"
             enhanced_prompt = self.summary_prompt + schema_instruction
             
+            # Modify prompt based on input type
+            if pdf_data:
+                input_prompt = "Please analyze the attached PDF document and provide a comprehensive EWA analysis."
+                print(f"[Gemini] Using PDF input ({len(pdf_data)} bytes) instead of markdown")
+            else:
+                input_prompt = markdown
+                print(f"[Gemini] Using markdown input ({len(markdown)} characters)")
+            
             loop = asyncio.get_running_loop()
             response = await loop.run_in_executor(
                 None, 
-                lambda: self.client.generate_json_content(markdown, enhanced_prompt)
+                lambda: self.client.generate_json_content(input_prompt, enhanced_prompt, pdf_data)
             )
             
             return response
@@ -103,10 +111,10 @@ class EWAAgent:
             print(f"[EWAAgent._call_gemini] Exception occurred: {str(e)}")
             raise
 
-    async def _repair(self, markdown: str, previous_json: Dict[str, Any]) -> Dict[str, Any]:
+    async def _repair(self, markdown: str, previous_json: Dict[str, Any], pdf_data: bytes = None) -> Dict[str, Any]:
         """Repair invalid JSON response"""
         if self.is_gemini:
-            return await self._repair_gemini(markdown, previous_json)
+            return await self._repair_gemini(markdown, previous_json, pdf_data)
         else:
             return await self._repair_openai(markdown, previous_json)
     
@@ -120,10 +128,23 @@ class EWAAgent:
         response = await self._async_openai(messages)
         return json.loads(response.choices[0].message.function_call.arguments)
     
-    async def _repair_gemini(self, markdown: str, previous_json: Dict[str, Any]) -> Dict[str, Any]:
-        """Repair JSON using Gemini"""
+    async def _repair_gemini(self, markdown: str, previous_json: Dict[str, Any], pdf_data: bytes = None) -> Dict[str, Any]:
+        """Repair JSON using Gemini with optional PDF input"""
         try:
-            repair_prompt = f"""The following JSON response did not validate against the required schema. Please fix all validation errors and return ONLY the corrected JSON object.
+            if pdf_data:
+                repair_prompt = f"""The following JSON response did not validate against the required schema. Please fix all validation errors and return ONLY the corrected JSON object.
+
+Analyze the attached PDF document and correct the JSON response.
+
+Invalid JSON response:
+{json.dumps(previous_json, indent=2)}
+
+Required JSON schema:
+{json.dumps(self.schema, indent=2)}
+
+Please analyze the validation errors and return the corrected JSON that conforms to the schema."""
+            else:
+                repair_prompt = f"""The following JSON response did not validate against the required schema. Please fix all validation errors and return ONLY the corrected JSON object.
 
 Original markdown content:
 {markdown}
@@ -139,7 +160,7 @@ Please analyze the validation errors and return the corrected JSON that conforms
             loop = asyncio.get_running_loop()
             response = await loop.run_in_executor(
                 None, 
-                lambda: self.client.generate_json_content(repair_prompt)
+                lambda: self.client.generate_json_content(repair_prompt, pdf_data=pdf_data)
             )
             
             return response

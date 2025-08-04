@@ -4,7 +4,7 @@ This directory contains the Google Gemini model integration for the EWA Analyzer
 
 ## Overview
 
-The EWA Analyzer now supports both Azure OpenAI and Google Gemini models, allowing you to choose the best model for your use case.
+The EWA Analyzer now supports both Azure OpenAI and Google Gemini models, with **automatic PDF processing** for Gemini models. This leverages Gemini's superior multimodal capabilities to analyze the original PDF documents directly, avoiding markdown conversion losses.
 
 ## Setup
 
@@ -50,25 +50,38 @@ set AZURE_OPENAI_SUMMARY_MODEL=gemini-pro
 
 ## Usage
 
-Once configured, the EWA Analyzer will automatically use Gemini models without any code changes:
+Once configured, the EWA Analyzer will automatically:
+1. **Detect Gemini models** and switch to PDF processing mode
+2. **Download the original PDF** from blob storage
+3. **Pass the PDF directly** to Gemini for multimodal analysis
+4. **Fall back to markdown** if PDF is unavailable
 
 ```python
-# This will automatically detect and use Gemini if configured
+# This automatically detects model type and input format
 orchestrator = EWAWorkflowOrchestrator()
 result = await orchestrator.execute_workflow("document.pdf")
+# For Gemini: Uses original PDF
+# For OpenAI: Uses parsed markdown
 ```
 
 ## Architecture
 
 ### GeminiClient (`gemini_client.py`)
-- Wrapper around Google's Gemini API
+- Wrapper around Google's Gemini API with **multimodal support**
+- **PDF Processing**: Direct PDF analysis using `types.Part.from_bytes()`
 - Handles JSON formatting and schema validation
-- Provides consistent interface with OpenAI client
+- Supports both text and binary (PDF) inputs
 
 ### EWAAgent Integration
-- Automatically detects model type from name
-- Routes requests to appropriate API (OpenAI or Gemini)
-- Maintains same interface for both model types
+- **Automatic Input Selection**: PDF for Gemini, markdown for OpenAI
+- **Multimodal Methods**: Enhanced to accept `pdf_data: bytes` parameter
+- Routes requests to appropriate API based on model type
+- Maintains backward compatibility for OpenAI models
+
+### Workflow Orchestrator
+- **Smart Input Detection**: Automatically chooses PDF vs markdown based on model
+- **PDF Download**: `download_pdf_from_blob()` retrieves original documents
+- **Fallback Logic**: Gracefully degrades to markdown if PDF unavailable
 
 ## Testing
 
@@ -108,9 +121,11 @@ Creating EWAAgent with Gemini model: gemini-2.5-flash
 
 ## Performance Considerations
 
-- **Gemini 2.5 Flash**: Faster response times, lower cost
-- **Gemini Pro**: Higher quality analysis, slower response
+- **Gemini 2.5 Flash**: Faster response times, lower cost, **excellent PDF processing**
+- **Gemini Pro**: Higher quality analysis, slower response, **superior multimodal understanding**
+- **PDF vs Markdown**: PDF processing may be slower but provides better accuracy
 - **Cost**: Gemini models may have different pricing than OpenAI
+- **Bandwidth**: PDF processing requires downloading original files from blob storage
 
 ## Switching Back to OpenAI
 

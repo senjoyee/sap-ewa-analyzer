@@ -155,6 +155,28 @@ class EWAWorkflowOrchestrator:
             print(error_message)
             raise Exception(error_message)
     
+    async def download_pdf_from_blob(self, blob_name: str) -> bytes:
+        """Download original PDF content from Azure Blob Storage for multimodal analysis"""
+        try:
+            print(f"Downloading PDF content from {blob_name}")
+            
+            blob_client = self.blob_service_client.get_blob_client(
+                container=AZURE_STORAGE_CONTAINER_NAME, 
+                blob=blob_name
+            )
+            
+            # Download the blob content as bytes
+            blob_data = blob_client.download_blob()
+            content = blob_data.readall()
+            
+            print(f"Successfully downloaded {len(content)} bytes of PDF content")
+            return content
+            
+        except Exception as e:
+            error_message = f"Error downloading PDF from blob storage: {str(e)}"
+            print(error_message)
+            raise Exception(error_message)
+    
     async def upload_to_blob(self, blob_name: str, content: str, content_type: str = "text/markdown", metadata: dict = None) -> str:
         """Upload content to Azure Blob Storage with optional metadata"""
         try:
@@ -451,8 +473,20 @@ class EWAWorkflowOrchestrator:
             # Run AI analysis for all sections except KPIs
             agent = self._create_agent(AZURE_OPENAI_SUMMARY_MODEL, ai_prompt)
             
-            # Run AI analysis for non-KPI sections
-            ai_result = await agent.run(state.markdown_content)
+            # Determine input type based on model
+            if is_gemini_model(AZURE_OPENAI_SUMMARY_MODEL):
+                # For Gemini models, use original PDF if available
+                try:
+                    pdf_data = await self.download_pdf_from_blob(state.blob_name)
+                    print(f"[Gemini Workflow] Using original PDF ({len(pdf_data)} bytes) for analysis")
+                    ai_result = await agent.run(state.markdown_content, pdf_data=pdf_data)
+                except Exception as e:
+                    print(f"[Gemini Workflow] Failed to load PDF, falling back to markdown: {str(e)}")
+                    ai_result = await agent.run(state.markdown_content)
+            else:
+                # For OpenAI models, continue using markdown
+                print(f"[OpenAI Workflow] Using markdown content for analysis")
+                ai_result = await agent.run(state.markdown_content)
             
             # Step 3: Combine AI results with deterministic KPIs
             if ai_result and extracted_kpis:
