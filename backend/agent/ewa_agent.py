@@ -1,11 +1,12 @@
-"""Agent responsible for producing a structured JSON summary for an SAP EWA report using Azure OpenAI function-calling."""
+"""Agent responsible for producing a structured JSON summary for an SAP EWA report using Azure OpenAI or Google Gemini."""
 from __future__ import annotations
 
 import os
 import json
 import asyncio
-from typing import Dict, Any
+from typing import Dict, Any, Union
 from jsonschema import validate, ValidationError
+from models.gemini_client import GeminiClient, is_gemini_model
 
 # Fallback prompt if not supplied
 DEFAULT_PROMPT = """You are a world-class SAP Technical Quality Manager and strategic EWA analyst with 20 years of experience. Your task is to analyze the provided SAP EarlyWatch Alert (EWA) report markdown and generate a comprehensive, structured, and actionable executive summary in JSON format. Your analysis must be deep, insightful, and practical, focusing on business risk and proactive quality management.
@@ -33,10 +34,11 @@ if os.path.exists(DEFAULT_PROMPT_PATH):
 class EWAAgent:
     """Small agent that plans (single step) and returns a validated JSON summary."""
 
-    def __init__(self, client, model: str, summary_prompt: str | None = None, schema_path: str | None = None):
+    def __init__(self, client: Union[object, GeminiClient, None], model: str, summary_prompt: str | None = None, schema_path: str | None = None):
         self.client = client
         self.model = model
         self.summary_prompt = summary_prompt or DEFAULT_PROMPT
+        self.is_gemini = is_gemini_model(model)
 
         if schema_path is None:
             base_dir = os.path.dirname(os.path.abspath(__file__))
@@ -54,7 +56,7 @@ class EWAAgent:
     # ----------------------------- Public API ----------------------------- #
     async def run(self, markdown: str) -> Dict[str, Any]:
         """Return a validated summary JSON object. May attempt a single self-repair."""
-        summary_json = await self._call_openai(markdown)
+        summary_json = await self._call_llm(markdown)
         if self._is_valid(summary_json):
             return summary_json
 
@@ -67,6 +69,13 @@ class EWAAgent:
     # ----------------------------- Internal helpers ----------------------------- #
 
 
+    async def _call_llm(self, markdown: str) -> Dict[str, Any]:
+        """Call either OpenAI or Gemini based on model type"""
+        if self.is_gemini:
+            return await self._call_gemini(markdown)
+        else:
+            return await self._call_openai(markdown)
+    
     async def _call_openai(self, markdown: str) -> Dict[str, Any]:
         messages = [
             {"role": "system", "content": self.summary_prompt},
@@ -74,8 +83,34 @@ class EWAAgent:
         ]
         response = await self._async_openai(messages)
         return json.loads(response.choices[0].message.function_call.arguments)
+    
+    async def _call_gemini(self, markdown: str) -> Dict[str, Any]:
+        """Call Gemini API for JSON generation"""
+        try:
+            # Add JSON schema to the prompt for Gemini
+            schema_instruction = f"\n\nIMPORTANT: Your response must conform to this exact JSON schema:\n{json.dumps(self.schema, indent=2)}"
+            enhanced_prompt = self.summary_prompt + schema_instruction
+            
+            loop = asyncio.get_running_loop()
+            response = await loop.run_in_executor(
+                None, 
+                lambda: self.client.generate_json_content(markdown, enhanced_prompt)
+            )
+            
+            return response
+            
+        except Exception as e:
+            print(f"[EWAAgent._call_gemini] Exception occurred: {str(e)}")
+            raise
 
     async def _repair(self, markdown: str, previous_json: Dict[str, Any]) -> Dict[str, Any]:
+        """Repair invalid JSON response"""
+        if self.is_gemini:
+            return await self._repair_gemini(markdown, previous_json)
+        else:
+            return await self._repair_openai(markdown, previous_json)
+    
+    async def _repair_openai(self, markdown: str, previous_json: Dict[str, Any]) -> Dict[str, Any]:
         repair_prompt = "The JSON you produced did not validate against the schema. Fix the issues and return ONLY the corrected JSON object."
         messages = [
             {"role": "system", "content": self.summary_prompt},
@@ -84,6 +119,35 @@ class EWAAgent:
         ]
         response = await self._async_openai(messages)
         return json.loads(response.choices[0].message.function_call.arguments)
+    
+    async def _repair_gemini(self, markdown: str, previous_json: Dict[str, Any]) -> Dict[str, Any]:
+        """Repair JSON using Gemini"""
+        try:
+            repair_prompt = f"""The following JSON response did not validate against the required schema. Please fix all validation errors and return ONLY the corrected JSON object.
+
+Original markdown content:
+{markdown}
+
+Invalid JSON response:
+{json.dumps(previous_json, indent=2)}
+
+Required JSON schema:
+{json.dumps(self.schema, indent=2)}
+
+Please analyze the validation errors and return the corrected JSON that conforms to the schema."""
+            
+            loop = asyncio.get_running_loop()
+            response = await loop.run_in_executor(
+                None, 
+                lambda: self.client.generate_json_content(repair_prompt)
+            )
+            
+            return response
+            
+        except Exception as e:
+            print(f"[EWAAgent._repair_gemini] Exception occurred: {str(e)}")
+            # Return the original response if repair fails
+            return previous_json
 
     async def _async_openai(self, messages):
         loop = asyncio.get_running_loop()

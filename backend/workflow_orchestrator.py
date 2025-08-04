@@ -30,6 +30,7 @@ from agent.ewa_agent import EWAAgent
 from utils.markdown_utils import json_to_markdown
 from utils.kpi_extractor import KPIExtractor
 from converters.document_converter import convert_document_to_markdown, get_conversion_status # Added for combined workflow
+from models.gemini_client import GeminiClient, is_gemini_model, create_gemini_client
 
 # Load environment variables
 load_dotenv()
@@ -109,6 +110,23 @@ class EWAWorkflowOrchestrator:
             
         except Exception as e:
             print(f"Error initializing clients: {str(e)}")
+            raise
+    
+    def _create_agent(self, model: str, summary_prompt: str) -> EWAAgent:
+        """Create appropriate agent (OpenAI or Gemini) based on model name"""
+        try:
+            if is_gemini_model(model):
+                # Create Gemini client
+                gemini_client = create_gemini_client(model)
+                print(f"Creating EWAAgent with Gemini model: {model}")
+                return EWAAgent(client=gemini_client, model=model, summary_prompt=summary_prompt)
+            else:
+                # Use Azure OpenAI client
+                print(f"Creating EWAAgent with Azure OpenAI model: {model}")
+                return EWAAgent(client=self.client, model=model, summary_prompt=summary_prompt)
+                
+        except Exception as e:
+            print(f"Error creating agent for model {model}: {str(e)}")
             raise
     
     async def download_markdown_from_blob(self, blob_name: str) -> str:
@@ -431,7 +449,7 @@ class EWAWorkflowOrchestrator:
             )
             
             # Run AI analysis for all sections except KPIs
-            agent = EWAAgent(client=self.client, model=AZURE_OPENAI_SUMMARY_MODEL, summary_prompt=ai_prompt)
+            agent = self._create_agent(AZURE_OPENAI_SUMMARY_MODEL, ai_prompt)
             
             # Run AI analysis for non-KPI sections
             ai_result = await agent.run(state.markdown_content)
