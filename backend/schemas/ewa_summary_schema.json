@@ -143,21 +143,7 @@
       }
     },
 
-    "Parameters": {
-      "type": "array",
-      "description": "Relevant SAP profile parameters.",
-      "items": {
-        "type": "object",
-        "required": ["Name", "Area", "Current Value", "Recommended Value", "Description"],
-        "properties": {
-          "Name":              { "type": "string" },
-          "Area":              { "type": "string" },
-          "Current Value":     { "type": "string" },
-          "Recommended Value": { "type": "string" },
-          "Description":       { "type": "string" }
-        }
-      }
-    },
+
 
 
     "KPIs": {
@@ -276,7 +262,6 @@
     "positive_findings",
     "key_findings",
     "recommendations",
-    "parameters",
     "kpis",
     "capacity_outlook",
     "quick_wins",
