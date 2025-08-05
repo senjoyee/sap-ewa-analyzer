@@ -93,18 +93,19 @@ def json_to_markdown(data: Dict[str, Any]) -> str:
     md: List[str] = []
 
     # ── Metadata & Header ───────────────────────────────────────────────────────
-    meta = data.get("System Metadata", {})
+    # Support both Title Case and snake_case keys
+    meta = data.get("System Metadata", data.get("system_metadata", {}))
     md.append(
-        f"# EWA Analysis for {meta.get('System ID', 'N/A')} "
-        f"({meta.get('Report Date', 'N/A')})"
+        f"# EWA Analysis for {meta.get('System ID', meta.get('system_id', 'N/A'))} "
+        f"({meta.get('Report Date', meta.get('report_date', 'N/A'))})"
     )
-    md.append(f"**Analysis Period:** {meta.get('Analysis Period', 'N/A')}")
+    md.append(f"**Analysis Period:** {meta.get('Analysis Period', meta.get('analysis_period', 'N/A'))}")
     md.append(f"**Overall Risk Assessment:** `{data.get('Overall Risk', data.get('overall_risk', 'N/A'))}`")
     md.append("\n---\n")
 
     # ── System Health Overview ────────────────────────────────────────────────
     md.append("## System Health Overview")
-    health = data.get("System Health Overview", {})
+    health = data.get("System Health Overview", data.get("system_health_overview", {}))
     if health:
         rows = [
             [k, v] for k, v in health.items() if v is not None
@@ -119,20 +120,20 @@ def json_to_markdown(data: Dict[str, Any]) -> str:
 
     # ── Executive Summary ──────────────────────────────────────────────────────
     md.append("## Executive Summary")
-    md.append(data.get("Executive Summary", "No summary provided."))
+    md.append(data.get("Executive Summary", data.get("executive_summary", "No summary provided.")))
     md.append("\n---\n")
 
     # ── Positive Findings ─────────────────────────────────────────────────────
-    md.extend(_array_to_markdown_table(data.get("Positive Findings", []), "Positive Findings"))
+    md.extend(_array_to_markdown_table(data.get("Positive Findings", data.get("positive_findings", [])), "Positive Findings"))
     md.append("\n---\n")
 
     # ── Key Findings ──────────────────────────────────────────────────────────
-    md.extend(_array_to_markdown_table(data.get("Key Findings", []), "Key Findings"))
+    md.extend(_array_to_markdown_table(data.get("Key Findings", data.get("key_findings", [])), "Key Findings"))
     md.append("\n---\n")
 
 
     # ── Recommendations ───────────────────────────────────────────────────────
-    md.extend(_array_to_markdown_table(data.get("Recommendations", []), "Recommendations"))
+    md.extend(_array_to_markdown_table(data.get("Recommendations", data.get("recommendations", [])), "Recommendations"))
 
 
     # ── Quick Wins ────────────────────────────────────────────────────────────
