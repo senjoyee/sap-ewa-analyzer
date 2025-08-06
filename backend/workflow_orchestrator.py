@@ -50,26 +50,30 @@ AZURE_STORAGE_CONTAINER_NAME = os.getenv("AZURE_STORAGE_CONTAINER_NAME")
 
 # System prompts for each workflow
 # System prompts for each workflow
-def load_summary_prompt():
-    """Loads the summary system prompt from the prompts directory."""
-    # Construct the absolute path to the prompts directory
-    # __file__ is the path to the current script (workflow_orchestrator.py)
-    # os.path.dirname(__file__) gives the directory of the current script (backend)
-    # os.path.join then constructs prompts/summary_system_prompt.md relative to that
+def load_summary_prompt() -> str | None:
+    """Return the first available summary prompt content, or None if none found."""
     current_dir = os.path.dirname(os.path.abspath(__file__))
-    prompt_path = os.path.join(current_dir, "prompts", "ewa_summary_prompt.md")
-    try:
-        with open(prompt_path, "r", encoding="utf-8") as f:
-            return f.read()
-    except FileNotFoundError:
-        print(f"ERROR: Summary prompt file not found at {prompt_path}")
-        # Fallback or raise an error, for now, let's raise
-        raise FileNotFoundError(f"Summary prompt file not found: {prompt_path}")
-    except Exception as e:
-        print(f"ERROR: Could not read summary prompt file: {e}")
-        raise
+    prompt_dir = os.path.join(current_dir, "prompts")
+    candidate_files = [
+        "ewa_summary_prompt.md",                # legacy path
+        "ewa_summary_prompt_openai.md",        # OpenAI-specific
+        "ewa_summary_prompt_openai_google.md", # Gemini-specific
+    ]
 
-SUMMARY_PROMPT = load_summary_prompt()
+    for filename in candidate_files:
+        path = os.path.join(prompt_dir, filename)
+        if os.path.exists(path):
+            try:
+                with open(path, "r", encoding="utf-8") as f:
+                    print(f"Loaded summary prompt from {path}")
+                    return f.read()
+            except Exception as e:
+                print(f"Warning: Could not read prompt file {path}: {e}")
+    # No prompt files found – return None so that downstream logic can fall back
+    print("No summary prompt files found; EWAAgent will use its internal default prompts.")
+    return None
+
+SUMMARY_PROMPT: str | None = load_summary_prompt()
 
 
 
@@ -112,7 +116,7 @@ class EWAWorkflowOrchestrator:
             print(f"Error initializing clients: {str(e)}")
             raise
     
-    def _create_agent(self, model: str, summary_prompt: str) -> EWAAgent:
+    def _create_agent(self, model: str, summary_prompt: str | None = None) -> EWAAgent:
         """Create appropriate agent (OpenAI or Gemini) based on model name"""
         try:
             if is_gemini_model(model):
