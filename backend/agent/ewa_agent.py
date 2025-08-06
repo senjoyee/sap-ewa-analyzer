@@ -42,18 +42,18 @@ class EWAAgent:
     def __init__(self, client: Union[object, GeminiClient, None], model: str, summary_prompt: str | None = None, schema_path: str | None = None):
         self.client = client
         self.model = model
-        # Load appropriate prompt if not supplied explicitly
-if summary_prompt is not None:
-    self.summary_prompt = summary_prompt
-else:
-    prompt_path = _GEMINI_PROMPT_PATH if is_gemini_model(model) else _OPENAI_PROMPT_PATH
-    if os.path.exists(prompt_path):
-        with open(prompt_path, "r", encoding="utf-8") as _p:
-            self.summary_prompt = _p.read()
-    else:
-        # Fallback to generic default
-        self.summary_prompt = DEFAULT_PROMPT
+        # Determine model type and load appropriate prompt
         self.is_gemini = is_gemini_model(model)
+
+        if summary_prompt is not None:
+            self.summary_prompt = summary_prompt
+        else:
+            prompt_path = _GEMINI_PROMPT_PATH if self.is_gemini else _OPENAI_PROMPT_PATH
+            if os.path.exists(prompt_path):
+                with open(prompt_path, "r", encoding="utf-8") as _p:
+                    self.summary_prompt = _p.read()
+            else:
+                self.summary_prompt = DEFAULT_PROMPT
 
         if schema_path is None:
             base_dir = os.path.dirname(os.path.abspath(__file__))
