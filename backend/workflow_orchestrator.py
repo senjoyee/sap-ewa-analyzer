@@ -406,11 +406,8 @@ class EWAWorkflowOrchestrator:
             params = {
                 "model": model,
                 "messages": messages,
-                "temperature": 0.0,
-                "top_p": 0.0,
+                "temperature": 1.0,
                 "max_tokens": max_tokens,
-                "frequency_penalty": 0,
-                "presence_penalty": 0
             }
             
             print(f"[MODEL INFO] Using model: {model} with max_tokens={max_tokens}")

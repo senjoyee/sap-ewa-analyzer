@@ -79,7 +79,7 @@ async def chat_with_document(request: ChatRequest):
                 model=model_name,
                 messages=messages,
                 max_tokens=8192,
-                temperature=0.0,
+                temperature=1.0,
                 top_p=0.0,
             )
             ai_response = response.choices[0].message.content
