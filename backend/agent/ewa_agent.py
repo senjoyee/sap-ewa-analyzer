@@ -25,10 +25,15 @@ Follow these instructions precisely, adhering to the structure of the requested 
 12. **Overall Risk**: Based on your complete analysis, assign a single overall risk rating: Low, Medium, High, or Critical.
 Ensure your entire output strictly adheres to the provided JSON schema. Do not add any commentary outside of the JSON structure."""
 
-# Attempt to load prompt from prompts/ewa_summary_prompt.md (preferred over inline string)
-DEFAULT_PROMPT_PATH = os.path.join(os.path.dirname(os.path.abspath(__file__)), "..", "prompts", "ewa_summary_prompt.md")
-if os.path.exists(DEFAULT_PROMPT_PATH):
-    with open(DEFAULT_PROMPT_PATH, "r", encoding="utf-8") as _f:
+# Directory containing prompt templates
+_PROMPT_DIR = os.path.join(os.path.dirname(os.path.abspath(__file__)), "..", "prompts")
+_OPENAI_PROMPT_PATH = os.path.join(_PROMPT_DIR, "ewa_summary_prompt_openai.md")
+_GEMINI_PROMPT_PATH = os.path.join(_PROMPT_DIR, "ewa_summary_prompt_openai_google.md")
+
+# Fallback: if specific prompt files are unavailable, use inline DEFAULT_PROMPT above
+_DEFAULT_FALLBACK_PROMPT_PATH = _OPENAI_PROMPT_PATH  # prefer OpenAI template for fallback
+if os.path.exists(_DEFAULT_FALLBACK_PROMPT_PATH):
+    with open(_DEFAULT_FALLBACK_PROMPT_PATH, "r", encoding="utf-8") as _f:
         DEFAULT_PROMPT = _f.read()
 
 class EWAAgent:
@@ -37,7 +42,17 @@ class EWAAgent:
     def __init__(self, client: Union[object, GeminiClient, None], model: str, summary_prompt: str | None = None, schema_path: str | None = None):
         self.client = client
         self.model = model
-        self.summary_prompt = summary_prompt or DEFAULT_PROMPT
+        # Load appropriate prompt if not supplied explicitly
+if summary_prompt is not None:
+    self.summary_prompt = summary_prompt
+else:
+    prompt_path = _GEMINI_PROMPT_PATH if is_gemini_model(model) else _OPENAI_PROMPT_PATH
+    if os.path.exists(prompt_path):
+        with open(prompt_path, "r", encoding="utf-8") as _p:
+            self.summary_prompt = _p.read()
+    else:
+        # Fallback to generic default
+        self.summary_prompt = DEFAULT_PROMPT
         self.is_gemini = is_gemini_model(model)
 
         if schema_path is None:
