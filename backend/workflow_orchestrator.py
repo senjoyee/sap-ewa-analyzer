@@ -406,7 +406,6 @@ class EWAWorkflowOrchestrator:
             params = {
                 "model": model,
                 "messages": messages,
-                "temperature": 1.0,
                 "max_tokens": max_tokens,
             }
             

@@ -193,8 +193,7 @@ Please analyze the validation errors and return the corrected JSON that conforms
                 messages=messages,
                 max_tokens=16384,
                 functions=[self.function_def],
-                function_call={"name": "create_ewa_summary"},
-                temperature=1.0,
+                function_call={"name": "create_ewa_summary"}
             )
         import traceback
         try:
