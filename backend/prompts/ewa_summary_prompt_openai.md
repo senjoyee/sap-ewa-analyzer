@@ -45,7 +45,7 @@ Craft content specifically for technical teams:
 - **Focus on technical implementation** rather than business justification
 - **Include specific technical details**: exact parameter values, table names, transaction codes
 - **Provide actionable technical guidance**: specific commands, configuration changes, monitoring approaches
-- **Highlight key technical entities** by wrapping parameter names, table names, configuration values, and transaction codes in backticks (e.g., `sec_info`) for clear visual emphasis in the rendered report
+- **Highlight key technical entities** by using bold formatting (e.g., **sec_info**) to provide strong visual emphasis in the rendered report
 - **Adopt a verbose, explanatory style**: use complete, multi-sentence descriptions that give sufficient context; avoid overly terse phrasing that could omit important detail
 - **Reference SAP documentation**: include SAP notes, OSS notes, or recommendations **explicitly mentioned within the EWA report**
 - **Use bullet points where possible**
