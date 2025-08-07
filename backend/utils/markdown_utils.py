@@ -131,28 +131,33 @@ def json_to_markdown(data: Dict[str, Any]) -> str:
 
     # ── Positive Findings ─────────────────────────────────────────────────────
     md.append("<div style='page-break-before: always;'></div>")
+    md.append("")
     md.extend(_array_to_markdown_table(data.get("Positive Findings", data.get("positive_findings", [])), "Positive Findings"))
     md.append("\n---\n")
 
     # ── Key Findings ──────────────────────────────────────────────────────────
     md.append("<div style='page-break-before: always;'></div>")
+    md.append("")
     md.extend(_array_to_markdown_table(data.get("Key Findings", data.get("key_findings", [])), "Key Findings"))
     md.append("\n---\n")
 
 
     # ── Recommendations ───────────────────────────────────────────────────────
     md.append("<div style='page-break-before: always;'></div>")
+    md.append("")
     md.extend(_array_to_markdown_table(data.get("Recommendations", data.get("recommendations", [])), "Recommendations"))
 
 
     # ── Quick Wins ────────────────────────────────────────────────────────────
     md.append("<div style='page-break-before: always;'></div>")
+    md.append("")
     md.extend(_array_to_markdown_table(data.get("Quick Wins", data.get("quick_wins", [])), "Quick Wins"))
     md.append("These are recommendations with low analysis and implementation effort that can be implemented quickly for immediate benefits.")
 
 
     # ── Key Performance Indicators ────────────────────────────────────────────
     md.append("<div style='page-break-before: always;'></div>")
+    md.append("")
     md.append("## Key Performance Indicators")
     # Look for KPIs under correct key from deterministic extraction
     kpis = data.get("key_performance_indicators", data.get("KPIs", []))
@@ -192,6 +197,7 @@ def json_to_markdown(data: Dict[str, Any]) -> str:
 
     # ── Capacity Outlook ──────────────────────────────────────────────────────
     md.append("<div style='page-break-before: always;'></div>")
+    md.append("")
     md.append("## Capacity Outlook")
     # Handle both key formats: "Capacity Outlook" and "capacity_outlook"
     capacity = data.get("Capacity Outlook", data.get("capacity_outlook", {}))
