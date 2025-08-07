@@ -110,7 +110,6 @@ def json_to_markdown(data: Dict[str, Any]) -> str:
     md.append("\n---\n")
 
     # ── System Health Overview ────────────────────────────────────────────────
-    md.append("<div style='page-break-before: always;'></div>")
     md.append("## System Health Overview")
     health = data.get("System Health Overview", data.get("system_health_overview", {}))
     if health:
@@ -126,7 +125,6 @@ def json_to_markdown(data: Dict[str, Any]) -> str:
     md.append("\n---\n")
 
     # ── Executive Summary ──────────────────────────────────────────────────────
-    md.append("<div style='page-break-before: always;'></div>")
     md.append("## Executive Summary")
     md.append(data.get("Executive Summary", data.get("executive_summary", "No summary provided.")))
     md.append("\n---\n")
