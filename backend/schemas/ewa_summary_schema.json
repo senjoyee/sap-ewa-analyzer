@@ -87,7 +87,7 @@
           "Finding":         { "type": "string" },
           "Impact":          { "type": "string", "description": "Potential technical impact." },
           "Business impact": { "type": "string", "description": "Translated business risk." },
-          "Severity":        { "type": "string", "enum": ["low", "medium", "high", "critical"] }
+          "Severity":        { "type": "string", "enum": ["medium", "high", "critical"] }
         }
       }
     },

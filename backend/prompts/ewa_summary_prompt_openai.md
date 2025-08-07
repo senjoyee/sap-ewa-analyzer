@@ -48,6 +48,7 @@ Craft content specifically for technical teams:
 - **Highlight key technical entities** by wrapping parameter names, table names, configuration values, and transaction codes in backticks (e.g., `sec_info`) for clear visual emphasis in the rendered report
 - **Adopt a verbose, explanatory style**: use complete, multi-sentence descriptions that give sufficient context; avoid overly terse phrasing that could omit important detail
 - **Reference SAP documentation**: include SAP notes, OSS notes, or recommendations **explicitly mentioned within the EWA report**
+- **Use bullet points where possible**
 
 Proceed with your systematic analysis, following this reasoning strategy.
 
@@ -144,9 +145,11 @@ For every amber/red-rated or high-impact observation, supply (include numeric va
   - Example: Instead of "Table reached critical limit," use: "The HANA column store table CDPOS has reached the critical limit of 2 billion records, which is the maximum supported for HANA column store tables."
 - `Impact`: technical consequences.
 - `Business Impact`: business risk explanation focusing on operational, financial, or compliance impact
-- `Severity`: `low`, `medium`, `high`, or `critical` (use lowercase).
+- `Severity`: `medium`, `high`, or `critical` (use lowercase). **Only include findings with these severities; omit any with `low`.**
+- Use bullet points where possible.
 
 ### Recommendations
+- Only generate recommendations that correspond to the retained (medium, high, critical) key findings.
 For each action, provide (retain any numeric thresholds, dates, or figures exactly as written):
 
 - `Recommendation ID`: pattern `REC-00`.
@@ -158,6 +161,7 @@ For each action, provide (retain any numeric thresholds, dates, or figures exact
 - `Linked Issue ID`: the related KF id, if any.
 - `Action`: concrete steps to implement. Refer to any SAP notes, SAP help, or other documentation and include links or related information, from the source document, if any.
 - `Preventative Action`: measures to prevent recurrence.
+- Use bullet points where possible.
 
 ### KPIs
 - Create a list of key performance indicator objects with structured format.
