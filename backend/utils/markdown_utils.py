@@ -110,6 +110,7 @@ def json_to_markdown(data: Dict[str, Any]) -> str:
     md.append("\n---\n")
 
     # ── System Health Overview ────────────────────────────────────────────────
+    md.append("<div style='page-break-before: always;'></div>")
     md.append("## System Health Overview")
     health = data.get("System Health Overview", data.get("system_health_overview", {}))
     if health:
@@ -125,29 +126,35 @@ def json_to_markdown(data: Dict[str, Any]) -> str:
     md.append("\n---\n")
 
     # ── Executive Summary ──────────────────────────────────────────────────────
+    md.append("<div style='page-break-before: always;'></div>")
     md.append("## Executive Summary")
     md.append(data.get("Executive Summary", data.get("executive_summary", "No summary provided.")))
     md.append("\n---\n")
 
     # ── Positive Findings ─────────────────────────────────────────────────────
+    md.append("<div style='page-break-before: always;'></div>")
     md.extend(_array_to_markdown_table(data.get("Positive Findings", data.get("positive_findings", [])), "Positive Findings"))
     md.append("\n---\n")
 
     # ── Key Findings ──────────────────────────────────────────────────────────
+    md.append("<div style='page-break-before: always;'></div>")
     md.extend(_array_to_markdown_table(data.get("Key Findings", data.get("key_findings", [])), "Key Findings"))
     md.append("\n---\n")
 
 
     # ── Recommendations ───────────────────────────────────────────────────────
+    md.append("<div style='page-break-before: always;'></div>")
     md.extend(_array_to_markdown_table(data.get("Recommendations", data.get("recommendations", [])), "Recommendations"))
 
 
     # ── Quick Wins ────────────────────────────────────────────────────────────
+    md.append("<div style='page-break-before: always;'></div>")
     md.extend(_array_to_markdown_table(data.get("Quick Wins", data.get("quick_wins", [])), "Quick Wins"))
     md.append("These are recommendations with low analysis and implementation effort that can be implemented quickly for immediate benefits.")
 
 
     # ── Key Performance Indicators ────────────────────────────────────────────
+    md.append("<div style='page-break-before: always;'></div>")
     md.append("## Key Performance Indicators")
     # Look for KPIs under correct key from deterministic extraction
     kpis = data.get("key_performance_indicators", data.get("KPIs", []))
@@ -186,6 +193,7 @@ def json_to_markdown(data: Dict[str, Any]) -> str:
     md.append("\n---\n")
 
     # ── Capacity Outlook ──────────────────────────────────────────────────────
+    md.append("<div style='page-break-before: always;'></div>")
     md.append("## Capacity Outlook")
     # Handle both key formats: "Capacity Outlook" and "capacity_outlook"
     capacity = data.get("Capacity Outlook", data.get("capacity_outlook", {}))
