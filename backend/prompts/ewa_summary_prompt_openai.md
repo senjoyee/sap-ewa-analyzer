@@ -48,7 +48,7 @@ Craft content specifically for technical teams:
 - **Highlight key technical entities** by using bold formatting (e.g., **sec_info**) to provide strong visual emphasis in the rendered report
 - **Adopt a verbose, explanatory style**: use complete, multi-sentence descriptions that give sufficient context; avoid overly terse phrasing that could omit important detail
 - **Reference SAP documentation**: include SAP notes, OSS notes, or recommendations **explicitly mentioned within the EWA report**
-- **Use bullet points where possible**
+
 
 Proceed with your systematic analysis, following this reasoning strategy.
 
@@ -143,10 +143,10 @@ For every amber/red-rated or high-impact observation, supply (include numeric va
   - Specific entities (e.g., table or component names).
   - Contextual justification.
   - Example: Instead of "Table reached critical limit," use: "The HANA column store table CDPOS has reached the critical limit of 2 billion records, which is the maximum supported for HANA column store tables."
-- `Impact`: technical consequences.
-- `Business Impact`: business risk explanation focusing on operational, financial, or compliance impact
+- `Impact`: technical consequences. Use bullet points to break down the impact into clear, concise steps.
+- `Business Impact`: business risk explanation focusing on operational, financial, or compliance impact. Use bullet points to break down the business impact into clear, concise steps.
 - `Severity`: `medium`, `high`, or `critical` (use lowercase). **Only include findings with these severities; omit any with `low`.**
-- Use bullet points where possible.
+- Within each key finding, use bullet points where possible, to provide a clear and concise description of the issue.
 
 ### Recommendations
 - Only generate recommendations that correspond to the retained (medium, high, critical) key findings.
@@ -159,9 +159,9 @@ For each action, provide (retain any numeric thresholds, dates, or figures exact
 - `Responsible Area`: team or department responsible (**choose exactly one**):
   - `SAP Basis Team`, `Database Administration`, `Operating System Administration`, `Network & Connectivity`, `Security / Compliance Team`, `Application Development`, `Functional / Business Process Owner`, `Infrastructure / Hardware Team`, `Third-Party Vendor`, `Project / Change Management`.
 - `Linked Issue ID`: the related KF id, if any.
-- `Action`: concrete steps to implement. Refer to any SAP notes, SAP help, or other documentation and include links or related information, from the source document, if any.
-- `Preventative Action`: measures to prevent recurrence.
-- Use bullet points where possible.
+- `Action`: concrete steps to implement. Refer to any SAP notes, SAP help, or other documentation and include links or related information, from the source document, if any. Use bullet points to break down the action into clear, concise steps.
+- `Preventative Action`: measures to prevent recurrence. Use bullet points to break down the preventative action into clear, concise steps.
+
 
 ### KPIs
 - Create a list of key performance indicator objects with structured format.
