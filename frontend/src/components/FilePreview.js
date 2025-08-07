@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import ReactMarkdown from 'react-markdown';
+import rehypeRaw from 'rehype-raw';
 import remarkGfm from 'remark-gfm';
 import Paper from '@mui/material/Paper';
 import Typography from '@mui/material/Typography';
@@ -828,6 +829,7 @@ const mdFileName = `${baseName}.md`;
               <ReactMarkdown
                 key={selectedFile ? selectedFile.name : 'default-key'}
                 remarkPlugins={[remarkGfm]}
+                 rehypePlugins={[rehypeRaw]}
                 components={{
                   table: ({ children }) => (
                     <Box sx={{ 
