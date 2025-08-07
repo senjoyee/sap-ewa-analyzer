@@ -16,7 +16,13 @@ def _format_table(headers: List[str], rows: List[List[str]]) -> List[str]:
     md.append(f"| {' | '.join(headers)} |")
     md.append(f"| {'|'.join(['---'] * len(headers))} |")
     for row in rows:
-        md.append(f"| {' | '.join(str(x) if x is not None else 'N/A' for x in row)} |")
+                # Sanitize cell values: replace newlines with <br> so lists inside cells don't break the table
+        sanitized_cells = []
+        for x in row:
+            cell = "N/A" if x is None else str(x)
+            cell = cell.replace("\n", "<br>")
+            sanitized_cells.append(cell)
+        md.append(f"| {' | '.join(sanitized_cells)} |")
     return md
 
 
