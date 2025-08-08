@@ -19,11 +19,11 @@ def _get_extraction_prompt() -> str:
     return """You are an extraction bot. Extract the System ID and Report End Date from the provided text.
 
 Instructions:
-1. Find the System ID - it's typically labeled as "System ID" followed by a short alphanumeric code
-2. Find the Report End Date - Look for phrases like "Reporting Period", "Analysis Period", or "Period" and extract the end date. If multiple dates are present, choose the later date which represents when the report coverage ends.
-3. Return ONLY valid JSON with these exact keys: system_id, report_date
-4. Format the report_date as dd.mm.yyyy regardless of input format
-5. If you cannot find either value, return that key with an empty string
+1. System ID (SAP SID) is exactly 3 alphanumeric characters (e.g., TBS, PRD, DEV). Do not return generic words like PRODUCT, SYSTEM, REPORT.
+2. Find the Report End Date - look for "Reporting Period", "Analysis Period", or "Period" and extract the end date. If multiple dates are present, choose the later date which represents when the report coverage ends.
+3. Output ONLY raw JSON (no code fences, no extra text) with these exact keys: system_id, report_date.
+4. Format report_date as dd.mm.yyyy regardless of input format.
+5. If you cannot find either value, return that key with an empty string.
 
 Example output:
 {"system_id": "ERP", "report_date": "09.06.2025"}
@@ -88,9 +88,8 @@ def _parse_regex_fallback(text: str) -> Dict[str, str]:
     """Fallback regex-based extraction if AI fails."""
     # Extract System ID
     sid_patterns = [
-        r'System\s*ID\s*[:\-]?\s*([A-Z0-9]{3,10})',
-        r'SID\s*[:\-]?\s*([A-Z0-9]{3,10})',
-        r'([A-Z0-9]{3,10})\s+System'
+        r'\bSystem\s*ID\s*[:\-]?\s*([A-Z0-9]{3})\b',
+        r'\bSID\s*[:\-]?\s*([A-Z0-9]{3})\b',
     ]
     
     system_id = ""
@@ -161,35 +160,58 @@ async def extract_metadata_with_ai(pdf_bytes: bytes) -> Dict[str, Any]:
                 {"role": "system", "content": _get_extraction_prompt()},
                 {"role": "user", "content": text[:4000]}  # Limit text to 4000 chars
             ],
-            max_tokens=100,
+            max_completion_tokens=100,
+            reasoning_effort="minimal",
             temperature=0
         )
         
         # Parse the response
         result_text = response.choices[0].message.content.strip()
-        
-        # Try to parse as JSON
+
+        # Try to parse as JSON robustly (handle code fences and extra text)
+        parsed = None
+        raw = result_text
         try:
-            result = json.loads(result_text)
-            
-            # Validate required keys
-            if "system_id" not in result or "report_date" not in result:
-                raise ValueError("Missing required keys in AI response")
-            
-            # Normalize the date
+            parsed = json.loads(raw)
+        except json.JSONDecodeError:
+            # Strip code fences like ```json ... ``` if present
+            m = re.match(r"^```(?:json)?\s*([\s\S]*?)\s*```$", raw.strip(), re.IGNORECASE)
+            if m:
+                raw = m.group(1).strip()
+            else:
+                # Extract JSON object substring heuristically
+                start = raw.find('{')
+                end = raw.rfind('}')
+                if start != -1 and end != -1 and end > start:
+                    raw = raw[start:end+1]
+            try:
+                parsed = json.loads(raw)
+            except Exception:
+                parsed = None
+
+        if parsed is not None:
+            result = parsed
+            # Normalize the date if present
             if result.get("report_date"):
                 result["report_date"] = _normalize_date_format(result["report_date"])
-            
-            # Validate that we got meaningful values
+
+            # If both present, return immediately
             if result.get("system_id") and result.get("report_date"):
                 return {
                     "system_id": result["system_id"],
                     "report_date": result["report_date"],
                     "report_date_str": result["report_date"]
                 }
-        except json.JSONDecodeError:
-            # If JSON parsing fails, continue to fallback
-            pass
+
+            # If system_id present but date missing, try regex to backfill date without overriding SID
+            if result.get("system_id") and not result.get("report_date"):
+                regex_result = _parse_regex_fallback(text)
+                if regex_result.get("report_date"):
+                    return {
+                        "system_id": result["system_id"],
+                        "report_date": regex_result["report_date"],
+                        "report_date_str": regex_result["report_date"]
+                    }
             
     except Exception as e:
         # If AI fails, continue to fallback

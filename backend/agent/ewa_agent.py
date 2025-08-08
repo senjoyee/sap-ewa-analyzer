@@ -4,6 +4,7 @@ from __future__ import annotations
 import os
 import json
 import asyncio
+import tempfile
 from typing import Dict, Any, Union
 from jsonschema import validate, ValidationError
 from models.gemini_client import GeminiClient, is_gemini_model
@@ -89,7 +90,8 @@ class EWAAgent:
         if self.is_gemini:
             return await self._call_gemini(markdown, pdf_data)
         else:
-            return await self._call_openai(markdown)
+            # Use Responses API with optional PDF input for OpenAI path
+            return await self._call_openai_responses(markdown, pdf_data)
     
     async def _call_openai(self, markdown: str) -> Dict[str, Any]:
         messages = [
@@ -98,6 +100,100 @@ class EWAAgent:
         ]
         response = await self._async_openai(messages)
         return json.loads(response.choices[0].message.function_call.arguments)
+
+    async def _call_openai_responses(self, markdown: str, pdf_data: bytes | None) -> Dict[str, Any]:
+        """Use Azure OpenAI Responses API with function-calling and optional PDF input.
+        Returns the parsed JSON from the function call arguments.
+        """
+        # Prepare tool (function) definition using the existing JSON schema
+        tools = [
+            {
+                "type": "function",
+                "function": {
+                    "name": self.function_def["name"],
+                    "description": self.function_def["description"],
+                    "parameters": self.function_def["parameters"],
+                },
+            }
+        ]
+
+        # Build input content
+        user_content = []
+
+        file_id = None
+        temp_path = None
+        try:
+            if pdf_data:
+                # Upload PDF bytes as a temp file to Files API (purpose="assistants")
+                with tempfile.NamedTemporaryFile(delete=False, suffix=".pdf") as tmp:
+                    tmp.write(pdf_data)
+                    temp_path = tmp.name
+                file_obj = open(temp_path, "rb")
+                try:
+                    uploaded = self.client.files.create(file=file_obj, purpose="assistants")
+                    file_id = uploaded.id
+                finally:
+                    file_obj.close()
+
+            instruction_text = (
+                f"{self.summary_prompt}\n\n"
+                "Return ONLY a function call to create_ewa_summary with arguments containing the final JSON."
+            )
+
+            if file_id:
+                user_content.append({"type": "input_file", "file_id": file_id})
+                user_content.append({"type": "input_text", "text": "Please analyze the attached EWA PDF and produce the structured JSON."})
+            else:
+                # Use markdown input
+                user_content.append({"type": "input_text", "text": f"{instruction_text}\n\nAnalyze this EWA markdown document:\n\n{markdown}"})
+
+            # If file was attached, include instructions as separate text to steer the function call
+            if file_id:
+                user_content.append({"type": "input_text", "text": instruction_text})
+
+            response = self.client.responses.create(
+                model=self.model,
+                tools=tools,
+                tool_choice={"type": "function", "function": {"name": self.function_def["name"]}},
+                input=[{"role": "user", "content": user_content}],
+            )
+
+            # Extract function_call arguments from the Responses output
+            args_str = None
+            try:
+                for output_item in getattr(response, "output", []) or []:
+                    # Expect a function_call item
+                    if getattr(output_item, "type", None) == "function_call":
+                        # output_item.arguments may already be a str
+                        args_str = getattr(output_item, "arguments", None)
+                        if args_str:
+                            break
+                if args_str is None:
+                    # As a fallback, try output_text (may be empty with forced tool_choice)
+                    text = getattr(response, "output_text", None)
+                    if text:
+                        args_str = text
+            except Exception:
+                # In case of SDK shape changes, dump the raw response for debugging
+                print("[EWAAgent._call_openai_responses] Unable to parse response.output; raw:")
+                try:
+                    print(response.model_dump_json(indent=2))
+                except Exception:
+                    print(str(response))
+                raise
+
+            if not args_str:
+                raise ValueError("Responses API did not return function_call arguments")
+
+            # Parse JSON from arguments string
+            return self._parse_json_arguments(args_str)
+        finally:
+            # Cleanup any temp file created
+            if temp_path and os.path.exists(temp_path):
+                try:
+                    os.remove(temp_path)
+                except Exception:
+                    pass
     
     async def _call_gemini(self, markdown: str, pdf_data: bytes = None) -> Dict[str, Any]:
         """Call Gemini API for JSON generation with optional PDF input"""
@@ -131,17 +227,74 @@ class EWAAgent:
         if self.is_gemini:
             return await self._repair_gemini(markdown, previous_json, pdf_data)
         else:
-            return await self._repair_openai(markdown, previous_json)
+            return await self._repair_openai(markdown, previous_json, pdf_data)
     
-    async def _repair_openai(self, markdown: str, previous_json: Dict[str, Any]) -> Dict[str, Any]:
-        repair_prompt = "The JSON you produced did not validate against the schema. Fix the issues and return ONLY the corrected JSON object."
-        messages = [
-            {"role": "system", "content": self.summary_prompt},
-            {"role": "assistant", "content": json.dumps(previous_json)},
-            {"role": "user", "content": repair_prompt},
+    async def _repair_openai(self, markdown: str, previous_json: Dict[str, Any], pdf_data: bytes | None) -> Dict[str, Any]:
+        """Use Responses API to repair invalid JSON by forcing a function call again."""
+        tools = [
+            {
+                "type": "function",
+                "function": {
+                    "name": self.function_def["name"],
+                    "description": self.function_def["description"],
+                    "parameters": self.function_def["parameters"],
+                },
+            }
         ]
-        response = await self._async_openai(messages)
-        return json.loads(response.choices[0].message.function_call.arguments)
+
+        repair_instruction = (
+            "The previous JSON did not validate against the schema. Fix all validation errors and return ONLY the corrected JSON via the function call arguments."
+        )
+
+        content_items = []
+        if pdf_data:
+            # Prefer reusing the PDF context again when available
+            with tempfile.NamedTemporaryFile(delete=False, suffix=".pdf") as tmp:
+                tmp.write(pdf_data)
+                temp_path = tmp.name
+            file_obj = open(temp_path, "rb")
+            try:
+                uploaded = self.client.files.create(file=file_obj, purpose="assistants")
+                file_id = uploaded.id
+            finally:
+                file_obj.close()
+                try:
+                    os.remove(temp_path)
+                except Exception:
+                    pass
+            content_items.append({"type": "input_file", "file_id": file_id})
+
+        content_items.append({"type": "input_text", "text": self.summary_prompt})
+        # Provide both the invalid JSON and (if no PDF) the original markdown for context
+        if not pdf_data:
+            content_items.append({"type": "input_text", "text": f"Original markdown content:\n\n{markdown}"})
+        content_items.append({"type": "input_text", "text": f"Invalid JSON response to repair:\n\n{json.dumps(previous_json, indent=2)}"})
+        content_items.append({"type": "input_text", "text": repair_instruction})
+
+        response = self.client.responses.create(
+            model=self.model,
+            tools=tools,
+            tool_choice={"type": "function", "function": {"name": self.function_def["name"]}},
+            input=[{"role": "user", "content": content_items}],
+        )
+
+        # Extract and parse arguments
+        args_str = None
+        for output_item in getattr(response, "output", []) or []:
+            if getattr(output_item, "type", None) == "function_call":
+                args_str = getattr(output_item, "arguments", None)
+                if args_str:
+                    break
+        if not args_str:
+            # As a fallback, try output_text
+            text = getattr(response, "output_text", None)
+            if text:
+                args_str = text
+        if not args_str:
+            # If still nothing, return previous_json as a last resort
+            print("[EWAAgent._repair_openai] No function_call arguments returned; returning previous JSON")
+            return previous_json
+        return self._parse_json_arguments(args_str)
     
     async def _repair_gemini(self, markdown: str, previous_json: Dict[str, Any], pdf_data: bytes = None) -> Dict[str, Any]:
         """Repair JSON using Gemini with optional PDF input"""
@@ -191,7 +344,7 @@ Please analyze the validation errors and return the corrected JSON that conforms
             return self.client.chat.completions.create(
                 model=self.model,
                 messages=messages,
-                max_tokens=16384,
+                max_completion_tokens=16384,
                 functions=[self.function_def],
                 function_call={"name": "create_ewa_summary"}
             )
@@ -216,3 +369,26 @@ Please analyze the validation errors and return the corrected JSON that conforms
             return True
         except ValidationError:
             return False
+
+    def _parse_json_arguments(self, args_str: Any) -> Dict[str, Any]:
+        """Parse JSON from a function_call.arguments string.
+        Be resilient to minor formatting issues (e.g., code fences).
+        """
+        if isinstance(args_str, dict):
+            return args_str
+        if not isinstance(args_str, str):
+            raise ValueError("Function call arguments are not a string or dict")
+        try:
+            return json.loads(args_str)
+        except Exception:
+            # Strip code fences or extract JSON substring
+            start = args_str.find('{')
+            end = args_str.rfind('}')
+            if start != -1 and end != -1 and end > start:
+                candidate = args_str[start:end+1]
+                try:
+                    return json.loads(candidate)
+                except Exception:
+                    pass
+            # Last resort
+            raise

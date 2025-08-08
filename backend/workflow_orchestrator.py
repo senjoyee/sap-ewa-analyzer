@@ -393,7 +393,7 @@ class EWAWorkflowOrchestrator:
             print(f"[DETERMINISTIC KPI] Error in deterministic KPI extraction: {str(e)}")
             return []
     
-    async def call_openai(self, prompt: str, content: str, model: str, max_tokens: int = 8000) -> str:
+    async def call_openai(self, prompt: str, content: str, model: str, max_completion_tokens: int = 8000) -> str:
         """Make a call to Azure OpenAI with specified model"""
         try:
             # Create messages array
@@ -406,10 +406,11 @@ class EWAWorkflowOrchestrator:
             params = {
                 "model": model,
                 "messages": messages,
-                "max_tokens": max_tokens,
+                "max_tokens": max_completion_tokens,
+                "reasoning_effort": "low",
             }
             
-            print(f"[MODEL INFO] Using model: {model} with max_tokens={max_tokens}")
+            print(f"[MODEL INFO] Using model: {model} with max_completion_tokens={max_completion_tokens}")
             
             response = self.client.chat.completions.create(**params)
             
@@ -420,7 +421,7 @@ class EWAWorkflowOrchestrator:
                 total_tokens = response.usage.total_tokens
                 
                 print(f"[TOKEN USAGE] Prompt: {prompt_tokens} | Completion: {completion_tokens} | Total: {total_tokens}")
-                print(f"[TOKEN USAGE] Completion tokens used: {completion_tokens}/{max_tokens} ({(completion_tokens / max_tokens * 100):.1f}%)")
+                print(f"[TOKEN USAGE] Completion tokens used: {completion_tokens}/{max_completion_tokens} ({(completion_tokens / max_completion_tokens * 100):.1f}%)")
             else:
                 print("[TOKEN USAGE] Token usage information not available in the response")
             
@@ -484,9 +485,14 @@ class EWAWorkflowOrchestrator:
                     print(f"[Gemini Workflow] Failed to load PDF, falling back to markdown: {str(e)}")
                     ai_result = await agent.run(state.markdown_content)
             else:
-                # For OpenAI models, continue using markdown
-                print(f"[OpenAI Workflow] Using markdown content for analysis")
-                ai_result = await agent.run(state.markdown_content)
+                # For OpenAI models, prefer original PDF via Responses API; fallback to markdown
+                try:
+                    pdf_data = await self.download_pdf_from_blob(state.blob_name)
+                    print(f"[OpenAI Workflow] Using original PDF ({len(pdf_data)} bytes) for analysis via Responses API")
+                    ai_result = await agent.run(state.markdown_content, pdf_data=pdf_data)
+                except Exception as e:
+                    print(f"[OpenAI Workflow] Failed to load PDF, falling back to markdown: {str(e)}")
+                    ai_result = await agent.run(state.markdown_content)
             
             # Step 3: Combine AI results with deterministic KPIs
             if ai_result and extracted_kpis:
