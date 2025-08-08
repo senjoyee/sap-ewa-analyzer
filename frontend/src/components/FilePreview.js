@@ -41,7 +41,7 @@ import DocumentChat from './DocumentChat';
 import sapLogo from '../logo/sap-3.svg';
 
 // Helper function to get appropriate file type label and icon
-const API_BASE = 'https://sap-ewa-analyzer-backend.azurewebsites.net/';
+const API_BASE = 'http://localhost:8001';
 const getFileTypeInfo = (fileName) => {
   if (!fileName || typeof fileName !== 'string') {
     return { icon: <InsertDriveFileOutlinedIcon />, label: 'UNKNOWN', color: 'default' };

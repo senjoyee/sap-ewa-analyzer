@@ -2,6 +2,27 @@
 
 This project was bootstrapped with manual steps, mimicking `create-react-app`.
 
+## Backend API Endpoints
+
+Base URL (local development): `http://localhost:8001`
+
+- __/api/upload__ — `frontend/src/components/FileUpload.js:214` — POST
+- __/api/files__ — `frontend/src/components/FileList.js:792` — GET
+- __/api/analyze__ — `frontend/src/components/FileList.js:425` — POST
+- __/api/analyze-ai__ — `frontend/src/components/FileList.js:464` — POST
+- __/api/reprocess-ai__ — `frontend/src/components/FileList.js:560` — POST
+- __/api/process-sequential__ — `frontend/src/components/FileList.js:303` — POST
+- __/api/process-and-analyze__ — `frontend/src/components/FileList.js:662` — POST
+- __/api/analysis-status/:fileName__ — `frontend/src/components/FileList.js:729` — GET
+- __/api/delete-analysis__ — `frontend/src/components/FileList.js:201,622` — DELETE
+- __/api/download/:file__ — `frontend/src/components/FileList.js:517`, `frontend/src/components/FilePreview.js:624,632,638` — GET
+- __/api/export-pdf__ — `frontend/src/components/FilePreview.js:589` — GET
+- __/api/chat__ — `frontend/src/components/DocumentChat.js:293` — POST
+
+Notes:
+- All API requests use the `API_BASE` constant set to `http://localhost:8001` in each component for local testing.
+- If you expose a different backend port or host, update the `API_BASE` values or provide `REACT_APP_API_BASE` at runtime.
+
 ## Available Scripts
 
 In the project directory, you can run:

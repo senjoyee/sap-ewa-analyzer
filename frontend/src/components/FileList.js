@@ -93,7 +93,7 @@ const formatFileSize = (sizeInBytes) => {
   }
 };
 
-const API_BASE = 'https://sap-ewa-analyzer-backend.azurewebsites.net/';
+const API_BASE = 'http://localhost:8001';
 
 // Snackbar Alert helper component
 const SnackbarAlert = React.forwardRef(function SnackbarAlert(props, ref) {

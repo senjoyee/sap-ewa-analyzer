@@ -269,7 +269,7 @@ const DocumentChat = ({ fileName, documentContent }) => {
 
   // Determine API base URL: env var or same-origin
 // Backend base URL (no trailing slash)
-const API_BASE = 'https://sap-ewa-analyzer-backend.azurewebsites.net';
+const API_BASE = 'http://localhost:8001';
 
 const handleSendMessage = async () => {
     if (!inputValue.trim() || loading) return;
