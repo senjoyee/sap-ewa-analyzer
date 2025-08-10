@@ -166,7 +166,9 @@ class EWAAgent:
             instruction_text = (
                 f"{self.summary_prompt}\n\n"
                 "Return ONLY a function call to create_ewa_summary with arguments containing the final JSON. "
-                "The function call arguments MUST be strictly valid JSON (RFC 8259): use double-quoted keys and strings, no trailing commas, no comments, and no extra text outside JSON."
+                "The function call arguments MUST be strictly valid JSON (RFC 8259): use double-quoted keys and strings, no trailing commas, no comments, and no extra text outside JSON. "
+                "Emit ONLY keys defined by the provided JSON schema (treat additionalProperties as false across all objects) — do not add any extra properties anywhere. "
+                "In Key Findings, if the 'Finding' content covers multiple sentences or topics, output it as a newline-delimited Markdown bullet list with each line starting with '- '."
             )
 
             if file_id:
@@ -277,7 +279,9 @@ class EWAAgent:
 
         repair_instruction = (
             "The previous JSON did not validate against the schema. Fix all validation errors and return ONLY the corrected JSON via the function call arguments. "
-            "Your function call arguments MUST be strictly valid JSON (RFC 8259): double-quoted keys and strings, no trailing commas, no comments, and no extra text outside JSON."
+            "Your function call arguments MUST be strictly valid JSON (RFC 8259): double-quoted keys and strings, no trailing commas, no comments, and no extra text outside JSON. "
+            "Emit ONLY keys defined by the provided JSON schema (treat additionalProperties as false across all objects); remove any extra properties. "
+            "For Key Findings, if the 'Finding' content contains multiple sentences/topics, format it as a newline-delimited Markdown bullet list ('- ' prefix)."
         )
 
         content_items = []

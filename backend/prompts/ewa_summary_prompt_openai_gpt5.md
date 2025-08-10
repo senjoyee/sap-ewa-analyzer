@@ -36,7 +36,7 @@ Analysis guidance (apply internally; output only the final JSON):
    - Create uniquely identified findings (e.g., KF‑001, KF‑002). Keep IDs stable.
    - For each finding include:
      - Area: choose exactly one of: Hardware; Operating System; Database; SAP Kernel / Basis; ABAP Stack; Java Stack; SAP HANA; Performance & Workload; Security & Compliance; Configuration & House-keeping; Interfaces / Connectivity; Backup & Recovery; Upgrade / Patch Management; Capacity & Sizing.
-     - Finding: detailed, self‑contained statement with numeric evidence and specific entities (tables, parameters, transactions) where applicable.
+     - Finding: output a single string. If the content covers multiple sentences or topics, format it as a newline‑delimited Markdown bullet list. Start each bullet line with "- ". If there is only one concise topic, a single line is acceptable. Include numeric evidence and specific entities (tables, parameters, transactions) where applicable.
      - Impact: output as a single string containing a newline‑delimited Markdown bullet list of technical consequences. Start each line with "- ", one point per line.
      - Business impact: output as a single string containing a newline‑delimited Markdown bullet list translating the technical issue into operational/financial/compliance risk. Start each line with "- ", one point per line.
      - Severity: one of low, medium, high, critical (use lowercase unless the schema specifies otherwise). Only include findings with medium/high/critical; omit low if not required.
@@ -49,7 +49,7 @@ Analysis guidance (apply internally; output only the final JSON):
    - Action: output as a single string containing a newline‑delimited Markdown bullet list. Start each line with "- ", one step per line. Keep steps concise and reference any SAP notes explicitly present in the report.
    - Preventative Action: output as a single string containing a newline‑delimited Markdown bullet list. Start each line with "- ", one measure per line.
    - Estimated Effort (object): keys {analysis, implementation}, each one of {low, medium, high}. Do NOT create sibling keys like "Estimated Effort:analysis" or "Estimated Effort:implementation". Use lowercase if the schema expects it; otherwise match schema exactly.
-   - Only include fields defined in the schema. Do not invent extra attributes.
+   - Only include fields defined in the schema. Do not invent extra attributes. Do NOT add any extra columns/keys such as "Responsible Area Details", "Recommendation ID_dup", or any duplicates/derived fields. Emit exactly and only the properties present in the schema.
 
 ### KPIs
 - Create a list of key performance indicator objects with structured format.
@@ -84,6 +84,7 @@ Validation discipline:
 - Keep IDs consistent and stable within this response (e.g., KF‑001, REC‑001).
  - Do NOT duplicate sections/keys in alternative casing (e.g., do not add lowercased duplicates such as "system_metadata" or "schema_version"). Use exactly the schema’s key names once.
  - Under Recommendations, "Estimated Effort" MUST be an object with keys {analysis, implementation}. Do NOT emit flattened duplicates like "Estimated Effort:analysis" or "Estimated Effort:implementation".
+ - Treat additionalProperties as false across ALL objects: emit ONLY the keys defined by the schema and nothing else. Do NOT add any extra properties anywhere (this prevents extra table columns in the UI).
 
 Finalization:
 - Return ONLY a function call to create_ewa_summary with arguments equal to the final JSON object.
