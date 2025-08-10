@@ -162,7 +162,6 @@ async def extract_metadata_with_ai(pdf_bytes: bytes) -> Dict[str, Any]:
             ],
             max_completion_tokens=100,
             reasoning_effort="minimal",
-            temperature=0
         )
         
         # Parse the response

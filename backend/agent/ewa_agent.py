@@ -141,18 +141,9 @@ class EWAAgent:
     
 
     async def _call_openai_responses(self, markdown: str, pdf_data: bytes | None) -> Dict[str, Any]:
-        """Use Azure OpenAI Responses API with function-calling and optional PDF input.
-        Returns the parsed JSON from the function call arguments.
+        """Use Azure OpenAI Responses API with Structured Outputs (response_format) and optional PDF input.
+        Returns the parsed JSON directly from structured outputs when available.
         """
-        # Prepare tool (function) definition using the existing JSON schema
-        tools = [
-            {
-                "type": "function",
-                "name": self.function_def["name"],
-                "description": self.function_def["description"],
-                "parameters": self.function_def["parameters"],
-            }
-        ]
 
         # Build input content
         user_content = []
@@ -174,10 +165,9 @@ class EWAAgent:
 
             instruction_text = (
                 f"{self.summary_prompt}\n\n"
-                "Return ONLY a function call to create_ewa_summary with arguments containing the final JSON. "
-                "The function call arguments MUST be strictly valid JSON (RFC 8259): use double-quoted keys and strings, no trailing commas, no comments, and no extra text outside JSON. "
-                "Emit ONLY keys defined by the provided JSON schema (treat additionalProperties as false across all objects) — do not add any extra properties anywhere. "
-                "In Key Findings, if the 'Finding' content covers multiple sentences or topics, output it as a newline-delimited Markdown bullet list with each line starting with '- '."
+                "Return ONLY a valid JSON object that strictly conforms to the provided JSON schema. "
+                "Do not include any text outside of the JSON. Use double-quoted keys and strings, no trailing commas, and no comments. "
+                "Emit ONLY keys defined by the schema (treat additionalProperties as false across all objects) — do not add any extra properties anywhere. "
             )
 
             if file_id:
@@ -191,55 +181,57 @@ class EWAAgent:
             if file_id:
                 user_content.append({"type": "input_text", "text": instruction_text})
 
+            # Structured outputs: provide the JSON schema via response_format
+            response_format = {
+                "type": "json_schema",
+                "json_schema": {
+                    "name": self.function_def["name"],
+                    "schema": self.schema,
+                    "strict": True,
+                },
+            }
+
             response = self.client.responses.create(
                 model=self.model,
-                tools=tools,
-                tool_choice={"type": "function", "name": self.function_def["name"]},
                 input=[{"role": "user", "content": user_content}],
+                response_format=response_format,
                 max_output_tokens=16384,
                 reasoning={"effort": "low"},
             )
 
-            # Extract function_call arguments from the Responses output
-            args_str = None
+            # Extract structured output
             try:
-                for output_item in getattr(response, "output", []) or []:
-                    # Expect a function_call item
-                    if getattr(output_item, "type", None) == "function_call":
-                        # output_item.arguments may already be a str
-                        args_str = getattr(output_item, "arguments", None)
-                        if args_str:
-                            break
-                if args_str is None:
-                    # As a fallback, try output_text (may be empty with forced tool_choice)
-                    text = getattr(response, "output_text", None)
-                    if text:
-                        args_str = text
+                parsed = getattr(response, "output_parsed", None)
+                if parsed is not None:
+                    if isinstance(parsed, dict):
+                        return parsed
+                    if isinstance(parsed, list) and len(parsed) == 1 and isinstance(parsed[0], dict):
+                        return parsed[0]
             except Exception:
-                # In case of SDK shape changes, dump the raw response for debugging
-                print("[EWAAgent._call_openai_responses] Unable to parse response.output; raw:")
-                try:
-                    print(response.model_dump_json(indent=2))
-                except Exception:
-                    print(str(response))
-                raise
+                pass
 
-            # Extract and parse arguments to JSON
-            try:
-                return self._parse_json_arguments(args_str)
-            except Exception as e:
-                print(f"[EWAAgent._call_openai_responses] JSON parse failed; attempting local JSON repair: {e}")
-                # Attempt local repair on the raw arguments string
+            # Fallback to output_text and parse/repair
+            text = getattr(response, "output_text", None)
+            if text:
                 try:
-                    raw_text = args_str if isinstance(args_str, str) else str(args_str)
-                    rr = self.json_repair.repair(raw_text)
-                    if rr.success and isinstance(rr.data, dict):
-                        return rr.data
-                except Exception as re:
-                    print(f"[EWAAgent._call_openai_responses] Local repair raised: {re}")
-                # Return sentinel dict to trigger local repair in run(); include raw arguments for context
-                raw = args_str if isinstance(args_str, str) else str(args_str)
-                return {"_parse_error": str(e), "raw_arguments": raw[:50000]}
+                    return json.loads(text)
+                except Exception:
+                    try:
+                        rr = self.json_repair.repair(text)
+                        if rr.success and isinstance(rr.data, dict):
+                            return rr.data
+                    except Exception:
+                        pass
+                    # As last resort, return sentinel to allow _repair_local() in run()
+                    return {"_parse_error": "Failed to parse structured output", "raw_arguments": text[:50000]}
+
+            # If neither parsed nor text available, dump raw for debugging and return empty result
+            print("[EWAAgent._call_openai_responses] No output_parsed or output_text; raw response:")
+            try:
+                print(response.model_dump_json(indent=2))
+            except Exception:
+                print(str(response))
+            return {"_parse_error": "No output returned", "raw_arguments": ""}
         finally:
             # Cleanup any temp file created
             if temp_path and os.path.exists(temp_path):
