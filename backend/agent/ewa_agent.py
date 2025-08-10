@@ -5,6 +5,7 @@ import os
 import json
 import asyncio
 import tempfile
+import copy
 from typing import Dict, Any, Union
 from jsonschema import validate, ValidationError
 from models.gemini_client import GeminiClient, is_gemini_model
@@ -141,8 +142,8 @@ class EWAAgent:
     
 
     async def _call_openai_responses(self, markdown: str, pdf_data: bytes | None) -> Dict[str, Any]:
-        """Use Azure OpenAI Responses API with Structured Outputs (response_format) and optional PDF input.
-        Returns the parsed JSON directly from structured outputs when available.
+        """Use Azure OpenAI Responses API with Structured Outputs via text.format and optional PDF input.
+        Returns the parsed JSON directly when available; otherwise falls back to output_text parsing/repair.
         """
 
         # Build input content
@@ -181,20 +182,24 @@ class EWAAgent:
             if file_id:
                 user_content.append({"type": "input_text", "text": instruction_text})
 
-            # Structured outputs: provide the JSON schema via response_format
-            response_format = {
-                "type": "json_schema",
-                "json_schema": {
+            # Prepare a STRICT schema for Structured Outputs by forcing additionalProperties: false on all objects
+            strict_schema = self._make_strict_schema_for_structured_outputs(self.schema)
+
+            # Structured outputs: provide the JSON schema using text.format (compatible shape)
+            text_format = {
+                "format": {
+                    "type": "json_schema",
                     "name": self.function_def["name"],
-                    "schema": self.schema,
+                    "schema": strict_schema,
                     "strict": True,
-                },
+                }
             }
 
+            # Single-path call using text.format; let exceptions surface to caller
             response = self.client.responses.create(
                 model=self.model,
                 input=[{"role": "user", "content": user_content}],
-                response_format=response_format,
+                text=text_format,
                 max_output_tokens=16384,
                 reasoning={"effort": "low"},
             )
@@ -239,6 +244,44 @@ class EWAAgent:
                     os.remove(temp_path)
                 except Exception:
                     pass
+
+    def _make_strict_schema_for_structured_outputs(self, schema: Dict[str, Any]) -> Dict[str, Any]:
+        """Return a deep-copied schema where every object has additionalProperties set to False.
+        This aligns with Structured Outputs strict-mode requirements.
+        """
+        def visit(node: Any) -> Any:
+            if isinstance(node, dict):
+                t = node.get("type")
+                if t == "object":
+                    # Explicitly disallow additional properties for strict schema enforcement
+                    node["additionalProperties"] = False
+                    props = node.get("properties")
+                    if isinstance(props, dict):
+                        for k, v in props.items():
+                            props[k] = visit(v)
+                    pat = node.get("patternProperties")
+                    if isinstance(pat, dict):
+                        for k, v in pat.items():
+                            pat[k] = visit(v)
+                # Recurse into array items
+                items = node.get("items")
+                if isinstance(items, dict):
+                    node["items"] = visit(items)
+                elif isinstance(items, list):
+                    node["items"] = [visit(it) for it in items]
+                # Recurse into combinators if present
+                for key in ("allOf", "anyOf", "oneOf"):
+                    seq = node.get(key)
+                    if isinstance(seq, list):
+                        node[key] = [visit(s) for s in seq]
+                return node
+            elif isinstance(node, list):
+                return [visit(n) for n in node]
+            else:
+                return node
+
+        copy_schema = copy.deepcopy(schema)
+        return visit(copy_schema)
     
     async def _call_gemini(self, markdown: str, pdf_data: bytes = None) -> Dict[str, Any]:
         """Call Gemini API for JSON generation with optional PDF input"""
