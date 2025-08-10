@@ -8,6 +8,10 @@ import tempfile
 from typing import Dict, Any, Union
 from jsonschema import validate, ValidationError
 from models.gemini_client import GeminiClient, is_gemini_model
+from utils.json_repair import JSONRepair
+
+# Note: LLM-based JSON repair has been removed.
+# EWAAgent uses local deterministic repair via utils.json_repair.JSONRepair.
 
 # Fallback prompt if not supplied
 DEFAULT_PROMPT = """You are a world-class SAP Technical Quality Manager and strategic EWA analyst with 20 years of experience. Your task is to analyze the provided SAP EarlyWatch Alert (EWA) report markdown and generate a comprehensive, structured, and actionable executive summary in JSON format. Your analysis must be deep, insightful, and practical, focusing on business risk and proactive quality management.
@@ -97,22 +101,27 @@ class EWAAgent:
             "description": "Return the structured executive summary for an EWA report in JSON that conforms to the schema.",
             "parameters": self.schema,
         }
+        
+        # Local JSON repair utility (non-LLM)
+        self.json_repair = JSONRepair()
 
     # ----------------------------- Public API ----------------------------- #
     async def run(self, markdown: str, pdf_data: bytes = None) -> Dict[str, Any]:
-        """Return a validated summary JSON object. May attempt a single self-repair."""
+        """Return a validated summary JSON object.
+        Attempts a single local (non-LLM) repair if initial output is invalid.
+        """
         summary_json = await self._call_llm(markdown, pdf_data)
         if self._is_valid(summary_json):
             print("[EWAAgent.run] Initial JSON valid; skipping repair")
             return summary_json
 
-        # Try once to repair
-        print(f"[EWAAgent.run] Initial JSON invalid; invoking repair via {'Gemini' if self.is_gemini else 'OpenAI'}")
-        summary_json = await self._repair(markdown, summary_json, pdf_data)
+        # Try local repair (no LLM)
+        print("[EWAAgent.run] Initial JSON invalid; invoking local JSON repair")
+        summary_json = self._repair_local(markdown, summary_json)
         # Log result validity (return value unchanged)
         try:
             is_valid_after = self._is_valid(summary_json)
-            print(f"[EWAAgent.run] Repair completed; valid={is_valid_after}")
+            print(f"[EWAAgent.run] Local repair completed; valid={is_valid_after}")
         except Exception:
             # Be resilient to unexpected types
             print("[EWAAgent.run] Repair completed; validity check raised an exception")
@@ -219,8 +228,16 @@ class EWAAgent:
             try:
                 return self._parse_json_arguments(args_str)
             except Exception as e:
-                print(f"[EWAAgent._call_openai_responses] JSON parse failed; will trigger repair via run(): {e}")
-                # Return sentinel dict to force repair in run(); also include raw arguments for debugging/repair prompt
+                print(f"[EWAAgent._call_openai_responses] JSON parse failed; attempting local JSON repair: {e}")
+                # Attempt local repair on the raw arguments string
+                try:
+                    raw_text = args_str if isinstance(args_str, str) else str(args_str)
+                    rr = self.json_repair.repair(raw_text)
+                    if rr.success and isinstance(rr.data, dict):
+                        return rr.data
+                except Exception as re:
+                    print(f"[EWAAgent._call_openai_responses] Local repair raised: {re}")
+                # Return sentinel dict to trigger local repair in run(); include raw arguments for context
                 raw = args_str if isinstance(args_str, str) else str(args_str)
                 return {"_parse_error": str(e), "raw_arguments": raw[:50000]}
         finally:
@@ -258,129 +275,29 @@ class EWAAgent:
             print(f"[EWAAgent._call_gemini] Exception occurred: {str(e)}")
             raise
 
-    async def _repair(self, markdown: str, previous_json: Dict[str, Any], pdf_data: bytes = None) -> Dict[str, Any]:
-        """Repair invalid JSON response"""
-        if self.is_gemini:
-            return await self._repair_gemini(markdown, previous_json, pdf_data)
-        else:
-            return await self._repair_openai(markdown, previous_json, pdf_data)
-    
-    async def _repair_openai(self, markdown: str, previous_json: Dict[str, Any], pdf_data: bytes | None) -> Dict[str, Any]:
-        """Use Responses API to repair invalid JSON by forcing a function call again."""
-        print("[EWAAgent._repair_openai] Invoked (Responses API)")
-        tools = [
-            {
-                "type": "function",
-                "name": self.function_def["name"],
-                "description": self.function_def["description"],
-                "parameters": self.function_def["parameters"],
-            }
-        ]
-
-        repair_instruction = (
-            "The previous JSON did not validate against the schema. Fix all validation errors and return ONLY the corrected JSON via the function call arguments. "
-            "Your function call arguments MUST be strictly valid JSON (RFC 8259): double-quoted keys and strings, no trailing commas, no comments, and no extra text outside JSON. "
-            "Emit ONLY keys defined by the provided JSON schema (treat additionalProperties as false across all objects); remove any extra properties. "
-            "For Key Findings, if the 'Finding' content contains multiple sentences/topics, format it as a newline-delimited Markdown bullet list ('- ' prefix)."
-        )
-
-        content_items = []
-        if pdf_data:
-            # Prefer reusing the PDF context again when available
-            with tempfile.NamedTemporaryFile(delete=False, suffix=".pdf") as tmp:
-                tmp.write(pdf_data)
-                temp_path = tmp.name
-            file_obj = open(temp_path, "rb")
-            try:
-                uploaded = self.client.files.create(file=file_obj, purpose="assistants")
-                file_id = uploaded.id
-            finally:
-                file_obj.close()
-                try:
-                    os.remove(temp_path)
-                except Exception:
-                    pass
-            content_items.append({"type": "input_file", "file_id": file_id})
-
-        content_items.append({"type": "input_text", "text": self.summary_prompt})
-        # Provide both the invalid JSON and (if no PDF) the original markdown for context
-        if not pdf_data:
-            content_items.append({"type": "input_text", "text": f"Original markdown content:\n\n{markdown}"})
-        content_items.append({"type": "input_text", "text": f"Invalid JSON response to repair:\n\n{json.dumps(previous_json, indent=2)}"})
-        content_items.append({"type": "input_text", "text": repair_instruction})
-
-        response = self.client.responses.create(
-            model=self.model,
-            tools=tools,
-            tool_choice={"type": "function", "name": self.function_def["name"]},
-            input=[{"role": "user", "content": content_items}],
-            max_output_tokens=16384,
-            reasoning={"effort": "low"},
-        )
-
-        # Extract and parse arguments
-        args_str = None
-        for output_item in getattr(response, "output", []) or []:
-            if getattr(output_item, "type", None) == "function_call":
-                args_str = getattr(output_item, "arguments", None)
-                if args_str:
-                    break
-        if not args_str:
-            # As a fallback, try output_text
-            text = getattr(response, "output_text", None)
-            if text:
-                args_str = text
-        if not args_str:
-            # If still nothing, return previous_json as a last resort
-            print("[EWAAgent._repair_openai] No function_call arguments returned; returning previous JSON")
-            return previous_json
-        return self._parse_json_arguments(args_str)
-    
-    async def _repair_gemini(self, markdown: str, previous_json: Dict[str, Any], pdf_data: bytes = None) -> Dict[str, Any]:
-        """Repair JSON using Gemini with optional PDF input"""
-        print("[EWAAgent._repair_gemini] Invoked")
+    def _repair_local(self, markdown: str, previous_json: Dict[str, Any]) -> Dict[str, Any]:
+        """Repair JSON locally without LLM calls. This is the only repair path.
+        - If we have raw_arguments (string) from a failed parse, repair that.
+        - Otherwise, attempt to repair the serialized previous_json.
+        Returns the repaired dict on success, else the original previous_json.
+        """
         try:
-            if pdf_data:
-                repair_prompt = f"""The following JSON response did not validate against the required schema. Please fix all validation errors and return ONLY the corrected JSON object.
+            # If parse previously failed and we captured raw arguments, try repairing that string first
+            if isinstance(previous_json, dict) and "raw_arguments" in previous_json:
+                raw = previous_json.get("raw_arguments", "")
+                rr = self.json_repair.repair(raw)
+                if rr.success and isinstance(rr.data, dict):
+                    return rr.data
 
-Analyze the attached PDF document and correct the JSON response.
-
-Invalid JSON response:
-{json.dumps(previous_json, indent=2)}
-
-Required JSON schema:
-{json.dumps(self.schema, indent=2)}
-
-Please analyze the validation errors and return the corrected JSON that conforms to the schema."""
-            else:
-                repair_prompt = f"""The following JSON response did not validate against the required schema. Please fix all validation errors and return ONLY the corrected JSON object.
-
-Original markdown content:
-{markdown}
-
-Invalid JSON response:
-{json.dumps(previous_json, indent=2)}
-
-Required JSON schema:
-{json.dumps(self.schema, indent=2)}
-
-Please analyze the validation errors and return the corrected JSON that conforms to the schema."""
-            
-            loop = asyncio.get_running_loop()
-            response = await loop.run_in_executor(
-                None, 
-                lambda: self.client.generate_json_content(repair_prompt, pdf_data=pdf_data)
-            )
-            
-            return response
-            
+            # Otherwise, try repairing the JSON dump of the previous object
+            text = json.dumps(previous_json, ensure_ascii=False)
+            rr = self.json_repair.repair(text)
+            if rr.success and isinstance(rr.data, dict):
+                return rr.data
         except Exception as e:
-            print(f"[EWAAgent._repair_gemini] Exception occurred: {str(e)}")
-            # Return the original response if repair fails
-            return previous_json
-
+            print(f"[EWAAgent._repair_local] Exception during local repair: {e}")
+        return previous_json
     
-
     def _is_valid(self, data: Dict[str, Any]) -> bool:
         try:
             validate(instance=data, schema=self.schema)
@@ -399,6 +316,13 @@ Please analyze the validation errors and return the corrected JSON that conforms
         try:
             return json.loads(args_str)
         except Exception:
+            # Attempt local repair on the raw arguments string
+            try:
+                rr = self.json_repair.repair(args_str)
+                if rr.success and isinstance(rr.data, dict):
+                    return rr.data
+            except Exception:
+                pass
             # Strip code fences or extract JSON substring
             start = args_str.find('{')
             end = args_str.rfind('}')
