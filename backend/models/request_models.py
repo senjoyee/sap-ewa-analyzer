@@ -11,3 +11,10 @@ class BlobNameRequest(BaseModel):
     """Simple request body that only requires a blob name."""
 
     blob_name: str
+
+
+class ProcessAnalyzeRequest(BaseModel):
+    """Request body for combined process+analyze with optional PDF-first flag."""
+
+    blob_name: str
+    pdf_first: bool = False

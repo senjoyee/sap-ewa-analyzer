@@ -146,48 +146,6 @@
 
 
 
-    "KPIs": {
-      "type": "array",
-      "description": "A list of key performance indicators (KPIs) with current values, targets, and trend information.",
-      "items": {
-        "type": "object",
-        "required": ["name", "current_value", "trend"],
-        "properties": {
-          "name": {
-            "type": "string",
-            "description": "Name of the KPI (e.g., 'Database Response Time', 'CPU Utilization')"
-          },
-          "current_value": {
-            "type": "string",
-            "description": "Current value with units (e.g., '25ms', '85%', '2.3GB')"
-          },
-          "target_value": {
-            "type": "string",
-            "description": "Target or recommended value with units (optional)"
-          },
-          "trend": {
-            "type": "object",
-            "required": ["direction"],
-            "properties": {
-              "direction": {
-                "type": "string",
-                "enum": ["up", "down", "flat"],
-                "description": "Trend direction compared to previous report"
-              },
-              "percent_change": {
-                "type": "number",
-                "description": "Percentage change from previous report (optional)"
-              },
-              "description": {
-                "type": "string",
-                "description": "Brief explanation of the trend (optional)"
-              }
-            }
-          }
-        }
-      }
-    },
-
     "capacity_outlook": {
       "type": "object",
       "properties": {
@@ -195,55 +153,6 @@
         "CPU Utilization":   { "type": "string" },
         "Memory Utilization":{ "type": "string" },
         "Summary":           { "type": "string" }
-      }
-    },
-
-
-    "quick_wins": {
-      "type": "array",
-      "description": "Recommendations with low analysis and implementation effort.",
-      "items": {
-        "type": "object",
-        "required": [
-          "Recommendation ID",
-          "Estimated Effort",
-          "Responsible Area",
-          "Action",
-          "Preventative Action"
-        ],
-        "properties": {
-          "Recommendation ID": {
-            "type": "string",
-            "pattern": "^REC-[0-9]{2}$"
-          },
-          "Estimated Effort": {
-            "type": "object",
-            "required": ["analysis", "implementation"],
-            "properties": {
-              "analysis":      { "type": "string", "enum": ["low", "medium", "high"] },
-              "implementation":{ "type": "string", "enum": ["low", "medium", "high"] }
-            }
-          },
-          "Responsible Area": { "type": "string", "enum": [
-              "SAP Basis Team",
-              "Database Administration",
-              "Operating System Administration",
-              "Network & Connectivity",
-              "Security / Compliance Team",
-              "Application Development",
-              "Functional / Business Process Owner",
-              "Infrastructure / Hardware Team",
-              "Third-Party Vendor",
-              "Project / Change Management"
-            ] },
-          "Linked issue ID": {
-            "type": "string",
-            "pattern": "^KF-[0-9]{2}$",
-            "description": "Key finding this recommendation addresses."
-          },
-          "Action":             { "type": "string", "description": "Specific steps to execute." },
-          "Preventative Action":{ "type": "string", "description": "Measure to prevent recurrence." }
-        }
       }
     },
 
@@ -262,9 +171,7 @@
     "positive_findings",
     "key_findings",
     "recommendations",
-    "kpis",
     "capacity_outlook",
-    "quick_wins",
     "overall_risk"
   ]
 

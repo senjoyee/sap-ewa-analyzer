@@ -30,6 +30,7 @@ Ensure your entire output strictly adheres to the provided JSON schema. Do not a
 _PROMPT_DIR = os.path.join(os.path.dirname(os.path.abspath(__file__)), "..", "prompts")
 _OPENAI_PROMPT_PATH = os.path.join(_PROMPT_DIR, "ewa_summary_prompt_openai.md")
 _GEMINI_PROMPT_PATH = os.path.join(_PROMPT_DIR, "ewa_summary_prompt_openai_google.md")
+_OPENAI_GPT5_PROMPT_PATH = os.path.join(_PROMPT_DIR, "ewa_summary_prompt_openai_gpt5.md")
 
 # Fallback: if specific prompt files are unavailable, use inline DEFAULT_PROMPT above
 _DEFAULT_FALLBACK_PROMPT_PATH = _OPENAI_PROMPT_PATH  # prefer OpenAI template for fallback
@@ -49,12 +50,40 @@ class EWAAgent:
         if summary_prompt is not None:
             self.summary_prompt = summary_prompt
         else:
-            prompt_path = _GEMINI_PROMPT_PATH if self.is_gemini else _OPENAI_PROMPT_PATH
-            if os.path.exists(prompt_path):
-                with open(prompt_path, "r", encoding="utf-8") as _p:
-                    self.summary_prompt = _p.read()
+            # Select prompt file based on model
+            if self.is_gemini:
+                candidate_paths = [
+                    _GEMINI_PROMPT_PATH,
+                    _OPENAI_GPT5_PROMPT_PATH,  # fallback to GPT-5 optimized if present
+                    _OPENAI_PROMPT_PATH,
+                ]
             else:
-                self.summary_prompt = DEFAULT_PROMPT
+                model_lc = (self.model or "").lower()
+                if "gpt-5" in model_lc:
+                    candidate_paths = [
+                        _OPENAI_GPT5_PROMPT_PATH,  # preferred for GPT-5 family
+                        _OPENAI_PROMPT_PATH,
+                        _GEMINI_PROMPT_PATH,
+                    ]
+                else:
+                    candidate_paths = [
+                        _OPENAI_PROMPT_PATH,
+                        _OPENAI_GPT5_PROMPT_PATH,
+                        _GEMINI_PROMPT_PATH,
+                    ]
+
+            loaded = None
+            for p in candidate_paths:
+                if os.path.exists(p):
+                    try:
+                        with open(p, "r", encoding="utf-8") as _p:
+                            loaded = _p.read()
+                            print(f"[EWAAgent] Loaded summary prompt from {p}")
+                            break
+                    except Exception as e:
+                        print(f"[EWAAgent] Warning: Could not read prompt file {p}: {e}")
+                        continue
+            self.summary_prompt = loaded if loaded is not None else DEFAULT_PROMPT
 
         if schema_path is None:
             base_dir = os.path.dirname(os.path.abspath(__file__))
@@ -74,11 +103,19 @@ class EWAAgent:
         """Return a validated summary JSON object. May attempt a single self-repair."""
         summary_json = await self._call_llm(markdown, pdf_data)
         if self._is_valid(summary_json):
+            print("[EWAAgent.run] Initial JSON valid; skipping repair")
             return summary_json
 
         # Try once to repair
+        print(f"[EWAAgent.run] Initial JSON invalid; invoking repair via {'Gemini' if self.is_gemini else 'OpenAI'}")
         summary_json = await self._repair(markdown, summary_json, pdf_data)
-        # Either returns valid JSON or last attempt regardless of validity
+        # Log result validity (return value unchanged)
+        try:
+            is_valid_after = self._is_valid(summary_json)
+            print(f"[EWAAgent.run] Repair completed; valid={is_valid_after}")
+        except Exception:
+            # Be resilient to unexpected types
+            print("[EWAAgent.run] Repair completed; validity check raised an exception")
         return summary_json
     
 
@@ -93,13 +130,6 @@ class EWAAgent:
             # Use Responses API with optional PDF input for OpenAI path
             return await self._call_openai_responses(markdown, pdf_data)
     
-    async def _call_openai(self, markdown: str) -> Dict[str, Any]:
-        messages = [
-            {"role": "system", "content": self.summary_prompt},
-            {"role": "user", "content": markdown},
-        ]
-        response = await self._async_openai(messages)
-        return json.loads(response.choices[0].message.function_call.arguments)
 
     async def _call_openai_responses(self, markdown: str, pdf_data: bytes | None) -> Dict[str, Any]:
         """Use Azure OpenAI Responses API with function-calling and optional PDF input.
@@ -109,11 +139,9 @@ class EWAAgent:
         tools = [
             {
                 "type": "function",
-                "function": {
-                    "name": self.function_def["name"],
-                    "description": self.function_def["description"],
-                    "parameters": self.function_def["parameters"],
-                },
+                "name": self.function_def["name"],
+                "description": self.function_def["description"],
+                "parameters": self.function_def["parameters"],
             }
         ]
 
@@ -137,7 +165,8 @@ class EWAAgent:
 
             instruction_text = (
                 f"{self.summary_prompt}\n\n"
-                "Return ONLY a function call to create_ewa_summary with arguments containing the final JSON."
+                "Return ONLY a function call to create_ewa_summary with arguments containing the final JSON. "
+                "The function call arguments MUST be strictly valid JSON (RFC 8259): use double-quoted keys and strings, no trailing commas, no comments, and no extra text outside JSON."
             )
 
             if file_id:
@@ -154,8 +183,10 @@ class EWAAgent:
             response = self.client.responses.create(
                 model=self.model,
                 tools=tools,
-                tool_choice={"type": "function", "function": {"name": self.function_def["name"]}},
+                tool_choice={"type": "function", "name": self.function_def["name"]},
                 input=[{"role": "user", "content": user_content}],
+                max_output_tokens=16384,
+                reasoning={"effort": "low"},
             )
 
             # Extract function_call arguments from the Responses output
@@ -182,11 +213,14 @@ class EWAAgent:
                     print(str(response))
                 raise
 
-            if not args_str:
-                raise ValueError("Responses API did not return function_call arguments")
-
-            # Parse JSON from arguments string
-            return self._parse_json_arguments(args_str)
+            # Extract and parse arguments to JSON
+            try:
+                return self._parse_json_arguments(args_str)
+            except Exception as e:
+                print(f"[EWAAgent._call_openai_responses] JSON parse failed; will trigger repair via run(): {e}")
+                # Return sentinel dict to force repair in run(); also include raw arguments for debugging/repair prompt
+                raw = args_str if isinstance(args_str, str) else str(args_str)
+                return {"_parse_error": str(e), "raw_arguments": raw[:50000]}
         finally:
             # Cleanup any temp file created
             if temp_path and os.path.exists(temp_path):
@@ -231,19 +265,19 @@ class EWAAgent:
     
     async def _repair_openai(self, markdown: str, previous_json: Dict[str, Any], pdf_data: bytes | None) -> Dict[str, Any]:
         """Use Responses API to repair invalid JSON by forcing a function call again."""
+        print("[EWAAgent._repair_openai] Invoked (Responses API)")
         tools = [
             {
                 "type": "function",
-                "function": {
-                    "name": self.function_def["name"],
-                    "description": self.function_def["description"],
-                    "parameters": self.function_def["parameters"],
-                },
+                "name": self.function_def["name"],
+                "description": self.function_def["description"],
+                "parameters": self.function_def["parameters"],
             }
         ]
 
         repair_instruction = (
-            "The previous JSON did not validate against the schema. Fix all validation errors and return ONLY the corrected JSON via the function call arguments."
+            "The previous JSON did not validate against the schema. Fix all validation errors and return ONLY the corrected JSON via the function call arguments. "
+            "Your function call arguments MUST be strictly valid JSON (RFC 8259): double-quoted keys and strings, no trailing commas, no comments, and no extra text outside JSON."
         )
 
         content_items = []
@@ -274,8 +308,10 @@ class EWAAgent:
         response = self.client.responses.create(
             model=self.model,
             tools=tools,
-            tool_choice={"type": "function", "function": {"name": self.function_def["name"]}},
+            tool_choice={"type": "function", "name": self.function_def["name"]},
             input=[{"role": "user", "content": content_items}],
+            max_output_tokens=16384,
+            reasoning={"effort": "low"},
         )
 
         # Extract and parse arguments
@@ -298,6 +334,7 @@ class EWAAgent:
     
     async def _repair_gemini(self, markdown: str, previous_json: Dict[str, Any], pdf_data: bytes = None) -> Dict[str, Any]:
         """Repair JSON using Gemini with optional PDF input"""
+        print("[EWAAgent._repair_gemini] Invoked")
         try:
             if pdf_data:
                 repair_prompt = f"""The following JSON response did not validate against the required schema. Please fix all validation errors and return ONLY the corrected JSON object.
@@ -338,30 +375,7 @@ Please analyze the validation errors and return the corrected JSON that conforms
             # Return the original response if repair fails
             return previous_json
 
-    async def _async_openai(self, messages):
-        loop = asyncio.get_running_loop()
-        def call():
-            return self.client.chat.completions.create(
-                model=self.model,
-                messages=messages,
-                max_completion_tokens=16384,
-                functions=[self.function_def],
-                function_call={"name": "create_ewa_summary"}
-            )
-        import traceback
-        try:
-            response = await loop.run_in_executor(None, call)
-            # Print token usage if available
-            if hasattr(response, 'usage') and response.usage is not None:
-                prompt_tokens = getattr(response.usage, 'prompt_tokens', None)
-                completion_tokens = getattr(response.usage, 'completion_tokens', None)
-                total_tokens = getattr(response.usage, 'total_tokens', None)
-                print(f"[TOKEN USAGE] Prompt: {prompt_tokens} | Completion: {completion_tokens} | Total: {total_tokens}")
-            return response
-        except Exception as e:
-            print("[EWAAgent._async_openai] Exception occurred:")
-            traceback.print_exc()
-            raise
+    
 
     def _is_valid(self, data: Dict[str, Any]) -> bool:
         try:

@@ -24,6 +24,8 @@ import FolderIcon from '@mui/icons-material/Folder';
 import BusinessIcon from '@mui/icons-material/Business';
 import Snackbar from '@mui/material/Snackbar';
 import MuiAlert from '@mui/material/Alert';
+import FormControlLabel from '@mui/material/FormControlLabel';
+import Switch from '@mui/material/Switch';
 import { useTheme } from '../contexts/ThemeContext';
 import dayjs from 'dayjs';
 import weekOfYear from 'dayjs/plugin/weekOfYear';
@@ -114,6 +116,7 @@ const FileList = ({ onFileSelect, refreshTrigger, selectedFile }) => {
   const pollingIntervalsRef = useRef({});
   const { theme } = useTheme();
   const isDark = theme === 'dark';
+  const [pdfFirstMode, setPdfFirstMode] = useState(false);
   
   // Snackbar state
   const [snackbar, setSnackbar] = useState({
@@ -241,108 +244,21 @@ const FileList = ({ onFileSelect, refreshTrigger, selectedFile }) => {
     // Show initiation message IMMEDIATELY
     showSnackbar(`Processing initiated for ${selectedFiles.length} file(s).`, 'info');
 
-    const newFiles = selectedFiles.filter(file => !file.ai_analyzed);
-    const processedFiles = selectedFiles.filter(file => file.ai_analyzed);
-    
-    let confirmMessage = '';
-    if (newFiles.length > 0 && processedFiles.length > 0) {
-      confirmMessage = `Process ${newFiles.length} new file(s) and reprocess ${processedFiles.length} already-processed file(s)?`;
-    } else if (newFiles.length > 0) {
-      confirmMessage = `Process ${newFiles.length} new file(s)?`;
-    } else {
-      confirmMessage = `Reprocess ${processedFiles.length} already-processed file(s)?`;
-    }
-    
-    const confirmProcess = window.confirm(confirmMessage);
-    
-    if (!confirmProcess) {
-      return;
-    }
-    
-    // Update UI to show processing state
-    const newProcessingState = {};
-    selectedFiles.forEach(file => {
-      newProcessingState[file.id || file.name] = true;
-    });
-    
-    if (processedFiles.length > 0) {
-      setReprocessingFiles(prev => ({
-        ...prev,
-        ...newProcessingState
-      }));
-    }
-    
-    if (newFiles.length > 0) {
-      setCombinedProcessingStatus(prev => {
-        const updated = { ...prev };
-        newFiles.forEach(file => {
-          updated[file.id || file.name] = 'processing';
-        });
-        return updated;
+    // Mark all selected files as processing in UI
+    setCombinedProcessingStatus(prev => {
+      const updated = { ...prev };
+      selectedFiles.forEach(file => {
+        updated[file.id || file.name] = 'processing';
       });
-    }
-    
-    // Process files sequentially (check if sequential processing is beneficial)
-    const groupedFiles = {};
-    selectedFiles.forEach(file => {
-      const key = `${file.customer_name}|${file.system_id}`;
-      if (!groupedFiles[key]) {
-        groupedFiles[key] = [];
-      }
-      groupedFiles[key].push(file);
+      return updated;
     });
-    
-    // Check if we have groups that would benefit from sequential processing
-    let useSequentialProcessing = false;
-    for (const [key, files] of Object.entries(groupedFiles)) {
-      if (files.length > 1) {
-        const [customer_name, system_id] = key.split('|');
-        // Use sequential processing for groups with multiple files
-        useSequentialProcessing = true;
-        try {
-          const response = await fetch(`${API_BASE}/api/process-sequential`, {
-            method: 'POST',
-            headers: {
-              'Content-Type': 'application/json',
-            },
-            body: JSON.stringify({
-              customer_name: customer_name,
-              system_id: system_id
-            })
-          });
-          
-          if (!response.ok) {
-            throw new Error(`Sequential processing failed: ${response.status}`);
-          }
-          
-          console.log(`Sequential processing initiated for ${files.length} files of ${customer_name}/${system_id}`);
-        } catch (error) {
-          console.error(`Error in sequential processing for ${customer_name}/${system_id}:`, error);
-          // Fall back to individual processing
-          for (const file of files) {
-            try {
-              if (file.ai_analyzed) {
-                await handleReprocessAI(file, false);
-              } else {
-                await handleProcessAndAnalyze(file, false);
-              }
-            } catch (fileError) {
-              console.error(`Error processing ${file.name}:`, fileError);
-            }
-          }
-        }
-      } else {
-        // Single file, process individually
-        const file = files[0];
-        try {
-          if (file.ai_analyzed) {
-            await handleReprocessAI(file, false);
-          } else {
-            await handleProcessAndAnalyze(file, false);
-          }
-        } catch (error) {
-          console.error(`Error processing ${file.name}:`, error);
-        }
+
+    // Process each selected file individually using the combined endpoint
+    for (const file of selectedFiles) {
+      try {
+        await handleProcessAndAnalyze(file);
+      } catch (error) {
+        console.error(`Error processing ${file.name}:`, error);
       }
     }
     
@@ -351,7 +267,7 @@ const FileList = ({ onFileSelect, refreshTrigger, selectedFile }) => {
     
     // Show completion message (optional, can be removed if not needed)
     // const totalFiles = selectedFiles.length;
-    // alert(`Processing initiated for ${totalFiles} file(s).${useSequentialProcessing ? ' Sequential processing used where beneficial.' : ''}`);
+    // alert(`Processing initiated for ${totalFiles} file(s).`);
   };
   
   // Group files by customer
@@ -664,7 +580,7 @@ const FileList = ({ onFileSelect, refreshTrigger, selectedFile }) => {
         headers: {
           'Content-Type': 'application/json',
         },
-        body: JSON.stringify({ blob_name: file.name }),
+        body: JSON.stringify({ blob_name: file.name, pdf_first: pdfFirstMode }),
       });
 
       if (!response.ok) {
@@ -1258,7 +1174,12 @@ const FileList = ({ onFileSelect, refreshTrigger, selectedFile }) => {
         
         {/* Batch action buttons */}
         {selectedCount > 0 && (
-          <Box sx={{ display: 'flex', gap: 1, justifyContent: 'flex-end' }}>
+          <Box sx={{ display: 'flex', gap: 1, justifyContent: 'flex-end', alignItems: 'center' }}>
+            <FormControlLabel 
+              control={<Switch checked={pdfFirstMode} onChange={(e) => setPdfFirstMode(e.target.checked)} size="small" />}
+              label="PDF-first"
+              sx={{ mr: 'auto', ml: 1 }}
+            />
             {selectedAnalyzedCount > 0 && (
               <Button
                 variant="outlined"

@@ -17,7 +17,6 @@ The orchestrator ensures a cohesive end-to-end analysis process for SAP EWA repo
 
 import os
 import json
-import re
 import asyncio
 import traceback # Added for exception logging
 from datetime import datetime
@@ -27,8 +26,8 @@ from azure.storage.blob import BlobServiceClient
 from openai import AzureOpenAI
 from dotenv import load_dotenv
 from agent.ewa_agent import EWAAgent
+from agent.kpi_image_agent import KPIImageAgent
 from utils.markdown_utils import json_to_markdown
-from utils.kpi_extractor import KPIExtractor
 from converters.document_converter import convert_document_to_markdown, get_conversion_status # Added for combined workflow
 from models.gemini_client import GeminiClient, is_gemini_model, create_gemini_client
 
@@ -51,14 +50,30 @@ AZURE_STORAGE_CONTAINER_NAME = os.getenv("AZURE_STORAGE_CONTAINER_NAME")
 # System prompts for each workflow
 # System prompts for each workflow
 def load_summary_prompt() -> str | None:
-    """Return the first available summary prompt content, or None if none found."""
+    """Return the first available summary prompt content, or None if none found.
+    Preference order:
+    - If Gemini model is configured, prefer the Gemini-specific prompt.
+    - Otherwise, prefer the GPT-5 optimized OpenAI prompt when present.
+    - Fallback to OpenAI or legacy prompts.
+    """
     current_dir = os.path.dirname(os.path.abspath(__file__))
     prompt_dir = os.path.join(current_dir, "prompts")
-    candidate_files = [
-        "ewa_summary_prompt.md",                # legacy path
-        "ewa_summary_prompt_openai.md",        # OpenAI-specific
-        "ewa_summary_prompt_openai_google.md", # Gemini-specific
-    ]
+
+    # Prefer model-appropriate prompt
+    if is_gemini_model(AZURE_OPENAI_SUMMARY_MODEL):
+        candidate_files = [
+            "ewa_summary_prompt_openai_google.md", # Gemini-specific
+            "ewa_summary_prompt_openai_gpt5.md",   # Fallback to GPT-5 optimized
+            "ewa_summary_prompt_openai.md",        # OpenAI-specific
+            "ewa_summary_prompt.md",               # legacy path
+        ]
+    else:
+        candidate_files = [
+            "ewa_summary_prompt_openai_gpt5.md",   # GPT-5 optimized (preferred for OpenAI models)
+            "ewa_summary_prompt_openai.md",        # OpenAI-specific
+            "ewa_summary_prompt.md",               # legacy path
+            "ewa_summary_prompt_openai_google.md", # Gemini-specific (as last resort)
+        ]
 
     for filename in candidate_files:
         path = os.path.join(prompt_dir, filename)
@@ -225,212 +240,7 @@ class EWAWorkflowOrchestrator:
         except Exception as e:
             print(f"Error retrieving metadata for {blob_name}: {str(e)}")
             return {}
-    
-    async def get_canonical_kpi_blob_name(self, customer_name: str, system_id: str) -> str:
-        """Generate canonical KPI blob name for customer + system"""
-        # Sanitize names for blob storage
-        safe_customer = re.sub(r'[^a-zA-Z0-9]', '_', customer_name.lower())
-        safe_system = re.sub(r'[^a-zA-Z0-9]', '_', system_id.lower())
-        return f"canonical_kpis/{safe_customer}_{safe_system}_kpis.json"
-    
-    async def get_canonical_kpi_list(self, customer_name: str, system_id: str) -> dict:
-        """Retrieve canonical KPI list for customer + system combination"""
-        try:
-            canonical_blob_name = await self.get_canonical_kpi_blob_name(customer_name, system_id)
-            blob_client = self.blob_service_client.get_blob_client(
-                container=AZURE_STORAGE_CONTAINER_NAME, 
-                blob=canonical_blob_name
-            )
-            
-            # Check if canonical KPI list exists
-            if blob_client.exists():
-                content = blob_client.download_blob().readall().decode('utf-8')
-                return json.loads(content)
-            else:
-                print(f"No canonical KPI list found for {customer_name}/{system_id}")
-                return None
-                
-        except Exception as e:
-            print(f"Error retrieving canonical KPI list for {customer_name}/{system_id}: {str(e)}")
-            return None
-    
-    async def save_canonical_kpi_list(self, customer_name: str, system_id: str, kpi_list: list) -> bool:
-        """Save canonical KPI list for customer + system combination"""
-        try:
-            canonical_blob_name = await self.get_canonical_kpi_blob_name(customer_name, system_id)
-            
-            canonical_data = {
-                "customer_name": customer_name,
-                "system_id": system_id,
-                "created_date": datetime.utcnow().isoformat(),
-                "kpi_list": kpi_list
-            }
-            
-            # Create metadata for canonical KPI file
-            metadata = {
-                "customer_name": customer_name,
-                "system_id": system_id,
-                "file_type": "canonical_kpis"
-            }
-            
-            await self.upload_to_blob(
-                canonical_blob_name, 
-                json.dumps(canonical_data, indent=2), 
-                "application/json", 
-                metadata
-            )
-            
-            print(f"Saved canonical KPI list for {customer_name}/{system_id} with {len(kpi_list)} KPIs")
-            return True
-            
-        except Exception as e:
-            print(f"Error saving canonical KPI list for {customer_name}/{system_id}: {str(e)}")
-            return False
-    
-    async def get_previous_analysis_kpis(self, customer_name: str, system_id: str, current_report_date: str) -> list:
-        """Get KPIs from the most recent previous analysis for trend calculation"""
-        try:
-            # List all blobs and find matching analyses
-            container_client = self.blob_service_client.get_container_client(AZURE_STORAGE_CONTAINER_NAME)
-            matching_analyses = []
-            
-            # Use regular for loop since list_blobs() returns ItemPaged, not async iterable
-            for blob in container_client.list_blobs(include=['metadata']):
-                if blob.name.endswith('_AI.json') and blob.metadata:
-                    blob_customer = blob.metadata.get('customer_name', '')
-                    blob_system = blob.metadata.get('system_id', '')
-                    blob_date = blob.metadata.get('report_date_str', '')
-                    
-                    if (blob_customer == customer_name and 
-                        blob_system == system_id and 
-                        blob_date != current_report_date):
-                        matching_analyses.append((blob.name, blob_date, blob.metadata.get('report_date', '')))
-            
-            if not matching_analyses:
-                print(f"No previous analyses found for {customer_name}/{system_id}")
-                return []
-            
-            # Sort by report_date and find the most recent one BEFORE current date
-            current_date_iso = datetime.strptime(current_report_date, "%d.%m.%Y").isoformat()
-            
-            # Filter for analyses before current report date, then get most recent
-            previous_analyses = [
-                (blob_name, blob_date_str, report_date_iso) 
-                for blob_name, blob_date_str, report_date_iso in matching_analyses 
-                if report_date_iso < current_date_iso
-            ]
-            
-            if not previous_analyses:
-                print(f"No previous analyses found before {current_report_date} for {customer_name}/{system_id}")
-                return []
-            
-            # Sort by report_date (ISO format) and get the most recent before current
-            previous_analyses.sort(key=lambda x: x[2], reverse=True)
-            most_recent_blob = previous_analyses[0][0]
-            
-            print(f"Found chronologically previous analysis: {most_recent_blob} (before {current_report_date})")
-            
-
-            
-            # Download and extract KPIs
-            blob_client = self.blob_service_client.get_blob_client(
-                container=AZURE_STORAGE_CONTAINER_NAME, 
-                blob=most_recent_blob
-            )
-            
-            content = blob_client.download_blob().readall().decode('utf-8')
-            analysis_data = json.loads(content)
-            
-            return analysis_data.get('key_performance_indicators', [])
-            
-        except Exception as e:
-            print(f"Error retrieving previous analysis KPIs for {customer_name}/{system_id}: {str(e)}")
-            return []
-    
-    async def extract_kpis_deterministically(self, markdown_content: str, system_id: str, 
-                                           customer_name: str, report_date_str: str) -> List[Dict[str, Any]]:
-        """Extract KPIs using deterministic Python logic instead of AI"""
-        try:
-            print(f"[DETERMINISTIC KPI] Starting KPI extraction for {customer_name}/{system_id}")
-            
-            # Initialize KPI extractor
-            kpi_extractor = KPIExtractor()
-            
-            # Extract current KPIs from markdown
-            current_kpis = kpi_extractor.extract_kpis_from_markdown(markdown_content, system_id)
-            
-            if not current_kpis:
-                print(f"[DETERMINISTIC KPI] No KPIs found in Performance Indicators table")
-                return []
-            
-            print(f"[DETERMINISTIC KPI] Extracted {len(current_kpis)} KPIs from table")
-            
-            # Get previous KPIs for trend calculation
-            previous_kpis = []
-            if report_date_str:
-                prev_analysis_kpis = await self.get_previous_analysis_kpis(customer_name, system_id, report_date_str)
-                if prev_analysis_kpis:
-                    # Convert previous AI-generated KPIs to simple format for comparison
-                    previous_kpis = []
-                    for prev_kpi in prev_analysis_kpis:
-                        if isinstance(prev_kpi, dict):
-                            previous_kpis.append({
-                                'name': prev_kpi.get('name', ''),
-                                'current_value': prev_kpi.get('current_value', '')
-                            })
-                    print(f"[DETERMINISTIC KPI] Found {len(previous_kpis)} previous KPIs for trend comparison")
-            
-            # Calculate trends
-            kpis_with_trends = kpi_extractor.calculate_trend(current_kpis, previous_kpis)
-            
-            # Format for output
-            formatted_kpis = kpi_extractor.format_kpis_for_output(kpis_with_trends)
-            
-            print(f"[DETERMINISTIC KPI] Successfully processed {len(formatted_kpis)} KPIs with trends")
-            return formatted_kpis
-            
-        except Exception as e:
-            print(f"[DETERMINISTIC KPI] Error in deterministic KPI extraction: {str(e)}")
-            return []
-    
-    async def call_openai(self, prompt: str, content: str, model: str, max_completion_tokens: int = 8000) -> str:
-        """Make a call to Azure OpenAI with specified model"""
-        try:
-            # Create messages array
-            messages = [
-                {"role": "system", "content": prompt},
-                {"role": "user", "content": f"Please analyze this EWA document:\n\n{content}"}
-            ]
-            
-            # Standard parameters for GPT-4.1
-            params = {
-                "model": model,
-                "messages": messages,
-                "max_tokens": max_completion_tokens,
-                "reasoning_effort": "low",
-            }
-            
-            print(f"[MODEL INFO] Using model: {model} with max_completion_tokens={max_completion_tokens}")
-            
-            response = self.client.chat.completions.create(**params)
-            
-            # Extract and log token usage information
-            if hasattr(response, 'usage') and response.usage is not None:
-                prompt_tokens = response.usage.prompt_tokens
-                completion_tokens = response.usage.completion_tokens
-                total_tokens = response.usage.total_tokens
-                
-                print(f"[TOKEN USAGE] Prompt: {prompt_tokens} | Completion: {completion_tokens} | Total: {total_tokens}")
-                print(f"[TOKEN USAGE] Completion tokens used: {completion_tokens}/{max_completion_tokens} ({(completion_tokens / max_completion_tokens * 100):.1f}%)")
-            else:
-                print("[TOKEN USAGE] Token usage information not available in the response")
-            
-            return response.choices[0].message.content
-            
-        except Exception as e:
-            error_message = f"Error calling Azure OpenAI: {str(e)}"
-            print(error_message)
-            raise Exception(error_message)
+ 
     
     # Workflow step functions
     async def download_content_step(self, state: WorkflowState) -> WorkflowState:
@@ -445,7 +255,7 @@ class EWAWorkflowOrchestrator:
     
 
     async def run_analysis_step(self, state: WorkflowState) -> WorkflowState:
-        """Step 2: Generate comprehensive EWA analysis with KPI trend and consistency management"""
+        """Step 2: Generate comprehensive EWA analysis; then extract KPIs via image agent"""
         try:
             print(f"[STEP 2] Running EWA analysis for {state.blob_name}")
             
@@ -457,19 +267,15 @@ class EWAWorkflowOrchestrator:
             
             print(f"Analysis - Customer: {customer_name}, System: {system_id}, Report Date: {report_date_str}")
             
-            # Step 1: Extract KPIs using deterministic Python logic
-            extracted_kpis = []
-            if customer_name and system_id:
-                extracted_kpis = await self.extract_kpis_deterministically(
-                    state.markdown_content, system_id, customer_name, report_date_str
-                )
-            
-            # Step 2: Run AI analysis for all other sections (excluding KPIs)
+            # Step 1: Run AI analysis for all other sections (excluding KPIs)
             # Update prompt to exclude KPI extraction since we handle it separately
-            ai_prompt = SUMMARY_PROMPT.replace(
-                "### KPIs\n- Create a list of key performance indicator objects with structured format.\n- Each KPI object must include: `name`, `current_value`, and `trend` information.\n- **Canonical KPI Enforcement**: If canonical KPIs are provided below, you MUST reuse exactly those KPI names. Do not create new KPI names.\n- **Trend Calculation Rules**:\n  - **FIRST ANALYSIS**: If no previous KPI data is provided below, set ALL trend directions to \"none\" with description \"First analysis - no previous data for comparison\"\n  - **SUBSEQUENT ANALYSIS**: If previous KPI data is provided below, compare current values with previous values:\n    - Extract numeric values from both current and previous (ignore units like ms, %, GB)\n    - `direction`: \"up\" if current > previous (+5% threshold), \"down\" if current < previous (-5% threshold), \"flat\" if within ±5%\n    - `percent_change`: calculate exact percentage change: ((current - previous) / previous) × 100\n    - `description`: brief explanation with actual values (e.g., \"Increased from 528ms to 629ms (+19%)\")\n  - **New KPIs**: For KPIs not found in previous data, use trend direction \"none\" and note \"New KPI - no previous data\"",
-                "### KPIs\n- KPIs will be provided separately using deterministic extraction from Performance Indicators table. Do NOT include KPIs in your analysis output."
-            )
+            if isinstance(SUMMARY_PROMPT, str):
+                ai_prompt = SUMMARY_PROMPT.replace(
+                    "### KPIs\n- Create a list of key performance indicator objects with structured format.\n- Each KPI object must include: `name`, `current_value`, and `trend` information.\n- **Canonical KPI Enforcement**: If canonical KPIs are provided below, you MUST reuse exactly those KPI names. Do not create new KPI names.\n- **Trend Calculation Rules**:\n  - **FIRST ANALYSIS**: If no previous KPI data is provided below, set ALL trend directions to \"none\" with description \"First analysis - no previous data for comparison\"\n  - **SUBSEQUENT ANALYSIS**: If previous KPI data is provided below, compare current values with previous values:\n    - Extract numeric values from both current and previous (ignore units like ms, %, GB)\n    - `direction`: \"up\" if current > previous (+5% threshold), \"down\" if current < previous (-5% threshold), \"flat\" if within ±5%\n    - `percent_change`: calculate exact percentage change: ((current - previous) / previous) × 100\n    - `description`: brief explanation with actual values (e.g., \"Increased from 528ms to 629ms (+19%)\")\n  - **New KPIs**: For KPIs not found in previous data, use trend direction \"none\" and note \"New KPI - no previous data\"",
+                    "### KPIs\n- KPIs will be provided separately via an image-based KPI extraction step. Do NOT include KPIs in your analysis output."
+                )
+            else:
+                ai_prompt = SUMMARY_PROMPT  # None -> EWAAgent will use its internal default
             
             # Run AI analysis for all sections except KPIs
             agent = self._create_agent(AZURE_OPENAI_SUMMARY_MODEL, ai_prompt)
@@ -494,78 +300,16 @@ class EWAWorkflowOrchestrator:
                     print(f"[OpenAI Workflow] Failed to load PDF, falling back to markdown: {str(e)}")
                     ai_result = await agent.run(state.markdown_content)
             
-            # Step 3: Combine AI results with deterministic KPIs
-            if ai_result and extracted_kpis:
-                # Replace AI-generated KPIs with deterministic ones
-                final_json = ai_result.copy()
-                final_json['key_performance_indicators'] = extracted_kpis
-                
-                print(f"[HYBRID ANALYSIS] Combined AI analysis with {len(extracted_kpis)} deterministic KPIs")
-            elif ai_result:
-                # No KPIs extracted, use AI result as-is
-                final_json = ai_result
-                print(f"[HYBRID ANALYSIS] Using AI analysis without KPI section")
-            else:
-                # Fallback - create minimal structure with KPIs only
-                final_json = {
-                    'key_performance_indicators': extracted_kpis,
-                    'executive_summary': 'Analysis completed with KPI extraction only',
-                    'system_metadata': {
-                        'system_id': system_id,
-                        'customer_name': customer_name,
-                        'report_date': report_date_str
-                    }
-                }
-                print(f"[HYBRID ANALYSIS] Created minimal analysis with {len(extracted_kpis)} KPIs")
-            
-            # Handle canonical KPI list management using deterministic KPIs
-            if customer_name and system_id and extracted_kpis:
-                # Check if canonical list exists
-                canonical_data = await self.get_canonical_kpi_list(customer_name, system_id)
-                
-                if not canonical_data:
-                    # Extract KPI names for canonical list
-                    kpi_names = [kpi.get('name', '') for kpi in extracted_kpis if kpi.get('name')]
-                    print(f"Creating canonical KPI list for {customer_name}/{system_id} with {len(kpi_names)} KPIs")
-                    await self.save_canonical_kpi_list(customer_name, system_id, kpi_names)
-                else:
-                    # Validate that current KPIs match canonical list
-                    # Handle case where canonical list contains dicts instead of strings
-                    canonical_kpi_list = canonical_data.get('kpi_list', [])
-                    canonical_names = set()
-                    
-                    for item in canonical_kpi_list:
-                        if isinstance(item, str):
-                            canonical_names.add(item)
-                        elif isinstance(item, dict) and 'name' in item:
-                            canonical_names.add(item['name'])
-                        elif isinstance(item, dict):
-                            # Skip malformed entries
-                            print(f"Warning: Skipping malformed canonical KPI entry: {item}")
-                    
-                    current_names = set(kpi.get('name', '') for kpi in extracted_kpis if kpi.get('name'))
-                    
-                    new_kpis = current_names - canonical_names
-                    if new_kpis:
-                        print(f"Detected {len(new_kpis)} new KPIs not in canonical list: {list(new_kpis)}")
-                        print(f"TODO: Implement approval workflow for new KPIs")
-                    else:
-                        print(f"All KPIs match canonical list for {customer_name}/{system_id}")
-            
-            # Add Quick Wins section: filter recommendations with both analysis and implementation effort = 'low'
-            if 'recommendations' in final_json:
-                quick_wins = []
-                for rec in final_json['recommendations']:
-                    # Check if Estimated Effort exists and both analysis and implementation are 'low'
-                    if ('Estimated Effort' in rec and 
-                        isinstance(rec['Estimated Effort'], dict) and
-                        rec['Estimated Effort'].get('analysis', '').lower() == 'low' and
-                        rec['Estimated Effort'].get('implementation', '').lower() == 'low'):
-                        quick_wins.append(rec)
-                
-                # Add Quick Wins section to final JSON
-                final_json['quick_wins'] = quick_wins
-                print(f"[QUICK WINS] Extracted {len(quick_wins)} quick wins from {len(final_json['recommendations'])} recommendations")
+            # Step 2: Extract KPIs via image-based agent (single high-res page to GPT-5)
+            final_json = ai_result.copy() if ai_result else {}
+            try:
+                pdf_data = await self.download_pdf_from_blob(state.blob_name)
+                kpi_agent = KPIImageAgent(client=self.client)
+                kpi_result = kpi_agent.extract_kpis_from_pdf_bytes(pdf_data)
+                final_json['kpis'] = kpi_result.get('kpis', [])
+                print(f"[KPI IMAGE AGENT] Extracted {len(final_json['kpis'])} KPI rows")
+            except Exception as kpi_e:
+                print(f"[KPI IMAGE AGENT] KPI extraction failed: {kpi_e}")
             
             state.summary_json = final_json
             state.summary_result = json_to_markdown(final_json)
@@ -619,113 +363,6 @@ class EWAWorkflowOrchestrator:
         except Exception as e:
             state.error = str(e)
             return state
-    
-    async def process_files_sequentially(self, customer_name: str, system_id: str) -> List[Dict[str, Any]]:
-        """
-        Find and process multiple files with the same customer and SID in chronological order.
-        This ensures proper trend analysis by processing files from oldest to newest.
-        
-        Args:
-            customer_name: Customer name to match
-            system_id: System ID to match
-            
-        Returns:
-            List of processing results for each file
-        """
-        try:
-            print(f"[SEQUENTIAL PROCESSING] Finding files for customer '{customer_name}' and SID '{system_id}'")
-            
-            if not self.blob_service_client:
-                raise Exception("Blob service client not initialized")
-            
-            container_client = self.blob_service_client.get_container_client(AZURE_STORAGE_CONTAINER_NAME)
-            blob_list = list(container_client.list_blobs())
-            
-            # Find matching files
-            matching_files = []
-            for blob in blob_list:
-                # Skip processed files (.md, .json)
-                if blob.name.lower().endswith(('.md', '.json')):
-                    continue
-                
-                try:
-                    blob_client = container_client.get_blob_client(blob.name)
-                    properties = blob_client.get_blob_properties()
-                    metadata = properties.metadata or {}
-                    
-                    # Check if this file matches our criteria
-                    if (metadata.get('customer_name') == customer_name and 
-                        metadata.get('system_id') == system_id):
-                        
-                        matching_files.append({
-                            'blob_name': blob.name,
-                            'report_date': metadata.get('report_date'),
-                            'report_date_str': metadata.get('report_date_str'),
-                            'last_modified': blob.last_modified
-                        })
-                        
-                except Exception as e:
-                    print(f"[SEQUENTIAL PROCESSING] Error reading metadata for {blob.name}: {e}")
-                    continue
-            
-            if not matching_files:
-                print(f"[SEQUENTIAL PROCESSING] No files found for customer '{customer_name}' and SID '{system_id}'")
-                return []
-            
-            # Sort by report date (chronological order: oldest first)
-            def get_sort_key(file_info):
-                try:
-                    if file_info.get('report_date'):
-                        # Parse ISO string back to datetime for proper comparison
-                        return datetime.fromisoformat(file_info['report_date'])
-                    else:
-                        # Fall back to last_modified if no report_date
-                        return file_info['last_modified']
-                except (ValueError, TypeError) as e:
-                    print(f"[SEQUENTIAL PROCESSING] Warning: Error parsing date for {file_info['blob_name']}: {e}")
-                    return file_info['last_modified']
-            
-            matching_files.sort(key=get_sort_key)
-            
-            print(f"[SEQUENTIAL PROCESSING] Found {len(matching_files)} files to process in order:")
-            for i, file_info in enumerate(matching_files):
-                print(f"  {i+1}. {file_info['blob_name']} (Date: {file_info['report_date_str']})")
-            
-            # Process files sequentially
-            results = []
-            for i, file_info in enumerate(matching_files):
-                blob_name = file_info['blob_name']
-                print(f"[SEQUENTIAL PROCESSING] Processing file {i+1}/{len(matching_files)}: {blob_name}")
-                
-                try:
-                    result = await self.process_and_analyze_ewa(blob_name)
-                    results.append({
-                        'blob_name': blob_name,
-                        'result': result,
-                        'order': i + 1
-                    })
-                    
-                    if result.get('success'):
-                        print(f"[SEQUENTIAL PROCESSING] Successfully processed {blob_name}")
-                    else:
-                        print(f"[SEQUENTIAL PROCESSING] Failed to process {blob_name}: {result.get('message')}")
-                        
-                except Exception as e:
-                    error_msg = f"Error processing {blob_name}: {str(e)}"
-                    print(f"[SEQUENTIAL PROCESSING] {error_msg}")
-                    results.append({
-                        'blob_name': blob_name,
-                        'result': {'success': False, 'message': error_msg},
-                        'order': i + 1
-                    })
-            
-            print(f"[SEQUENTIAL PROCESSING] Completed processing {len(results)} files")
-            return results
-            
-        except Exception as e:
-            error_msg = f"Error in sequential processing: {str(e)}"
-            print(f"[SEQUENTIAL PROCESSING] {error_msg}")
-            return [{'error': error_msg}]
     
     async def process_and_analyze_ewa(self, original_blob_name: str) -> dict:
         """
@@ -808,8 +445,13 @@ class EWAWorkflowOrchestrator:
             print(f"{error_msg} - Full traceback: {traceback.format_exc()}") # More detailed logging
             return {"success": False, "message": error_msg, "blob_name": original_blob_name}
 
-    async def execute_workflow(self, blob_name: str) -> Dict[str, Any]:
-        """Execute the complete workflow"""
+    async def execute_workflow(self, blob_name: str, skip_markdown: bool = False) -> Dict[str, Any]:
+        """Execute the complete workflow.
+
+        Args:
+            blob_name: Name of the original PDF blob to analyze.
+            skip_markdown: If True, do not download or rely on converted markdown; run analysis directly on the PDF.
+        """
         try:
             print(f"Starting workflow for {blob_name}")
             
@@ -817,9 +459,12 @@ class EWAWorkflowOrchestrator:
             state = WorkflowState(blob_name=blob_name)
             
             # Execute workflow steps sequentially
-            state = await self.download_content_step(state)
-            if state.error:
-                raise Exception(state.error)
+            if skip_markdown:
+                print("[WORKFLOW] skip_markdown=True: Skipping markdown download; proceeding with PDF-first analysis")
+            else:
+                state = await self.download_content_step(state)
+                if state.error:
+                    raise Exception(state.error)
             
             # Run the EWA analysis using single enhanced agent
             summary_state = await self.run_analysis_step(state)
@@ -863,14 +508,20 @@ class EWAWorkflowOrchestrator:
 # Global orchestrator instance
 ewa_orchestrator = EWAWorkflowOrchestrator()
 
-async def execute_ewa_analysis(blob_name: str) -> Dict[str, Any]:
+async def execute_ewa_analysis(blob_name: str, pdf_first: bool = False) -> Dict[str, Any]:
     """
     Convenience function to execute EWA analysis workflow
     
     Args:
         blob_name: Name of the file to analyze
+        pdf_first: If True, skip markdown and analyze directly from PDF
     
     Returns:
         dict: Analysis result
     """
-    return await ewa_orchestrator.execute_workflow(blob_name)
+    return await ewa_orchestrator.execute_workflow(blob_name, skip_markdown=pdf_first)
+
+
+async def execute_ewa_analysis_pdf_first(blob_name: str) -> Dict[str, Any]:
+    """Explicit helper to run PDF-first analysis (skips markdown parsing)."""
+    return await ewa_orchestrator.execute_workflow(blob_name, skip_markdown=True)
