@@ -146,7 +146,7 @@
 
 
 
-    "capacity_outlook": {
+    "Capacity Outlook": {
       "type": "object",
       "properties": {
         "Database Growth":   { "type": "string" },
@@ -157,22 +157,22 @@
     },
 
 
-    "overall_risk": {
+    "Overall Risk": {
       "type": "string",
       "enum": ["low", "medium", "high", "critical"]
     }
   },
 
   "required": [
-    "schema_version",
-    "system_metadata",
-    "executive_summary",
-    "system_health_overview",
-    "positive_findings",
-    "key_findings",
-    "recommendations",
-    "capacity_outlook",
-    "overall_risk"
+    "Schema Version",
+    "System Metadata",
+    "Executive Summary",
+    "System Health Overview",
+    "Positive Findings",
+    "Key Findings",
+    "Recommendations",
+    "Capacity Outlook",
+    "Overall Risk"
   ]
 
 
