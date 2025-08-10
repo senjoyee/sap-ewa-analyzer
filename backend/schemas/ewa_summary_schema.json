@@ -37,7 +37,8 @@
         "Security":    { "type": "string", "enum": ["good", "fair", "poor"] },
         "Stability":   { "type": "string", "enum": ["good", "fair", "poor"] },
         "configuration": { "type": "string", "enum": ["good", "fair", "poor"] }
-      }
+      },
+      "required": ["Performance", "Security", "Stability", "configuration"]
     },
 
     "Executive Summary": {
@@ -153,7 +154,8 @@
         "CPU Utilization":   { "type": "string" },
         "Memory Utilization":{ "type": "string" },
         "Summary":           { "type": "string" }
-      }
+      },
+      "required": ["Database Growth", "CPU Utilization", "Memory Utilization", "Summary"]
     },
 
 
