@@ -249,15 +249,26 @@ const FileList = ({ onFileSelect, refreshTrigger, selectedFile }) => {
       });
       return updated;
     });
-
-    // Process each selected file individually using the combined endpoint
-    for (const file of selectedFiles) {
-      try {
-        await handleProcessAndAnalyze(file);
-      } catch (error) {
-        console.error(`Error processing ${file.name}:`, error);
+    
+    // Process selected files with a concurrency limit (pool of 3)
+    const filesToProcess = [...selectedFiles];
+    const concurrency = 3;
+    let index = 0;
+    const worker = async () => {
+      while (true) {
+        const i = index;
+        if (i >= filesToProcess.length) break;
+        index = i + 1;
+        const file = filesToProcess[i];
+        try {
+          await handleProcessAndAnalyze(file);
+        } catch (error) {
+          console.error(`Error processing ${file.name}:`, error);
+        }
       }
-    }
+    };
+    const workers = Array.from({ length: Math.min(concurrency, filesToProcess.length) }, () => worker());
+    await Promise.all(workers);
     
     // Clear selection after operation
     setSelectedFiles([]);
