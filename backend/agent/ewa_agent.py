@@ -159,7 +159,8 @@ class EWAAgent:
                     temp_path = tmp.name
                 file_obj = open(temp_path, "rb")
                 try:
-                    uploaded = self.client.files.create(file=file_obj, purpose="assistants")
+                    # Offload blocking Files API upload to a thread
+                    uploaded = await asyncio.to_thread(lambda: self.client.files.create(file=file_obj, purpose="assistants"))
                     file_id = uploaded.id
                 finally:
                     file_obj.close()
@@ -195,13 +196,15 @@ class EWAAgent:
                 }
             }
 
-            # Single-path call using text.format; let exceptions surface to caller
-            response = self.client.responses.create(
-                model=self.model,
-                input=[{"role": "user", "content": user_content}],
-                text=text_format,
-                max_output_tokens=16384,
-                reasoning={"effort": "low"},
+            # Single-path call using text.format; offload blocking call to a thread
+            response = await asyncio.to_thread(
+                lambda: self.client.responses.create(
+                    model=self.model,
+                    input=[{"role": "user", "content": user_content}],
+                    text=text_format,
+                    max_output_tokens=16384,
+                    reasoning={"effort": "low"},
+                )
             )
             # Log token usage for visibility
             try:

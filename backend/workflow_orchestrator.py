@@ -162,9 +162,11 @@ class EWAWorkflowOrchestrator:
                 blob=md_blob_name
             )
             
-            # Download the blob content
-            blob_data = blob_client.download_blob()
-            content = blob_data.readall().decode('utf-8')
+            # Download the blob content off the event loop to avoid blocking
+            def _read_md() -> str:
+                downloader = blob_client.download_blob()
+                return downloader.readall().decode('utf-8')
+            content = await asyncio.to_thread(_read_md)
             
             print(f"Successfully downloaded {len(content)} characters of markdown content")
             return content
@@ -184,9 +186,11 @@ class EWAWorkflowOrchestrator:
                 blob=blob_name
             )
             
-            # Download the blob content as bytes
-            blob_data = blob_client.download_blob()
-            content = blob_data.readall()
+            # Download the blob content as bytes off the event loop
+            def _read_pdf() -> bytes:
+                downloader = blob_client.download_blob()
+                return downloader.readall()
+            content = await asyncio.to_thread(_read_pdf)
             
             print(f"Successfully downloaded {len(content)} bytes of PDF content")
             return content
@@ -216,7 +220,8 @@ class EWAWorkflowOrchestrator:
                 upload_params["metadata"] = metadata
                 print(f"Uploading {blob_name} with metadata: {metadata}")
             
-            blob_client.upload_blob(**upload_params)
+            # Offload blocking upload to a thread
+            await asyncio.to_thread(lambda: blob_client.upload_blob(**upload_params))
             
             print(f"Successfully uploaded content to {blob_name}")
             return blob_name
@@ -234,7 +239,7 @@ class EWAWorkflowOrchestrator:
                 blob=blob_name
             )
             
-            properties = blob_client.get_blob_properties()
+            properties = await asyncio.to_thread(blob_client.get_blob_properties)
             return properties.metadata or {}
             
         except Exception as e:
@@ -305,7 +310,7 @@ class EWAWorkflowOrchestrator:
             try:
                 pdf_data = await self.download_pdf_from_blob(state.blob_name)
                 kpi_agent = KPIImageAgent(client=self.client)
-                kpi_result = kpi_agent.extract_kpis_from_pdf_bytes(pdf_data)
+                kpi_result = await asyncio.to_thread(kpi_agent.extract_kpis_from_pdf_bytes, pdf_data)
                 final_json['kpis'] = kpi_result.get('kpis', [])
                 print(f"[KPI IMAGE AGENT] Extracted {len(final_json['kpis'])} KPI rows")
             except Exception as kpi_e:
@@ -350,10 +355,13 @@ class EWAWorkflowOrchestrator:
                             container=AZURE_STORAGE_CONTAINER_NAME,
                             blob=state.blob_name
                         )
-                        existing_metadata = orig_blob_client.get_blob_properties().metadata or {}
+                        # Offload property retrieval to a thread
+                        existing_properties = await asyncio.to_thread(orig_blob_client.get_blob_properties)
+                        existing_metadata = (existing_properties.metadata or {}).copy()
                         # Azure metadata keys must be lowercase
                         existing_metadata["report_date"] = report_date
-                        orig_blob_client.set_blob_metadata(existing_metadata)
+                        # Offload setting metadata to a thread
+                        await asyncio.to_thread(orig_blob_client.set_blob_metadata, existing_metadata)
                         print(f"Set report_date metadata ({report_date}) on {state.blob_name}")
                     except Exception as meta_e:
                         # Non-fatal; continue even if metadata update fails
@@ -373,7 +381,7 @@ class EWAWorkflowOrchestrator:
             print(f"Starting combined processing and analysis for: {original_blob_name}")
 
             # Step 1: Initiate document to markdown conversion
-            init_conversion_result = convert_document_to_markdown(original_blob_name)
+            init_conversion_result = await asyncio.to_thread(convert_document_to_markdown, original_blob_name)
 
             if init_conversion_result.get("error") or init_conversion_result.get("status") == "failed":
                 error_msg = f"Initial call to convert_document_to_markdown failed for {original_blob_name}: {init_conversion_result.get('message')}"
@@ -391,7 +399,7 @@ class EWAWorkflowOrchestrator:
 
             while retries < max_retries:
                 await asyncio.sleep(poll_interval_seconds)
-                status_result = get_conversion_status(original_blob_name)
+                status_result = await asyncio.to_thread(get_conversion_status, original_blob_name)
                 final_conversion_status_result = status_result # Store last status
                 current_status = status_result.get("status")
                 
