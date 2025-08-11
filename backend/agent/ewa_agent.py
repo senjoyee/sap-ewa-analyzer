@@ -203,6 +203,29 @@ class EWAAgent:
                 max_output_tokens=16384,
                 reasoning={"effort": "low"},
             )
+            # Log token usage for visibility
+            try:
+                usage = getattr(response, "usage", None)
+                in_tok = out_tok = None
+                if usage is not None:
+                    # usage may be a pydantic model or dict
+                    in_tok = getattr(usage, "input_tokens", None) if hasattr(usage, "input_tokens") else (usage.get("input_tokens") if isinstance(usage, dict) else None)
+                    out_tok = getattr(usage, "output_tokens", None) if hasattr(usage, "output_tokens") else (usage.get("output_tokens") if isinstance(usage, dict) else None)
+                if in_tok is None or out_tok is None:
+                    try:
+                        resp_dict = response.model_dump() if hasattr(response, "model_dump") else None
+                        if isinstance(resp_dict, dict):
+                            u = resp_dict.get("usage", {})
+                            if in_tok is None:
+                                in_tok = u.get("input_tokens")
+                            if out_tok is None:
+                                out_tok = u.get("output_tokens")
+                    except Exception:
+                        pass
+                print(f"[EWAAgent._call_openai_responses] Token usage: input_tokens={in_tok}, output_tokens={out_tok}")
+            except Exception:
+                # Do not fail if usage is unavailable
+                pass
 
             # Extract structured output
             try:
