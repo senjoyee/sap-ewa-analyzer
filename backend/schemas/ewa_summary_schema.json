@@ -102,6 +102,7 @@
           "Recommendation ID",
           "Estimated Effort",
           "Responsible Area",
+          "Linked issue ID",
           "Action",
           "Preventative Action"
         ],
