@@ -24,8 +24,6 @@ import FolderIcon from '@mui/icons-material/Folder';
 import BusinessIcon from '@mui/icons-material/Business';
 import Snackbar from '@mui/material/Snackbar';
 import MuiAlert from '@mui/material/Alert';
-import FormControlLabel from '@mui/material/FormControlLabel';
-import Switch from '@mui/material/Switch';
 import { useTheme } from '../contexts/ThemeContext';
 import dayjs from 'dayjs';
 import weekOfYear from 'dayjs/plugin/weekOfYear';
@@ -116,7 +114,6 @@ const FileList = ({ onFileSelect, refreshTrigger, selectedFile }) => {
   const pollingIntervalsRef = useRef({});
   const { theme } = useTheme();
   const isDark = theme === 'dark';
-  const [pdfFirstMode, setPdfFirstMode] = useState(false);
   
   // Snackbar state
   const [snackbar, setSnackbar] = useState({
@@ -580,7 +577,7 @@ const FileList = ({ onFileSelect, refreshTrigger, selectedFile }) => {
         headers: {
           'Content-Type': 'application/json',
         },
-        body: JSON.stringify({ blob_name: file.name, pdf_first: pdfFirstMode }),
+        body: JSON.stringify({ blob_name: file.name }),
       });
 
       if (!response.ok) {
@@ -1175,11 +1172,7 @@ const FileList = ({ onFileSelect, refreshTrigger, selectedFile }) => {
         {/* Batch action buttons */}
         {selectedCount > 0 && (
           <Box sx={{ display: 'flex', gap: 1, justifyContent: 'flex-end', alignItems: 'center' }}>
-            <FormControlLabel 
-              control={<Switch checked={pdfFirstMode} onChange={(e) => setPdfFirstMode(e.target.checked)} size="small" />}
-              label="PDF-first"
-              sx={{ mr: 'auto', ml: 1 }}
-            />
+            {/* PDF-first toggle removed: PDF-first is now the default workflow */}
             {selectedAnalyzedCount > 0 && (
               <Button
                 variant="outlined"

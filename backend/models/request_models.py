@@ -14,7 +14,6 @@ class BlobNameRequest(BaseModel):
 
 
 class ProcessAnalyzeRequest(BaseModel):
-    """Request body for combined process+analyze with optional PDF-first flag."""
+    """Request body for combined process+analyze."""
 
     blob_name: str
-    pdf_first: bool = False

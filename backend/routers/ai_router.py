@@ -48,15 +48,8 @@ async def process_and_analyze_document_endpoint(request: ProcessAnalyzeRequest):
     if not blob_service_client:
         raise HTTPException(status_code=500, detail="Azure Blob Service client not initialized.")
     try:
-        # If pdf_first is requested, skip markdown conversion and analyze directly from PDF
-        if getattr(request, "pdf_first", False):
-            result = await ewa_orchestrator.execute_workflow(request.blob_name, skip_markdown=True)
-            if not result.get("success", False):
-                raise HTTPException(status_code=result.get("status_code", 500), detail=result.get("message", "Workflow failed"))
-            return result
-
-        # Otherwise, follow the existing combined convert+analyze flow
-        result = await ewa_orchestrator.process_and_analyze_ewa(request.blob_name)
+        # Always analyze directly from PDF (skip markdown conversion)
+        result = await ewa_orchestrator.execute_workflow(request.blob_name, skip_markdown=True)
         if not result.get("success", False):
             raise HTTPException(status_code=result.get("status_code", 500), detail=result.get("message", "Workflow failed"))
         return result
@@ -132,9 +125,9 @@ async def reprocess_document_with_ai(request: BlobNameRequest):
         print(f"Error deleting old AI blobs: {e}")
         # Proceed anyway
 
-    # Run analysis again
+    # Run analysis again (always from PDF)
     try:
-        result = await ewa_orchestrator.execute_workflow(original_blob_name)
+        result = await ewa_orchestrator.execute_workflow(original_blob_name, skip_markdown=True)
         if not result.get("success", False):
             raise HTTPException(status_code=500, detail=f"Re-analysis failed: {result.get('message', 'Unknown error')}")
         return {
