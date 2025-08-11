@@ -15,8 +15,8 @@ except Exception:  # pragma: no cover
 
 class KPIImageAgent:
     """
-    Extracts the 'Performance Indicators' table by sending ONE high-resolution
-    page image to the Azure OpenAI Responses API (IMAGE_MODEL, e.g., gpt-5).
+    Extracts the 'Performance Indicators' table by sending ONE or TWO high-resolution
+    page images to the Azure OpenAI Responses API (IMAGE_MODEL, e.g., gpt-5).
 
     Returns a dict like: {"kpis": [{"area","indicator","value","trend":{"symbol","name"}} ...]}
     """
@@ -78,6 +78,25 @@ class KPIImageAgent:
         finally:
             doc.close()
 
+    def _render_pages_png(self, pdf_bytes: bytes, page_indexes: List[int]) -> List[bytes]:
+        """Render multiple pages to PNG bytes; skips out-of-range pages gracefully."""
+        if fitz is None:
+            raise RuntimeError("PyMuPDF (fitz) is not installed. Install 'pymupdf' to enable KPI image extraction.")
+        images: List[bytes] = []
+        doc = fitz.open(stream=pdf_bytes, filetype="pdf")
+        try:
+            pc = doc.page_count
+            for idx in page_indexes:
+                if idx < 0 or idx >= pc:
+                    continue
+                page = doc.load_page(idx)
+                mat = fitz.Matrix(self.zoom, self.zoom)
+                pix = page.get_pixmap(matrix=mat, alpha=False)
+                images.append(pix.tobytes("png"))
+            return images
+        finally:
+            doc.close()
+
     # ────────────────────────────────────────────────────────────────────────────
     # Responses API call
     # ────────────────────────────────────────────────────────────────────────────
@@ -114,13 +133,14 @@ class KPIImageAgent:
         }
 
     @staticmethod
-    def _build_instruction_prompt_single_image() -> str:
+    def _build_instruction_prompt_images() -> str:
         return (
-            "You are given ONE high-resolution image of the 'Performance Indicators' page from an SAP EWA report.\n"
-            "Task: Extract the entire table into JSON with rows in order, preserving exact 'value' formatting (units, punctuation).\n"
+            "You are given one or two high-resolution images of adjacent pages that contain the 'Performance Indicators' table from an SAP EWA report.\n"
+            "Task: Extract the entire table across the provided page images into JSON with rows in order, preserving exact 'value' formatting (units, punctuation).\n"
+            "If the table spans both images, merge them into one logical table in reading order.\n"
         )
 
-    def _call_responses_single_image(self, page_png: bytes) -> Dict[str, Any]:
+    def _call_responses_images(self, page_pngs: List[bytes]) -> Dict[str, Any]:
         tools = [
             {
                 "type": "function",
@@ -129,15 +149,15 @@ class KPIImageAgent:
                 "parameters": self._build_function_schema(),
             }
         ]
-        instruction = self._build_instruction_prompt_single_image()
-
-        b64 = base64.b64encode(page_png).decode("ascii")
-        data_url = f"data:image/png;base64,{b64}"
+        instruction = self._build_instruction_prompt_images()
 
         content_items: List[Dict[str, Any]] = [
             {"type": "input_text", "text": instruction},
-            {"type": "input_image", "image_url": data_url},
         ]
+        for png in page_pngs:
+            b64 = base64.b64encode(png).decode("ascii")
+            data_url = f"data:image/png;base64,{b64}"
+            content_items.append({"type": "input_image", "image_url": data_url})
 
         response = self.client.responses.create(
             model=self.model,
@@ -212,5 +232,9 @@ class KPIImageAgent:
         if not pdf_bytes:
             return {"kpis": []}
         page_index = self._find_performance_page_index(pdf_bytes)
-        page_png = self._render_single_page_png(pdf_bytes, page_index)
-        return self._call_responses_single_image(page_png)
+        candidate_pages = [page_index, page_index + 1]
+        page_pngs = self._render_pages_png(pdf_bytes, candidate_pages)
+        if not page_pngs:
+            # Fallback to first page if rendering failed
+            page_pngs = [self._render_single_page_png(pdf_bytes, 0)]
+        return self._call_responses_images(page_pngs)

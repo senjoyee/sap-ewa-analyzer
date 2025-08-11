@@ -112,6 +112,12 @@ class EWAAgent:
         Attempts a single local (non-LLM) repair if initial output is invalid.
         """
         summary_json = await self._call_llm(markdown, pdf_data)
+        # Apply bullet normalization before validation/return to cover all model paths
+        try:
+            if isinstance(summary_json, dict):
+                self._normalize_key_findings_bullets(summary_json)
+        except Exception:
+            pass
         if self._is_valid(summary_json):
             print("[EWAAgent.run] Initial JSON valid; skipping repair")
             return summary_json
@@ -209,9 +215,12 @@ class EWAAgent:
                 parsed = getattr(response, "output_parsed", None)
                 if parsed is not None:
                     if isinstance(parsed, dict):
+                        self._normalize_key_findings_bullets(parsed)
                         return parsed
                     if isinstance(parsed, list) and len(parsed) == 1 and isinstance(parsed[0], dict):
-                        return parsed[0]
+                        data0 = parsed[0]
+                        self._normalize_key_findings_bullets(data0)
+                        return data0
             except Exception:
                 pass
 
@@ -219,11 +228,15 @@ class EWAAgent:
             text = getattr(response, "output_text", None)
             if text:
                 try:
-                    return json.loads(text)
+                    data = json.loads(text)
+                    if isinstance(data, dict):
+                        self._normalize_key_findings_bullets(data)
+                    return data
                 except Exception:
                     try:
                         rr = self.json_repair.repair(text)
                         if rr.success and isinstance(rr.data, dict):
+                            self._normalize_key_findings_bullets(rr.data)
                             return rr.data
                     except Exception:
                         pass
@@ -282,6 +295,48 @@ class EWAAgent:
 
         copy_schema = copy.deepcopy(schema)
         return visit(copy_schema)
+
+    def _normalize_key_findings_bullets(self, data: Dict[str, Any]) -> None:
+        """Normalize bullet markers to disc-style '*' across all string fields in
+        'Key Findings' and 'Recommendations' sections. Operates in-place; ignores errors silently.
+        """
+        def normalize_text(text: str) -> str:
+            lines = text.splitlines()
+            out: list[str] = []
+            for ln in lines:
+                stripped = ln.lstrip()
+                if stripped.startswith("- "):
+                    out.append("* " + stripped[2:])
+                elif stripped.startswith("• "):
+                    out.append("* " + stripped[2:])
+                elif stripped.startswith("– "):
+                    out.append("* " + stripped[2:])
+                else:
+                    out.append(ln)
+            return "\n".join(out)
+
+        def normalize_value(v: Any) -> Any:
+            if isinstance(v, str):
+                return normalize_text(v)
+            if isinstance(v, list):
+                return [normalize_value(x) for x in v]
+            if isinstance(v, dict):
+                for k in list(v.keys()):
+                    v[k] = normalize_value(v[k])
+                return v
+            return v
+
+        try:
+            for section in ("Key Findings", "Recommendations"):
+                items = data.get(section)
+                if not isinstance(items, list):
+                    continue
+                for i, item in enumerate(items):
+                    if isinstance(item, dict):
+                        items[i] = normalize_value(item)
+        except Exception:
+            # Do not fail the pipeline on normalization issues
+            pass
     
     async def _call_gemini(self, markdown: str, pdf_data: bytes = None) -> Dict[str, Any]:
         """Call Gemini API for JSON generation with optional PDF input"""
@@ -328,6 +383,7 @@ class EWAAgent:
             text = json.dumps(previous_json, ensure_ascii=False)
             rr = self.json_repair.repair(text)
             if rr.success and isinstance(rr.data, dict):
+                self._normalize_key_findings_bullets(rr.data)
                 return rr.data
         except Exception as e:
             print(f"[EWAAgent._repair_local] Exception during local repair: {e}")
