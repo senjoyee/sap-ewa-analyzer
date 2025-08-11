@@ -209,11 +209,9 @@ class EWAAgent:
                 parsed = getattr(response, "output_parsed", None)
                 if parsed is not None:
                     if isinstance(parsed, dict):
-                        self._normalize_key_findings_bullets(parsed)
                         return parsed
                     if isinstance(parsed, list) and len(parsed) == 1 and isinstance(parsed[0], dict):
                         data0 = parsed[0]
-                        self._normalize_key_findings_bullets(data0)
                         return data0
             except Exception:
                 pass
@@ -223,14 +221,11 @@ class EWAAgent:
             if text:
                 try:
                     data = json.loads(text)
-                    if isinstance(data, dict):
-                        self._normalize_key_findings_bullets(data)
                     return data
                 except Exception:
                     try:
                         rr = self.json_repair.repair(text)
                         if rr.success and isinstance(rr.data, dict):
-                            self._normalize_key_findings_bullets(rr.data)
                             return rr.data
                     except Exception:
                         pass
@@ -290,36 +285,7 @@ class EWAAgent:
         copy_schema = copy.deepcopy(schema)
         return visit(copy_schema)
 
-    def _normalize_key_findings_bullets(self, data: Dict[str, Any]) -> None:
-        """Normalize bullet markers in Key Findings 'Finding' field to use disc-style '*' bullets.
-        Operates in-place; ignores errors silently.
-        """
-        try:
-            key_findings = data.get("Key Findings")
-            if not isinstance(key_findings, list):
-                return
-            for item in key_findings:
-                if not isinstance(item, dict):
-                    continue
-                value = item.get("Finding")
-                if not isinstance(value, str) or not value:
-                    continue
-                lines = value.splitlines()
-                normalized: list[str] = []
-                for ln in lines:
-                    stripped = ln.lstrip()
-                    if stripped.startswith("- "):
-                        normalized.append("* " + stripped[2:])
-                    elif stripped.startswith("• "):
-                        normalized.append("* " + stripped[2:])
-                    elif stripped.startswith("– "):
-                        normalized.append("* " + stripped[2:])
-                    else:
-                        normalized.append(ln)
-                item["Finding"] = "\n".join(normalized)
-        except Exception:
-            # Do not fail the pipeline on normalization issues
-            pass
+    
     
     async def _call_gemini(self, markdown: str, pdf_data: bytes = None) -> Dict[str, Any]:
         """Call Gemini API for JSON generation with optional PDF input"""
@@ -366,7 +332,6 @@ class EWAAgent:
             text = json.dumps(previous_json, ensure_ascii=False)
             rr = self.json_repair.repair(text)
             if rr.success and isinstance(rr.data, dict):
-                self._normalize_key_findings_bullets(rr.data)
                 return rr.data
         except Exception as e:
             print(f"[EWAAgent._repair_local] Exception during local repair: {e}")
