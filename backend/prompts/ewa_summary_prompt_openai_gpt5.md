@@ -41,9 +41,9 @@ Analysis Instructions (internal; output only the final JSON):
    - Assign unique, stable IDs to findings (e.g., KF-001).
    - For each finding, provide:
         - Area: choose one from the schema list.
-        - Finding: single string. For multiple points, use a newline-delimited markdown bullet list. **Use disc-style bullet points.**
-        - Impact: single string, newline-delimited markdown bullet list of technical consequences. **Use disc-style bullet points.**
-        - Business impact: single string, newline-delimited markdown bullet list of business risks. **Use disc-style bullet points.**
+        - Finding: single string. For multiple points, use a newline-delimited markdown disc style bullet list. 
+        - Impact: single string, newline-delimited markdown disc style bullet list of technical consequences. 
+        - Business impact: single string, newline-delimited markdown disc style bullet list of business risks. 
         - Severity: one of low, medium, high, critical (lowercase unless otherwise specified).
    - Clearly state the source for each finding (e.g., report section/table/component).
    - Do not add extra fields not defined in the schema; all key and casing must match the schema exactly.
@@ -51,7 +51,7 @@ Analysis Instructions (internal; output only the final JSON):
 6. Recommendations
    - Generate recommendations only for retained (medium/high/critical) findings. Link using "Linked Issue ID" (e.g., REC-001 → KF-001).
    - Each recommendation must include: unique ID, Responsible Area, Linked Issue ID, Action, Preventative Action, Estimated Effort (object with {analysis, implementation}).
-   - Action & Preventative Action must be a newline-delimited markdown bullet list. Use disc-style bullet points.
+   - Action & Preventative Action must be a newline-delimited markdown disc style bullet list. 
    - Do not add extra fields not defined in the schema; all key and casing must match the schema exactly.
    - "Estimated Effort" must be an object with "analysis" and "implementation" as keys only (match schema case and values).
 

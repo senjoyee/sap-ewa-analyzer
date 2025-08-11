@@ -112,12 +112,6 @@ class EWAAgent:
         Attempts a single local (non-LLM) repair if initial output is invalid.
         """
         summary_json = await self._call_llm(markdown, pdf_data)
-        # Apply bullet normalization before validation/return to cover all model paths
-        try:
-            if isinstance(summary_json, dict):
-                self._normalize_key_findings_bullets(summary_json)
-        except Exception:
-            pass
         if self._is_valid(summary_json):
             print("[EWAAgent.run] Initial JSON valid; skipping repair")
             return summary_json
@@ -297,43 +291,32 @@ class EWAAgent:
         return visit(copy_schema)
 
     def _normalize_key_findings_bullets(self, data: Dict[str, Any]) -> None:
-        """Normalize bullet markers to disc-style '*' across all string fields in
-        'Key Findings' and 'Recommendations' sections. Operates in-place; ignores errors silently.
+        """Normalize bullet markers in Key Findings 'Finding' field to use disc-style '*' bullets.
+        Operates in-place; ignores errors silently.
         """
-        def normalize_text(text: str) -> str:
-            lines = text.splitlines()
-            out: list[str] = []
-            for ln in lines:
-                stripped = ln.lstrip()
-                if stripped.startswith("- "):
-                    out.append("* " + stripped[2:])
-                elif stripped.startswith("• "):
-                    out.append("* " + stripped[2:])
-                elif stripped.startswith("– "):
-                    out.append("* " + stripped[2:])
-                else:
-                    out.append(ln)
-            return "\n".join(out)
-
-        def normalize_value(v: Any) -> Any:
-            if isinstance(v, str):
-                return normalize_text(v)
-            if isinstance(v, list):
-                return [normalize_value(x) for x in v]
-            if isinstance(v, dict):
-                for k in list(v.keys()):
-                    v[k] = normalize_value(v[k])
-                return v
-            return v
-
         try:
-            for section in ("Key Findings", "Recommendations"):
-                items = data.get(section)
-                if not isinstance(items, list):
+            key_findings = data.get("Key Findings")
+            if not isinstance(key_findings, list):
+                return
+            for item in key_findings:
+                if not isinstance(item, dict):
                     continue
-                for i, item in enumerate(items):
-                    if isinstance(item, dict):
-                        items[i] = normalize_value(item)
+                value = item.get("Finding")
+                if not isinstance(value, str) or not value:
+                    continue
+                lines = value.splitlines()
+                normalized: list[str] = []
+                for ln in lines:
+                    stripped = ln.lstrip()
+                    if stripped.startswith("- "):
+                        normalized.append("* " + stripped[2:])
+                    elif stripped.startswith("• "):
+                        normalized.append("* " + stripped[2:])
+                    elif stripped.startswith("– "):
+                        normalized.append("* " + stripped[2:])
+                    else:
+                        normalized.append(ln)
+                item["Finding"] = "\n".join(normalized)
         except Exception:
             # Do not fail the pipeline on normalization issues
             pass
