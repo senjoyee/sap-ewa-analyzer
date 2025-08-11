@@ -120,7 +120,7 @@ def _array_to_markdown_table(
             v = item.get(k, "N/A")
             # Render bullet lists for Action/Preventative Action/Impact/Business impact (case-insensitive)
             key_norm = k.strip().lower()
-            bullet_fields = {"action", "preventative action", "preventive action", "impact", "business impact"}
+            bullet_fields = {"finding", "action", "preventative action", "preventive action", "impact", "business impact"}
             if isinstance(v, str) and key_norm in bullet_fields:
                 text = v.replace("\r", "").strip()
                 bullet_lines = []
