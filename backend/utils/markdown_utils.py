@@ -159,67 +159,6 @@ def _array_to_markdown_table(
 
 
 # ────────────────────────────────────────────────────────────────────────────────
-# KPI HTML table with merged Area cells
-# ────────────────────────────────────────────────────────────────────────────────
-def _html_escape(val: Any) -> str:
-    """Escape minimal HTML characters for safe embedding inside our HTML table."""
-    s = "N/A" if val is None else str(val)
-    return (
-        s.replace("&", "&amp;")
-        .replace("<", "&lt;")
-        .replace(">", "&gt;")
-        .replace('"', "&quot;")
-    )
-
-
-def _kpi_rows_to_html_table(rows: List[List[Any]]) -> str:
-    """
-    Render a list of normalized KPI rows [[area, indicator, value, trend]] as an HTML
-    table, merging contiguous rows with the same non-empty, non-'N/A' Area via rowspan.
-    """
-    html: List[str] = []
-    html.append("<table>")
-    html.append("  <thead><tr><th>Area</th><th>Indicator</th><th>Value</th><th>Trend</th></tr></thead>")
-    html.append("  <tbody>")
-
-    i = 0
-    n = len(rows)
-    while i < n:
-        area = rows[i][0]
-        area_norm = ("" if area is None else str(area)).strip()
-        can_merge = bool(area_norm) and area_norm.upper() != "N/A"
-        # Count contiguous group length
-        j = i + 1
-        if can_merge:
-            while j < n and str(rows[j][0]).strip() == area_norm:
-                j += 1
-        else:
-            j = i + 1
-        group_len = j - i
-
-        for k in range(i, j):
-            _, indicator, value, trend = rows[k]
-            html.append("    <tr>")
-            if k == i:
-                # First row in the group: output Area with rowspan (>=1)
-                if group_len > 1:
-                    html.append(f"      <td rowspan=\"{group_len}\">{_html_escape(area)}</td>")
-                else:
-                    html.append(f"      <td>{_html_escape(area)}</td>")
-            # Remaining columns
-            html.append(f"      <td>{_html_escape(indicator)}</td>")
-            html.append(f"      <td>{_html_escape(value)}</td>")
-            html.append(f"      <td>{_html_escape(trend)}</td>")
-            html.append("    </tr>")
-
-        i = j
-
-    html.append("  </tbody>")
-    html.append("</table>")
-    return "\n".join(html)
-
-
-# ────────────────────────────────────────────────────────────────────────────────
 # Public API
 # ────────────────────────────────────────────────────────────────────────────────
 def json_to_markdown(data: Dict[str, Any]) -> str:
@@ -299,6 +238,7 @@ def json_to_markdown(data: Dict[str, Any]) -> str:
                 )
             )
             if is_new_schema:
+                headers = ["Area", "Indicator", "Value", "Trend"]
                 rows: List[List[str]] = []
                 for kpi in kpis:
                     area = kpi.get("area", "N/A")
@@ -309,9 +249,10 @@ def json_to_markdown(data: Dict[str, Any]) -> str:
                     # Show only the arrow symbol, no text
                     trend_display = symbol if symbol else "N/A"
                     rows.append([area, indicator, value, trend_display])
-                md.append(_kpi_rows_to_html_table(rows))
+                md.extend(_format_table(headers, rows))
             else:
                 # Legacy deterministic schema
+                headers = ["Area", "KPI", "Current Value", "Trend"]
                 rows: List[List[str]] = []
                 for kpi in kpis:
                     area = kpi.get('area', 'N/A')
@@ -329,7 +270,7 @@ def json_to_markdown(data: Dict[str, Any]) -> str:
                             'flat': '➡️'
                         }.get(trend_direction, trend_direction)
                     rows.append([area, name, current_value, trend_display])
-                md.append(_kpi_rows_to_html_table(rows))
+                md.extend(_format_table(headers, rows))
         else:
             # Fallback for simple string KPIs
             for kpi in kpis:
