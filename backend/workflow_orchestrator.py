@@ -28,7 +28,6 @@ from dotenv import load_dotenv
 from agent.ewa_agent import EWAAgent
 from agent.kpi_image_agent import KPIImageAgent
 from utils.markdown_utils import json_to_markdown
-from converters.document_converter import convert_document_to_markdown, get_conversion_status # Added for combined workflow
 from models.gemini_client import GeminiClient, is_gemini_model, create_gemini_client
 
 # Load environment variables
@@ -364,86 +363,6 @@ class EWAWorkflowOrchestrator:
             state.error = str(e)
             return state
     
-    async def process_and_analyze_ewa(self, original_blob_name: str) -> dict:
-        """
-        Orchestrates the combined workflow of converting a document to markdown and then performing AI analysis.
-        It calls the existing self.execute_workflow for the AI analysis part after successful conversion.
-        """
-        try:
-            print(f"Starting combined processing and analysis for: {original_blob_name}")
-
-            # Step 1: Initiate document to markdown conversion
-            init_conversion_result = await asyncio.to_thread(convert_document_to_markdown, original_blob_name)
-
-            if init_conversion_result.get("error") or init_conversion_result.get("status") == "failed":
-                error_msg = f"Initial call to convert_document_to_markdown failed for {original_blob_name}: {init_conversion_result.get('message')}"
-                print(error_msg)
-                return {"success": False, "message": error_msg, "blob_name": original_blob_name, "details": init_conversion_result}
-
-            print(f"Document conversion initiated for {original_blob_name}. Polling for completion...")
-
-            # Step 2: Poll for markdown conversion completion
-            max_retries = 60  # Poll for up to 5 minutes (60 retries * 5 seconds/retry)
-            poll_interval_seconds = 5
-            retries = 0
-            conversion_completed = False
-            final_conversion_status_result = None
-
-            while retries < max_retries:
-                await asyncio.sleep(poll_interval_seconds)
-                status_result = await asyncio.to_thread(get_conversion_status, original_blob_name)
-                final_conversion_status_result = status_result # Store last status
-                current_status = status_result.get("status")
-                
-                print(f"Polling for {original_blob_name} (attempt {retries + 1}/{max_retries}): status = {current_status}, progress = {status_result.get('progress', 'N/A')}")
-
-                if current_status == "completed":
-                    print(f"Markdown conversion completed for {original_blob_name}.")
-                    conversion_completed = True
-                    break
-                elif current_status == "error" or current_status == "failed":
-                    error_msg = f"Markdown conversion failed for {original_blob_name}: {status_result.get('message')}"
-                    print(error_msg)
-                    return {"success": False, "message": error_msg, "blob_name": original_blob_name, "details": status_result}
-                
-                retries += 1
-            
-            if not conversion_completed:
-                error_msg = f"Markdown conversion timed out for {original_blob_name} after {max_retries * poll_interval_seconds} seconds."
-                print(error_msg)
-                return {"success": False, "message": error_msg, "blob_name": original_blob_name, "details": final_conversion_status_result}
-
-            # Step 3: Execute AI analysis workflow (which includes downloading the .md and other steps)
-            print(f"Markdown conversion successful. Starting AI analysis workflow for {original_blob_name}.")
-            # self.execute_workflow handles the AI part and returns a comprehensive dictionary
-            analysis_result_dict = await self.execute_workflow(original_blob_name)
-
-            if analysis_result_dict.get("success"):
-                print(f"AI analysis workflow completed successfully for {original_blob_name}.")
-                # Adapt the result from execute_workflow for the combined endpoint's response
-                return {
-                    "success": True,
-                    "message": "Document processed and AI analysis completed successfully.",
-                    "blob_name": original_blob_name,
-                    "analysis_output_blob": analysis_result_dict.get("summary_file")
-                    # Optionally, include other details from analysis_result_dict if needed by frontend
-                }
-            else:
-                # AI analysis workflow failed after successful conversion
-                error_msg = f"AI analysis workflow failed after successful conversion for {original_blob_name}: {analysis_result_dict.get('message')}"
-                print(error_msg)
-                return {
-                    "success": False, 
-                    "message": error_msg, 
-                    "blob_name": original_blob_name,
-                    "details": analysis_result_dict # Pass along the error details from execute_workflow
-                }
-
-        except Exception as e:
-            # Log the full traceback in a real scenario using logging module
-            error_msg = f"Unexpected error in process_and_analyze_ewa for {original_blob_name}: {str(e)}"
-            print(f"{error_msg} - Full traceback: {traceback.format_exc()}") # More detailed logging
-            return {"success": False, "message": error_msg, "blob_name": original_blob_name}
 
     async def execute_workflow(self, blob_name: str, skip_markdown: bool = False) -> Dict[str, Any]:
         """Execute the complete workflow.

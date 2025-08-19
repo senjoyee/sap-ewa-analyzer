@@ -336,41 +336,15 @@ const FileList = ({ onFileSelect, refreshTrigger, selectedFile }) => {
 
   // Function to handle analyze button click
   const handleAnalyze = async (file) => {
-    console.log(`Analyzing file: ${file.name}`);
-    
-    // Set initial status to analyzing
+    console.log(`Analyzing file (PDF-first): ${file.name}`);
+
+    // Mark as analyzing in UI, then delegate to combined PDF-first workflow
     setAnalyzingFiles(prev => ({
       ...prev,
       [file.id || file.name]: 'analyzing'
     }));
-    
-    try {
-      // Make API call to start analysis
-      const response = await fetch(`${API_BASE}/api/analyze`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({ blob_name: file.name }),
-      });
-      
-      if (!response.ok) {
-        const errorData = await response.json();
-        throw new Error(errorData.detail || `Analysis failed: ${response.status}`);
-      }
-      
-      // Start polling for status updates
-      startStatusPolling(file.name);
-      
-    } catch (error) {
-      console.error(`Error analyzing file ${file.name}:`, error);
-      // Set status back to pending on error
-      setAnalyzingFiles(prev => ({
-        ...prev,
-        [file.id || file.name]: 'error'
-      }));
-      showSnackbar(`Error analyzing file: ${error.message}`, 'error');
-    }
+
+    await handleProcessAndAnalyze(file);
   };
 
   // Function to handle AI analysis button click

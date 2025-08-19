@@ -8,12 +8,9 @@ Base URL (local development): `http://localhost:8001`
 
 - __/api/upload__ — `frontend/src/components/FileUpload.js:214` — POST
 - __/api/files__ — `frontend/src/components/FileList.js:792` — GET
-- __/api/analyze__ — `frontend/src/components/FileList.js:425` — POST
 - __/api/analyze-ai__ — `frontend/src/components/FileList.js:464` — POST
 - __/api/reprocess-ai__ — `frontend/src/components/FileList.js:560` — POST
-- __/api/process-sequential__ — `frontend/src/components/FileList.js:303` — POST
 - __/api/process-and-analyze__ — `frontend/src/components/FileList.js:662` — POST
-- __/api/analysis-status/:fileName__ — `frontend/src/components/FileList.js:729` — GET
 - __/api/delete-analysis__ — `frontend/src/components/FileList.js:201,622` — DELETE
 - __/api/download/:file__ — `frontend/src/components/FileList.js:517`, `frontend/src/components/FilePreview.js:624,632,638` — GET
 - __/api/export-pdf__ — `frontend/src/components/FilePreview.js:589` — GET
