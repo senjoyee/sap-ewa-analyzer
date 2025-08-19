@@ -9,6 +9,7 @@ from __future__ import annotations
 import os
 import traceback
 from typing import List, Dict, Any
+import asyncio
 
 from fastapi import APIRouter, HTTPException
 from pydantic import BaseModel
@@ -47,7 +48,12 @@ async def chat_with_document(request: ChatRequest):
         api_key = os.getenv("AZURE_OPENAI_API_KEY")
         api_version = os.getenv("AZURE_OPENAI_API_VERSION", "2024-12-01-preview")
         azure_endpoint = os.getenv("AZURE_OPENAI_ENDPOINT")
-        model_name = os.getenv("AZURE_OPENAI_DEPLOYMENT_NAME", "gpt-4.1")
+        # Prefer summary/fast model names used elsewhere in the backend; fall back to legacy var
+        model_name = (
+            os.getenv("AZURE_OPENAI_SUMMARY_MODEL")
+            or os.getenv("AZURE_OPENAI_FAST_MODEL")
+            or os.getenv("AZURE_OPENAI_DEPLOYMENT_NAME", "gpt-4.1")
+        )
         print(f"Azure endpoint set: {bool(azure_endpoint)}, model: {model_name}")
 
         if not api_key or not azure_endpoint:
@@ -67,20 +73,52 @@ async def chat_with_document(request: ChatRequest):
 
         system_prompt = _build_system_prompt(request.fileName, doc_content)
 
-        messages = [{"role": "system", "content": system_prompt}]
+        # Build Responses API input messages with content parts
+        responses_messages = []
+        responses_messages.append({
+            "role": "system",
+            "content": [{"type": "input_text", "text": system_prompt}],
+        })
         recent_history = request.chatHistory[-10:] if len(request.chatHistory) > 10 else request.chatHistory
         for msg in recent_history:
             role = "user" if msg.get("isUser") else "assistant"
-            messages.append({"role": role, "content": msg.get("text", "")})
-        messages.append({"role": "user", "content": request.message})
+            text = msg.get("text", "")
+            content_type = "input_text" if role == "user" else "output_text"
+            responses_messages.append({
+                "role": role,
+                "content": [{"type": content_type, "text": text}],
+            })
+        responses_messages.append({
+            "role": "user",
+            "content": [{"type": "input_text", "text": request.message}],
+        })
 
         try:
-            response = client.chat.completions.create(
-                model=model_name,
-                messages=messages,
-                max_completion_tokens=8192,
+            # Use Azure OpenAI Responses API (GPT-5 compatible) off the event loop
+            response = await asyncio.to_thread(
+                lambda: client.responses.create(
+                    model=model_name,
+                    input=responses_messages,
+                    max_output_tokens=4096,
                 )
-            ai_response = response.choices[0].message.content
+            )
+            # Log token usage if available
+            try:
+                usage = getattr(response, "usage", None)
+                if usage is not None:
+                    in_tok = getattr(usage, "input_tokens", None) if hasattr(usage, "input_tokens") else (usage.get("input_tokens") if isinstance(usage, dict) else None)
+                    out_tok = getattr(usage, "output_tokens", None) if hasattr(usage, "output_tokens") else (usage.get("output_tokens") if isinstance(usage, dict) else None)
+                    print(f"[Chat] Token usage: input_tokens={in_tok}, output_tokens={out_tok}")
+            except Exception:
+                pass
+
+            ai_response = getattr(response, "output_text", None)
+            if not ai_response:
+                # Fallback: try to stringify response for debugging context
+                try:
+                    ai_response = response.model_dump_json() if hasattr(response, "model_dump_json") else str(response)
+                except Exception:
+                    ai_response = ""
             return {"response": ai_response}
         except Exception as api_err:
             print("OpenAI API error:", api_err)
@@ -129,6 +167,8 @@ def _humanize_openai_error(err: Exception, model_name: str) -> str:
     txt = str(err).lower()
     if "not found" in txt and "model" in txt:
         return f"Model '{model_name}' not found. Please check configuration."
+    if "deploymentnotfound" in txt or "deployment not found" in txt:
+        return f"Deployment '{model_name}' not found. Verify Azure deployment name and AZURE_OPENAI_* environment variables."
     if "authenticate" in txt or "key" in txt:
         return "Authentication error. Please check Azure OpenAI API key and endpoint."
     if "rate limit" in txt:
