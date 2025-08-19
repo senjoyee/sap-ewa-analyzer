@@ -39,9 +39,9 @@ Analysis Instructions (internal; output only the final JSON):
    - Assign unique, stable IDs to each finding (e.g., KF-001).
    - For every finding, include:
         - Area: choose from the schema list.
-        - Finding: one clear sentence or a newline-delimited markdown bullet list for multiple points. 
-        - Impact: one clear sentence or a bullet list of technical consequences. 
-        - Business impact: one clear sentence or a bullet list of business risks. 
+        - Finding: Newline-delimited markdown bullet list of findings. 
+        - Impact: Newline-delimited markdown bullet list of technical consequences. 
+        - Business impact: Newline-delimited markdown bullet list of business risks. 
         - Severity: one of low, medium, high, critical (lowercase unless the schema requires another format).
    - Always include the source for each finding (e.g., report section/table/component).
    - Do not add extra fields not defined by the schema; all key names and casing must match the schema exactly.

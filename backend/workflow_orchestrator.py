@@ -287,23 +287,15 @@ class EWAWorkflowOrchestrator:
             
             # Determine input type based on model
             if is_gemini_model(AZURE_OPENAI_SUMMARY_MODEL):
-                # For Gemini models, use original PDF if available
-                try:
-                    pdf_data = await self.download_pdf_from_blob(state.blob_name)
-                    print(f"[Gemini Workflow] Using original PDF ({len(pdf_data)} bytes) for analysis")
-                    ai_result = await agent.run(state.markdown_content, pdf_data=pdf_data)
-                except Exception as e:
-                    print(f"[Gemini Workflow] Failed to load PDF, falling back to markdown: {str(e)}")
-                    ai_result = await agent.run(state.markdown_content)
+                # For Gemini models, use original PDF. On failure, propagate error (no markdown fallback).
+                pdf_data = await self.download_pdf_from_blob(state.blob_name)
+                print(f"[Gemini Workflow] Using original PDF ({len(pdf_data)} bytes) for analysis")
+                ai_result = await agent.run(state.markdown_content, pdf_data=pdf_data)
             else:
-                # For OpenAI models, prefer original PDF via Responses API; fallback to markdown
-                try:
-                    pdf_data = await self.download_pdf_from_blob(state.blob_name)
-                    print(f"[OpenAI Workflow] Using original PDF ({len(pdf_data)} bytes) for analysis via Responses API")
-                    ai_result = await agent.run(state.markdown_content, pdf_data=pdf_data)
-                except Exception as e:
-                    print(f"[OpenAI Workflow] Failed to load PDF, falling back to markdown: {str(e)}")
-                    ai_result = await agent.run(state.markdown_content)
+                # For OpenAI models, use original PDF via Responses API. On failure, propagate error (no markdown fallback).
+                pdf_data = await self.download_pdf_from_blob(state.blob_name)
+                print(f"[OpenAI Workflow] Using original PDF ({len(pdf_data)} bytes) for analysis via Responses API")
+                ai_result = await agent.run(state.markdown_content, pdf_data=pdf_data)
             
             # Step 2: Extract KPIs via image-based agent (single high-res page to GPT-5)
             final_json = ai_result.copy() if ai_result else {}

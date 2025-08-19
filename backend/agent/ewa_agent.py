@@ -203,8 +203,8 @@ class EWAAgent:
                     model=self.model,
                     input=[{"role": "user", "content": user_content}],
                     text=text_format,
-                    max_output_tokens=16384,
-                    reasoning={"effort": "medium"},
+                    max_output_tokens=32768,
+                    reasoning={"effort": "low"},
                 )
             )
             # Log token usage for visibility
