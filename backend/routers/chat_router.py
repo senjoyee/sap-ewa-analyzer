@@ -100,6 +100,8 @@ async def chat_with_document(request: ChatRequest):
                     model=model_name,
                     input=responses_messages,
                     max_output_tokens=4096,
+                    reasoning={"effort": "medium"},
+                    text={"verbosity": "concise"},
                 )
             )
             # Log token usage if available
