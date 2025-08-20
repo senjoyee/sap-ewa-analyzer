@@ -1,16 +1,43 @@
-import React, { createContext, useContext } from 'react';
+import React, { createContext, useContext, useEffect, useState } from 'react';
 
 // Create the theme context
 const ThemeContext = createContext();
 
-// Theme provider component - using SAP Belize theme (light)
+// Theme provider component with Teams detection via URL (?theme=light|dark|contrast)
 export const ThemeProvider = ({ children }) => {
-  // Fixed light theme for SAP Belize
-  const theme = 'light';
-  
-  // For backwards compatibility, providing empty functions
-  const toggleTheme = () => {};
-  const setSpecificTheme = () => {};
+  // Modes: 'sap', 'teams-light', 'teams-dark', 'teams-contrast'
+  const [theme, setTheme] = useState('sap');
+
+  useEffect(() => {
+    try {
+      const params = new URLSearchParams(window.location.search || '');
+      const themeParam = (params.get('theme') || '').toLowerCase();
+      if (themeParam === 'dark') {
+        setTheme('teams-dark');
+      } else if (themeParam === 'contrast' || themeParam === 'high-contrast') {
+        setTheme('teams-contrast');
+      } else if (themeParam === 'light') {
+        setTheme('teams-light');
+      } else {
+        // default stays SAP Belize
+        setTheme('sap');
+      }
+    } catch (e) {
+      setTheme('sap');
+    }
+  }, []);
+
+  const toggleTheme = () => {
+    setTheme((prev) => (prev.startsWith('teams') ? 'sap' : 'teams-light'));
+  };
+
+  const setSpecificTheme = (mode) => {
+    // Guard: only allow supported modes
+    const allowed = ['sap', 'teams-light', 'teams-dark', 'teams-contrast'];
+    if (allowed.includes(mode)) {
+      setTheme(mode);
+    }
+  };
 
   return (
     <ThemeContext.Provider value={{ theme, toggleTheme, setSpecificTheme }}>

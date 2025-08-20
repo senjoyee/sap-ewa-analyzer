@@ -21,7 +21,7 @@ import FileList from './components/FileList';
 import FilePreview from './components/FilePreview';
 // ThemeToggle removed as we're using only light theme
 import { ThemeProvider, useTheme } from './contexts/ThemeContext';
-import { appTheme } from './theme/themeConfig';
+import { appTheme, createTeamsTheme } from './theme/themeConfig';
 
 // Add a keyframe animation for the spinning loader
 const spinAnimation = {
@@ -44,22 +44,27 @@ const AppContent = () => {
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
   const { theme: themeMode } = useTheme(); // Renamed to avoid conflicts with MUI theme parameter
   
-  // Using only light theme with spinner animation
+  // Pick SAP Belize or Microsoft Teams themes based on ThemeContext
   const currentTheme = useMemo(() => {
+    const mode = themeMode;
+    const baseTheme = mode === 'sap'
+      ? appTheme
+      : createTeamsTheme(mode === 'teams-dark' ? 'dark' : mode === 'teams-contrast' ? 'contrast' : 'light');
+
     return {
-      ...appTheme,
+      ...baseTheme,
       components: {
-        ...appTheme.components,
+        ...baseTheme.components,
         MuiCssBaseline: {
           styleOverrides: {
             '@global': {
-              ...spinAnimation
+              ...spinAnimation,
             },
           },
         },
-      }
+      },
     };
-  }, []);
+  }, [themeMode]);
 
   const handleUploadSuccess = () => {
     setFileListRefreshTrigger(prev => prev + 1);
@@ -73,26 +78,26 @@ const AppContent = () => {
           position="fixed" 
           sx={{ 
             zIndex: (muiTheme) => muiTheme.zIndex.drawer + 1,
-            background: '#0070b1', // SAP Belize blue
-            borderBottom: '1px solid rgba(0, 0, 0, 0.1)'
+            background: (muiTheme) => muiTheme.palette.primary.main,
+            borderBottom: (muiTheme) => `1px solid ${muiTheme.palette.divider}`
           }}
         >
           <Toolbar>
             <Box sx={{ display: 'flex', alignItems: 'center' }}>
-              <DescriptionIcon sx={{ mr: 1.5, color: '#ffffff' }} />
-              <Typography variant="h6" noWrap component="div" sx={{ color: '#ffffff', fontWeight: 400 }}>
+              <DescriptionIcon sx={{ mr: 1.5, color: (muiTheme) => muiTheme.palette.primary.contrastText }} />
+              <Typography variant="h6" noWrap component="div" sx={{ color: (muiTheme) => muiTheme.palette.primary.contrastText, fontWeight: 400 }}>
                 EWA Analyzer
               </Typography>
             </Box>
             <Box sx={{ flexGrow: 1 }} />
             {/* Theme toggle removed as we're using only light theme */}
             <Tooltip title="Settings">
-              <IconButton sx={{ color: '#ffffff' }}>
+              <IconButton sx={{ color: (muiTheme) => muiTheme.palette.primary.contrastText }}>
                 <SettingsIcon />
               </IconButton>
             </Tooltip>
             <Tooltip title="Help">
-              <IconButton sx={{ color: '#ffffff' }}>
+              <IconButton sx={{ color: (muiTheme) => muiTheme.palette.primary.contrastText }}>
                 <HelpOutlineIcon />
               </IconButton>
             </Tooltip>
@@ -108,12 +113,12 @@ const AppContent = () => {
             [`& .MuiDrawer-paper`]: {
               width: sidebarCollapsed ? collapsedDrawerWidth : drawerWidth,
               boxSizing: 'border-box',
-              background: '#ffffff', // SAP Belize light background
-              borderRight: '1px solid #e5e5e5', // Lighter border for Belize theme
+              background: (muiTheme) => muiTheme.palette.background.paper,
+              borderRight: (muiTheme) => `1px solid ${muiTheme.palette.divider}`,
               transition: 'width 225ms cubic-bezier(0.4, 0, 0.6, 1) 0ms',
               overflow: 'hidden',
-              boxShadow: '0 1px 4px rgba(0, 0, 0, 0.1)', // Lighter shadow for Belize theme
-              color: '#32363a', // SAP Belize text color
+              boxShadow: '0 1px 4px rgba(0, 0, 0, 0.1)',
+              color: (muiTheme) => muiTheme.palette.text.primary,
             },
           }}
         >
@@ -129,7 +134,7 @@ const AppContent = () => {
           }}>
             <Typography variant="h6" sx={{ 
               fontWeight: 500,
-              color: '#32363a',
+              color: (muiTheme) => muiTheme.palette.text.primary,
               fontSize: '1.1rem'
             }}>
               File Management
@@ -138,9 +143,9 @@ const AppContent = () => {
               onClick={() => setSidebarCollapsed(true)}
               size="small"
               sx={{
-                color: '#6a6d70', // SAP Belize neutral gray
+                color: (muiTheme) => muiTheme.palette.text.secondary,
                 '&:hover': {
-                  backgroundColor: 'rgba(0,112,177,0.08)', // Light blue hover
+                  backgroundColor: (muiTheme) => muiTheme.palette.action.hover,
                 }
               }}>
               <ChevronLeftIcon fontSize="small" />
@@ -153,18 +158,18 @@ const AppContent = () => {
             display: 'flex', 
             flexDirection: 'column', 
             gap: 3,
-            background: '#ffffff',
+            background: (muiTheme) => muiTheme.palette.background.paper,
             '&::-webkit-scrollbar': {
               width: '6px',
             },
             '&::-webkit-scrollbar-track': {
-              background: '#1a1a1a',
+              background: (muiTheme) => muiTheme.palette.background.default,
             },
             '&::-webkit-scrollbar-thumb': {
-              background: '#333333',
+              background: (muiTheme) => muiTheme.palette.divider,
               borderRadius: '3px',
               '&:hover': {
-                background: '#555555',
+                background: (muiTheme) => muiTheme.palette.text.secondary,
               },
             },
           }}>
@@ -186,7 +191,7 @@ const AppContent = () => {
               left: 0,
               zIndex: 1200,
               transform: 'translateY(-50%)',
-              backgroundColor: '#333333',
+              backgroundColor: (muiTheme) => muiTheme.palette.primary.main,
               borderRadius: '0 4px 4px 0',
               boxShadow: '2px 0 8px rgba(0,0,0,0.5)',
               transition: 'left 225ms cubic-bezier(0.4, 0, 0.6, 1) 0ms',
@@ -195,7 +200,7 @@ const AppContent = () => {
             <IconButton
               onClick={() => setSidebarCollapsed(false)}
               size="small"
-              sx={{ borderRadius: '0 4px 4px 0', padding: '12px 4px', color: '#ffffff' }}
+              sx={{ borderRadius: '0 4px 4px 0', padding: '12px 4px', color: (muiTheme) => muiTheme.palette.primary.contrastText }}
             >
               <ChevronRightIcon />
             </IconButton>
@@ -210,7 +215,7 @@ const AppContent = () => {
             width: `calc(100% - ${sidebarCollapsed ? collapsedDrawerWidth : drawerWidth}px)`,
             display: 'flex',
             flexDirection: 'column',
-            background: '#f5f5f5', // SAP Belize light background
+            background: (muiTheme) => muiTheme.palette.background.default,
             transition: 'width 225ms cubic-bezier(0.4, 0, 0.6, 1) 0ms, margin 225ms cubic-bezier(0.4, 0, 0.6, 1) 0ms',
           }}
         >

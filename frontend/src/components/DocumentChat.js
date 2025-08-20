@@ -24,6 +24,7 @@ import {
   Person as PersonIcon
 } from '@mui/icons-material';
 import { styled } from '@mui/material/styles';
+import { apiUrl } from '../config';
 
 const ChatContainer = styled(Paper)(({ theme, expanded }) => ({
   position: 'fixed',
@@ -267,9 +268,7 @@ const DocumentChat = ({ fileName, documentContent }) => {
     }
   }, [fileName, documentContent]);
 
-  // Determine API base URL: env var or same-origin
-// Backend base URL (no trailing slash)
-const API_BASE = 'http://localhost:8001';
+  // API base is centralized in src/config.js
 
 const handleSendMessage = async () => {
     if (!inputValue.trim() || loading) return;
@@ -290,7 +289,7 @@ const handleSendMessage = async () => {
       
       console.log(`Sending chat request for ${fileName} with content length: ${documentContent?.length || 0}`);
       
-      const response = await fetch(`${API_BASE}/api/chat`, {
+      const response = await fetch(apiUrl('/api/chat'), {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',

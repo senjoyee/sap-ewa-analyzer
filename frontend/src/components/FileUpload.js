@@ -29,6 +29,7 @@ import DescriptionIcon from '@mui/icons-material/Description';
 import TextSnippetIcon from '@mui/icons-material/TextSnippet';
 import InsertDriveFileIcon from '@mui/icons-material/InsertDriveFile';
 import { useTheme } from '../contexts/ThemeContext';
+import { apiUrl } from '../config';
 
 // Helper function to get appropriate icon for file type
 const getFileIcon = (filename) => {
@@ -69,7 +70,7 @@ const formatFileSize = (sizeInBytes) => {
   }
 };
 
-const API_BASE = 'http://localhost:8001';
+// API base is centralized in src/config.js
 
 const FileUpload = ({ onUploadSuccess }) => {
   const [uploadingFilesInfo, setUploadingFilesInfo] = useState([]); // To track multiple uploads
@@ -211,7 +212,7 @@ const FileUpload = ({ onUploadSuccess }) => {
           index === i ? { ...f, progress: 50 } : f // Simulate mid-upload
         ));
 
-        const response = await fetch(`${API_BASE}/api/upload`, {
+        const response = await fetch(apiUrl('/api/upload'), {
           method: 'POST',
           body: formData,
         });
