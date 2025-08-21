@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
+import { Button as FluentButton } from '@fluentui/react-components';
 import Paper from '@mui/material/Paper';
 import Typography from '@mui/material/Typography';
 import List from '@mui/material/List';
@@ -12,7 +13,7 @@ import Alert from '@mui/material/Alert';
 import Box from '@mui/material/Box';
 import Divider from '@mui/material/Divider';
 import Chip from '@mui/material/Chip';
-import Button from '@mui/material/Button';
+// Replaced MUI Button with Fluent UI Button
 import IconButton from '@mui/material/IconButton';
 import Tooltip from '@mui/material/Tooltip';
 import Checkbox from '@mui/material/Checkbox';
@@ -794,14 +795,13 @@ const FileList = ({ onFileSelect, refreshTrigger, selectedFile }) => {
           variant="outlined"
           sx={{ borderRadius: 2 }}
           action={
-            <Button 
+            <FluentButton 
+              appearance="subtle"
               size="small" 
-              color="error" 
-              variant="text" 
               onClick={fetchFiles}
             >
               Retry
-            </Button>
+            </FluentButton>
           }
         >
           {error}
@@ -1069,7 +1069,7 @@ const FileList = ({ onFileSelect, refreshTrigger, selectedFile }) => {
           )}
         </Typography>
         <Box sx={{ display: 'flex', gap: 0.5 }}>
-          <Button
+          <FluentButton
             size="small"
             onClick={() => {
               const allExpanded = {};
@@ -1079,35 +1079,15 @@ const FileList = ({ onFileSelect, refreshTrigger, selectedFile }) => {
               });
               setExpandedCustomers(allExpanded);
             }}
-            sx={{ 
-              fontSize: '0.7rem',
-              textTransform: 'none',
-              color: '#666',
-              minWidth: 'auto',
-              px: 1,
-              '&:hover': {
-                backgroundColor: 'rgba(0,0,0,0.04)',
-              }
-            }}
           >
             EXPAND ALL
-          </Button>
-          <Button
+          </FluentButton>
+          <FluentButton
             size="small"
             onClick={() => setExpandedCustomers({})}
-            sx={{ 
-              fontSize: '0.7rem',
-              textTransform: 'none',
-              color: '#666',
-              minWidth: 'auto',
-              px: 1,
-              '&:hover': {
-                backgroundColor: 'rgba(0,0,0,0.04)',
-              }
-            }}
           >
             COLLAPSE ALL
-          </Button>
+          </FluentButton>
         </Box>
       </Box>
       <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1, mb: 1 }}>
@@ -1117,38 +1097,18 @@ const FileList = ({ onFileSelect, refreshTrigger, selectedFile }) => {
             {selectedCount} selected ({selectedAnalyzedCount} analyzed)
           </Typography>
           <Box sx={{ display: 'flex', gap: 0.5 }}>
-            <Button
+            <FluentButton
               size="small"
               onClick={() => handleSelectAllFiles()}
-              sx={{ 
-                fontSize: '0.75rem',
-                textTransform: 'none',
-                color: '#666',
-                minWidth: 'auto',
-                px: 1,
-                '&:hover': {
-                  backgroundColor: 'rgba(0,0,0,0.04)',
-                }
-              }}
             >
               SELECT ALL
-            </Button>
-            <Button
+            </FluentButton>
+            <FluentButton
               size="small"
               onClick={() => handleDeselectAllFiles()}
-              sx={{ 
-                fontSize: '0.7rem',
-                textTransform: 'none',
-                color: '#888',
-                minWidth: 'auto',
-                px: 1,
-                '&:hover': {
-                  backgroundColor: 'rgba(255,255,255,0.05)',
-                }
-              }}
             >
               DESELECT ALL
-            </Button>
+            </FluentButton>
           </Box>
         </Box>
         
@@ -1157,55 +1117,23 @@ const FileList = ({ onFileSelect, refreshTrigger, selectedFile }) => {
           <Box sx={{ display: 'flex', gap: 1, justifyContent: 'flex-end', alignItems: 'center' }}>
             {/* PDF-first toggle removed: PDF-first is now the default workflow */}
             {selectedAnalyzedCount > 0 && (
-              <Button
-                variant="outlined"
+              <FluentButton
+                appearance="outline"
                 size="small"
-                startIcon={<DeleteIcon sx={{ fontSize: 14 }} />}
+                icon={<DeleteIcon sx={{ fontSize: 14 }} />}
                 onClick={handleBatchDelete}
-                sx={{ 
-                  textTransform: 'none',
-                  fontSize: '0.75rem',
-                  py: 0.5,
-                  px: 1.2,
-                  borderRadius: '8px',
-                  color: '#ef4444',
-                  borderColor: 'rgba(239, 68, 68, 0.3)',
-                  backgroundColor: 'rgba(239, 68, 68, 0.05)',
-                  '&:hover': {
-                    backgroundColor: 'rgba(239, 68, 68, 0.1)',
-                    borderColor: 'rgba(239, 68, 68, 0.5)',
-                  },
-                  transition: 'all 0.2s ease',
-                  minWidth: 'auto'
-                }}
               >
                 Delete ({selectedAnalyzedCount})
-              </Button>
+              </FluentButton>
             )}
-            <Button
-              variant="outlined"
+            <FluentButton
+              appearance="outline"
               size="small"
-              startIcon={<PlayArrowIcon sx={{ fontSize: 14 }} />}
+              icon={<PlayArrowIcon sx={{ fontSize: 14 }} />}
               onClick={handleBatchProcess}
-              sx={{ 
-                textTransform: 'none',
-                fontSize: '0.75rem',
-                py: 0.5,
-                px: 1.2,
-                borderRadius: '8px',
-                color: '#60a5fa',
-                borderColor: 'rgba(96, 165, 250, 0.3)',
-                backgroundColor: 'rgba(96, 165, 250, 0.05)',
-                '&:hover': {
-                  backgroundColor: 'rgba(96, 165, 250, 0.1)',
-                  borderColor: 'rgba(96, 165, 250, 0.5)',
-                },
-                transition: 'all 0.2s ease',
-                minWidth: 'auto'
-              }}
             >
               Process ({selectedCount})
-            </Button>
+            </FluentButton>
           </Box>
         )}
       </Box>

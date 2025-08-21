@@ -1,7 +1,7 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { Button as FluentButton } from '@fluentui/react-components';
+import { Alert as FluentAlert } from '@fluentui/react-alert';
 import Typography from '@mui/material/Typography';
-import Alert from '@mui/material/Alert';
 import Box from '@mui/material/Box';
 import Paper from '@mui/material/Paper';
 import TextField from '@mui/material/TextField';
@@ -269,12 +269,7 @@ const FileUpload = ({ onUploadSuccess }) => {
         border: '1px solid #e5e5e5'
       }}>
       <Box sx={{ textAlign: 'center' }}>
-        <CloudUploadIcon sx={{ 
-          fontSize: 44, 
-          color: '#60a5fa',
-          mb: 1.5,
-          opacity: 0.8
-        }} />
+        <CloudArrowUp24Regular style={{ width: 44, height: 44, color: '#60a5fa', marginBottom: 12, opacity: 0.8 }} />
         <Typography 
           variant="h6" 
           sx={{ 
@@ -495,9 +490,9 @@ const FileUpload = ({ onUploadSuccess }) => {
 
       {/* Overall status alerts */}
       {overallStatus.message && !overallStatus.error && (
-        <Alert 
-          severity="info" 
-          sx={{ mt: 2, borderRadius: 1 }}
+        <FluentAlert 
+          intent="info" 
+          style={{ marginTop: 16, borderRadius: 8 }}
           icon={<CloudArrowUp24Regular />}
           action={
             <FluentButton
@@ -511,12 +506,12 @@ const FileUpload = ({ onUploadSuccess }) => {
           }
         >
           {overallStatus.message}
-        </Alert>
+        </FluentAlert>
       )}
       {overallStatus.error && (
-        <Alert 
-          severity="error" 
-          sx={{ mt: 2, borderRadius: 1 }}
+        <FluentAlert 
+          intent="error" 
+          style={{ marginTop: 16, borderRadius: 8 }}
           action={
             <FluentButton
               appearance="subtle"
@@ -529,7 +524,7 @@ const FileUpload = ({ onUploadSuccess }) => {
           }
         >
           {overallStatus.error}
-        </Alert>
+        </FluentAlert>
       )}
 
       {/* File upload progress indicators */}
