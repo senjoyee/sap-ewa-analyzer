@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { Button as FluentButton } from '@fluentui/react-components';
 import { Alert as FluentAlert } from '@fluentui/react-alert';
+import { Toaster, useToastController, Toast, ToastTitle } from '@fluentui/react-toast';
 import { Delete24Regular, Play24Regular, Document24Regular } from '@fluentui/react-icons';
 import Paper from '@mui/material/Paper';
 import Typography from '@mui/material/Typography';
@@ -25,8 +26,7 @@ import AccordionDetails from '@mui/material/AccordionDetails';
 import ExpandMoreIcon from '@mui/icons-material/ExpandMore';
 import FolderIcon from '@mui/icons-material/Folder';
 import BusinessIcon from '@mui/icons-material/Business';
-import Snackbar from '@mui/material/Snackbar';
-import MuiAlert from '@mui/material/Alert';
+ 
 import { useTheme } from '../contexts/ThemeContext';
 import { apiUrl } from '../config';
 import dayjs from 'dayjs';
@@ -98,10 +98,7 @@ const formatFileSize = (sizeInBytes) => {
 
 // API base is centralized in src/config.js
 
-// Snackbar Alert helper component
-const SnackbarAlert = React.forwardRef(function SnackbarAlert(props, ref) {
-  return <MuiAlert elevation={6} ref={ref} variant="filled" {...props} />;
-});
+ 
 
 const FileList = ({ onFileSelect, refreshTrigger, selectedFile }) => {
   const [files, setFiles] = useState([]);
@@ -118,23 +115,18 @@ const FileList = ({ onFileSelect, refreshTrigger, selectedFile }) => {
   const { theme } = useTheme();
   const isDark = theme === 'dark';
   
-  // Snackbar state
-  const [snackbar, setSnackbar] = useState({
-    open: false,
-    message: '',
-    severity: 'info' // 'success', 'error', 'warning', 'info'
-  });
+  // Toast controller (Fluent UI Toast)
+  const { dispatchToast } = useToastController('fileListToaster');
   
-  // Snackbar helper functions
+  // Keep the same API but dispatch a Fluent Toast instead
   const showSnackbar = (message, severity = 'info') => {
-    setSnackbar({ open: true, message, severity });
-  };
-  
-  const handleSnackbarClose = (event, reason) => {
-    if (reason === 'clickaway') {
-      return;
-    }
-    setSnackbar(prev => ({ ...prev, open: false }));
+    const intent = severity; // maps directly: 'success' | 'error' | 'warning' | 'info'
+    dispatchToast(
+      <Toast intent={intent}>
+        <ToastTitle>{message}</ToastTitle>
+      </Toast>,
+      { position: 'bottom', timeout: 4000 }
+    );
   };
   
   // Function to handle file selection with checkbox
@@ -1163,21 +1155,8 @@ const FileList = ({ onFileSelect, refreshTrigger, selectedFile }) => {
         {content}
       </Paper>
       
-      {/* Snackbar for notifications */}
-      <Snackbar
-        open={snackbar.open}
-        autoHideDuration={4000}
-        onClose={handleSnackbarClose}
-        anchorOrigin={{ vertical: 'bottom', horizontal: 'center' }}
-      >
-        <SnackbarAlert
-          onClose={handleSnackbarClose}
-          severity={snackbar.severity}
-          sx={{ width: '100%' }}
-        >
-          {snackbar.message}
-        </SnackbarAlert>
-      </Snackbar>
+      {/* Toaster for notifications */}
+      <Toaster toasterId="fileListToaster" position="bottom" />
     </Box>
   );
 };
