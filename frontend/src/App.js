@@ -2,16 +2,13 @@ import React, { useState, useMemo } from 'react';
 import { ThemeProvider as MuiThemeProvider } from '@mui/material/styles';
 import CssBaseline from '@mui/material/CssBaseline';
 import Box from '@mui/material/Box';
-import Drawer from '@mui/material/Drawer';
 import MuiToolbar from '@mui/material/Toolbar';
 import Typography from '@mui/material/Typography';
 import Container from '@mui/material/Container';
 import Grid from '@mui/material/Grid';
 import IconButton from '@mui/material/IconButton';
-import ChevronLeftIcon from '@mui/icons-material/ChevronLeft';
-import ChevronRightIcon from '@mui/icons-material/ChevronRight';
 import { Toolbar as FluentToolbar, ToolbarButton, Tooltip as FluentTooltip } from '@fluentui/react-components';
-import { Document24Regular, Settings24Regular, QuestionCircle24Regular } from '@fluentui/react-icons';
+import { Document24Regular, Settings24Regular, QuestionCircle24Regular, ChevronLeft24Regular, ChevronRight24Regular } from '@fluentui/react-icons';
 
 import FileUpload from './components/FileUpload';
 import FileList from './components/FileList';
@@ -82,7 +79,7 @@ const AppContent = () => {
             borderBottom: (muiTheme) => `1px solid ${muiTheme.palette.divider}`
           }}
         >
-          <Box sx={{ px: 2, py: 1 }}>
+          <Box sx={{ px: 2, py: 1, color: (muiTheme) => muiTheme.palette.primary.contrastText }}>
             <FluentToolbar>
               <div style={{ display: 'flex', alignItems: 'center', gap: 8, color: 'inherit' }}>
                 <Document24Regular />
@@ -101,22 +98,20 @@ const AppContent = () => {
           </Box>
         </Box>
         
-        <Drawer
-          variant="permanent"
+        <Box
+          component="aside"
+          role="complementary"
           sx={{
             width: sidebarCollapsed ? collapsedDrawerWidth : drawerWidth,
             flexShrink: 0,
             transition: 'width 225ms cubic-bezier(0.4, 0, 0.6, 1) 0ms',
-            [`& .MuiDrawer-paper`]: {
-              width: sidebarCollapsed ? collapsedDrawerWidth : drawerWidth,
-              boxSizing: 'border-box',
-              background: (muiTheme) => muiTheme.palette.background.paper,
-              borderRight: (muiTheme) => `1px solid ${muiTheme.palette.divider}`,
-              transition: 'width 225ms cubic-bezier(0.4, 0, 0.6, 1) 0ms',
-              overflow: 'hidden',
-              boxShadow: '0 1px 4px rgba(0, 0, 0, 0.1)',
-              color: (muiTheme) => muiTheme.palette.text.primary,
-            },
+            height: '100vh',
+            boxSizing: 'border-box',
+            background: (muiTheme) => muiTheme.palette.background.paper,
+            borderRight: (muiTheme) => `1px solid ${muiTheme.palette.divider}`,
+            overflow: 'hidden',
+            boxShadow: '0 1px 4px rgba(0, 0, 0, 0.1)',
+            color: (muiTheme) => muiTheme.palette.text.primary,
           }}
         >
           <MuiToolbar /> {/* Spacer to offset content below top bar */}
@@ -145,7 +140,7 @@ const AppContent = () => {
                   backgroundColor: (muiTheme) => muiTheme.palette.action.hover,
                 }
               }}>
-              <ChevronLeftIcon fontSize="small" />
+              <ChevronLeft24Regular />
             </IconButton>
           </Box>
           <Box sx={{ 
@@ -177,7 +172,7 @@ const AppContent = () => {
               selectedFile={selectedFileForPreview}
             />
           </Box>
-        </Drawer>
+        </Box>
         
         {/* Toggle button for sidebar collapse that appears on the edge of the screen when sidebar is collapsed */}
         {sidebarCollapsed && (
@@ -199,7 +194,7 @@ const AppContent = () => {
               size="small"
               sx={{ borderRadius: '0 4px 4px 0', padding: '12px 4px', color: (muiTheme) => muiTheme.palette.primary.contrastText }}
             >
-              <ChevronRightIcon />
+              <ChevronRight24Regular />
             </IconButton>
           </Box>
         )}
