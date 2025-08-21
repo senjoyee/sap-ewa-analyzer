@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { Button as FluentButton } from '@fluentui/react-components';
-import { Delete24Regular, Play24Regular } from '@fluentui/react-icons';
+import { Alert as FluentAlert } from '@fluentui/react-alert';
+import { Delete24Regular, Play24Regular, Document24Regular } from '@fluentui/react-icons';
 import Paper from '@mui/material/Paper';
 import Typography from '@mui/material/Typography';
 import List from '@mui/material/List';
@@ -10,7 +11,7 @@ import ListItemText from '@mui/material/ListItemText';
 import ListItemIcon from '@mui/material/ListItemIcon';
 import ListItemSecondaryAction from '@mui/material/ListItemSecondaryAction';
 import CircularProgress from '@mui/material/CircularProgress';
-import Alert from '@mui/material/Alert';
+ 
 import Box from '@mui/material/Box';
 import Divider from '@mui/material/Divider';
 import Chip from '@mui/material/Chip';
@@ -790,10 +791,9 @@ const FileList = ({ onFileSelect, refreshTrigger, selectedFile }) => {
   } else if (error) {
     content = (
       <Box sx={{ p: 1 }}>
-        <Alert 
-          severity="error" 
-          variant="outlined"
-          sx={{ borderRadius: 2 }}
+        <FluentAlert 
+          intent="error" 
+          style={{ borderRadius: 8 }}
           action={
             <FluentButton 
               appearance="subtle"
@@ -805,13 +805,13 @@ const FileList = ({ onFileSelect, refreshTrigger, selectedFile }) => {
           }
         >
           {error}
-        </Alert>
+        </FluentAlert>
       </Box>
     );
   } else if (files.length === 0) {
     content = (
       <Box sx={{ p: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', py: 4, minHeight: 120 }}>
-        <InsertDriveFileIcon sx={{ fontSize: 40, color: 'text.disabled', mb: 2 }} />
+        <Document24Regular style={{ width: 40, height: 40, opacity: 0.6, marginBottom: 8 }} />
         <Typography variant="body2" color="text.secondary" align="center">
           No files uploaded yet
         </Typography>
