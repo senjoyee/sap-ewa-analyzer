@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { Button as FluentButton } from '@fluentui/react-components';
+import { Delete24Regular, Play24Regular } from '@fluentui/react-icons';
 import Paper from '@mui/material/Paper';
 import Typography from '@mui/material/Typography';
 import List from '@mui/material/List';
@@ -41,14 +42,13 @@ import TextSnippetIcon from '@mui/icons-material/TextSnippet';
 import InsertDriveFileIcon from '@mui/icons-material/InsertDriveFile';
 
 // Action and status icons
-import PlayArrowIcon from '@mui/icons-material/PlayArrow';
 import AiAnalysisIcon from './AiAnalysisIcon';
 import AutorenewIcon from '@mui/icons-material/Autorenew';
 import CheckCircleIcon from '@mui/icons-material/CheckCircle';
 import PendingIcon from '@mui/icons-material/Pending';
 import VisibilityIcon from '@mui/icons-material/Visibility';
 import RefreshIcon from '@mui/icons-material/Refresh';
-import DeleteIcon from '@mui/icons-material/Delete';
+// Replaced MUI Delete/Play icons with Fluent UI icons
 
 // Initialise weekOfYear plugin after all imports
 dayjs.extend(weekOfYear);
@@ -1120,7 +1120,7 @@ const FileList = ({ onFileSelect, refreshTrigger, selectedFile }) => {
               <FluentButton
                 appearance="outline"
                 size="small"
-                icon={<DeleteIcon sx={{ fontSize: 14 }} />}
+                icon={<Delete24Regular />}
                 onClick={handleBatchDelete}
               >
                 Delete ({selectedAnalyzedCount})
@@ -1129,7 +1129,7 @@ const FileList = ({ onFileSelect, refreshTrigger, selectedFile }) => {
             <FluentButton
               appearance="outline"
               size="small"
-              icon={<PlayArrowIcon sx={{ fontSize: 14 }} />}
+              icon={<Play24Regular />}
               onClick={handleBatchProcess}
             >
               Process ({selectedCount})
