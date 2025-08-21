@@ -13,15 +13,12 @@ import MenuItem from '@mui/material/MenuItem';
 import FormLabel from '@mui/material/FormLabel';
 import LinearProgress from '@mui/material/LinearProgress';
 import Chip from '@mui/material/Chip';
-import IconButton from '@mui/material/IconButton';
-import AddIcon from '@mui/icons-material/Add';
-import CloudUploadIcon from '@mui/icons-material/CloudUpload';
 import CheckCircleIcon from '@mui/icons-material/CheckCircle';
 import ErrorIcon from '@mui/icons-material/Error';
-import CloseIcon from '@mui/icons-material/Close';
 import BusinessIcon from '@mui/icons-material/Business';
 import Divider from '@mui/material/Divider';
 import Badge from '@mui/material/Badge';
+import { Add24Regular, Dismiss24Regular, Dismiss16Regular, CloudArrowUp24Regular } from '@fluentui/react-icons';
 // File type icons for getFileIcon function
 import PictureAsPdfIcon from '@mui/icons-material/PictureAsPdf';
 import ImageIcon from '@mui/icons-material/Image';
@@ -309,7 +306,7 @@ const FileUpload = ({ onUploadSuccess }) => {
         
         <FluentButton
           appearance="primary"
-          icon={<AddIcon />}
+          icon={<Add24Regular />}
           onClick={handleAddClick}
         >
           Browse Files
@@ -479,7 +476,7 @@ const FileUpload = ({ onUploadSuccess }) => {
               appearance="outline"
               size="small"
               onClick={handleCancelUpload}
-              icon={<CloseIcon />}
+              icon={<Dismiss24Regular />}
             >
               Cancel
             </FluentButton>
@@ -488,7 +485,7 @@ const FileUpload = ({ onUploadSuccess }) => {
               size="small"
               onClick={handleProceedWithUpload}
               disabled={filesWithCustomers.every(f => !f.customerName.trim())}
-              icon={<CloudUploadIcon />}
+              icon={<CloudArrowUp24Regular />}
             >
               Upload Files ({filesWithCustomers.length})
             </FluentButton>
@@ -501,16 +498,16 @@ const FileUpload = ({ onUploadSuccess }) => {
         <Alert 
           severity="info" 
           sx={{ mt: 2, borderRadius: 1 }}
-          icon={<CloudUploadIcon fontSize="inherit" />}
+          icon={<CloudArrowUp24Regular />}
           action={
-            <IconButton
-              aria-label="close"
-              color="inherit"
+            <FluentButton
+              appearance="subtle"
               size="small"
+              shape="circular"
+              aria-label="close"
               onClick={dismissOverallStatus}
-            >
-              <CloseIcon fontSize="inherit" />
-            </IconButton>
+              icon={<Dismiss24Regular />}
+            />
           }
         >
           {overallStatus.message}
@@ -521,14 +518,14 @@ const FileUpload = ({ onUploadSuccess }) => {
           severity="error" 
           sx={{ mt: 2, borderRadius: 1 }}
           action={
-            <IconButton
-              aria-label="close"
-              color="inherit"
+            <FluentButton
+              appearance="subtle"
               size="small"
+              shape="circular"
+              aria-label="close"
               onClick={dismissOverallStatus}
-            >
-              <CloseIcon fontSize="inherit" />
-            </IconButton>
+              icon={<Dismiss24Regular />}
+            />
           }
         >
           {overallStatus.error}
@@ -557,7 +554,7 @@ const FileUpload = ({ onUploadSuccess }) => {
                     }
                     variant="outlined"
                     sx={{ height: 20, fontSize: '0.7rem' }}
-                    deleteIcon={<CloseIcon style={{ fontSize: 14 }} />}
+                    deleteIcon={<Dismiss16Regular style={{ width: 14, height: 14 }} />}
                     onDelete={() => dismissFileStatus(index)}
                   />
                 </Box>
