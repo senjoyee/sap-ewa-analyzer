@@ -1,5 +1,5 @@
 import React, { useState, useRef, useEffect } from 'react';
-import Button from '@mui/material/Button';
+import { Button as FluentButton } from '@fluentui/react-components';
 import Typography from '@mui/material/Typography';
 import Alert from '@mui/material/Alert';
 import Box from '@mui/material/Box';
@@ -307,28 +307,13 @@ const FileUpload = ({ onUploadSuccess }) => {
           accept="*"
         />
         
-        <Button
-          variant="contained"
-          startIcon={<AddIcon />}
+        <FluentButton
+          appearance="primary"
+          icon={<AddIcon />}
           onClick={handleAddClick}
-          sx={{
-            backgroundColor: '#0070b1', // SAP Belize primary blue
-            color: 'white',
-            px: 3,
-            py: 1,
-            borderRadius: 2,
-            textTransform: 'none',
-            fontWeight: 500,
-            boxShadow: '0 3px 5px 2px rgba(0, 0, 0, .3)',
-            border: '1px solid #60a5fa',
-            '&:hover': {
-              background: 'linear-gradient(45deg, #333333 30%, #555555 90%)',
-              boxShadow: '0 4px 8px 3px rgba(0, 0, 0, .4)',
-            }
-          }}
         >
           Browse Files
-        </Button>
+        </FluentButton>
       </Box>
 
       {/* Customer name input fields - shown only after file selection */}
@@ -490,26 +475,23 @@ const FileUpload = ({ onUploadSuccess }) => {
           </Box>
           
           <Box sx={{ display: 'flex', justifyContent: 'space-between', mt: 4, pt: 1 }}>
-            <Button
-              variant="outlined"
+            <FluentButton
+              appearance="outline"
               size="small"
               onClick={handleCancelUpload}
-              startIcon={<CloseIcon />}
-              sx={{ py: 1 }}
+              icon={<CloseIcon />}
             >
               Cancel
-            </Button>
-            <Button
-              variant="contained"
+            </FluentButton>
+            <FluentButton
+              appearance="primary"
               size="small"
-              color="primary"
               onClick={handleProceedWithUpload}
               disabled={filesWithCustomers.every(f => !f.customerName.trim())}
-              startIcon={<CloudUploadIcon />}
-              sx={{ py: 1 }}
+              icon={<CloudUploadIcon />}
             >
               Upload Files ({filesWithCustomers.length})
-            </Button>
+            </FluentButton>
           </Box>
         </Paper>
       )}
