@@ -3,18 +3,15 @@ import { ThemeProvider as MuiThemeProvider } from '@mui/material/styles';
 import CssBaseline from '@mui/material/CssBaseline';
 import Box from '@mui/material/Box';
 import Drawer from '@mui/material/Drawer';
-import AppBar from '@mui/material/AppBar';
-import Toolbar from '@mui/material/Toolbar';
+import MuiToolbar from '@mui/material/Toolbar';
 import Typography from '@mui/material/Typography';
 import Container from '@mui/material/Container';
 import Grid from '@mui/material/Grid';
 import IconButton from '@mui/material/IconButton';
-import Tooltip from '@mui/material/Tooltip';
-import DescriptionIcon from '@mui/icons-material/Description';
-import SettingsIcon from '@mui/icons-material/Settings';
-import HelpOutlineIcon from '@mui/icons-material/HelpOutline';
 import ChevronLeftIcon from '@mui/icons-material/ChevronLeft';
 import ChevronRightIcon from '@mui/icons-material/ChevronRight';
+import { Toolbar as FluentToolbar, ToolbarButton, Tooltip as FluentTooltip } from '@fluentui/react-components';
+import { Document24Regular, Settings24Regular, QuestionCircle24Regular } from '@fluentui/react-icons';
 
 import FileUpload from './components/FileUpload';
 import FileList from './components/FileList';
@@ -74,35 +71,35 @@ const AppContent = () => {
     <MuiThemeProvider theme={currentTheme}>
       <Box sx={{ display: 'flex', height: '100vh' }}>
         <CssBaseline />
-        <AppBar 
-          position="fixed" 
+        <Box 
           sx={{ 
+            position: 'fixed',
+            top: 0,
+            left: 0,
+            right: 0,
             zIndex: (muiTheme) => muiTheme.zIndex.drawer + 1,
             background: (muiTheme) => muiTheme.palette.primary.main,
             borderBottom: (muiTheme) => `1px solid ${muiTheme.palette.divider}`
           }}
         >
-          <Toolbar>
-            <Box sx={{ display: 'flex', alignItems: 'center' }}>
-              <DescriptionIcon sx={{ mr: 1.5, color: (muiTheme) => muiTheme.palette.primary.contrastText }} />
-              <Typography variant="h6" noWrap component="div" sx={{ color: (muiTheme) => muiTheme.palette.primary.contrastText, fontWeight: 400 }}>
-                EWA Analyzer
-              </Typography>
-            </Box>
-            <Box sx={{ flexGrow: 1 }} />
-            {/* Theme toggle removed as we're using only light theme */}
-            <Tooltip title="Settings">
-              <IconButton sx={{ color: (muiTheme) => muiTheme.palette.primary.contrastText }}>
-                <SettingsIcon />
-              </IconButton>
-            </Tooltip>
-            <Tooltip title="Help">
-              <IconButton sx={{ color: (muiTheme) => muiTheme.palette.primary.contrastText }}>
-                <HelpOutlineIcon />
-              </IconButton>
-            </Tooltip>
-          </Toolbar>
-        </AppBar>
+          <Box sx={{ px: 2, py: 1 }}>
+            <FluentToolbar>
+              <div style={{ display: 'flex', alignItems: 'center', gap: 8, color: 'inherit' }}>
+                <Document24Regular />
+                <Typography variant="h6" noWrap component="div" sx={{ color: (muiTheme) => muiTheme.palette.primary.contrastText, fontWeight: 400 }}>
+                  EWA Analyzer
+                </Typography>
+              </div>
+              <div style={{ flex: 1 }} />
+              <FluentTooltip content="Settings" relationship="label">
+                <ToolbarButton aria-label="Settings" icon={<Settings24Regular />} />
+              </FluentTooltip>
+              <FluentTooltip content="Help" relationship="label">
+                <ToolbarButton aria-label="Help" icon={<QuestionCircle24Regular />} />
+              </FluentTooltip>
+            </FluentToolbar>
+          </Box>
+        </Box>
         
         <Drawer
           variant="permanent"
@@ -122,7 +119,7 @@ const AppContent = () => {
             },
           }}
         >
-          <Toolbar /> {/* Spacer to offset content below AppBar */}
+          <MuiToolbar /> {/* Spacer to offset content below top bar */}
           {/* Collapse button */}
           <Box sx={{ 
             display: 'flex', 
@@ -219,7 +216,7 @@ const AppContent = () => {
             transition: 'width 225ms cubic-bezier(0.4, 0, 0.6, 1) 0ms, margin 225ms cubic-bezier(0.4, 0, 0.6, 1) 0ms',
           }}
         >
-          <Toolbar /> {/* Spacer to offset content below AppBar */}
+          <MuiToolbar /> {/* Spacer to offset content below top bar */}
           <Box sx={{flexGrow: 1, height: '100%', display: 'flex', alignItems: 'stretch'}}>
              <FilePreview selectedFile={selectedFileForPreview} />
           </Box>
