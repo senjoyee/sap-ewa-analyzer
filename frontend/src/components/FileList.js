@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { Button as FluentButton, Spinner } from '@fluentui/react-components';
+import { Button as FluentButton, Spinner, Tooltip as FluentTooltip } from '@fluentui/react-components';
 import { Alert as FluentAlert } from '@fluentui/react-alert';
 import { Toaster, useToastController, Toast, ToastTitle } from '@fluentui/react-toast';
 import { Delete24Regular, Play24Regular, Document24Regular, DocumentPdf24Regular, Image24Regular, TextDescription24Regular, ChevronDown24Regular } from '@fluentui/react-icons';
@@ -14,7 +14,6 @@ import ListItemSecondaryAction from '@mui/material/ListItemSecondaryAction';
 import Box from '@mui/material/Box';
 import Chip from '@mui/material/Chip';
 // Replaced MUI Button with Fluent UI Button
-import Tooltip from '@mui/material/Tooltip';
 import Checkbox from '@mui/material/Checkbox';
 import Accordion from '@mui/material/Accordion';
 import AccordionSummary from '@mui/material/AccordionSummary';
@@ -943,7 +942,7 @@ const FileList = ({ onFileSelect, refreshTrigger, selectedFile }) => {
                           }}
                         >
                           {getFileIcon(file.name)}
-                          <Tooltip title={file.name} placement="top-start">
+                          <FluentTooltip content={file.name} relationship="label" positioning={{ position: 'above', align: 'start' }}>
                             <Typography sx={{ 
                               fontSize: '0.875rem',
                               fontWeight: 400,
@@ -958,7 +957,7 @@ const FileList = ({ onFileSelect, refreshTrigger, selectedFile }) => {
                             }}>
                               {file.name}
                             </Typography>
-                          </Tooltip>
+                          </FluentTooltip>
                         </Box>
                       </ListItemButton>
                       <ListItemSecondaryAction sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}>
