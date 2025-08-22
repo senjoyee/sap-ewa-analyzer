@@ -239,6 +239,10 @@ const useStyles = makeStyles({
   },
   tableScroll: {
     overflowX: 'auto',
+    ':focus-visible': {
+      outline: `2px solid ${tokens.colorBrandStroke1}`,
+      outlineOffset: '2px',
+    },
   },
   mdTable: {
     width: '100%',
@@ -334,12 +338,12 @@ const JsonCodeBlockRenderer = ({ node, inline, className, children, ...props }) 
         return (
           <div className={classes.tableCard}>
             <div className={classes.tableTitle}>{jsonData.tableTitle}</div>
-            <div className={classes.tableScroll}>
-              <table className={classes.mdTable}>
+            <div className={classes.tableScroll} tabIndex={0} role="group" aria-label={`${jsonData.tableTitle} table`}>
+              <table className={classes.mdTable} aria-label={`${jsonData.tableTitle} data`}>
                 <thead>
                   <tr>
-                    <th className={classes.mdTh} style={{ width: '40%' }}>Parameter</th>
-                    <th className={classes.mdTh} style={{ width: '60%' }}>Value</th>
+                    <th className={classes.mdTh} style={{ width: '40%' }} scope="col">Parameter</th>
+                    <th className={classes.mdTh} style={{ width: '60%' }} scope="col">Value</th>
                   </tr>
                 </thead>
                 <tbody>
@@ -365,8 +369,8 @@ const JsonCodeBlockRenderer = ({ node, inline, className, children, ...props }) 
         return (
           <div className={classes.tableCard}>
             <div className={classes.tableTitle}>{jsonData.tableTitle}</div>
-            <div className={classes.tableScroll}>
-              <table className={classes.mdTable}>
+            <div className={classes.tableScroll} tabIndex={0} role="group" aria-label={`${jsonData.tableTitle} table`}>
+              <table className={classes.mdTable} aria-label={`${jsonData.tableTitle} data`}>
                 <thead>
                   <tr>
                     {jsonData.headers.map((header, index) => {
@@ -382,7 +386,7 @@ const JsonCodeBlockRenderer = ({ node, inline, className, children, ...props }) 
                         header.toLowerCase().includes('cpus')
                       );
                       return (
-                        <th key={index} className={classes.mdTh} style={{ textAlign: isNumericHeader ? 'center' : 'left' }}>
+                        <th key={index} className={classes.mdTh} style={{ textAlign: isNumericHeader ? 'center' : 'left' }} scope="col">
                           {header.charAt(0).toUpperCase() + header.slice(1).replace(/_/g, ' ')}
                         </th>
                       );
@@ -437,8 +441,8 @@ const JsonCodeBlockRenderer = ({ node, inline, className, children, ...props }) 
             return (
               <div className={classes.tableCard}>
                 <div className={classes.tableTitle}>{tableTitle}</div>
-                <div className={classes.tableScroll}>
-                  <table className={classes.mdTable}>
+                <div className={classes.tableScroll} tabIndex={0} role="group" aria-label={`${tableTitle} table`}>
+                  <table className={classes.mdTable} aria-label={`${tableTitle} data`}>
                     <thead>
                       <tr>
                         {headers.map((header, idx) => {
@@ -454,7 +458,7 @@ const JsonCodeBlockRenderer = ({ node, inline, className, children, ...props }) 
                             header.toLowerCase().includes('cpus')
                           );
                           return (
-                            <th key={idx} className={classes.mdTh} style={{ textAlign: isNumericHeader ? 'center' : 'left' }}>
+                            <th key={idx} className={classes.mdTh} style={{ textAlign: isNumericHeader ? 'center' : 'left' }} scope="col">
                               {header}
                             </th>
                           );
@@ -585,12 +589,12 @@ const FilePreview = ({ selectedFile }) => {
                 rehypePlugins={[rehypeRaw]}
                 components={{
                   table: ({ children }) => (
-                    <div className={classes.tableScroll}>
-                      <table className={classes.mdTable}>{children}</table>
+                    <div className={classes.tableScroll} tabIndex={0} role="group" aria-label="Markdown table">
+                      <table className={classes.mdTable} aria-label="Markdown data table">{children}</table>
                     </div>
                   ),
                   thead: ({ children }) => <thead>{children}</thead>,
-                  th: ({ children }) => <th className={classes.mdTh}>{children}</th>,
+                  th: ({ children }) => <th className={classes.mdTh} scope="col">{children}</th>,
                   td: ({ children }) => <td className={classes.mdTd}>{children}</td>,
                   tbody: ({ children }) => <tbody>{children}</tbody>,
                   code: JsonCodeBlockRenderer,
@@ -703,7 +707,7 @@ const FilePreview = ({ selectedFile }) => {
             </div>
           )
         ) : (
-          <div className={classes.noFileSelected}>
+          <div className={classes.noFileSelected} role="status" aria-live="polite">
             <Document24Regular style={{ fontSize: 64, color: '#9e9e9e', marginBottom: 8 }} />
             <div className={classes.noFileTitle}>
               No File Selected
