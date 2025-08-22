@@ -63,6 +63,7 @@ const useStyles = makeStyles({
     flexDirection: 'column',
     overflow: 'hidden',
     border: `1px solid ${tokens.colorNeutralStroke1}`,
+    minWidth: 0,
   },
   headerBar: {
     paddingLeft: tokens.spacingHorizontalM,
@@ -74,6 +75,13 @@ const useStyles = makeStyles({
     alignItems: 'center',
     backgroundColor: tokens.colorNeutralBackground2,
     gap: tokens.spacingHorizontalS,
+    flexWrap: 'wrap',
+    rowGap: tokens.spacingVerticalXS,
+    '@media (max-width: 600px)': {
+      flexDirection: 'column',
+      alignItems: 'stretch',
+      gap: tokens.spacingVerticalXS,
+    },
   },
   title: {
     fontWeight: tokens.fontWeightSemibold,
@@ -81,11 +89,19 @@ const useStyles = makeStyles({
     fontSize: tokens.fontSizeBase500,
     lineHeight: '24px',
     flexGrow: 1,
+    minWidth: 0,
+    overflowWrap: 'anywhere',
   },
   actionBar: {
     display: 'flex',
     alignItems: 'center',
     gap: tokens.spacingHorizontalXS,
+    flexWrap: 'wrap',
+    '@media (max-width: 600px)': {
+      width: '100%',
+      justifyContent: 'flex-start',
+      rowGap: tokens.spacingVerticalXXS,
+    },
   },
   // Icon sizing and colors
   icon16: { width: 16, height: 16 },
@@ -269,6 +285,19 @@ const useStyles = makeStyles({
     display: 'flex',
     alignItems: 'stretch',
     justifyContent: 'flex-start',
+    // Subtle custom scrollbar (Firefox + WebKit)
+    scrollbarWidth: 'thin',
+    scrollbarColor: `${tokens.colorNeutralStroke1} ${tokens.colorNeutralBackground1}`,
+    msOverflowStyle: 'auto',
+    selectors: {
+      '&::-webkit-scrollbar': { width: '6px' },
+      '&::-webkit-scrollbar-track': { background: tokens.colorNeutralBackground1 },
+      '&::-webkit-scrollbar-thumb': { background: tokens.colorNeutralStroke1, borderRadius: '3px' },
+      '&::-webkit-scrollbar-thumb:hover': { background: tokens.colorNeutralStroke1Hover },
+    },
+    '@media (max-width: 600px)': {
+      padding: tokens.spacingHorizontalM,
+    },
   },
   noFileIcon: {
     fontSize: 64,

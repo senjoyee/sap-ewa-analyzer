@@ -29,6 +29,7 @@ const useStyles = makeStyles({
     flexDirection: 'column',
     height: '100%',
     gap: tokens.spacingHorizontalM,
+    minWidth: 0,
   },
   // Icon sizes
   icon16: {
@@ -64,6 +65,13 @@ const useStyles = makeStyles({
     justifyContent: 'space-between',
     alignItems: 'center',
     marginBottom: tokens.spacingVerticalS,
+    flexWrap: 'wrap',
+    gap: tokens.spacingHorizontalS,
+    '@media (max-width: 600px)': {
+      flexDirection: 'column',
+      alignItems: 'stretch',
+      rowGap: tokens.spacingVerticalXS,
+    },
   },
   title: {
     fontWeight: tokens.fontWeightSemibold,
@@ -72,10 +80,13 @@ const useStyles = makeStyles({
     display: 'flex',
     alignItems: 'center',
     gap: tokens.spacingHorizontalS,
+    minWidth: 0,
+    overflowWrap: 'anywhere',
   },
   actionButtons: {
     display: 'flex',
     gap: tokens.spacingHorizontalXS,
+    flexWrap: 'wrap',
   },
   selectionSection: {
     display: 'flex',
@@ -87,6 +98,8 @@ const useStyles = makeStyles({
     display: 'flex',
     justifyContent: 'space-between',
     alignItems: 'center',
+    flexWrap: 'wrap',
+    rowGap: tokens.spacingVerticalXS,
   },
   selectionText: {
     color: tokens.colorNeutralForeground3,
@@ -105,6 +118,10 @@ const useStyles = makeStyles({
     border: `1px solid ${tokens.colorNeutralStroke1}`,
     borderRadius: tokens.borderRadiusMedium,
     boxShadow: tokens.shadow4,
+    // Subtle custom scrollbar (Firefox + WebKit)
+    scrollbarWidth: 'thin',
+    scrollbarColor: `${tokens.colorNeutralStroke1} ${tokens.colorNeutralBackground2}`,
+    msOverflowStyle: 'auto',
     selectors: {
       '&::-webkit-scrollbar': { width: '6px' },
       '&::-webkit-scrollbar-track': { background: tokens.colorNeutralBackground2 },

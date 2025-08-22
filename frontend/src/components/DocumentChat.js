@@ -26,6 +26,7 @@ const useStyles = makeStyles({
     ...shorthands.borderRadius('16px'),
     overflow: 'hidden',
     ...shorthands.border('1px', 'solid', tokens.colorNeutralStroke1),
+    minWidth: 0,
     '::before': {
       content: '""',
       position: 'absolute',
@@ -35,6 +36,12 @@ const useStyles = makeStyles({
       height: '3px',
       backgroundImage: 'linear-gradient(90deg, #4285F4, #34A853, #FBBC05, #EA4335)',
       zIndex: 1301,
+    },
+    '@media (max-width: 600px)': {
+      width: 'calc(100vw - 32px)',
+      height: '70vh',
+      right: '16px',
+      bottom: '16px',
     },
   },
   header: {
@@ -47,15 +54,22 @@ const useStyles = makeStyles({
     color: tokens.colorNeutralForeground1,
     position: 'relative',
     zIndex: 2,
+    flexWrap: 'wrap',
+    rowGap: '6px',
   },
   headerLeft: {
     display: 'flex',
     alignItems: 'center',
     columnGap: '8px',
+    minWidth: 0,
+    flex: 1,
+    flexWrap: 'wrap',
   },
   headerTitle: {
     fontSize: '0.9rem',
     fontWeight: 600,
+    minWidth: 0,
+    overflowWrap: 'anywhere',
   },
   messages: {
     flexGrow: 1,
@@ -65,8 +79,17 @@ const useStyles = makeStyles({
     flexDirection: 'column',
     rowGap: '4px',
     backgroundColor: tokens.colorNeutralBackground2,
+    minWidth: 0,
+    // Subtle custom scrollbar (Firefox + WebKit)
     scrollbarWidth: 'thin',
+    scrollbarColor: `${tokens.colorNeutralStroke1} ${tokens.colorNeutralBackground2}`,
     msOverflowStyle: 'auto',
+    selectors: {
+      '&::-webkit-scrollbar': { width: '6px' },
+      '&::-webkit-scrollbar-track': { background: tokens.colorNeutralBackground2 },
+      '&::-webkit-scrollbar-thumb': { background: tokens.colorNeutralStroke1, borderRadius: '3px' },
+      '&::-webkit-scrollbar-thumb:hover': { background: tokens.colorNeutralStroke1Hover },
+    },
   },
   emptyIcon: {
     width: '48px',
@@ -79,6 +102,8 @@ const useStyles = makeStyles({
     alignItems: 'flex-start',
     columnGap: '6px',
     marginBottom: '4px',
+    flexWrap: 'wrap',
+    rowGap: '4px',
   },
   messageRowUser: {
     flexDirection: 'row-reverse',
@@ -105,6 +130,7 @@ const useStyles = makeStyles({
     padding: '8px 12px',
     maxWidth: '90%',
     wordWrap: 'break-word',
+    overflowWrap: 'anywhere',
     boxShadow: tokens.shadow4,
     fontSize: '0.82rem',
     lineHeight: 1.35,
@@ -130,6 +156,12 @@ const useStyles = makeStyles({
     columnGap: '8px',
     alignItems: 'flex-end',
     backgroundColor: tokens.colorNeutralBackground2,
+    flexWrap: 'wrap',
+    rowGap: '8px',
+    '@media (max-width: 600px)': {
+      flexDirection: 'column',
+      alignItems: 'stretch',
+    },
   },
   inputArea: {
     flexGrow: 1,
@@ -169,6 +201,9 @@ const useStyles = makeStyles({
     justifyContent: 'center',
     width: '100%',
     maxWidth: 520,
+    '@media (max-width: 600px)': {
+      maxWidth: '100%',
+    },
   },
   placeholderMuted: {
     color: tokens.colorNeutralForeground3,
