@@ -3,7 +3,7 @@ import ReactMarkdown from 'react-markdown';
 import rehypeRaw from 'rehype-raw';
 import remarkGfm from 'remark-gfm';
 import { makeStyles } from '@griffel/react';
-import { tokens, Button, Tooltip, Accordion as FluentAccordion, AccordionItem, AccordionHeader, AccordionPanel } from '@fluentui/react-components';
+import { tokens, Button, Tooltip, Accordion as FluentAccordion, AccordionItem, AccordionHeader, AccordionPanel, ProgressBar } from '@fluentui/react-components';
 import { DocumentPdf24Regular, ChevronDown24Regular, DataBarVertical24Regular, Settings24Regular } from '@fluentui/react-icons';
  
  
@@ -322,6 +322,25 @@ const useStyles = makeStyles({
     color: tokens.colorNeutralForeground3,
     fontSize: tokens.fontSizeBase200,
   },
+  // Lightweight skeleton styles (no animation for simplicity)
+  skeletonContainer: {
+    display: 'flex',
+    flexDirection: 'column',
+    rowGap: tokens.spacingVerticalS,
+  },
+  skeletonLine: {
+    width: '100%',
+    height: '12px',
+    borderRadius: tokens.borderRadiusSmall,
+    backgroundColor: tokens.colorNeutralBackground3,
+  },
+  skeletonBlock: {
+    width: '100%',
+    height: '120px',
+    borderRadius: tokens.borderRadiusMedium,
+    backgroundColor: tokens.colorNeutralBackground3,
+    border: `1px solid ${tokens.colorNeutralStroke2}`,
+  },
 });
 
 const JsonCodeBlockRenderer = ({ node, inline, className, children, ...props }) => {
@@ -581,113 +600,122 @@ const FilePreview = ({ selectedFile }) => {
         {selectedFile ? (
           isAnalysisView ? (
             <div className={classes.analysisInner}>
-              {/* Main Analysis Content - We'll add metrics at the end */}
-              
-              {/* Analysis Content Section */}
-              <ReactMarkdown
-                key={selectedFile ? selectedFile.name : 'default-key'}
-                remarkPlugins={[remarkGfm]}
-                rehypePlugins={[rehypeRaw]}
-                components={{
-                  table: ({ children }) => (
-                    <div className={classes.tableScroll} tabIndex={0} role="group" aria-label="Markdown table">
-                      <table className={classes.mdTable} aria-label="Markdown data table">{children}</table>
+              {selectedFile.analysisLoading ? (
+                <div className={classes.skeletonContainer} role="status" aria-live="polite" aria-busy="true">
+                  <ProgressBar thickness="small" />
+                  <div className={classes.skeletonLine} style={{ width: '40%', height: 20 }} />
+                  <div className={classes.skeletonLine} style={{ width: '95%' }} />
+                  <div className={classes.skeletonLine} style={{ width: '85%' }} />
+                  <div className={classes.skeletonBlock} />
+                  <div className={classes.skeletonLine} style={{ width: '60%', height: 16 }} />
+                  <div className={classes.skeletonBlock} style={{ height: 160 }} />
+                </div>
+              ) : (
+                <>
+                  {/* Analysis Content Section */}
+                  <ReactMarkdown
+                    key={selectedFile ? selectedFile.name : 'default-key'}
+                    remarkPlugins={[remarkGfm]}
+                    rehypePlugins={[rehypeRaw]}
+                    components={{
+                      table: ({ children }) => (
+                        <div className={classes.tableScroll} tabIndex={0} role="group" aria-label="Markdown table">
+                          <table className={classes.mdTable} aria-label="Markdown data table">{children}</table>
+                        </div>
+                      ),
+                      thead: ({ children }) => <thead>{children}</thead>,
+                      th: ({ children }) => <th className={classes.mdTh} scope="col">{children}</th>,
+                      td: ({ children }) => <td className={classes.mdTd}>{children}</td>,
+                      tbody: ({ children }) => <tbody>{children}</tbody>,
+                      code: JsonCodeBlockRenderer,
+                      h1: ({ children }) => (
+                        <h1 className={classes.mdH1}>{children}</h1>
+                      ),
+                      h2: ({ children }) => (
+                        <h2 className={classes.mdH2}>{children}</h2>
+                      ),
+                      h3: ({ children }) => (
+                        <h3 className={classes.mdH3}>{children}</h3>
+                      ),
+                      p: ({ children }) => (
+                        <p className={classes.mdP}>{children}</p>
+                      ),
+                      ul: ({ children }) => (
+                        <ul className={classes.mdUl}>{children}</ul>
+                      ),
+                      ol: ({ children }) => (
+                        <ol className={classes.mdOl}>{children}</ol>
+                      ),
+                      li: ({ children }) => (
+                        <li className={classes.mdLi}>{children}</li>
+                      ),
+                      strong: ({ children }) => (
+                        <strong className={classes.mdStrong}>{children}</strong>
+                      ),
+                      em: ({ children }) => (
+                        <em className={classes.mdEm}>{children}</em>
+                      ),
+                      blockquote: ({ children }) => (
+                        <blockquote className={classes.mdBlockquote}>{children}</blockquote>
+                      ),
+                      a: ({ children, href }) => (
+                        <a
+                          href={href}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className={classes.mdLink}
+                        >
+                          {children}
+                        </a>
+                      ),
+                    }}
+                  >
+                    {selectedFile.analysisContent}
+                  </ReactMarkdown>
+                  
+                  {/* Collapsible Metrics Section at the end */}
+                  {hasMetrics && (
+                    <div className={classes.accordionSection}>
+                      <FluentAccordion>
+                        <AccordionItem value="metrics">
+                          <AccordionHeader expandIcon={<ChevronDown24Regular />} className={classes.accordionHeader} aria-label="Key Metrics Summary">
+                            <div style={{ display: 'flex', alignItems: 'center' }}>
+                              <DataBarVertical24Regular style={{ marginRight: 12, color: '#1976d2' }} />
+                              <span style={{ fontWeight: 500, color: '#1976d2' }}>Key Metrics Summary</span>
+                            </div>
+                          </AccordionHeader>
+                          <AccordionPanel className={classes.accordionPanel}>
+                            <div className={classes.panelInner}>
+                              {/* <MetricsTable metricsData={metricsData} /> */}
+                            </div>
+                          </AccordionPanel>
+                        </AccordionItem>
+                      </FluentAccordion>
                     </div>
-                  ),
-                  thead: ({ children }) => <thead>{children}</thead>,
-                  th: ({ children }) => <th className={classes.mdTh} scope="col">{children}</th>,
-                  td: ({ children }) => <td className={classes.mdTd}>{children}</td>,
-                  tbody: ({ children }) => <tbody>{children}</tbody>,
-                  code: JsonCodeBlockRenderer,
-                  h1: ({ children }) => (
-                    <h1 className={classes.mdH1}>{children}</h1>
-                  ),
-                  h2: ({ children }) => (
-                    <h2 className={classes.mdH2}>{children}</h2>
-                  ),
-                  h3: ({ children }) => (
-                    <h3 className={classes.mdH3}>{children}</h3>
-                  ),
-                  p: ({ children }) => (
-                    <p className={classes.mdP}>{children}</p>
-                  ),
-                  ul: ({ children }) => (
-                    <ul className={classes.mdUl}>{children}</ul>
-                  ),
-                  ol: ({ children }) => (
-                    <ol className={classes.mdOl}>{children}</ol>
-                  ),
-                  li: ({ children }) => (
-                    <li className={classes.mdLi}>{children}</li>
-                  ),
-                  strong: ({ children }) => (
-                    <strong className={classes.mdStrong}>{children}</strong>
-                  ),
-                  em: ({ children }) => (
-                    <em className={classes.mdEm}>{children}</em>
-                  ),
-                  blockquote: ({ children }) => (
-                    <blockquote className={classes.mdBlockquote}>{children}</blockquote>
-                  ),
-                  a: ({ children, href }) => (
-                    <a
-                      href={href}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className={classes.mdLink}
-                    >
-                      {children}
-                    </a>
-                  ),
-                }}
-              >
-                {selectedFile.analysisContent}
-              </ReactMarkdown>
-              
-              {/* Collapsible Metrics Section at the end */}
-              {hasMetrics && (
-                <div className={classes.accordionSection}>
-                  <FluentAccordion>
-                    <AccordionItem value="metrics">
-                      <AccordionHeader expandIcon={<ChevronDown24Regular />} className={classes.accordionHeader} aria-label="Key Metrics Summary">
-                        <div style={{ display: 'flex', alignItems: 'center' }}>
-                          <DataBarVertical24Regular style={{ marginRight: 12, color: '#1976d2' }} />
-                          <span style={{ fontWeight: 500, color: '#1976d2' }}>Key Metrics Summary</span>
-                        </div>
-                      </AccordionHeader>
-                      <AccordionPanel className={classes.accordionPanel}>
-                        <div className={classes.panelInner}>
-                          {/* <MetricsTable metricsData={metricsData} /> */}
-                        </div>
-                      </AccordionPanel>
-                    </AccordionItem>
-                  </FluentAccordion>
-                </div>
+                  )}
+                  
+                  {/* Collapsible Parameters Section after metrics */}
+                  {hasParameters && (
+                    <div className={classes.accordionSection}>
+                      <FluentAccordion>
+                        <AccordionItem value="parameters">
+                          <AccordionHeader expandIcon={<ChevronDown24Regular />} className={classes.accordionHeader} aria-label="Recommended Parameters">
+                            <div style={{ display: 'flex', alignItems: 'center' }}>
+                              <Settings24Regular style={{ marginRight: 12, color: '#2e7d32' }} />
+                              <span style={{ fontWeight: 500, color: '#2e7d32' }}>Recommended Parameters</span>
+                            </div>
+                          </AccordionHeader>
+                          <AccordionPanel className={classes.accordionPanel}>
+                            <div className={classes.panelInner}>
+                              {/* <ParametersTable parametersData={parametersData} /> */}
+                            </div>
+                          </AccordionPanel>
+                        </AccordionItem>
+                      </FluentAccordion>
+                    </div>
+                  )}
+                </>
               )}
-              
-              {/* Collapsible Parameters Section after metrics */}
-              {hasParameters && (
-                <div className={classes.accordionSection}>
-                  <FluentAccordion>
-                    <AccordionItem value="parameters">
-                      <AccordionHeader expandIcon={<ChevronDown24Regular />} className={classes.accordionHeader} aria-label="Recommended Parameters">
-                        <div style={{ display: 'flex', alignItems: 'center' }}>
-                          <Settings24Regular style={{ marginRight: 12, color: '#2e7d32' }} />
-                          <span style={{ fontWeight: 500, color: '#2e7d32' }}>Recommended Parameters</span>
-                        </div>
-                      </AccordionHeader>
-                      <AccordionPanel className={classes.accordionPanel}>
-                        <div className={classes.panelInner}>
-                          {/* <ParametersTable parametersData={parametersData} /> */}
-                        </div>
-                      </AccordionPanel>
-                    </AccordionItem>
-                  </FluentAccordion>
-                </div>
-              )}
-              
-              {/* Error display if metrics failed to load */}
-              {/* No metrics error UI: setError is unused; keeping UI minimal */}
             </div>
           ) : (
             <div className={classes.placeholderContainer}> 
