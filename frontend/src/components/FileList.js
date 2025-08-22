@@ -2,28 +2,25 @@ import React, { useState, useEffect, useRef } from 'react';
 import { Button as FluentButton } from '@fluentui/react-components';
 import { Alert as FluentAlert } from '@fluentui/react-alert';
 import { Toaster, useToastController, Toast, ToastTitle } from '@fluentui/react-toast';
-import { Delete24Regular, Play24Regular, Document24Regular } from '@fluentui/react-icons';
+import { Delete24Regular, Play24Regular, Document24Regular, DocumentPdf24Regular, Image24Regular, TextDescription24Regular, ChevronDown24Regular } from '@fluentui/react-icons';
 import Paper from '@mui/material/Paper';
 import Typography from '@mui/material/Typography';
 import List from '@mui/material/List';
 import ListItem from '@mui/material/ListItem';
 import ListItemButton from '@mui/material/ListItemButton';
-import ListItemText from '@mui/material/ListItemText';
 import ListItemIcon from '@mui/material/ListItemIcon';
 import ListItemSecondaryAction from '@mui/material/ListItemSecondaryAction';
 import CircularProgress from '@mui/material/CircularProgress';
  
 import Box from '@mui/material/Box';
-import Divider from '@mui/material/Divider';
 import Chip from '@mui/material/Chip';
 // Replaced MUI Button with Fluent UI Button
-import IconButton from '@mui/material/IconButton';
 import Tooltip from '@mui/material/Tooltip';
 import Checkbox from '@mui/material/Checkbox';
 import Accordion from '@mui/material/Accordion';
 import AccordionSummary from '@mui/material/AccordionSummary';
 import AccordionDetails from '@mui/material/AccordionDetails';
-import ExpandMoreIcon from '@mui/icons-material/ExpandMore';
+ 
 import FolderIcon from '@mui/icons-material/Folder';
 import BusinessIcon from '@mui/icons-material/Business';
  
@@ -31,24 +28,14 @@ import { useTheme } from '../contexts/ThemeContext';
 import { apiUrl } from '../config';
 import dayjs from 'dayjs';
 import weekOfYear from 'dayjs/plugin/weekOfYear';
-import ListSubheader from '@mui/material/ListSubheader';
 
 
 
 // File type icons
-import PictureAsPdfIcon from '@mui/icons-material/PictureAsPdf';
-import ImageIcon from '@mui/icons-material/Image';
-import DescriptionIcon from '@mui/icons-material/Description';
-import TextSnippetIcon from '@mui/icons-material/TextSnippet';
-import InsertDriveFileIcon from '@mui/icons-material/InsertDriveFile';
+ 
 
 // Action and status icons
-import AiAnalysisIcon from './AiAnalysisIcon';
-import AutorenewIcon from '@mui/icons-material/Autorenew';
-import CheckCircleIcon from '@mui/icons-material/CheckCircle';
-import PendingIcon from '@mui/icons-material/Pending';
-import VisibilityIcon from '@mui/icons-material/Visibility';
-import RefreshIcon from '@mui/icons-material/Refresh';
+ 
 // Replaced MUI Delete/Play icons with Fluent UI icons
 
 // Initialise weekOfYear plugin after all imports
@@ -66,20 +53,20 @@ const getFileIcon = (filename) => {
   
   switch(fileExtension) {
     case 'pdf':
-      return <PictureAsPdfIcon color="error" fontSize="small" />;
+      return <DocumentPdf24Regular style={{ width: 16, height: 16 }} />;
     case 'jpg':
     case 'jpeg':
     case 'png':
     case 'gif':
     case 'bmp':
-      return <ImageIcon color="info" fontSize="small" />;
+      return <Image24Regular style={{ width: 16, height: 16 }} />;
     case 'doc':
     case 'docx':
-      return <DescriptionIcon color="primary" fontSize="small" />;
+      return <Document24Regular style={{ width: 16, height: 16 }} />;
     case 'txt':
-      return <TextSnippetIcon color="secondary" fontSize="small" />;
+      return <TextDescription24Regular style={{ width: 16, height: 16 }} />;
     default:
-      return <InsertDriveFileIcon color="disabled" fontSize="small" />;
+      return <Document24Regular style={{ width: 16, height: 16, opacity: 0.6 }} />;
   }
 };
 
@@ -839,7 +826,7 @@ const FileList = ({ onFileSelect, refreshTrigger, selectedFile }) => {
             }}
           >
             <AccordionSummary 
-              expandIcon={<ExpandMoreIcon sx={{ color: '#60a5fa' }} />}
+              expandIcon={<ChevronDown24Regular style={{ color: '#60a5fa' }} />}
               sx={{ 
                 minHeight: 44,
                 backgroundColor: '#f8f9fa',
