@@ -1,19 +1,12 @@
-import React, { useState, useRef, useEffect } from 'react';
+import React, { useState, useRef } from 'react';
 import { Button as FluentButton, Combobox, Option, Tag, ProgressBar } from '@fluentui/react-components';
 import { Alert as FluentAlert } from '@fluentui/react-alert';
-import TextField from '@mui/material/TextField';
-import FormControl from '@mui/material/FormControl';
 import FormHelperText from '@mui/material/FormHelperText';
-import InputLabel from '@mui/material/InputLabel';
-import FormLabel from '@mui/material/FormLabel';
 // Replaced MUI LinearProgress with Fluent ProgressBar
 // Removed MUI Chip in favor of Fluent Tag
-import Divider from '@mui/material/Divider';
-import Badge from '@mui/material/Badge';
 import { 
   Add24Regular, 
   Dismiss24Regular, 
-  Dismiss16Regular, 
   CloudArrowUp24Regular,
   CheckmarkCircle16Regular,
   ErrorCircle16Regular,
@@ -23,7 +16,6 @@ import {
   DocumentText16Regular,
   Document16Regular,
 } from '@fluentui/react-icons';
-import { useTheme } from '../contexts/ThemeContext';
 import { apiUrl } from '../config';
 import { makeStyles, shorthands, tokens } from '@fluentui/react-components';
 
@@ -98,16 +90,50 @@ const useStyles = makeStyles({
     transitionProperty: 'box-shadow, border-color',
     transitionDuration: '200ms',
   },
+  heroTitle: {
+    marginBottom: '4px',
+    fontWeight: 600,
+    color: tokens.colorNeutralForeground1,
+    fontSize: '1.125rem',
+  },
+  heroSubtext: {
+    color: tokens.colorNeutralForeground3,
+    marginBottom: '16px',
+  },
+  sectionHeader: {
+    fontWeight: 600,
+    fontSize: '1.1rem',
+    color: tokens.colorBrandForeground1,
+  },
+  sectionDescription: {
+    color: tokens.colorNeutralForeground3,
+    marginBottom: '24px',
+  },
+  fileTitle: {
+    fontWeight: 600,
+    color: tokens.colorNeutralForeground1,
+    whiteSpace: 'nowrap',
+    overflow: 'hidden',
+    textOverflow: 'ellipsis',
+  },
+  fileMeta: {
+    color: tokens.colorNeutralForeground3,
+    fontSize: '0.75rem',
+  },
+  errorText: {
+    display: 'block',
+    marginTop: '4px',
+    color: tokens.colorPaletteRedForeground1,
+    fontSize: '0.75rem',
+  },
 });
 
 const FileUpload = ({ onUploadSuccess }) => {
   const [uploadingFilesInfo, setUploadingFilesInfo] = useState([]); // To track multiple uploads
-  const { theme } = useTheme();
-  const isDark = theme === 'dark';
   const [overallStatus, setOverallStatus] = useState({ message: '', error: '' });
   const [filesWithCustomers, setFilesWithCustomers] = useState([]); // Array of {file, customerName, error} objects
   const [showCustomerFields, setShowCustomerFields] = useState(false); // Control visibility of customer fields
-  const [customers, setCustomers] = useState([
+  const [customers] = useState([
     'TBS',
     'Eviosys',
     'BSW',
@@ -116,6 +142,8 @@ const FileUpload = ({ onUploadSuccess }) => {
     'Shoosmiths'
   ]); // Predefined customer list
   const fileInputRef = useRef(null);
+  const classes = useStyles();
+  const instructionsId = 'upload-instructions';
   
   // Function to dismiss overall status message
   const dismissOverallStatus = () => {
@@ -292,29 +320,12 @@ const FileUpload = ({ onUploadSuccess }) => {
     }
   };
 
-  const classes = useStyles();
-
   return (
     <div className={classes.card}>
       <div style={{ textAlign: 'center' }}>
-        <CloudArrowUp24Regular style={{ width: 44, height: 44, color: '#60a5fa', marginBottom: 12, opacity: 0.8 }} />
-        <div 
-          style={{ 
-            marginBottom: 4,
-            fontWeight: 400,
-            color: '#32363a'
-          }}
-        >
-          Upload Files
-        </div>
-        <div 
-          style={{ 
-            color: '#6a6d70',
-            marginBottom: 16
-          }}
-        >
-          Drag and drop files here or click to browse
-        </div>
+        <CloudArrowUp24Regular style={{ width: 44, height: 44, color: tokens.colorPaletteBlueForeground2, marginBottom: 12, opacity: 0.9 }} />
+        <div className={classes.heroTitle}>Upload Files</div>
+        <div id={instructionsId} className={classes.heroSubtext}>Drag and drop files here or click to browse</div>
         
         <input
           ref={fileInputRef}
@@ -323,12 +334,14 @@ const FileUpload = ({ onUploadSuccess }) => {
           onChange={handleFilesSelected}
           style={{ display: 'none' }}
           accept="*"
+          aria-hidden="true"
         />
         
         <FluentButton
           appearance="primary"
           icon={<Add24Regular />}
           onClick={handleAddClick}
+          aria-describedby={instructionsId}
         >
           Browse Files
         </FluentButton>
@@ -338,17 +351,13 @@ const FileUpload = ({ onUploadSuccess }) => {
       {showCustomerFields && filesWithCustomers.length > 0 && (
         <div className={classes.sectionCard}>
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 16 }}>
-            <div style={{ fontWeight: 600, fontSize: '1.1rem', color: '#1976d2' }}>
-              📋 Customer Assignment
-            </div>
+            <h2 className={classes.sectionHeader} style={{ margin: 0 }}>📋 Customer Assignment</h2>
             <Tag size="small" appearance="outline" style={{ fontWeight: 500 }}>
               {`${filesWithCustomers.length} file${filesWithCustomers.length > 1 ? 's' : ''}`}
             </Tag>
           </div>
           
-          <div style={{ color: '#666', marginBottom: 24 }}>
-            Please select the appropriate customer for each file to ensure proper processing.
-          </div>
+          <div className={classes.sectionDescription}>Please select the appropriate customer for each file to ensure proper processing.</div>
           
           {/* Compact grid layout for multiple files */}
           <div className={classes.grid} style={{ gridTemplateColumns: filesWithCustomers.length > 2 ? 'repeat(auto-fit, minmax(320px, 1fr))' : '1fr' }}>
@@ -357,12 +366,8 @@ const FileUpload = ({ onUploadSuccess }) => {
                 <div style={{ display: 'flex', alignItems: 'center', marginBottom: 16 }}>
                   {getFileIcon(fileData.file.name)}
                   <div style={{ marginLeft: 12, flex: 1, minWidth: 0 }}>
-                    <div style={{ fontWeight: 600, color: '#333', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
-                      {fileData.file.name}
-                    </div>
-                    <div style={{ color: '#666', fontSize: '0.75rem' }}>
-                      {formatFileSize(fileData.file.size)}
-                    </div>
+                    <div className={classes.fileTitle}>{fileData.file.name}</div>
+                    <div className={classes.fileMeta}>{formatFileSize(fileData.file.size)}</div>
                   </div>
                 </div>
                 
@@ -372,6 +377,9 @@ const FileUpload = ({ onUploadSuccess }) => {
                     placeholder="Choose a customer..."
                     selectedOptions={fileData.customerName ? [fileData.customerName] : []}
                     onOptionSelect={(e, data) => handleCustomerNameChange(index, data.optionValue ?? '')}
+                    aria-label={`Customer for ${fileData.file.name}`}
+                    aria-invalid={!!fileData.error}
+                    aria-describedby={fileData.error ? `error-${index}` : undefined}
                   >
                     {customers.map((customer) => (
                       <Option key={customer} text={customer} value={customer}>
@@ -383,7 +391,7 @@ const FileUpload = ({ onUploadSuccess }) => {
                     ))}
                   </Combobox>
                   {fileData.error && (
-                    <FormHelperText error sx={{ mt: 1, fontWeight: 500 }}>
+                    <FormHelperText id={`error-${index}`} error sx={{ mt: 1, fontWeight: 500 }}>
                       {fileData.error}
                     </FormHelperText>
                   )}
@@ -430,6 +438,7 @@ const FileUpload = ({ onUploadSuccess }) => {
               icon={<Dismiss24Regular />}
             />
           }
+          aria-live="polite"
         >
           {overallStatus.message}
         </FluentAlert>
@@ -448,6 +457,7 @@ const FileUpload = ({ onUploadSuccess }) => {
               icon={<Dismiss24Regular />}
             />
           }
+          aria-live="assertive"
         >
           {overallStatus.error}
         </FluentAlert>
@@ -475,6 +485,7 @@ const FileUpload = ({ onUploadSuccess }) => {
                     dismissible
                     onDismiss={() => dismissFileStatus(index)}
                     style={{ height: 20, fontSize: '0.7rem' }}
+                    aria-label={`Upload status: ${fileInfo.status}${fileInfo.status === 'uploading' ? ` ${fileInfo.progress}%` : ''}`}
                   >
                     {fileInfo.status === 'uploading' ? `${fileInfo.progress}%` : fileInfo.status}
                   </Tag>
@@ -483,9 +494,10 @@ const FileUpload = ({ onUploadSuccess }) => {
               <ProgressBar 
                 value={typeof fileInfo.progress === 'number' ? fileInfo.progress / 100 : undefined}
                 style={{ height: 4, borderRadius: 2 }}
+                aria-label={`Upload progress for ${fileInfo.name}`}
               />
               {fileInfo.status === 'error' && fileInfo.error && (
-                <div style={{ display: 'block', marginTop: 4, color: '#d32f2f', fontSize: '0.75rem' }}>
+                <div className={classes.errorText} role="alert">
                   Error: {fileInfo.error}
                 </div>
               )}
