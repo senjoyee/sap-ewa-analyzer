@@ -2,7 +2,7 @@ import React, { useState, useEffect, useRef } from 'react';
 import { Button as FluentButton, Spinner, Tooltip as FluentTooltip } from '@fluentui/react-components';
 import { Alert as FluentAlert } from '@fluentui/react-alert';
 import { Toaster, useToastController, Toast, ToastTitle } from '@fluentui/react-toast';
-import { Delete24Regular, Play24Regular, Document24Regular, DocumentPdf24Regular, Image24Regular, TextDescription24Regular, ChevronDown24Regular } from '@fluentui/react-icons';
+import { Delete24Regular, Play24Regular, Document24Regular, DocumentPdf24Regular, Image24Regular, TextDescription24Regular, ChevronDown24Regular, Building24Regular } from '@fluentui/react-icons';
 import Paper from '@mui/material/Paper';
 import Typography from '@mui/material/Typography';
 import List from '@mui/material/List';
@@ -18,9 +18,6 @@ import Checkbox from '@mui/material/Checkbox';
 import Accordion from '@mui/material/Accordion';
 import AccordionSummary from '@mui/material/AccordionSummary';
 import AccordionDetails from '@mui/material/AccordionDetails';
- 
-import FolderIcon from '@mui/icons-material/Folder';
-import BusinessIcon from '@mui/icons-material/Business';
  
 import { useTheme } from '../contexts/ThemeContext';
 import { apiUrl } from '../config';
@@ -844,9 +841,10 @@ const FileList = ({ onFileSelect, refreshTrigger, selectedFile }) => {
               }}
             >
               <Box sx={{ display: 'flex', alignItems: 'center', width: '100%' }}>
-                <BusinessIcon sx={{ 
-                  mr: 1.5, 
-                  fontSize: 18,
+                <Building24Regular style={{ 
+                  marginRight: 12,
+                  width: 18,
+                  height: 18,
                   color: '#60a5fa'
                 }} />
                 <Typography sx={{ 
