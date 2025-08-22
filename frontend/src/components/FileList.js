@@ -1,13 +1,11 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { Button as FluentButton, Spinner, Tooltip as FluentTooltip, CounterBadge, Accordion as FluentAccordion, AccordionItem, AccordionHeader, AccordionPanel, Checkbox } from '@fluentui/react-components';
+import { makeStyles } from '@griffel/react';
 import { Alert as FluentAlert } from '@fluentui/react-alert';
 import { Toaster, useToastController, Toast, ToastTitle } from '@fluentui/react-toast';
 import { Delete24Regular, Play24Regular, Document24Regular, DocumentPdf24Regular, Image24Regular, TextDescription24Regular, ChevronDown24Regular, Building24Regular, Folder24Regular } from '@fluentui/react-icons';
-import Paper from '@mui/material/Paper';
-import Typography from '@mui/material/Typography';
  
  
-import Box from '@mui/material/Box';
 // Replaced MUI Button with Fluent UI Button
  
  
@@ -27,6 +25,58 @@ import weekOfYear from 'dayjs/plugin/weekOfYear';
 
 // Initialise weekOfYear plugin after all imports
 dayjs.extend(weekOfYear);
+
+// Styles (Griffel)
+const useStyles = makeStyles({
+  root: {
+    display: 'flex',
+    flexDirection: 'column',
+    height: '100%',
+    gap: '16px',
+  },
+  headerBar: {
+    display: 'flex',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: 8,
+  },
+  title: {
+    fontWeight: 600,
+    color: '#32363a',
+    fontSize: '0.85rem',
+    display: 'flex',
+    alignItems: 'center',
+    gap: 8,
+  },
+  actionButtons: {
+    display: 'flex',
+    gap: 4,
+  },
+  selectionSection: {
+    display: 'flex',
+    flexDirection: 'column',
+    gap: 8,
+    marginBottom: 8,
+  },
+  selectionRow: {
+    display: 'flex',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+  },
+  listContainer: {
+    flex: 1,
+    overflow: 'auto',
+    backgroundColor: '#f5f5f5',
+    border: '1px solid #e5e5e5',
+    borderRadius: '8px',
+    selectors: {
+      '&::-webkit-scrollbar': { width: '6px' },
+      '&::-webkit-scrollbar-track': { background: '#f5f5f5' },
+      '&::-webkit-scrollbar-thumb': { background: '#d0d0d0', borderRadius: '3px' },
+      '&::-webkit-scrollbar-thumb:hover': { background: '#b0b0b0' },
+    },
+  },
+});
 
 // Helper function to get appropriate icon for file type
 const getFileIcon = (filename) => {
@@ -88,6 +138,7 @@ const FileList = ({ onFileSelect, refreshTrigger, selectedFile }) => {
   const pollingIntervalsRef = useRef({});
   const { theme } = useTheme();
   const isDark = theme === 'dark';
+  const classes = useStyles();
   
   // Toast controller (Fluent UI Toast)
   const { dispatchToast } = useToastController('fileListToaster');
@@ -744,13 +795,13 @@ const FileList = ({ onFileSelect, refreshTrigger, selectedFile }) => {
 
   if (isLoading) {
     content = (
-      <Box sx={{ display: 'flex', justifyContent: 'center', alignItems: 'center', p: 3, minHeight: 120 }}>
+      <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', padding: 12, minHeight: 120 }}>
         <Spinner />
-      </Box>
+      </div>
     );
   } else if (error) {
     content = (
-      <Box sx={{ p: 1 }}>
+      <div style={{ padding: 8 }}>
         <FluentAlert 
           intent="error" 
           style={{ borderRadius: 8 }}
@@ -766,16 +817,16 @@ const FileList = ({ onFileSelect, refreshTrigger, selectedFile }) => {
         >
           {error}
         </FluentAlert>
-      </Box>
+      </div>
     );
   } else if (files.length === 0) {
     content = (
-      <Box sx={{ p: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', py: 4, minHeight: 120 }}>
+      <div style={{ padding: 8, display: 'flex', flexDirection: 'column', alignItems: 'center', paddingBlock: 16, minHeight: 120 }}>
         <Document24Regular style={{ width: 40, height: 40, opacity: 0.6, marginBottom: 8 }} />
-        <Typography variant="body2" color="text.secondary" align="center">
+        <div style={{ color: '#6a6d70', fontSize: '0.8rem', textAlign: 'center' }}>
           No files uploaded yet
-        </Typography>
-      </Box>
+        </div>
+      </div>
     );
   } else {
     // Group files by customer
@@ -784,7 +835,7 @@ const FileList = ({ onFileSelect, refreshTrigger, selectedFile }) => {
     
     const openItems = Object.keys(expandedCustomers).filter(k => expandedCustomers[k]);
     content = (
-      <Box>
+      <div>
         <FluentAccordion multiple openItems={openItems} onToggle={(e, data) => {
           const next = {};
           const items = Array.isArray(data.openItems) ? data.openItems : [data.openItems];
@@ -796,27 +847,23 @@ const FileList = ({ onFileSelect, refreshTrigger, selectedFile }) => {
               <AccordionHeader expandIcon={<ChevronDown24Regular style={{ color: '#60a5fa' }} />}
                 style={{ minHeight: 44, backgroundColor: '#f8f9fa', borderBottom: '1px solid #e5e5e5' }}
               >
-                <Box sx={{ display: 'flex', alignItems: 'center', width: '100%' }}>
+                <div style={{ display: 'flex', alignItems: 'center', width: '100%' }}>
                   <Building24Regular style={{ 
                     marginRight: 12,
                     width: 18,
                     height: 18,
                     color: '#60a5fa'
                   }} />
-                  <Typography sx={{ 
-                    fontWeight: 500,
-                    fontSize: '0.875rem',
-                    color: '#32363a'
-                  }}>
+                  <span style={{ fontWeight: 500, fontSize: '0.875rem', color: '#32363a' }}>
                     {customer}
-                  </Typography>
+                  </span>
                   <CounterBadge 
                     count={filesByCustomer[customer].length}
                     size="small"
                     color="brand"
                     style={{ marginLeft: 'auto', marginRight: 8 }}
                   />
-                </Box>
+                </div>
               </AccordionHeader>
               <AccordionPanel style={{ padding: 4, backgroundColor: '#ffffff' }}>
                 <div>
@@ -856,14 +903,14 @@ const FileList = ({ onFileSelect, refreshTrigger, selectedFile }) => {
                           <div style={{ minWidth: 28, color: 'rgba(0, 0, 0, 0.54)' }}>
                             {getFileIcon(file.name)}
                           </div>
-                          <Box sx={{ flex: 1, minWidth: 0 }}>
-                            <Typography noWrap sx={{ fontSize: '0.9rem', color: '#32363a' }}>
+                          <div style={{ flex: 1, minWidth: 0 }}>
+                            <div style={{ fontSize: '0.9rem', color: '#32363a', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
                               {file.name}
-                            </Typography>
-                            <Typography variant="body2" sx={{ color: '#6a6d70', fontSize: '0.8rem' }}>
+                            </div>
+                            <div style={{ color: '#6a6d70', fontSize: '0.8rem' }}>
                               {file.customer_name || 'Unknown'} • {file.report_date || 'Unknown date'} • {formatFileSize(file.size)}
-                            </Typography>
-                          </Box>
+                            </div>
+                          </div>
                           <div style={{ marginLeft: 'auto', display: 'flex', alignItems: 'center', gap: 4 }}>
                             {combinedProcessingStatus[file.id || file.name] === 'processing' && (
                               <Spinner size="tiny" />
@@ -888,36 +935,16 @@ const FileList = ({ onFileSelect, refreshTrigger, selectedFile }) => {
             </AccordionItem>
           ))}
         </FluentAccordion>
-      </Box>
+      </div>
     );
    }
 
   return (
-    <Box sx={{ 
-      display: 'flex',
-      flexDirection: 'column',
-      height: '100%',
-      gap: 2
-    }}>
-      <Box sx={{ 
-        display: 'flex',
-        justifyContent: 'space-between',
-        alignItems: 'center',
-        mb: 1
-      }}>
-        <Typography 
-          variant="subtitle1" 
-          sx={{ 
-            fontWeight: 600,
-            color: '#32363a',
-            fontSize: '0.85rem',
-            display: 'flex',
-            alignItems: 'center',
-            gap: 1
-          }}
-        >
+    <div className={classes.root}>
+      <div className={classes.headerBar}>
+        <div className={classes.title}>
           <Folder24Regular style={{ width: 18, height: 18, color: '#60a5fa' }} />
-          Uploaded Files
+          <span>Uploaded Files</span>
           {files.length > 0 && (
             <CounterBadge 
               count={files.length}
@@ -926,8 +953,8 @@ const FileList = ({ onFileSelect, refreshTrigger, selectedFile }) => {
               style={{ marginLeft: 4 }}
             />
           )}
-        </Typography>
-        <Box sx={{ display: 'flex', gap: 0.5 }}>
+        </div>
+        <div className={classes.actionButtons}>
           <FluentButton
             size="small"
             onClick={() => {
@@ -947,15 +974,15 @@ const FileList = ({ onFileSelect, refreshTrigger, selectedFile }) => {
           >
             COLLAPSE ALL
           </FluentButton>
-        </Box>
-      </Box>
-      <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1, mb: 1 }}>
+        </div>
+      </div>
+      <div className={classes.selectionSection}>
         {/* Selection info and controls */}
-        <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-          <Typography variant="body2" sx={{ color: '#6a6d70' }}>
+        <div className={classes.selectionRow}>
+          <span style={{ color: '#6a6d70' }}>
             {selectedCount} selected ({selectedAnalyzedCount} analyzed)
-          </Typography>
-          <Box sx={{ display: 'flex', gap: 0.5 }}>
+          </span>
+          <div className={classes.actionButtons}>
             <FluentButton
               size="small"
               onClick={() => handleSelectAllFiles()}
@@ -968,13 +995,12 @@ const FileList = ({ onFileSelect, refreshTrigger, selectedFile }) => {
             >
               DESELECT ALL
             </FluentButton>
-          </Box>
-        </Box>
+          </div>
+        </div>
         
         {/* Batch action buttons */}
         {selectedCount > 0 && (
-          <Box sx={{ display: 'flex', gap: 1, justifyContent: 'flex-end', alignItems: 'center' }}>
-            {/* PDF-first toggle removed: PDF-first is now the default workflow */}
+          <div style={{ display: 'flex', gap: 8, justifyContent: 'flex-end', alignItems: 'center' }}>
             {selectedAnalyzedCount > 0 && (
               <FluentButton
                 appearance="outline"
@@ -993,38 +1019,16 @@ const FileList = ({ onFileSelect, refreshTrigger, selectedFile }) => {
             >
               Process ({selectedCount})
             </FluentButton>
-          </Box>
+          </div>
         )}
-      </Box>
-      <Paper 
-        elevation={0} 
-        sx={{ 
-          flex: 1,
-          overflow: 'auto',
-          backgroundColor: '#f5f5f5',
-          border: '1px solid #e5e5e5',
-          borderRadius: 2,
-          '&::-webkit-scrollbar': {
-            width: '6px',
-          },
-          '&::-webkit-scrollbar-track': {
-            background: '#f5f5f5',
-          },
-          '&::-webkit-scrollbar-thumb': {
-            background: '#d0d0d0',
-            borderRadius: '3px',
-            '&:hover': {
-              background: '#b0b0b0',
-            },
-          },
-        }}
-      >
+      </div>
+      <div className={classes.listContainer}>
         {content}
-      </Paper>
+      </div>
       
       {/* Toaster for notifications */}
       <Toaster toasterId="fileListToaster" position="bottom" />
-    </Box>
+    </div>
   );
 };
 
