@@ -1,12 +1,12 @@
 import React, { useState, useRef, useEffect } from 'react';
-import { Button as FluentButton, Combobox, Option, Tag } from '@fluentui/react-components';
+import { Button as FluentButton, Combobox, Option, Tag, ProgressBar } from '@fluentui/react-components';
 import { Alert as FluentAlert } from '@fluentui/react-alert';
 import TextField from '@mui/material/TextField';
 import FormControl from '@mui/material/FormControl';
 import FormHelperText from '@mui/material/FormHelperText';
 import InputLabel from '@mui/material/InputLabel';
 import FormLabel from '@mui/material/FormLabel';
-import LinearProgress from '@mui/material/LinearProgress';
+// Replaced MUI LinearProgress with Fluent ProgressBar
 // Removed MUI Chip in favor of Fluent Tag
 import Divider from '@mui/material/Divider';
 import Badge from '@mui/material/Badge';
@@ -480,15 +480,9 @@ const FileUpload = ({ onUploadSuccess }) => {
                   </Tag>
                 </div>
               </div>
-              <LinearProgress 
-                variant={fileInfo.status === 'uploading' ? 'determinate' : 'determinate'} 
-                value={fileInfo.progress}
-                color={
-                  fileInfo.status === 'success' ? 'success' : 
-                  fileInfo.status === 'error' ? 'error' : 
-                  'primary'
-                }
-                sx={{ height: 4, borderRadius: 2 }}
+              <ProgressBar 
+                value={typeof fileInfo.progress === 'number' ? fileInfo.progress / 100 : undefined}
+                style={{ height: 4, borderRadius: 2 }}
               />
               {fileInfo.status === 'error' && fileInfo.error && (
                 <div style={{ display: 'block', marginTop: 4, color: '#d32f2f', fontSize: '0.75rem' }}>
