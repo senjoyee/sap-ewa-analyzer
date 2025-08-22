@@ -1,5 +1,5 @@
 import React, { useState, useRef, useEffect } from 'react';
-import { Button as FluentButton, Combobox, Option } from '@fluentui/react-components';
+import { Button as FluentButton, Combobox, Option, Tag } from '@fluentui/react-components';
 import { Alert as FluentAlert } from '@fluentui/react-alert';
 import TextField from '@mui/material/TextField';
 import FormControl from '@mui/material/FormControl';
@@ -7,7 +7,7 @@ import FormHelperText from '@mui/material/FormHelperText';
 import InputLabel from '@mui/material/InputLabel';
 import FormLabel from '@mui/material/FormLabel';
 import LinearProgress from '@mui/material/LinearProgress';
-import Chip from '@mui/material/Chip';
+// Removed MUI Chip in favor of Fluent Tag
 import Divider from '@mui/material/Divider';
 import Badge from '@mui/material/Badge';
 import { 
@@ -341,13 +341,9 @@ const FileUpload = ({ onUploadSuccess }) => {
             <div style={{ fontWeight: 600, fontSize: '1.1rem', color: '#1976d2' }}>
               📋 Customer Assignment
             </div>
-            <Chip 
-              label={`${filesWithCustomers.length} file${filesWithCustomers.length > 1 ? 's' : ''}`} 
-              size="small" 
-              color="primary" 
-              variant="outlined"
-              sx={{ fontWeight: 500 }}
-            />
+            <Tag size="small" appearance="outline" style={{ fontWeight: 500 }}>
+              {`${filesWithCustomers.length} file${filesWithCustomers.length > 1 ? 's' : ''}`}
+            </Tag>
           </div>
           
           <div style={{ color: '#666', marginBottom: 24 }}>
@@ -473,19 +469,15 @@ const FileUpload = ({ onUploadSuccess }) => {
                   {fileInfo.status === 'error' && (
                     <ErrorCircle16Regular style={{ width: 16, height: 16, color: tokens.colorPaletteRedForeground1, marginRight: 4 }} />
                   )}
-                  <Chip
-                    label={fileInfo.status === 'uploading' ? `${fileInfo.progress}%` : fileInfo.status}
+                  <Tag
                     size="small"
-                    color={
-                      fileInfo.status === 'success' ? 'success' : 
-                      fileInfo.status === 'error' ? 'error' : 
-                      'primary'
-                    }
-                    variant="outlined"
-                    sx={{ height: 20, fontSize: '0.7rem' }}
-                    deleteIcon={<Dismiss16Regular style={{ width: 14, height: 14 }} />}
-                    onDelete={() => dismissFileStatus(index)}
-                  />
+                    appearance="outline"
+                    dismissible
+                    onDismiss={() => dismissFileStatus(index)}
+                    style={{ height: 20, fontSize: '0.7rem' }}
+                  >
+                    {fileInfo.status === 'uploading' ? `${fileInfo.progress}%` : fileInfo.status}
+                  </Tag>
                 </div>
               </div>
               <LinearProgress 
