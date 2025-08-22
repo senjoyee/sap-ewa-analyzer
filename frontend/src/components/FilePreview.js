@@ -113,6 +113,11 @@ const useStyles = makeStyles({
   },
   accordionHeader: {
     backgroundColor: tokens.colorNeutralBackground2,
+    transition: 'background-color 150ms ease, border-color 150ms ease',
+    selectors: {
+      '&:hover': { backgroundColor: tokens.colorSubtleBackgroundHover },
+      '&:focus-visible': { outline: `${tokens.strokeWidthThick} solid ${tokens.colorBrandStroke1}`, outlineOffset: 2 },
+    },
   },
   accordionPanel: {
     padding: tokens.spacingHorizontalL,
@@ -239,6 +244,7 @@ const useStyles = makeStyles({
   },
   tableScroll: {
     overflowX: 'auto',
+    transition: 'outline-color 150ms ease, box-shadow 150ms ease',
     ':focus-visible': {
       outline: `2px solid ${tokens.colorBrandStroke1}`,
       outlineOffset: '2px',

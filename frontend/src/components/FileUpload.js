@@ -76,6 +76,11 @@ const useStyles = makeStyles({
     ...shorthands.borderRadius('12px'),
     ...shorthands.border('1px', 'solid', tokens.colorNeutralStroke1),
     boxShadow: tokens.shadow8,
+    transition: 'background-color 150ms ease, border-color 150ms ease, box-shadow 150ms ease, outline-color 150ms ease',
+    selectors: {
+      '&:hover': { backgroundColor: tokens.colorSubtleBackgroundHover },
+      '&:focus-within': { outline: `${tokens.strokeWidthThick} solid ${tokens.colorBrandStroke1}`, outlineOffset: 2 },
+    },
   },
   grid: {
     display: 'grid',
@@ -86,8 +91,11 @@ const useStyles = makeStyles({
     backgroundColor: tokens.colorNeutralBackground2,
     ...shorthands.borderRadius('8px'),
     ...shorthands.border('1px', 'solid', tokens.colorNeutralStroke2),
-    transitionProperty: 'box-shadow, border-color',
-    transitionDuration: '200ms',
+    transition: 'background-color 150ms ease, border-color 150ms ease, box-shadow 150ms ease, outline-color 150ms ease',
+    selectors: {
+      '&:hover': { backgroundColor: tokens.colorSubtleBackgroundHover },
+      '&:focus-within': { outline: `${tokens.strokeWidthThick} solid ${tokens.colorBrandStroke1}`, outlineOffset: 2 },
+    },
   },
   heroTitle: {
     marginBottom: tokens.spacingVerticalXS,

@@ -127,6 +127,11 @@ const useStyles = makeStyles({
     minHeight: 44,
     backgroundColor: tokens.colorNeutralBackground2,
     borderBottom: `1px solid ${tokens.colorNeutralStroke1}`,
+    transition: 'background-color 150ms ease, border-color 150ms ease',
+    selectors: {
+      '&:hover': { backgroundColor: tokens.colorSubtleBackgroundHover },
+      '&:focus-visible': { outline: `${tokens.strokeWidthThick} solid ${tokens.colorBrandStroke1}`, outlineOffset: 2 },
+    },
   },
   accordionHeaderContent: {
     display: 'flex',
@@ -166,11 +171,11 @@ const useStyles = makeStyles({
     marginInline: tokens.spacingHorizontalXS,
     borderRadius: tokens.borderRadiusMedium,
     minHeight: 48,
-    transition: 'all 0.2s ease',
+    transition: 'background-color 150ms ease, outline-color 150ms ease, box-shadow 150ms ease',
     cursor: 'pointer',
     selectors: {
       '&:hover': { backgroundColor: tokens.colorSubtleBackgroundHover },
-      '&:focus-visible': { outline: `${tokens.strokeWidthThick} solid ${tokens.colorStrokeFocus2}`, outlineOffset: 2 },
+      '&:focus-visible': { outline: `${tokens.strokeWidthThick} solid ${tokens.colorBrandStroke1}`, outlineOffset: 2 },
     },
   },
   itemRowSelected: {
