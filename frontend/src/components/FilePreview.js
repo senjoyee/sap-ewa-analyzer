@@ -157,9 +157,82 @@ const useStyles = makeStyles({
     color: tokens.colorNeutralForeground3,
     fontSize: tokens.fontSizeBase300,
   },
+  mdH1: {
+    marginTop: tokens.spacingVerticalXL,
+    marginBottom: tokens.spacingVerticalM,
+    fontWeight: tokens.fontWeightSemibold,
+    fontSize: '1.75rem',
+    letterSpacing: '-0.02em',
+    color: tokens.colorNeutralForeground1,
+  },
+  mdH2: {
+    marginTop: tokens.spacingVerticalL,
+    marginBottom: tokens.spacingVerticalS,
+    fontWeight: tokens.fontWeightSemibold,
+    fontSize: '1.375rem',
+    letterSpacing: '-0.01em',
+    color: tokens.colorNeutralForeground1,
+  },
+  mdH3: {
+    marginTop: tokens.spacingVerticalM,
+    marginBottom: tokens.spacingVerticalXS,
+    fontWeight: tokens.fontWeightSemibold,
+    fontSize: '1.125rem',
+    color: tokens.colorNeutralForeground1,
+  },
+  mdP: {
+    marginBottom: tokens.spacingVerticalS,
+    fontSize: '0.85rem',
+    lineHeight: '1.7',
+    color: tokens.colorNeutralForeground2,
+  },
+  mdUl: {
+    marginBottom: tokens.spacingVerticalM,
+    paddingLeft: tokens.spacingHorizontalXL,
+  },
+  mdOl: {
+    marginBottom: tokens.spacingVerticalM,
+    paddingLeft: tokens.spacingHorizontalXL,
+  },
+  mdLi: {
+    marginBottom: tokens.spacingVerticalXXS,
+  },
+  mdStrong: {
+    fontWeight: tokens.fontWeightSemibold,
+    color: tokens.colorNeutralForeground1,
+  },
+  mdEm: {
+    fontStyle: 'normal',
+    fontWeight: 400,
+  },
+  mdBlockquote: {
+    borderLeft: `4px solid ${tokens.colorBrandStroke1}`,
+    paddingLeft: tokens.spacingHorizontalM,
+    marginLeft: 0,
+    marginTop: tokens.spacingVerticalM,
+    marginBottom: tokens.spacingVerticalM,
+    fontStyle: 'italic',
+    color: tokens.colorNeutralForeground3,
+    fontSize: '0.85rem',
+  },
+  mdLink: {
+    color: '#2563eb',
+    textDecoration: 'underline',
+    fontWeight: 500,
+  },
+  mdPre: {
+    padding: tokens.spacingHorizontalS,
+    marginTop: tokens.spacingVerticalXS,
+    marginBottom: tokens.spacingVerticalXS,
+    backgroundColor: tokens.colorNeutralBackground3,
+    borderRadius: tokens.borderRadiusMedium,
+    overflowX: 'auto',
+    fontSize: '0.875rem',
+  },
 });
 
 const JsonCodeBlockRenderer = ({ node, inline, className, children, ...props }) => {
+  const classes = useStyles();
   const match = /language-(\w+)/.exec(className || '');
   const lang = match && match[1];
 
@@ -628,21 +701,20 @@ const JsonCodeBlockRenderer = ({ node, inline, className, children, ...props }) 
       console.warn('Failed to parse JSON for table or invalid table structure:', error);
     }
   }
-
+  
   // Fallback to default code rendering or use a syntax highlighter if available
   // For simplicity, rendering as a preformatted code block here.
   return (
-    <Box component="pre" sx={{ p: 1, my: 1, backgroundColor: 'action.selected', borderRadius: 1, overflowX: 'auto', fontSize: '0.875rem' }}>
-      <Box component="code" className={className} {...props}>
+    <pre className={classes.mdPre}>
+      <code className={className} {...props}>
         {children}
-      </Box>
-    </Box>
+      </code>
+    </pre>
   );
 };
 
 const FilePreview = ({ selectedFile }) => {
   const fileTypeInfo = selectedFile ? getFileTypeInfo(selectedFile.name) : null;
-  const isDark = false; // Using SAP Belize light theme
   const [originalContent, setOriginalContent] = useState('');
   
   // Function to export Markdown to PDF via backend endpoint
@@ -993,178 +1065,44 @@ const mdFileName = `${baseName}.md`;
                   ),
                   code: JsonCodeBlockRenderer,
                   h1: ({ children }) => (
-                    <Typography 
-                      variant="h4" 
-                      sx={{ 
-                        mt: 3, 
-                        mb: 2, 
-                        fontWeight: 600,
-                        fontFamily: '"Noto Sans", "Noto Sans", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif',
-                        fontSize: '1.75rem',
-                        letterSpacing: '-0.02em',
-                        color: isDark ? '#f3f4f6' : '#111827',
-                        WebkitFontSmoothing: 'antialiased',
-                        MozOsxFontSmoothing: 'grayscale',
-                      }}
-                    >
-                      {children}
-                    </Typography>
+                    <h1 className={classes.mdH1}>{children}</h1>
                   ),
                   h2: ({ children }) => (
-                    <Typography 
-                      variant="h5" 
-                      sx={{ 
-                        mt: 2.5, 
-                        mb: 1.5, 
-                        fontWeight: 600,
-                        fontFamily: '"Noto Sans", "Noto Sans", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif',
-                        fontSize: '1.375rem',
-                        letterSpacing: '-0.01em',
-                        color: isDark ? '#e5e7eb' : '#1f2937',
-                        WebkitFontSmoothing: 'antialiased',
-                        MozOsxFontSmoothing: 'grayscale',
-                      }}
-                    >
-                      {children}
-                    </Typography>
+                    <h2 className={classes.mdH2}>{children}</h2>
                   ),
                   h3: ({ children }) => (
-                    <Typography 
-                      variant="h6" 
-                      sx={{ 
-                        mt: 2, 
-                        mb: 1, 
-                        fontWeight: 600,
-                        fontFamily: '"Noto Sans", "Noto Sans", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif',
-                        fontSize: '1.125rem',
-                        letterSpacing: '0',
-                        color: isDark ? '#d1d5db' : '#374151',
-                        WebkitFontSmoothing: 'antialiased',
-                        MozOsxFontSmoothing: 'grayscale',
-                      }}
-                    >
-                      {children}
-                    </Typography>
+                    <h3 className={classes.mdH3}>{children}</h3>
                   ),
                   p: ({ children }) => (
-                    <Typography 
-                      paragraph 
-                      sx={{ 
-                        mb: 1.5,
-                        fontFamily: '"Noto Sans", "Noto Sans", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif',
-                        fontSize: '0.85rem',
-                        lineHeight: 1.7,
-                        color: isDark ? '#d1d5db' : '#4b5563',
-                        WebkitFontSmoothing: 'antialiased',
-                        MozOsxFontSmoothing: 'grayscale',
-                      }}
-                    >
-                      {children}
-                    </Typography>
+                    <p className={classes.mdP}>{children}</p>
                   ),
                   ul: ({ children }) => (
-                    <Box component="ul" sx={{ 
-                      mb: 2, 
-                      pl: 3,
-                      '& li': {
-                        fontFamily: '"Noto Sans", "Noto Sans", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif',
-                        fontSize: '0.85rem',
-                        lineHeight: 1.7,
-                        color: isDark ? '#d1d5db' : '#4b5563',
-                        WebkitFontSmoothing: 'antialiased',
-                        MozOsxFontSmoothing: 'grayscale',
-                      }
-                    }}>
-                      {children}
-                    </Box>
+                    <ul className={classes.mdUl}>{children}</ul>
                   ),
                   ol: ({ children }) => (
-                    <Box component="ol" sx={{ 
-                      mb: 2, 
-                      pl: 3,
-                      '& li': {
-                        fontFamily: '"Noto Sans", "Noto Sans", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif',
-                        fontSize: '0.85rem',
-                        lineHeight: 1.7,
-                        color: isDark ? '#d1d5db' : '#4b5563',
-                        WebkitFontSmoothing: 'antialiased',
-                        MozOsxFontSmoothing: 'grayscale',
-                      }
-                    }}>
-                      {children}
-                    </Box>
+                    <ol className={classes.mdOl}>{children}</ol>
                   ),
                   li: ({ children }) => (
-                    <Box component="li" sx={{ 
-                      mb: 0.5,
-                      '&::marker': {
-                        color: isDark ? '#9ca3af' : '#6b7280',
-                      }
-                    }}>
-                      {children}
-                    </Box>
+                    <li className={classes.mdLi}>{children}</li>
                   ),
                   strong: ({ children }) => (
-                    <Box 
-                      component="strong" 
-                      sx={{ 
-                        fontWeight: 400,
-                        color: isDark ? '#f3f4f6' : '#111827',
-                      }}
-                    >
-                      {children}
-                    </Box>
+                    <strong className={classes.mdStrong}>{children}</strong>
                   ),
                   em: ({ children }) => (
-                    <Box 
-                      component="em" 
-                      sx={{ 
-                        fontStyle: 'normal',
-                        fontWeight: 400,
-                      }}
-                    >
-                      {children}
-                    </Box>
+                    <em className={classes.mdEm}>{children}</em>
                   ),
                   blockquote: ({ children }) => (
-                    <Box 
-                      component="blockquote" 
-                      sx={{ 
-                        borderLeft: '4px solid',
-                        borderColor: 'primary.main',
-                        pl: 2,
-                        ml: 0,
-                        my: 2,
-                        fontStyle: 'italic',
-                        color: isDark ? '#9ca3af' : '#6b7280',
-                        fontFamily: '"Noto Sans", "Noto Sans", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif',
-                        fontSize: '0.85rem',
-                      }}
-                    >
-                      {children}
-                    </Box>
+                    <blockquote className={classes.mdBlockquote}>{children}</blockquote>
                   ),
                   a: ({ children, href }) => (
-                    <Box 
-                      component="a" 
+                    <a
                       href={href}
                       target="_blank"
                       rel="noopener noreferrer"
-                      sx={{ 
-                        color: isDark ? '#60a5fa' : '#2563eb', // Light blue for dark theme, darker blue for light theme
-                        textDecoration: 'underline',
-                        fontWeight: 500,
-                        '&:hover': {
-                          color: isDark ? '#93c5fd' : '#1d4ed8',
-                          textDecoration: 'none',
-                        },
-                        '&:visited': {
-                          color: isDark ? '#a78bfa' : '#7c3aed',
-                        }
-                      }}
+                      className={classes.mdLink}
                     >
                       {children}
-                    </Box>
+                    </a>
                   ),
                   // ... other custom components like h1, p, table etc. should remain here
                 }}
