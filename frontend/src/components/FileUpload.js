@@ -339,7 +339,8 @@ const FileUpload = ({ onUploadSuccess }) => {
         />
         
         <FluentButton
-          appearance="primary"
+          appearance="secondary"
+          size="small"
           icon={<Add24Regular />}
           onClick={handleAddClick}
           aria-describedby={instructionsId}

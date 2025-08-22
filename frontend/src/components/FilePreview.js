@@ -552,7 +552,7 @@ const FilePreview = ({ selectedFile }) => {
             {selectedFile && selectedFile.name && (
               <Tooltip content="Export to PDF" relationship="label">
                 <Button
-                  appearance="transparent"
+                  appearance="subtle"
                   size="small"
                   icon={<DocumentPdf24Regular />}
                   aria-label="Export to PDF"
