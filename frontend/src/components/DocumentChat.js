@@ -8,7 +8,7 @@ import {
   Bot24Regular,
   Person24Regular,
 } from '@fluentui/react-icons';
-import { Button, Textarea, Spinner, Field, makeStyles, shorthands, tokens } from '@fluentui/react-components';
+import { Button, Textarea, ProgressBar, Field, makeStyles, shorthands, tokens } from '@fluentui/react-components';
 import { apiUrl } from '../config';
 
 const useStyles = makeStyles({
@@ -349,8 +349,8 @@ const handleSendMessage = async () => {
             <div className={classes.avatar} aria-hidden="true">
               <Bot24Regular style={{ width: 16, height: 16 }} />
             </div>
-            <div className={classes.bubble}>
-              <Spinner label="Thinking..." />
+            <div className={classes.bubble} role="status" aria-live="polite" aria-busy="true">
+              <ProgressBar thickness="small" />
             </div>
           </div>
         )}
