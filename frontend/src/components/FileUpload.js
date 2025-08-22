@@ -1,8 +1,6 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { Button as FluentButton } from '@fluentui/react-components';
 import { Alert as FluentAlert } from '@fluentui/react-alert';
-import Typography from '@mui/material/Typography';
-import Box from '@mui/material/Box';
 import TextField from '@mui/material/TextField';
 import FormControl from '@mui/material/FormControl';
 import FormHelperText from '@mui/material/FormHelperText';
@@ -300,27 +298,25 @@ const FileUpload = ({ onUploadSuccess }) => {
 
   return (
     <div className={classes.card}>
-      <Box sx={{ textAlign: 'center' }}>
+      <div style={{ textAlign: 'center' }}>
         <CloudArrowUp24Regular style={{ width: 44, height: 44, color: '#60a5fa', marginBottom: 12, opacity: 0.8 }} />
-        <Typography 
-          variant="h6" 
-          sx={{ 
-            mb: 0.5,
+        <div 
+          style={{ 
+            marginBottom: 4,
             fontWeight: 400,
             color: '#32363a'
           }}
         >
           Upload Files
-        </Typography>
-        <Typography 
-          variant="body2" 
-          sx={{ 
+        </div>
+        <div 
+          style={{ 
             color: '#6a6d70',
-            mb: 2
+            marginBottom: 16
           }}
         >
           Drag and drop files here or click to browse
-        </Typography>
+        </div>
         
         <input
           ref={fileInputRef}
@@ -338,15 +334,15 @@ const FileUpload = ({ onUploadSuccess }) => {
         >
           Browse Files
         </FluentButton>
-      </Box>
+      </div>
 
       {/* Customer name input fields - shown only after file selection */}
       {showCustomerFields && filesWithCustomers.length > 0 && (
         <div className={classes.sectionCard}>
-          <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 2 }}>
-            <Typography variant="h6" sx={{ fontWeight: 600, fontSize: '1.1rem', color: '#1976d2' }}>
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 16 }}>
+            <div style={{ fontWeight: 600, fontSize: '1.1rem', color: '#1976d2' }}>
               📋 Customer Assignment
-            </Typography>
+            </div>
             <Chip 
               label={`${filesWithCustomers.length} file${filesWithCustomers.length > 1 ? 's' : ''}`} 
               size="small" 
@@ -354,29 +350,29 @@ const FileUpload = ({ onUploadSuccess }) => {
               variant="outlined"
               sx={{ fontWeight: 500 }}
             />
-          </Box>
+          </div>
           
-          <Typography variant="body2" sx={{ color: '#666', mb: 3 }}>
+          <div style={{ color: '#666', marginBottom: 24 }}>
             Please select the appropriate customer for each file to ensure proper processing.
-          </Typography>
+          </div>
           
           {/* Compact grid layout for multiple files */}
           <div className={classes.grid} style={{ gridTemplateColumns: filesWithCustomers.length > 2 ? 'repeat(auto-fit, minmax(320px, 1fr))' : '1fr' }}>
             {filesWithCustomers.map((fileData, index) => (
               <div key={index} className={classes.fileCard}>
-                <Box sx={{ display: 'flex', alignItems: 'center', mb: 2 }}>
+                <div style={{ display: 'flex', alignItems: 'center', marginBottom: 16 }}>
                   {getFileIcon(fileData.file.name)}
-                  <Box sx={{ ml: 1.5, flex: 1, minWidth: 0 }}>
-                    <Typography variant="body2" sx={{ fontWeight: 600, color: '#333' }} noWrap>
+                  <div style={{ marginLeft: 12, flex: 1, minWidth: 0 }}>
+                    <div style={{ fontWeight: 600, color: '#333', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
                       {fileData.file.name}
-                    </Typography>
-                    <Typography variant="caption" sx={{ color: '#666' }}>
+                    </div>
+                    <div style={{ color: '#666', fontSize: '0.75rem' }}>
                       {formatFileSize(fileData.file.size)}
-                    </Typography>
-                  </Box>
-                </Box>
+                    </div>
+                  </div>
+                </div>
                 
-                <Box>
+                <div>
                   <Select
                     fullWidth
                     value={fileData.customerName}
@@ -465,12 +461,12 @@ const FileUpload = ({ onUploadSuccess }) => {
                       {fileData.error}
                     </FormHelperText>
                   )}
-                </Box>
+                </div>
               </div>
             ))}
           </div>
           
-          <Box sx={{ display: 'flex', justifyContent: 'space-between', mt: 4, pt: 1 }}>
+          <div style={{ display: 'flex', justifyContent: 'space-between', marginTop: 32, paddingTop: 8 }}>
             <FluentButton
               appearance="outline"
               size="small"
@@ -488,7 +484,7 @@ const FileUpload = ({ onUploadSuccess }) => {
             >
               Upload Files ({filesWithCustomers.length})
             </FluentButton>
-          </Box>
+          </div>
         </div>
       )}
 
@@ -533,14 +529,14 @@ const FileUpload = ({ onUploadSuccess }) => {
 
       {/* File upload progress indicators */}
       {uploadingFilesInfo.length > 0 && (
-        <Box sx={{ mt: 2 }}>
+        <div style={{ marginTop: 16 }}>
           {uploadingFilesInfo.map((fileInfo, index) => (
-            <Box key={index} sx={{ mt: 1.5, mb: 1 }}>
-              <Box sx={{ display: 'flex', alignItems: 'center', mb: 0.5 }}>
-                <Typography variant="body2" sx={{ flexGrow: 1, fontSize: '0.875rem' }}>
+            <div key={index} style={{ marginTop: 12, marginBottom: 8 }}>
+              <div style={{ display: 'flex', alignItems: 'center', marginBottom: 4 }}>
+                <div style={{ flexGrow: 1, fontSize: '0.875rem' }}>
                   {fileInfo.name}
-                </Typography>
-                <Box sx={{ display: 'flex', alignItems: 'center' }}>
+                </div>
+                <div style={{ display: 'flex', alignItems: 'center' }}>
                   {fileInfo.status === 'success' && (
                     <CheckmarkCircle16Regular style={{ width: 16, height: 16, color: tokens.colorPaletteGreenForeground1, marginRight: 4 }} />
                   )}
@@ -560,8 +556,8 @@ const FileUpload = ({ onUploadSuccess }) => {
                     deleteIcon={<Dismiss16Regular style={{ width: 14, height: 14 }} />}
                     onDelete={() => dismissFileStatus(index)}
                   />
-                </Box>
-              </Box>
+                </div>
+              </div>
               <LinearProgress 
                 variant={fileInfo.status === 'uploading' ? 'determinate' : 'determinate'} 
                 value={fileInfo.progress}
@@ -573,13 +569,13 @@ const FileUpload = ({ onUploadSuccess }) => {
                 sx={{ height: 4, borderRadius: 2 }}
               />
               {fileInfo.status === 'error' && fileInfo.error && (
-                <Typography variant="caption" color="error" sx={{ display: 'block', mt: 0.5 }}>
+                <div style={{ display: 'block', marginTop: 4, color: '#d32f2f', fontSize: '0.75rem' }}>
                   Error: {fileInfo.error}
-                </Typography>
+                </div>
               )}
-            </Box>
+            </div>
           ))}
-        </Box>
+        </div>
       )}
     </div>
   );
