@@ -1,5 +1,5 @@
-import React, { useState, useEffect, useRef } from 'react';
-import { Button as FluentButton, Spinner, Tooltip as FluentTooltip, CounterBadge, Accordion as FluentAccordion, AccordionItem, AccordionHeader, AccordionPanel, Checkbox } from '@fluentui/react-components';
+import React, { useState, useEffect, useCallback } from 'react';
+import { Button as FluentButton, Spinner, Tooltip as FluentTooltip, CounterBadge, Accordion as FluentAccordion, AccordionItem, AccordionHeader, AccordionPanel, Checkbox, tokens } from '@fluentui/react-components';
 import { makeStyles } from '@griffel/react';
 import { Alert as FluentAlert } from '@fluentui/react-alert';
 import { Toaster, useToastController, Toast, ToastTitle } from '@fluentui/react-toast';
@@ -9,10 +9,7 @@ import { Delete24Regular, Play24Regular, Document24Regular, DocumentPdf24Regular
 // Replaced MUI Button with Fluent UI Button
  
  
-import { useTheme } from '../contexts/ThemeContext';
 import { apiUrl } from '../config';
-import dayjs from 'dayjs';
-import weekOfYear from 'dayjs/plugin/weekOfYear';
 
 
 
@@ -23,8 +20,7 @@ import weekOfYear from 'dayjs/plugin/weekOfYear';
  
 // Replaced MUI Delete/Play icons with Fluent UI icons
 
-// Initialise weekOfYear plugin after all imports
-dayjs.extend(weekOfYear);
+ 
 
 // Styles (Griffel)
 const useStyles = makeStyles({
@@ -41,22 +37,22 @@ const useStyles = makeStyles({
     marginBottom: 8,
   },
   title: {
-    fontWeight: 600,
-    color: '#32363a',
-    fontSize: '0.85rem',
+    fontWeight: tokens.fontWeightSemibold,
+    color: tokens.colorNeutralForeground1,
+    fontSize: tokens.fontSizeBase200,
     display: 'flex',
     alignItems: 'center',
-    gap: 8,
+    gap: tokens.spacingHorizontalS,
   },
   actionButtons: {
     display: 'flex',
-    gap: 4,
+    gap: tokens.spacingHorizontalXS,
   },
   selectionSection: {
     display: 'flex',
     flexDirection: 'column',
-    gap: 8,
-    marginBottom: 8,
+    gap: tokens.spacingVerticalS,
+    marginBottom: tokens.spacingVerticalS,
   },
   selectionRow: {
     display: 'flex',
@@ -64,72 +60,72 @@ const useStyles = makeStyles({
     alignItems: 'center',
   },
   selectionText: {
-    color: '#6a6d70',
+    color: tokens.colorNeutralForeground3,
   },
   batchActions: {
     display: 'flex',
-    gap: 8,
+    gap: tokens.spacingHorizontalS,
     justifyContent: 'flex-end',
     alignItems: 'center',
   },
   listContainer: {
     flex: 1,
     overflow: 'auto',
-    backgroundColor: '#f5f5f5',
-    border: '1px solid #e5e5e5',
-    borderRadius: '8px',
+    backgroundColor: tokens.colorNeutralBackground2,
+    border: `1px solid ${tokens.colorNeutralStroke1}`,
+    borderRadius: tokens.borderRadiusMedium,
     selectors: {
       '&::-webkit-scrollbar': { width: '6px' },
-      '&::-webkit-scrollbar-track': { background: '#f5f5f5' },
-      '&::-webkit-scrollbar-thumb': { background: '#d0d0d0', borderRadius: '3px' },
-      '&::-webkit-scrollbar-thumb:hover': { background: '#b0b0b0' },
+      '&::-webkit-scrollbar-track': { background: tokens.colorNeutralBackground2 },
+      '&::-webkit-scrollbar-thumb': { background: tokens.colorNeutralStroke1, borderRadius: '3px' },
+      '&::-webkit-scrollbar-thumb:hover': { background: tokens.colorNeutralStroke1Hover },
     },
   },
   loadingCenter: {
     display: 'flex',
     justifyContent: 'center',
     alignItems: 'center',
-    padding: 12,
+    padding: tokens.spacingVerticalM,
     minHeight: 120,
   },
   alertWrapper: {
-    padding: 8,
+    padding: tokens.spacingVerticalS,
   },
   alert: {
-    borderRadius: 8,
+    borderRadius: tokens.borderRadiusMedium,
   },
   emptyState: {
-    padding: 8,
+    padding: tokens.spacingVerticalS,
     display: 'flex',
     flexDirection: 'column',
     alignItems: 'center',
-    paddingTop: 16,
-    paddingBottom: 16,
+    paddingTop: tokens.spacingVerticalL,
+    paddingBottom: tokens.spacingVerticalL,
     minHeight: 120,
   },
   emptyIcon: {
     width: 40,
     height: 40,
     opacity: 0.6,
-    marginBottom: 8,
+    marginBottom: tokens.spacingVerticalS,
   },
   emptyText: {
-    color: '#6a6d70',
-    fontSize: '0.8rem',
+    color: tokens.colorNeutralForeground3,
+    fontSize: tokens.fontSizeBase100,
     textAlign: 'center',
   },
   headerFolderIcon: {
     width: 18,
     height: 18,
-    color: '#60a5fa',
+    color: tokens.colorBrandForeground1,
   },
   titleBadgeSpacing: {
-    marginLeft: 4,
+    marginLeft: tokens.spacingHorizontalXS,
   },
   accordionHeader: {
     minHeight: 44,
-    backgroundColor: '#f8f9fa',
-    borderBottom: '1px solid #e5e5e5',
+    backgroundColor: tokens.colorNeutralBackground2,
+    borderBottom: `1px solid ${tokens.colorNeutralStroke1}`,
   },
   accordionHeaderContent: {
     display: 'flex',
@@ -137,47 +133,47 @@ const useStyles = makeStyles({
     width: '100%',
   },
   brandIcon: {
-    color: '#60a5fa',
+    color: tokens.colorBrandForeground1,
   },
   leadingIcon: {
-    marginRight: 12,
+    marginRight: tokens.spacingHorizontalM,
     width: 18,
     height: 18,
-    color: '#60a5fa',
+    color: tokens.colorBrandForeground1,
   },
   customerName: {
-    fontWeight: 500,
-    fontSize: '0.875rem',
-    color: '#32363a',
+    fontWeight: tokens.fontWeightMedium,
+    fontSize: tokens.fontSizeBase200,
+    color: tokens.colorNeutralForeground1,
   },
   headerBadge: {
     marginLeft: 'auto',
-    marginRight: 8,
+    marginRight: tokens.spacingHorizontalS,
   },
   accordionPanel: {
-    padding: 4,
-    backgroundColor: '#ffffff',
+    padding: tokens.spacingHorizontalXS,
+    backgroundColor: tokens.colorNeutralBackground1,
   },
   itemWrapper: {
     position: 'relative',
-    marginBottom: 4,
+    marginBottom: tokens.spacingVerticalXS,
   },
   itemRow: {
     display: 'flex',
     alignItems: 'center',
-    paddingRight: 12,
-    marginInline: 4,
+    paddingRight: tokens.spacingHorizontalM,
+    marginInline: tokens.spacingHorizontalXS,
     borderRadius: 8,
     minHeight: 48,
     transition: 'all 0.2s ease',
     cursor: 'pointer',
     selectors: {
-      '&:hover': { backgroundColor: 'rgba(96, 165, 250, 0.08)' },
-      '&:focus-visible': { outline: '2px solid #60a5fa', outlineOffset: 2 },
+      '&:hover': { backgroundColor: tokens.colorSubtleBackgroundHover },
+      '&:focus-visible': { outline: `${tokens.strokeWidthThick} solid ${tokens.colorStrokeFocus2}`, outlineOffset: 2 },
     },
   },
   itemRowSelected: {
-    backgroundColor: 'rgba(96, 165, 250, 0.1)',
+    backgroundColor: tokens.colorSubtleBackgroundSelected,
   },
   checkboxCell: {
     minWidth: 36,
@@ -186,22 +182,22 @@ const useStyles = makeStyles({
   },
   fileIconCell: {
     minWidth: 28,
-    color: 'rgba(0, 0, 0, 0.54)',
+    color: tokens.colorNeutralForeground3,
   },
   itemDetails: {
     flex: 1,
     minWidth: 0,
   },
   itemTitle: {
-    fontSize: '0.9rem',
-    color: '#32363a',
+    fontSize: tokens.fontSizeBase200,
+    color: tokens.colorNeutralForeground1,
     whiteSpace: 'nowrap',
     overflow: 'hidden',
     textOverflow: 'ellipsis',
   },
   itemMeta: {
-    color: '#6a6d70',
-    fontSize: '0.8rem',
+    color: tokens.colorNeutralForeground3,
+    fontSize: tokens.fontSizeBase100,
   },
   itemStatus: {
     marginLeft: 'auto',
@@ -210,10 +206,10 @@ const useStyles = makeStyles({
     gap: 4,
   },
   successIcon: {
-    color: '#10b981',
+    color: tokens.colorPaletteGreenForeground3,
   },
   errorIcon: {
-    color: '#ef4444',
+    color: tokens.colorPaletteRedForeground3,
   },
   fileTypeIcon: {
     width: 16,
@@ -276,16 +272,10 @@ const FileList = ({ onFileSelect, refreshTrigger, selectedFile }) => {
   const [files, setFiles] = useState([]);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState(null);
-  const [analyzingFiles, setAnalyzingFiles] = useState({}); // Track analysis status for each file
-  const [analysisProgress, setAnalysisProgress] = useState({}); // Track progress for each file
+  
   const [expandedCustomers, setExpandedCustomers] = useState({});
-  const [aiAnalyzing, setAiAnalyzing] = useState({}); // Track AI analysis status for each file
   const [combinedProcessingStatus, setCombinedProcessingStatus] = useState({}); // Track combined processing & AI analysis status
-  const [reprocessingFiles, setReprocessingFiles] = useState({}); // Track reprocessing status for each file
   const [selectedFiles, setSelectedFiles] = useState([]);
-  const pollingIntervalsRef = useRef({});
-  const { theme } = useTheme();
-  const isDark = theme === 'dark';
   const classes = useStyles();
   
   // Toast controller (Fluent UI Toast)
@@ -459,104 +449,7 @@ const FileList = ({ onFileSelect, refreshTrigger, selectedFile }) => {
     return grouped;
   };
 
-  // ---- Time-based grouping helpers ----
-  const getWeekKey = (file) => {
-    if (!file.report_date) return 'Unknown';
-    const d = dayjs(file.report_date);
-    if (!d.isValid()) return 'Unknown';
-    return `${d.year()}-W${String(d.week()).padStart(2, '0')}`;
-  };
-
-  const groupByWeek = (files) => {
-    const grouped = {};
-    files.forEach(f => {
-      const key = getWeekKey(f);
-      if (!grouped[key]) grouped[key] = [];
-      grouped[key].push(f);
-    });
-    return grouped;
-  };
-
-  // Month grouping helpers
-  const getMonthKey = (file) => {
-    if (!file.report_date) return 'Unknown';
-    const d = dayjs(file.report_date);
-    return d.isValid() ? d.format('YYYY-MM') : 'Unknown';
-  };
-
-  const groupByMonth = (files) => {
-    const grouped = {};
-    files.forEach(f => {
-      const key = getMonthKey(f);
-      if (!grouped[key]) grouped[key] = [];
-      grouped[key].push(f);
-    });
-    return grouped;
-  };
-
   
-
-  // Function to handle analyze button click
-  const handleAnalyze = async (file) => {
-    console.log(`Analyzing file (PDF-first): ${file.name}`);
-
-    // Mark as analyzing in UI, then delegate to combined PDF-first workflow
-    setAnalyzingFiles(prev => ({
-      ...prev,
-      [file.id || file.name]: 'analyzing'
-    }));
-
-    await handleProcessAndAnalyze(file);
-  };
-
-  // Function to handle AI analysis button click
-  const handleAnalyzeAI = async (file) => {
-    console.log(`Starting AI analysis for file: ${file.name}`);
-    
-    // Set initial status to analyzing
-    setAiAnalyzing(prev => ({
-      ...prev,
-      [file.id || file.name]: 'analyzing'
-    }));
-    
-    try {
-      // Make API call to start AI analysis
-      const response = await fetch(apiUrl('/api/analyze-ai'), {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({ blob_name: file.name }),
-      });
-      
-      if (!response.ok) {
-        const errorData = await response.json();
-        throw new Error(errorData.detail || `AI Analysis failed: ${response.status}`);
-      }
-      
-      const result = await response.json();
-      console.log('AI Analysis result:', result);
-      
-      // Set status to completed
-      setAiAnalyzing(prev => ({
-        ...prev,
-        [file.id || file.name]: 'completed'
-      }));
-      
-      // Show success message with fallback for undefined analysis_file
-      const analysisFileName = result.analysis_file || `${file.name.split('.').slice(0, -1).join('.')}_AI.md`;
-      showSnackbar(`AI Analysis completed successfully! Analysis saved as: ${analysisFileName}`, 'success');
-      
-    } catch (error) {
-      console.error(`Error in AI analysis for file ${file.name}:`, error);
-      // Set status back to ready on error
-      setAiAnalyzing(prev => ({
-        ...prev,
-        [file.id || file.name]: 'error'
-      }));
-      showSnackbar(`Error in AI analysis: ${error.message}`, 'error');
-    }
-  };
 
   // Function to handle displaying AI analysis - replaces Display button logic
   const handleDisplayAnalysis = async (file) => {
@@ -600,112 +493,7 @@ const FileList = ({ onFileSelect, refreshTrigger, selectedFile }) => {
     }
   };
 
-  // Function to handle reprocessing of AI analysis
-  const handleReprocessAI = async (file, showAlert = true) => {
-    console.log(`Reprocessing AI analysis for file: ${file.name}`);
-    
-    // Confirm reprocessing with the user (skip if in batch mode)
-    if (showAlert && !window.confirm(`This will delete the existing AI analysis for "${file.name}" and create a new one. Continue?`)) {
-      return; // User cancelled
-    }
-    
-    // Set status to reprocessing
-    setReprocessingFiles(prev => ({
-      ...prev,
-      [file.id || file.name]: true
-    }));
-    
-    try {
-      // Make API call to reprocess with AI
-      const response = await fetch(apiUrl('/api/reprocess-ai'), {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({ blob_name: file.name }),
-      });
-      
-      if (!response.ok) {
-        const errorData = await response.json();
-        throw new Error(errorData.detail || `AI Reprocessing failed: ${response.status}`);
-      }
-      
-      const result = await response.json();
-      console.log('AI Reprocessing result:', result);
-      
-      // Clear reprocessing status
-      setReprocessingFiles(prev => ({
-        ...prev,
-        [file.id || file.name]: false
-      }));
-      
-      // Show success message (if not in batch mode)
-      if (showAlert) {
-        showSnackbar(`Reprocessing of ${file.name} started successfully.`, 'info');
-      }
-      
-    } catch (error) {
-      console.error(`Error in AI reprocessing for file ${file.name}:`, error);
-      // Clear reprocessing status on error
-      setReprocessingFiles(prev => ({
-        ...prev,
-        [file.id || file.name]: false
-      }));
-      
-      // Show error message if not in batch mode
-      if (showAlert) {
-        showSnackbar(`Error in AI reprocessing: ${error.message}`, 'error');
-      }
-    }
-  };
-
   // PDF export functionality moved to FilePreview component
-
-  // Function to handle deletion of an analysis and all related files
-  const handleDeleteAnalysis = async (file, showAlerts = true) => {
-    // Confirm before deletion (skip if in batch mode)
-    if (showAlerts) {
-      const confirmDelete = window.confirm(`Are you sure you want to delete the analysis for ${file.name}? This action cannot be undone.`);
-      
-      if (!confirmDelete) {
-        return; // User cancelled the deletion
-      }
-    }
-    
-    try {
-      const baseName = file.name.split('.').slice(0, -1).join('.');
-      
-      // Call the backend to delete all related files from blob storage
-      const response = await fetch(apiUrl('/api/delete-analysis'), {
-        method: 'DELETE',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          fileName: file.name,
-          baseName: baseName
-        })
-      });
-      
-      if (!response.ok) {
-        throw new Error(`Server responded with ${response.status}: ${await response.text()}`);
-      }
-      
-      // Refresh the file list to show updated files after deletion
-      await fetchFiles();
-      
-      // Show success message (if not in batch mode)
-      if (showAlerts) {
-        showSnackbar(`Successfully deleted analysis for ${file.name}`, 'success');
-      }
-      
-    } catch (error) {
-      console.error(`Error deleting analysis for ${file.name}:`, error);
-      if (showAlerts) {
-        showSnackbar(`Failed to delete analysis: ${error.message}`, 'error');
-      }
-    }
-  };
 
   // Function to handle combined processing and AI analysis
   const handleProcessAndAnalyze = async (file) => {
@@ -748,9 +536,7 @@ const FileList = ({ onFileSelect, refreshTrigger, selectedFile }) => {
         )
       );
       
-      // Also update the individual status trackers if they are still used elsewhere or for consistency
-      setAnalyzingFiles(prev => ({ ...prev, [file.id || file.name]: 'analyzed' }));
-      setAiAnalyzing(prev => ({ ...prev, [file.id || file.name]: 'completed' }));
+      // Individual status trackers removed; using combinedProcessingStatus for UI
 
       // Show success message with fallback for undefined summary_file
       const summaryFileName = result.summary_file || `${file.name.split('.').slice(0, -1).join('.')}_AI.md`;
@@ -765,84 +551,7 @@ const FileList = ({ onFileSelect, refreshTrigger, selectedFile }) => {
       showSnackbar(`Error in combined processing and AI analysis for ${file.name}: ${error.message}`, 'error');
     }
   };
-
-  // Start polling for status updates
-  const startStatusPolling = (fileName) => {
-    // Clear any existing polling interval for this file
-    if (pollingIntervalsRef.current[fileName]) {
-      clearInterval(pollingIntervalsRef.current[fileName]);
-    }
-    
-    // Set initial progress
-    setAnalysisProgress(prev => ({
-      ...prev,
-      [fileName]: 0
-    }));
-    
-    // Create a new polling interval
-    pollingIntervalsRef.current[fileName] = setInterval(async () => {
-      try {
-        // Make API call to check status
-        const response = await fetch(apiUrl(`/api/analysis-status/${encodeURIComponent(fileName)}`));
-        
-        if (!response.ok) {
-          if (response.status === 404) {
-            // No status found, keep showing as analyzing
-            console.log(`No status found for ${fileName}, continuing to poll...`);
-            return;
-          }
-          const errorData = await response.json();
-          throw new Error(errorData.detail || `Status check failed: ${response.status}`);
-        }
-        
-        const statusData = await response.json();
-        console.log(`Status update for ${fileName}:`, statusData);
-        
-        // Update progress percentage
-        setAnalysisProgress(prev => ({
-          ...prev,
-          [fileName]: statusData.progress || 0
-        }));
-        
-        // Update status based on the response
-        if (statusData.status === 'completed') {
-          // Analysis completed successfully
-          setAnalyzingFiles(prev => ({
-            ...prev,
-            [fileName]: 'analyzed'
-          }));
-          
-          // Stop polling
-          clearInterval(pollingIntervalsRef.current[fileName]);
-          delete pollingIntervalsRef.current[fileName];
-          
-          console.log(`Analysis completed for ${fileName}:`, statusData.result);
-          
-          // Refresh the file list to show updated processed status
-          fetchFiles();
-        } else if (statusData.status === 'failed') {
-          // Analysis failed
-          setAnalyzingFiles(prev => ({
-            ...prev,
-            [fileName]: 'error'
-          }));
-          
-          // Stop polling
-          clearInterval(pollingIntervalsRef.current[fileName]);
-          delete pollingIntervalsRef.current[fileName];
-          
-          console.error(`Analysis failed for ${fileName}:`, statusData.message);
-          showSnackbar(`Analysis failed: ${statusData.message}`, 'error');
-        }
-        // If status is 'pending' or 'processing', we continue polling
-        
-      } catch (error) {
-        console.error(`Error checking status for ${fileName}:`, error);
-      }
-    }, 2000); // Poll every 2 seconds
-  };
-
-  const fetchFiles = async () => {
+  const fetchFiles = useCallback(async () => {
     setIsLoading(true);
     setError(null);
     try {
@@ -872,28 +581,6 @@ const FileList = ({ onFileSelect, refreshTrigger, selectedFile }) => {
       }));
       
       setFiles(filesWithIds);
-      
-      // Initialize analysis status for each file
-      const statusMap = {};
-      const aiStatusMap = {};
-      
-      filesWithIds.forEach(file => {
-        // Use the 'processed' flag directly from the backend
-        // Set status to 'analyzed' if processed is true, otherwise 'pending'
-        console.log(`File ${file.name} processed status:`, file.processed, "AI analyzed:", file.ai_analyzed);
-        statusMap[file.id || file.name] = file.processed ? 'analyzed' : 'pending';
-        
-        // Set AI analysis status based on backend data
-        if (file.ai_analyzed) {
-          aiStatusMap[file.id || file.name] = 'completed';
-        }
-      });
-      
-      setAnalyzingFiles(statusMap);
-      setAiAnalyzing(prev => ({
-        ...prev,
-        ...aiStatusMap
-      }));
 
       const newCombinedStatus = {};
       filesWithIds.forEach(file => {
@@ -906,15 +593,22 @@ const FileList = ({ onFileSelect, refreshTrigger, selectedFile }) => {
       setCombinedProcessingStatus(newCombinedStatus);
       
       // Auto-expand any customer with only one file or if few total customers
-      const grouped = groupByCustomer(filesWithIds);
-      const newExpandedState = { ...expandedCustomers };
-      Object.keys(grouped).forEach(customer => {
-        // If customer has only one file or if there are few total customers, auto-expand
-        if (grouped[customer].length === 1 || Object.keys(grouped).length <= 3) {
-          newExpandedState[customer] = true;
-        }
+      const grouped = {};
+      filesWithIds.forEach(f => {
+        const customer = f.customer_name || 'Unknown';
+        if (!grouped[customer]) grouped[customer] = [];
+        grouped[customer].push(f);
       });
-      setExpandedCustomers(newExpandedState);
+      setExpandedCustomers(prev => {
+        const next = { ...prev };
+        const totalCustomers = Object.keys(grouped).length;
+        Object.keys(grouped).forEach(customer => {
+          if (grouped[customer].length === 1 || totalCustomers <= 3) {
+            next[customer] = true;
+          }
+        });
+        return next;
+      });
     } catch (err) {
       console.error("Error fetching files:", err);
       setError(err.message);
@@ -922,22 +616,11 @@ const FileList = ({ onFileSelect, refreshTrigger, selectedFile }) => {
     } finally {
       setIsLoading(false);
     }
-  };
+  }, []);
 
   useEffect(() => {
     fetchFiles();
-  }, [refreshTrigger]);
-  
-  // Cleanup function to clear all polling intervals when component unmounts
-  useEffect(() => {
-    return () => {
-      // Clear all polling intervals
-      Object.values(pollingIntervalsRef.current).forEach(intervalId => {
-        clearInterval(intervalId);
-      });
-      pollingIntervalsRef.current = {};
-    };
-  }, []);
+  }, [fetchFiles, refreshTrigger]);
 
   let content;
 
@@ -979,7 +662,6 @@ const FileList = ({ onFileSelect, refreshTrigger, selectedFile }) => {
   } else {
     // Group files by customer
     const filesByCustomer = groupByCustomer(files);
-    const customers = Object.keys(filesByCustomer).sort();
     
     const openItems = Object.keys(expandedCustomers).filter(k => expandedCustomers[k]);
     content = (
@@ -994,6 +676,7 @@ const FileList = ({ onFileSelect, refreshTrigger, selectedFile }) => {
             <AccordionItem value={customer} key={customer}>
               <AccordionHeader
                 className={classes.accordionHeader}
+                aria-label={`${customer} files`}
                 expandIcon={<ChevronDown24Regular className={classes.brandIcon} />}
               >
                 <div className={classes.accordionHeaderContent}>
@@ -1024,6 +707,15 @@ const FileList = ({ onFileSelect, refreshTrigger, selectedFile }) => {
                             handleDisplayAnalysis(file);
                           }}
                           className={`${classes.itemRow} ${isSelected ? classes.itemRowSelected : ''}`}
+                          role="button"
+                          tabIndex={0}
+                          aria-label={`Open analysis for ${file.name}`}
+                          onKeyDown={(e) => {
+                            if (e.key === 'Enter' || e.key === ' ') {
+                              e.preventDefault();
+                              handleDisplayAnalysis(file);
+                            }
+                          }}
                         >
                           <div className={classes.checkboxCell}>
                             <Checkbox
@@ -1033,6 +725,7 @@ const FileList = ({ onFileSelect, refreshTrigger, selectedFile }) => {
                                 handleFileSelection(file, e);
                               }}
                               size="small"
+                              aria-label={`Select ${file.name}`}
                             />
                           </div>
                           <div className={classes.fileIconCell}>
