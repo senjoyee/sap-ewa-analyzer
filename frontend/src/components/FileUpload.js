@@ -3,7 +3,6 @@ import { Button as FluentButton } from '@fluentui/react-components';
 import { Alert as FluentAlert } from '@fluentui/react-alert';
 import Typography from '@mui/material/Typography';
 import Box from '@mui/material/Box';
-import Paper from '@mui/material/Paper';
 import TextField from '@mui/material/TextField';
 import FormControl from '@mui/material/FormControl';
 import FormHelperText from '@mui/material/FormHelperText';
@@ -27,6 +26,7 @@ import TextSnippetIcon from '@mui/icons-material/TextSnippet';
 import InsertDriveFileIcon from '@mui/icons-material/InsertDriveFile';
 import { useTheme } from '../contexts/ThemeContext';
 import { apiUrl } from '../config';
+import { makeStyles, shorthands, tokens } from '@fluentui/react-components';
 
 // Helper function to get appropriate icon for file type
 const getFileIcon = (filename) => {
@@ -68,6 +68,38 @@ const formatFileSize = (sizeInBytes) => {
 };
 
 // API base is centralized in src/config.js
+
+const useStyles = makeStyles({
+  card: {
+    ...shorthands.padding('24px'),
+    ...shorthands.borderRadius('16px'),
+    backgroundColor: tokens.colorNeutralBackground1,
+    ...shorthands.border('1px', 'solid', tokens.colorNeutralStroke1),
+  },
+  center: {
+    textAlign: 'center',
+  },
+  sectionCard: {
+    ...shorthands.padding('16px'),
+    marginBottom: '12px',
+    backgroundColor: tokens.colorNeutralBackground1,
+    ...shorthands.borderRadius('12px'),
+    ...shorthands.border('1px', 'solid', tokens.colorNeutralStroke1),
+    boxShadow: tokens.shadow8,
+  },
+  grid: {
+    display: 'grid',
+    gap: '20px',
+  },
+  fileCard: {
+    ...shorthands.padding('20px'),
+    backgroundColor: tokens.colorNeutralBackground2,
+    ...shorthands.borderRadius('8px'),
+    ...shorthands.border('1px', 'solid', tokens.colorNeutralStroke2),
+    transitionProperty: 'box-shadow, border-color',
+    transitionDuration: '200ms',
+  },
+});
 
 const FileUpload = ({ onUploadSuccess }) => {
   const [uploadingFilesInfo, setUploadingFilesInfo] = useState([]); // To track multiple uploads
@@ -261,13 +293,10 @@ const FileUpload = ({ onUploadSuccess }) => {
     }
   };
 
+  const classes = useStyles();
+
   return (
-    <Paper elevation={2} sx={{ 
-        padding: 3,
-        borderRadius: 2,
-        backgroundColor: '#ffffff',
-        border: '1px solid #e5e5e5'
-      }}>
+    <div className={classes.card}>
       <Box sx={{ textAlign: 'center' }}>
         <CloudArrowUp24Regular style={{ width: 44, height: 44, color: '#60a5fa', marginBottom: 12, opacity: 0.8 }} />
         <Typography 
@@ -310,17 +339,7 @@ const FileUpload = ({ onUploadSuccess }) => {
 
       {/* Customer name input fields - shown only after file selection */}
       {showCustomerFields && filesWithCustomers.length > 0 && (
-        <Paper 
-          elevation={1} 
-          sx={{ 
-            p: 3,
-            mb: 3,
-            bgcolor: '#ffffff',
-            borderRadius: 3,
-            border: '1px solid #e3f2fd',
-            boxShadow: '0 2px 8px rgba(0, 0, 0, 0.08)',
-          }}
-        >
+        <div className={classes.sectionCard}>
           <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 2 }}>
             <Typography variant="h6" sx={{ fontWeight: 600, fontSize: '1.1rem', color: '#1976d2' }}>
               📋 Customer Assignment
@@ -339,27 +358,9 @@ const FileUpload = ({ onUploadSuccess }) => {
           </Typography>
           
           {/* Compact grid layout for multiple files */}
-          <Box sx={{ 
-            display: 'grid',
-            gap: 2.5,
-            gridTemplateColumns: filesWithCustomers.length > 2 ? 'repeat(auto-fit, minmax(320px, 1fr))' : '1fr'
-          }}>
+          <div className={classes.grid} style={{ gridTemplateColumns: filesWithCustomers.length > 2 ? 'repeat(auto-fit, minmax(320px, 1fr))' : '1fr' }}>
             {filesWithCustomers.map((fileData, index) => (
-              <Paper
-                key={index}
-                elevation={0}
-                sx={{
-                  p: 2.5,
-                  bgcolor: '#fafafa',
-                  borderRadius: 2,
-                  border: '1px solid #e0e0e0',
-                  transition: 'all 0.2s ease',
-                  '&:hover': {
-                    boxShadow: '0 2px 4px rgba(0, 0, 0, 0.1)',
-                    borderColor: '#60a5fa'
-                  }
-                }}
-              >
+              <div key={index} className={classes.fileCard}>
                 <Box sx={{ display: 'flex', alignItems: 'center', mb: 2 }}>
                   {getFileIcon(fileData.file.name)}
                   <Box sx={{ ml: 1.5, flex: 1, minWidth: 0 }}>
@@ -462,9 +463,9 @@ const FileUpload = ({ onUploadSuccess }) => {
                     </FormHelperText>
                   )}
                 </Box>
-              </Paper>
+              </div>
             ))}
-          </Box>
+          </div>
           
           <Box sx={{ display: 'flex', justifyContent: 'space-between', mt: 4, pt: 1 }}>
             <FluentButton
@@ -485,7 +486,7 @@ const FileUpload = ({ onUploadSuccess }) => {
               Upload Files ({filesWithCustomers.length})
             </FluentButton>
           </Box>
-        </Paper>
+        </div>
       )}
 
       {/* Overall status alerts */}
@@ -573,7 +574,7 @@ const FileUpload = ({ onUploadSuccess }) => {
           ))}
         </Box>
       )}
-    </Paper>
+    </div>
   );
 };
 
