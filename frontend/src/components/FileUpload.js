@@ -1,7 +1,6 @@
 import React, { useState, useRef } from 'react';
-import { Button as FluentButton, Combobox, Option, Tag, ProgressBar } from '@fluentui/react-components';
+import { Button as FluentButton, Combobox, Option, Field, Tag, ProgressBar } from '@fluentui/react-components';
 import { Alert as FluentAlert } from '@fluentui/react-alert';
-import FormHelperText from '@mui/material/FormHelperText';
 // Replaced MUI LinearProgress with Fluent ProgressBar
 // Removed MUI Chip in favor of Fluent Tag
 import { 
@@ -372,29 +371,27 @@ const FileUpload = ({ onUploadSuccess }) => {
                 </div>
                 
                 <div>
-                  <Combobox
-                    style={{ width: '100%' }}
-                    placeholder="Choose a customer..."
-                    selectedOptions={fileData.customerName ? [fileData.customerName] : []}
-                    onOptionSelect={(e, data) => handleCustomerNameChange(index, data.optionValue ?? '')}
-                    aria-label={`Customer for ${fileData.file.name}`}
-                    aria-invalid={!!fileData.error}
-                    aria-describedby={fileData.error ? `error-${index}` : undefined}
+                  <Field
+                    validationState={fileData.error ? 'error' : undefined}
+                    validationMessage={fileData.error}
                   >
-                    {customers.map((customer) => (
-                      <Option key={customer} text={customer} value={customer}>
-                        <span style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-                          <Building16Regular style={{ width: 16, height: 16, color: tokens.colorBrandForeground1 }} />
-                          {customer}
-                        </span>
-                      </Option>
-                    ))}
-                  </Combobox>
-                  {fileData.error && (
-                    <FormHelperText id={`error-${index}`} error sx={{ mt: 1, fontWeight: 500 }}>
-                      {fileData.error}
-                    </FormHelperText>
-                  )}
+                    <Combobox
+                      style={{ width: '100%' }}
+                      placeholder="Choose a customer..."
+                      selectedOptions={fileData.customerName ? [fileData.customerName] : []}
+                      onOptionSelect={(e, data) => handleCustomerNameChange(index, data.optionValue ?? '')}
+                      aria-label={`Customer for ${fileData.file.name}`}
+                    >
+                      {customers.map((customer) => (
+                        <Option key={customer} text={customer} value={customer}>
+                          <span style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                            <Building16Regular style={{ width: 16, height: 16, color: tokens.colorBrandForeground1 }} />
+                            {customer}
+                          </span>
+                        </Option>
+                      ))}
+                    </Combobox>
+                  </Field>
                 </div>
               </div>
             ))}
