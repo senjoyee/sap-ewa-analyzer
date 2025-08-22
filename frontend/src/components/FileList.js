@@ -1,19 +1,14 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { Button as FluentButton, Spinner, Tooltip as FluentTooltip, CounterBadge, Accordion as FluentAccordion, AccordionItem, AccordionHeader, AccordionPanel } from '@fluentui/react-components';
+import { Button as FluentButton, Spinner, Tooltip as FluentTooltip, CounterBadge, Accordion as FluentAccordion, AccordionItem, AccordionHeader, AccordionPanel, Checkbox } from '@fluentui/react-components';
 import { Alert as FluentAlert } from '@fluentui/react-alert';
 import { Toaster, useToastController, Toast, ToastTitle } from '@fluentui/react-toast';
 import { Delete24Regular, Play24Regular, Document24Regular, DocumentPdf24Regular, Image24Regular, TextDescription24Regular, ChevronDown24Regular, Building24Regular, Folder24Regular } from '@fluentui/react-icons';
 import Paper from '@mui/material/Paper';
 import Typography from '@mui/material/Typography';
-import List from '@mui/material/List';
-import ListItem from '@mui/material/ListItem';
-import ListItemButton from '@mui/material/ListItemButton';
-import ListItemIcon from '@mui/material/ListItemIcon';
-import ListItemSecondaryAction from '@mui/material/ListItemSecondaryAction';
+ 
  
 import Box from '@mui/material/Box';
 // Replaced MUI Button with Fluent UI Button
-import Checkbox from '@mui/material/Checkbox';
  
  
 import { useTheme } from '../contexts/ThemeContext';
@@ -824,67 +819,43 @@ const FileList = ({ onFileSelect, refreshTrigger, selectedFile }) => {
                 </Box>
               </AccordionHeader>
               <AccordionPanel style={{ padding: 4, backgroundColor: '#ffffff' }}>
-                <List sx={{ py: 0 }}>
+                <div>
                   {filesByCustomer[customer].map((file) => {
                     const isSelected = selectedFile && (selectedFile.id === file.id || selectedFile.name === file.name);
                     return (
-                      <ListItem 
-                        key={file.id || file.name} 
-                        disablePadding 
-                        sx={{ 
-                          position: 'relative', 
-                          mb: 0.5,
-                          '&:last-child': { mb: 0 }
-                        }}
+                      <div
+                        key={file.id || file.name}
+                        style={{ position: 'relative', marginBottom: 4 }}
                       >
-                        <ListItemButton 
-                          onClick={(e) => {
-                            // Don't select if clicking checkbox
-                            if (!e.target.closest('.MuiCheckbox-root')) {
-                              // Use the display handler like the original Display button
-                              handleDisplayAnalysis(file);
-                            }
+                        <div
+                          onClick={() => {
+                            // Use the display handler like the original Display button
+                            handleDisplayAnalysis(file);
                           }}
-                          selected={isSelected}
-                          sx={{
-                            pr: 12, // Reduced padding for secondary action
-                            mx: 0.5,
-                            borderRadius: '8px',
-                            minHeight: 48, // Reduced height for sleeker look
+                          style={{
+                            display: 'flex',
+                            alignItems: 'center',
+                            paddingRight: 12,
+                            marginInline: 4,
+                            borderRadius: 8,
+                            minHeight: 48,
                             transition: 'all 0.2s ease',
-                            backgroundColor: 'transparent',
-                            border: 'none',
-                            '&.Mui-selected': {
-                              backgroundColor: 'rgba(96, 165, 250, 0.1)',
-                              '&:hover': {
-                                backgroundColor: 'rgba(96, 165, 250, 0.15)',
-                              }
-                            },
-                            '&:hover': {
-                              backgroundColor: 'rgba(0, 0, 0, 0.04)',
-                            }
+                            backgroundColor: isSelected ? 'rgba(96, 165, 250, 0.1)' : 'transparent'
                           }}
                         >
-                          <ListItemIcon sx={{ minWidth: 36, display: 'flex', alignItems: 'center' }}>
-                            <Checkbox 
+                          <div style={{ minWidth: 36, display: 'flex', alignItems: 'center' }}>
+                            <Checkbox
                               checked={isFileSelected(file)}
                               onChange={(e) => {
                                 e.stopPropagation();
                                 handleFileSelection(file, e);
                               }}
                               size="small"
-                              sx={{ 
-                                p: 0.5,
-                                color: '#60a5fa',
-                                '&.Mui-checked': {
-                                  color: '#60a5fa',
-                                }
-                              }}
                             />
-                          </ListItemIcon>
-                          <ListItemIcon sx={{ minWidth: 28, color: 'rgba(0, 0, 0, 0.54)' }}>
+                          </div>
+                          <div style={{ minWidth: 28, color: 'rgba(0, 0, 0, 0.54)' }}>
                             {getFileIcon(file.name)}
-                          </ListItemIcon>
+                          </div>
                           <Box sx={{ flex: 1, minWidth: 0 }}>
                             <Typography noWrap sx={{ fontSize: '0.9rem', color: '#32363a' }}>
                               {file.name}
@@ -893,8 +864,7 @@ const FileList = ({ onFileSelect, refreshTrigger, selectedFile }) => {
                               {file.customer_name || 'Unknown'} • {file.report_date || 'Unknown date'} • {formatFileSize(file.size)}
                             </Typography>
                           </Box>
-                          <ListItemSecondaryAction sx={{ right: 8, display: 'flex', alignItems: 'center', gap: 1 }}>
-                            {/* Combined status indicator */}
+                          <div style={{ marginLeft: 'auto', display: 'flex', alignItems: 'center', gap: 4 }}>
                             {combinedProcessingStatus[file.id || file.name] === 'processing' && (
                               <Spinner size="tiny" />
                             )}
@@ -908,12 +878,12 @@ const FileList = ({ onFileSelect, refreshTrigger, selectedFile }) => {
                                 <Delete24Regular style={{ color: '#ef4444' }} />
                               </FluentTooltip>
                             )}
-                          </ListItemSecondaryAction>
-                        </ListItemButton>
-                      </ListItem>
+                          </div>
+                        </div>
+                      </div>
                     );
                   })}
-                </List>
+                </div>
               </AccordionPanel>
             </AccordionItem>
           ))}
