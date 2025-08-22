@@ -137,6 +137,44 @@ const useStyles = makeStyles({
   controlFullWidth: {
     width: '100%',
   },
+  // Unified empty placeholder pattern (ui-cos-11)
+  emptyState: {
+    paddingTop: '32px',
+    paddingBottom: '32px',
+    display: 'flex',
+    flexDirection: 'column',
+    alignItems: 'center',
+    rowGap: tokens.spacingVerticalXS,
+  },
+  placeholderTitle: {
+    fontWeight: tokens.fontWeightSemibold,
+    color: tokens.colorNeutralForeground2,
+    fontSize: tokens.fontSizeBase500,
+    marginBottom: tokens.spacingVerticalXS,
+    textAlign: 'center',
+  },
+  placeholderSubtext: {
+    color: tokens.colorNeutralForeground3,
+    fontSize: tokens.fontSizeBase300,
+    marginBottom: tokens.spacingVerticalS,
+    textAlign: 'center',
+  },
+  placeholderFrame: {
+    border: `1px dashed ${tokens.colorNeutralStroke1}`,
+    borderRadius: tokens.borderRadiusMedium,
+    padding: tokens.spacingHorizontalL,
+    minHeight: '100px',
+    display: 'flex',
+    alignItems: 'center',
+    justifyContent: 'center',
+    width: '100%',
+    maxWidth: 520,
+  },
+  placeholderMuted: {
+    color: tokens.colorNeutralForeground3,
+    fontSize: tokens.fontSizeBase200,
+    textAlign: 'center',
+  },
 });
 
 const DocumentChat = ({ fileName, documentContent }) => {
@@ -283,30 +321,40 @@ const handleSendMessage = async () => {
 
       <div className={classes.messages}>
         {messages.length === 0 && (
-          <div style={{ textAlign: 'center', padding: '32px 0', color: tokens.colorNeutralForeground3 }}>
+          <div className={classes.emptyState} role="status" aria-live="polite">
             <Bot24Regular className={classes.emptyIcon} />
             {contentStatus === 'available' ? (
-              <div style={{ fontSize: '0.9rem' }}>Ask me anything about this SAP EWA report!</div>
+              <>
+                <div className={classes.placeholderTitle}>Ask about this report</div>
+                <div className={classes.placeholderSubtext}>Ask me anything about this SAP EWA report.</div>
+                <div className={classes.placeholderFrame}>
+                  <div className={classes.placeholderMuted}>Your conversation will appear here.</div>
+                </div>
+              </>
             ) : contentStatus === 'missing' || contentStatus === 'minimal' ? (
-              <div>
-                <div style={{ marginBottom: 4, color: tokens.colorPaletteRedForeground1, fontSize: '0.9rem' }}>
-                  Document content is limited or missing.
+              <>
+                <div className={classes.placeholderTitle} style={{ color: tokens.colorPaletteRedForeground1 }}>Document content is limited or missing</div>
+                <div className={classes.placeholderSubtext}>Please process the document first by clicking “Process file”.</div>
+                <div className={classes.placeholderFrame}>
+                  <div className={classes.placeholderMuted}>Once processed, content will be available for chat.</div>
                 </div>
-                <div style={{ fontSize: '0.8rem' }}>
-                  Please ensure the document has been processed first by clicking the "Process file" button.
-                </div>
-              </div>
+              </>
             ) : contentStatus === 'error' ? (
-              <div>
-                <div style={{ marginBottom: 4, color: tokens.colorPaletteRedForeground1, fontSize: '0.9rem' }}>
-                  Error loading document content.
+              <>
+                <div className={classes.placeholderTitle} style={{ color: tokens.colorPaletteRedForeground1 }}>Error loading content</div>
+                <div className={classes.placeholderSubtext}>Try reprocessing the document or check server logs.</div>
+                <div className={classes.placeholderFrame}>
+                  <div className={classes.placeholderMuted}>If the problem persists, contact an administrator.</div>
                 </div>
-                <div style={{ fontSize: '0.8rem' }}>
-                  Please try reprocessing the document or check server logs.
-                </div>
-              </div>
+              </>
             ) : (
-              <div style={{ fontSize: '0.9rem' }}>Ask me anything about this document!</div>
+              <>
+                <div className={classes.placeholderTitle}>Ask about this document</div>
+                <div className={classes.placeholderSubtext}>Start the conversation using the input below.</div>
+                <div className={classes.placeholderFrame}>
+                  <div className={classes.placeholderMuted}>Tips: be specific to get better answers.</div>
+                </div>
+              </>
             )}
           </div>
         )}

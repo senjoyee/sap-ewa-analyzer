@@ -736,13 +736,12 @@ const FilePreview = ({ selectedFile }) => {
             </div>
           )
         ) : (
-          <div className={classes.noFileSelected} role="status" aria-live="polite">
-            <Document24Regular style={{ fontSize: 64, color: '#9e9e9e', marginBottom: 8 }} />
-            <div className={classes.noFileTitle}>
-              No File Selected
-            </div>
-            <div className={classes.noFileText}>
-              Select a file from the list to preview its contents
+          <div className={classes.placeholderContainer} role="status" aria-live="polite">
+            <Document24Regular style={{ fontSize: 48, marginBottom: 8, opacity: 0.7 }} />
+            <div className={classes.placeholderTitle}>No File Selected</div>
+            <div className={classes.placeholderText}>Select a file from the list to preview its contents</div>
+            <div className={classes.placeholderFrame}>
+              <div className={classes.placeholderMuted}>Content preview will show here.</div>
             </div>
           </div>
         )}
