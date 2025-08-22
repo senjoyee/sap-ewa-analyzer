@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { Button as FluentButton, Spinner, Tooltip as FluentTooltip, CounterBadge } from '@fluentui/react-components';
+import { Button as FluentButton, Spinner, Tooltip as FluentTooltip, CounterBadge, Accordion as FluentAccordion, AccordionItem, AccordionHeader, AccordionPanel } from '@fluentui/react-components';
 import { Alert as FluentAlert } from '@fluentui/react-alert';
 import { Toaster, useToastController, Toast, ToastTitle } from '@fluentui/react-toast';
 import { Delete24Regular, Play24Regular, Document24Regular, DocumentPdf24Regular, Image24Regular, TextDescription24Regular, ChevronDown24Regular, Building24Regular, Folder24Regular } from '@fluentui/react-icons';
@@ -14,9 +14,7 @@ import ListItemSecondaryAction from '@mui/material/ListItemSecondaryAction';
 import Box from '@mui/material/Box';
 // Replaced MUI Button with Fluent UI Button
 import Checkbox from '@mui/material/Checkbox';
-import Accordion from '@mui/material/Accordion';
-import AccordionSummary from '@mui/material/AccordionSummary';
-import AccordionDetails from '@mui/material/AccordionDetails';
+ 
  
 import { useTheme } from '../contexts/ThemeContext';
 import { apiUrl } from '../config';
@@ -302,13 +300,7 @@ const FileList = ({ onFileSelect, refreshTrigger, selectedFile }) => {
     return grouped;
   };
 
-  // Function to handle accordion expand/collapse
-  const handleAccordionChange = (customer) => (event, isExpanded) => {
-    setExpandedCustomers(prev => ({
-      ...prev,
-      [customer]: isExpanded
-    }));
-  };
+  
 
   // Function to handle analyze button click
   const handleAnalyze = async (file) => {
@@ -795,197 +787,137 @@ const FileList = ({ onFileSelect, refreshTrigger, selectedFile }) => {
     const filesByCustomer = groupByCustomer(files);
     const customers = Object.keys(filesByCustomer).sort();
     
+    const openItems = Object.keys(expandedCustomers).filter(k => expandedCustomers[k]);
     content = (
       <Box>
-        
-        {/* Customer accordions */}
-        {Object.keys(filesByCustomer).map((customer) => (
-          <Accordion 
-            key={customer}
-            expanded={expandedCustomers[customer] === true}
-            onChange={handleAccordionChange(customer)}
-            elevation={0}
-            sx={{ 
-              mb: 1,
-              backgroundColor: '#ffffff',
-              border: '1px solid #e5e5e5',
-              borderRadius: '12px !important',
-              overflow: 'hidden',
-              '&:before': {
-                display: 'none',
-              },
-              '&.Mui-expanded': {
-                margin: '0 0 8px 0',
-              }
-            }}
-          >
-            <AccordionSummary 
-              expandIcon={<ChevronDown24Regular style={{ color: '#60a5fa' }} />}
-              sx={{ 
-                minHeight: 44,
-                backgroundColor: '#f8f9fa',
-                borderBottom: '1px solid #e5e5e5',
-                '&.Mui-expanded': {
-                  minHeight: 44,
-                },
-                '& .MuiAccordionSummary-content': {
-                  margin: '10px 0',
-                  '&.Mui-expanded': {
-                    margin: '10px 0',
-                  }
-                },
-                '&:hover': {
-                  backgroundColor: '#f0f0f0',
-                }
-              }}
-            >
-              <Box sx={{ display: 'flex', alignItems: 'center', width: '100%' }}>
-                <Building24Regular style={{ 
-                  marginRight: 12,
-                  width: 18,
-                  height: 18,
-                  color: '#60a5fa'
-                }} />
-                <Typography sx={{ 
-                  fontWeight: 500,
-                  fontSize: '0.875rem',
-                  color: '#32363a'
-                }}>
-                  {customer}
-                </Typography>
-                <CounterBadge 
-                  count={filesByCustomer[customer].length}
-                  size="small"
-                  color="brand"
-                  style={{ marginLeft: 'auto', marginRight: 8 }}
-                />
-              </Box>
-            </AccordionSummary>
-            <AccordionDetails sx={{ p: 0.5, backgroundColor: '#ffffff' }}>
-              <List sx={{ py: 0 }}>
-                {filesByCustomer[customer].map((file) => {
-                  const isSelected = selectedFile && (selectedFile.id === file.id || selectedFile.name === file.name);
-                  return (
-                    <ListItem 
-                      key={file.id || file.name} 
-                      disablePadding 
-                      sx={{ 
-                        position: 'relative', 
-                        mb: 0.5,
-                        '&:last-child': { mb: 0 }
-                      }}
-                    >
-                      <ListItemButton 
-                        onClick={(e) => {
-                          // Don't select if clicking checkbox
-                          if (!e.target.closest('.MuiCheckbox-root')) {
-                            // Use the display handler like the original Display button
-                            handleDisplayAnalysis(file);
-                          }
-                        }}
-                        selected={isSelected}
-                        sx={{
-                          pr: 12, // Reduced padding for secondary action
-                          mx: 0.5,
-                          borderRadius: '8px',
-                          minHeight: 48, // Reduced height for sleeker look
-                          transition: 'all 0.2s ease',
-                          backgroundColor: 'transparent',
-                          border: 'none',
-                          '&.Mui-selected': {
-                            backgroundColor: 'rgba(96, 165, 250, 0.1)',
-                            '&:hover': {
-                              backgroundColor: 'rgba(96, 165, 250, 0.15)',
-                            }
-                          },
-                          '&:hover': {
-                            backgroundColor: 'rgba(0, 0, 0, 0.04)',
-                          }
+        <FluentAccordion multiple openItems={openItems} onToggle={(e, data) => {
+          const next = {};
+          const items = Array.isArray(data.openItems) ? data.openItems : [data.openItems];
+          items.forEach(k => { next[k] = true; });
+          setExpandedCustomers(next);
+        }}>
+          {Object.keys(filesByCustomer).map((customer) => (
+            <AccordionItem value={customer} key={customer}>
+              <AccordionHeader expandIcon={<ChevronDown24Regular style={{ color: '#60a5fa' }} />}
+                style={{ minHeight: 44, backgroundColor: '#f8f9fa', borderBottom: '1px solid #e5e5e5' }}
+              >
+                <Box sx={{ display: 'flex', alignItems: 'center', width: '100%' }}>
+                  <Building24Regular style={{ 
+                    marginRight: 12,
+                    width: 18,
+                    height: 18,
+                    color: '#60a5fa'
+                  }} />
+                  <Typography sx={{ 
+                    fontWeight: 500,
+                    fontSize: '0.875rem',
+                    color: '#32363a'
+                  }}>
+                    {customer}
+                  </Typography>
+                  <CounterBadge 
+                    count={filesByCustomer[customer].length}
+                    size="small"
+                    color="brand"
+                    style={{ marginLeft: 'auto', marginRight: 8 }}
+                  />
+                </Box>
+              </AccordionHeader>
+              <AccordionPanel style={{ padding: 4, backgroundColor: '#ffffff' }}>
+                <List sx={{ py: 0 }}>
+                  {filesByCustomer[customer].map((file) => {
+                    const isSelected = selectedFile && (selectedFile.id === file.id || selectedFile.name === file.name);
+                    return (
+                      <ListItem 
+                        key={file.id || file.name} 
+                        disablePadding 
+                        sx={{ 
+                          position: 'relative', 
+                          mb: 0.5,
+                          '&:last-child': { mb: 0 }
                         }}
                       >
-                        <ListItemIcon sx={{ minWidth: 36, display: 'flex', alignItems: 'center' }}>
-                          <Checkbox 
-                            checked={isFileSelected(file)}
-                            onChange={(e) => {
-                              e.stopPropagation();
-                              handleFileSelection(file, e);
-                            }}
-                            size="small"
-                            sx={{ 
-                              p: 0.5,
-                              color: '#60a5fa',
-                              '&.Mui-checked': {
-                                color: '#60a5fa',
+                        <ListItemButton 
+                          onClick={(e) => {
+                            // Don't select if clicking checkbox
+                            if (!e.target.closest('.MuiCheckbox-root')) {
+                              // Use the display handler like the original Display button
+                              handleDisplayAnalysis(file);
+                            }
+                          }}
+                          selected={isSelected}
+                          sx={{
+                            pr: 12, // Reduced padding for secondary action
+                            mx: 0.5,
+                            borderRadius: '8px',
+                            minHeight: 48, // Reduced height for sleeker look
+                            transition: 'all 0.2s ease',
+                            backgroundColor: 'transparent',
+                            border: 'none',
+                            '&.Mui-selected': {
+                              backgroundColor: 'rgba(96, 165, 250, 0.1)',
+                              '&:hover': {
+                                backgroundColor: 'rgba(96, 165, 250, 0.15)',
                               }
-                            }}
-                          />
-                        </ListItemIcon>
-                        <Box 
-                          sx={{ 
-                            display: 'flex', 
-                            alignItems: 'center', 
-                            gap: 1.5, 
-                            flex: 1,
-                            cursor: 'pointer'
+                            },
+                            '&:hover': {
+                              backgroundColor: 'rgba(0, 0, 0, 0.04)',
+                            }
                           }}
                         >
-                          {getFileIcon(file.name)}
-                          <FluentTooltip content={file.name} relationship="label" positioning={{ position: 'above', align: 'start' }}>
-                            <Typography sx={{ 
-                              fontSize: '0.875rem',
-                              fontWeight: 400,
-                              color: '#32363a',
-                              overflow: 'hidden',
-                              textOverflow: 'ellipsis',
-                              whiteSpace: 'nowrap',
-                              flex: 1,
-                              '&:hover': {
-                                color: '#60a5fa'
-                              }
-                            }}>
+                          <ListItemIcon sx={{ minWidth: 36, display: 'flex', alignItems: 'center' }}>
+                            <Checkbox 
+                              checked={isFileSelected(file)}
+                              onChange={(e) => {
+                                e.stopPropagation();
+                                handleFileSelection(file, e);
+                              }}
+                              size="small"
+                              sx={{ 
+                                p: 0.5,
+                                color: '#60a5fa',
+                                '&.Mui-checked': {
+                                  color: '#60a5fa',
+                                }
+                              }}
+                            />
+                          </ListItemIcon>
+                          <ListItemIcon sx={{ minWidth: 28, color: 'rgba(0, 0, 0, 0.54)' }}>
+                            {getFileIcon(file.name)}
+                          </ListItemIcon>
+                          <Box sx={{ flex: 1, minWidth: 0 }}>
+                            <Typography noWrap sx={{ fontSize: '0.9rem', color: '#32363a' }}>
                               {file.name}
                             </Typography>
-                          </FluentTooltip>
-                        </Box>
-                      </ListItemButton>
-                      <ListItemSecondaryAction sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}>
-                        {combinedProcessingStatus[file.id || file.name] === 'processing' ? (
-                          <Spinner />
-                        ) : reprocessingFiles[file.id || file.name] ? (
-                          <Spinner />
-                        ) : (combinedProcessingStatus[file.id || file.name] === 'completed' || file.ai_analyzed) ? (
-                          <Box sx={{ 
-                            width: 8, 
-                            height: 8, 
-                            borderRadius: '50%', 
-                            backgroundColor: '#10b981',
-                            flexShrink: 0
-                          }} />
-                        ) : combinedProcessingStatus[file.id || file.name] === 'error' ? (
-                          <Box sx={{ 
-                            width: 8, 
-                            height: 8, 
-                            borderRadius: '50%', 
-                            backgroundColor: '#ef4444',
-                            flexShrink: 0
-                          }} />
-                        ) : (
-                          <Box sx={{ 
-                            width: 8, 
-                            height: 8, 
-                            borderRadius: '50%', 
-                            backgroundColor: '#d1d5db',
-                            flexShrink: 0
-                          }} />
-                        )}
-                      </ListItemSecondaryAction>
-                    </ListItem>
-                  );
-                })}
-              </List>
-            </AccordionDetails>
-          </Accordion>
-        ))}
+                            <Typography variant="body2" sx={{ color: '#6a6d70', fontSize: '0.8rem' }}>
+                              {file.customer_name || 'Unknown'} • {file.report_date || 'Unknown date'} • {formatFileSize(file.size)}
+                            </Typography>
+                          </Box>
+                          <ListItemSecondaryAction sx={{ right: 8, display: 'flex', alignItems: 'center', gap: 1 }}>
+                            {/* Combined status indicator */}
+                            {combinedProcessingStatus[file.id || file.name] === 'processing' && (
+                              <Spinner size="tiny" />
+                            )}
+                            {combinedProcessingStatus[file.id || file.name] === 'completed' && (
+                              <FluentTooltip content="AI analysis ready">
+                                <Play24Regular style={{ color: '#10b981' }} />
+                              </FluentTooltip>
+                            )}
+                            {combinedProcessingStatus[file.id || file.name] === 'error' && (
+                              <FluentTooltip content="Error in processing">
+                                <Delete24Regular style={{ color: '#ef4444' }} />
+                              </FluentTooltip>
+                            )}
+                          </ListItemSecondaryAction>
+                        </ListItemButton>
+                      </ListItem>
+                    );
+                  })}
+                </List>
+              </AccordionPanel>
+            </AccordionItem>
+          ))}
+        </FluentAccordion>
       </Box>
     );
    }
