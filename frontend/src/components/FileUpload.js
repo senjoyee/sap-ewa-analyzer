@@ -1,12 +1,10 @@
 import React, { useState, useRef, useEffect } from 'react';
-import { Button as FluentButton } from '@fluentui/react-components';
+import { Button as FluentButton, Combobox, Option } from '@fluentui/react-components';
 import { Alert as FluentAlert } from '@fluentui/react-alert';
 import TextField from '@mui/material/TextField';
 import FormControl from '@mui/material/FormControl';
 import FormHelperText from '@mui/material/FormHelperText';
-import Select from '@mui/material/Select';
 import InputLabel from '@mui/material/InputLabel';
-import MenuItem from '@mui/material/MenuItem';
 import FormLabel from '@mui/material/FormLabel';
 import LinearProgress from '@mui/material/LinearProgress';
 import Chip from '@mui/material/Chip';
@@ -373,89 +371,21 @@ const FileUpload = ({ onUploadSuccess }) => {
                 </div>
                 
                 <div>
-                  <Select
-                    fullWidth
-                    value={fileData.customerName}
-                    onChange={(e) => handleCustomerNameChange(index, e.target.value)}
-                    size="small"
-                    error={!!fileData.error}
-                    MenuProps={{
-                      PaperProps: {
-                        sx: {
-                          bgcolor: '#ffffff',
-                          borderRadius: 2,
-                          border: '1px solid #e0e0e0',
-                          boxShadow: '0 8px 24px rgba(0, 0, 0, 0.12)',
-                          mt: 1,
-                          '& .MuiMenuItem-root': {
-                            fontSize: '0.875rem',
-                            fontWeight: 500,
-                            color: '#333',
-                            py: 1.5,
-                            px: 2,
-                            margin: '2px 4px',
-                            borderRadius: 1,
-                            '&:hover': {
-                              bgcolor: '#f0f7ff',
-                              color: '#1976d2'
-                            },
-                            '&.Mui-selected': {
-                              bgcolor: '#e3f2fd',
-                              color: '#1976d2',
-                              fontWeight: 600,
-                              '&:hover': {
-                                bgcolor: '#e3f2fd'
-                              }
-                            }
-                          }
-                        }
-                      }
-                    }}
-                    sx={{
-                      borderRadius: 2,
-                      bgcolor: '#ffffff',
-                      fontFamily: "'Inter', 'Roboto', 'Arial', sans-serif",
-                      fontSize: '0.875rem',
-                      fontWeight: 500,
-                      '& .MuiSelect-select': {
-                        fontFamily: "'Inter', 'Roboto', 'Arial', sans-serif",
-                        fontSize: '0.875rem',
-                        fontWeight: 500,
-                        py: 1.5,
-                        px: 2,
-                        display: 'flex',
-                        alignItems: 'center',
-                        gap: 1
-                      },
-                      '& .MuiOutlinedInput-notchedOutline': {
-                        borderColor: '#d0d0d0',
-                        borderWidth: '1.5px'
-                      },
-                      '&:hover .MuiOutlinedInput-notchedOutline': {
-                        borderColor: '#60a5fa',
-                        borderWidth: '2px'
-                      },
-                      '&.Mui-focused .MuiOutlinedInput-notchedOutline': {
-                        borderColor: '#1976d2',
-                        borderWidth: '2px'
-                      },
-                      '&.Mui-error .MuiOutlinedInput-notchedOutline': {
-                        borderColor: '#d32f2f'
-                      }
-                    }}
-                    displayEmpty
+                  <Combobox
+                    style={{ width: '100%' }}
+                    placeholder="Choose a customer..."
+                    selectedOptions={fileData.customerName ? [fileData.customerName] : []}
+                    onOptionSelect={(e, data) => handleCustomerNameChange(index, data.optionValue ?? '')}
                   >
-                    <MenuItem value="" disabled sx={{ fontStyle: 'italic', opacity: 0.7 }}>
-                      <Building16Regular style={{ marginRight: 8, width: 16, height: 16, color: tokens.colorNeutralForeground3 }} />
-                      Choose a customer...
-                    </MenuItem>
                     {customers.map((customer) => (
-                      <MenuItem key={customer} value={customer}>
-                        <Building16Regular style={{ marginRight: 8, width: 16, height: 16, color: tokens.colorBrandForeground1 }} />
-                        {customer}
-                      </MenuItem>
+                      <Option key={customer} text={customer} value={customer}>
+                        <span style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                          <Building16Regular style={{ width: 16, height: 16, color: tokens.colorBrandForeground1 }} />
+                          {customer}
+                        </span>
+                      </Option>
                     ))}
-                  </Select>
+                  </Combobox>
                   {fileData.error && (
                     <FormHelperText error sx={{ mt: 1, fontWeight: 500 }}>
                       {fileData.error}
