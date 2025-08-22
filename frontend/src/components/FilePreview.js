@@ -2,35 +2,21 @@ import React, { useState, useEffect } from 'react';
 import ReactMarkdown from 'react-markdown';
 import rehypeRaw from 'rehype-raw';
 import remarkGfm from 'remark-gfm';
-import Paper from '@mui/material/Paper';
+import { makeStyles } from '@griffel/react';
+import { tokens, Button, Tooltip, Accordion as FluentAccordion, AccordionItem, AccordionHeader, AccordionPanel } from '@fluentui/react-components';
+import { DocumentPdf24Regular, ChevronDown24Regular, DataBarVertical24Regular, Settings24Regular } from '@fluentui/react-icons';
 import Typography from '@mui/material/Typography';
 import Box from '@mui/material/Box';
-import Chip from '@mui/material/Chip';
-import Divider from '@mui/material/Divider';
-import CircularProgress from '@mui/material/CircularProgress';
-import Accordion from '@mui/material/Accordion';
-import AccordionSummary from '@mui/material/AccordionSummary';
-import AccordionDetails from '@mui/material/AccordionDetails';
-import ExpandMoreIcon from '@mui/icons-material/ExpandMore';
-import InsertDriveFileOutlinedIcon from '@mui/icons-material/InsertDriveFileOutlined';
-import PictureAsPdfIcon from '@mui/icons-material/PictureAsPdf';
-import ImageIcon from '@mui/icons-material/Image';
-import DescriptionIcon from '@mui/icons-material/Description';
-import TextSnippetIcon from '@mui/icons-material/TextSnippet';
-import SmartToyIcon from '@mui/icons-material/SmartToy';
-import EqualizerIcon from '@mui/icons-material/Equalizer';
-import AssessmentIcon from '@mui/icons-material/Assessment';
-import TuneIcon from '@mui/icons-material/Tune';
-import PictureAsPdfOutlinedIcon from '@mui/icons-material/PictureAsPdfOutlined';
-import Tooltip from '@mui/material/Tooltip';
-import IconButton from '@mui/material/IconButton';
+ 
+ 
+import { Image24Regular, Document24Regular, TextDescription24Regular } from '@fluentui/react-icons';
+ 
 import Table from '@mui/material/Table';
 import TableBody from '@mui/material/TableBody';
 import TableCell from '@mui/material/TableCell';
 import TableContainer from '@mui/material/TableContainer';
 import TableHead from '@mui/material/TableHead';
 import TableRow from '@mui/material/TableRow';
-import { useTheme } from '../contexts/ThemeContext';
 
 // Import our custom table components
 // import MetricsTable from './MetricsTable';
@@ -44,7 +30,7 @@ import sapLogo from '../logo/sap-3.svg';
 const API_BASE = 'http://localhost:8001';
 const getFileTypeInfo = (fileName) => {
   if (!fileName || typeof fileName !== 'string') {
-    return { icon: <InsertDriveFileOutlinedIcon />, label: 'UNKNOWN', color: 'default' };
+    return { icon: <Document24Regular />, label: 'UNKNOWN', color: 'default' };
   }
   
   // Extract extension safely
@@ -56,7 +42,7 @@ const getFileTypeInfo = (fileName) => {
   switch(extension) {
     case 'pdf':
       return { 
-        icon: <PictureAsPdfIcon sx={{ color: '#F44336' }} />, 
+        icon: <DocumentPdf24Regular style={{ color: '#F44336' }} />, 
         label: 'PDF',
         color: 'error' 
       };
@@ -66,31 +52,112 @@ const getFileTypeInfo = (fileName) => {
     case 'gif':
     case 'bmp':
       return { 
-        icon: <ImageIcon sx={{ color: '#29B6F6' }} />, 
+        icon: <Image24Regular style={{ color: '#29B6F6' }} />, 
         label: 'IMAGE',
         color: 'info' 
       };
     case 'doc':
     case 'docx':
       return { 
-        icon: <DescriptionIcon sx={{ color: '#90CAF9' }} />, 
+        icon: <Document24Regular style={{ color: '#90CAF9' }} />, 
         label: 'DOCUMENT',
         color: 'primary' 
       };
     case 'txt':
       return { 
-        icon: <TextSnippetIcon sx={{ color: '#CE93D8' }} />, 
+        icon: <TextDescription24Regular style={{ color: '#CE93D8' }} />, 
         label: 'TEXT',
         color: 'secondary' 
       };
     default:
       return { 
-        icon: <InsertDriveFileOutlinedIcon sx={{ color: '#9E9E9E' }} />, 
+        icon: <Document24Regular style={{ color: '#9E9E9E' }} />, 
         label: extension ? extension.toUpperCase() : 'FILE',
         color: 'default' 
       };
   }
 };
+
+// Styles for Fluent migration
+const useStyles = makeStyles({
+  container: {
+    padding: '0px',
+    backgroundColor: tokens.colorNeutralBackground1,
+    borderRadius: '8px',
+    height: '100%',
+    width: '100%',
+    display: 'flex',
+    flexDirection: 'column',
+    overflow: 'hidden',
+    border: `1px solid ${tokens.colorNeutralStroke1}`,
+  },
+  headerBar: {
+    paddingLeft: tokens.spacingHorizontalM,
+    paddingRight: tokens.spacingHorizontalM,
+    paddingTop: tokens.spacingVerticalS,
+    paddingBottom: tokens.spacingVerticalS,
+    borderBottom: `1px solid ${tokens.colorNeutralStroke1}`,
+    display: 'flex',
+    alignItems: 'center',
+    backgroundColor: tokens.colorNeutralBackground2,
+    gap: tokens.spacingHorizontalS,
+  },
+  title: {
+    fontWeight: tokens.fontWeightSemibold,
+    color: tokens.colorNeutralForeground1,
+    fontSize: tokens.fontSizeBase500,
+    lineHeight: '24px',
+    flexGrow: 1,
+  },
+  actionBar: {
+    display: 'flex',
+    alignItems: 'center',
+    gap: tokens.spacingHorizontalXS,
+  },
+  accordionSection: {
+    marginTop: tokens.spacingVerticalL,
+    marginBottom: tokens.spacingVerticalL,
+  },
+  accordionHeader: {
+    backgroundColor: tokens.colorNeutralBackground2,
+  },
+  accordionPanel: {
+    padding: tokens.spacingHorizontalL,
+  },
+  fileBadge: {
+    display: 'inline-flex',
+    alignItems: 'center',
+    borderRadius: '6px',
+    padding: '4px 8px',
+    border: `1px solid ${tokens.colorNeutralStroke1}`,
+    backgroundColor: tokens.colorNeutralBackground1,
+  },
+  badgeIcon: {
+    display: 'inline-flex',
+    alignItems: 'center',
+    marginRight: tokens.spacingHorizontalXS,
+  },
+  badgeLabel: {
+    fontSize: tokens.fontSizeBase200,
+    color: tokens.colorNeutralForeground2,
+  },
+  noFileSelected: {
+    textAlign: 'center',
+    maxWidth: '400px',
+    marginLeft: 'auto',
+    marginRight: 'auto',
+  },
+  noFileTitle: {
+    fontWeight: tokens.fontWeightSemibold,
+    color: tokens.colorNeutralForeground2,
+    marginBottom: tokens.spacingVerticalXS,
+    fontSize: tokens.fontSizeBase500,
+  },
+  noFileText: {
+    color: tokens.colorNeutralForeground3,
+    fontSize: tokens.fontSizeBase300,
+  },
+});
 
 const JsonCodeBlockRenderer = ({ node, inline, className, children, ...props }) => {
   const match = /language-(\w+)/.exec(className || '');
@@ -113,7 +180,7 @@ const JsonCodeBlockRenderer = ({ node, inline, className, children, ...props }) 
             }}>
               {jsonData.tableTitle}
             </Typography>
-            <TableContainer component={Paper} elevation={0}>
+            <TableContainer component="div">
               <Table size="small" sx={{
                 borderCollapse: 'collapse',
                 tableLayout: 'auto',
@@ -186,7 +253,7 @@ const JsonCodeBlockRenderer = ({ node, inline, className, children, ...props }) 
             }}>
               {jsonData.tableTitle}
             </Typography>
-            <TableContainer component={Paper} elevation={0}>
+            <TableContainer component="div">
               <Table size="small" sx={{
                 borderCollapse: 'collapse',
                 tableLayout: 'auto',
@@ -575,9 +642,7 @@ const JsonCodeBlockRenderer = ({ node, inline, className, children, ...props }) 
 
 const FilePreview = ({ selectedFile }) => {
   const fileTypeInfo = selectedFile ? getFileTypeInfo(selectedFile.name) : null;
-  const { theme } = useTheme();
   const isDark = false; // Using SAP Belize light theme
-  const [error, setError] = useState(null);
   const [originalContent, setOriginalContent] = useState('');
   
   // Function to export Markdown to PDF via backend endpoint
@@ -727,84 +792,41 @@ const mdFileName = `${baseName}.md`;
     }
   }, [isAnalysisView, hasMetrics, hasParameters, metricsData, parametersData]);
   
+  const classes = useStyles();
   return (
-    <Paper
-      elevation={2}
-      sx={{
-        padding: 0,
-        background: '#ffffff', // SAP Belize theme uses flat white backgrounds
-        borderRadius: 2,
-        height: '100%',
-        width: '100%',
-        display: 'flex',
-        flexDirection: 'column',
-        overflow: 'hidden',
-        border: '1px solid #e5e5e5', // Light border for SAP Belize theme
-      }}
-    >
-      <Box sx={{ 
-        px: 2, 
-        py: 1.5, 
-        borderBottom: '1px solid #e5e5e5',
-        display: 'flex',
-        alignItems: 'center',
-        backgroundColor: '#f7f7f7', // SAP Belize light header background
-      }}>
-        <Typography variant="h6" component="div" sx={{ flexGrow: 1, fontWeight: 500 }}>
+    <div className={classes.container}>
+      <div className={classes.headerBar}>
+        <div className={classes.title}>
           {isAnalysisView ? 'AI Analysis' : 'File Preview'}
-        </Typography>
+        </div>
         {selectedFile && (
-          <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+          <div className={classes.actionBar}>
             {selectedFile && selectedFile.name && (
-              <Tooltip title="Export to PDF">
-                <IconButton 
+              <Tooltip content="Export to PDF" relationship="label">
+                <Button
+                  appearance="transparent"
                   size="small"
+                  icon={<DocumentPdf24Regular />}
+                  aria-label="Export to PDF"
                   onClick={() => handleExportPDF(selectedFile)}
-                  sx={{ 
-                    color: isDark ? 'rgba(255, 255, 255, 0.7)' : 'rgba(0, 0, 0, 0.7)',
-                    '&:hover': {
-                      color: '#F44336',
-                      backgroundColor: isDark ? 'rgba(244, 67, 54, 0.08)' : 'rgba(244, 67, 54, 0.04)'
-                    }
-                  }}
-                >
-                  <PictureAsPdfOutlinedIcon fontSize="medium" />
-                </IconButton>
+                />
               </Tooltip>
             )}
-            <Chip
-              icon={isAnalysisView ? 
-                <Box component="img" 
-                  src={sapLogo} 
-                  alt="SAP Logo"
-                  sx={{ 
-                    height: 40,
-                    width: 40,
-                    objectFit: 'contain',
-                    marginRight: '2px'
-                  }} 
-                /> : fileTypeInfo?.icon
-              }
-              label={isAnalysisView ? '' : fileTypeInfo?.label}
-              size={isAnalysisView ? "medium" : "small"}
-              color={isAnalysisView ? 'info' : fileTypeInfo?.color}
-              variant={isAnalysisView ? "default" : "outlined"}
-              sx={{ 
-                borderRadius: 1,
-                height: isAnalysisView ? 36 : 'auto',
-                '& .MuiChip-icon': { 
-                  marginLeft: isAnalysisView ? '8px' : '5px' 
-                },
-                ...(isAnalysisView && {
-                  backgroundColor: 'transparent',
-                  border: 'none',
-                  boxShadow: 'none'
-                })
-              }}
-            />
-          </Box>
+            <div className={classes.fileBadge} aria-label={isAnalysisView ? 'SAP Analysis' : `File type ${fileTypeInfo?.label || ''}`}>
+              <span className={classes.badgeIcon}>
+                {isAnalysisView ? (
+                  <img src={sapLogo} alt="SAP Logo" style={{ height: 24, width: 24, objectFit: 'contain' }} />
+                ) : (
+                  fileTypeInfo?.icon || null
+                )}
+              </span>
+              {!isAnalysisView && (
+                <span className={classes.badgeLabel}>{fileTypeInfo?.label}</span>
+              )}
+            </div>
+          </div>
         )}
-      </Box>
+      </div>
       
       <Box sx={{
         flexGrow: 1,
@@ -923,14 +945,6 @@ const mdFileName = `${baseName}.md`;
                     const content = children?.toString() || '';
                     const hasStatusIcon = content.includes('✅') || content.includes('❌') || content.includes('⚠️');
                     
-                    // Check if this is the first cell (usually contains primary identifier)
-                    const isFirstCell = false; // Can't determine position in ReactMarkdown context
-                    
-                    // Check if content is numeric
-                    const isNumeric = /^[\d.,\s%]+$/.test(content) || 
-                                    content.includes('ms') || 
-                                    content.includes('GB') ||
-                                    content.includes('MHz');
                     
                     let textColor = '#32363a';
                     let fontWeight = '400';
@@ -1160,97 +1174,48 @@ const mdFileName = `${baseName}.md`;
               
               {/* Collapsible Metrics Section at the end */}
               {hasMetrics && (
-                <Box sx={{ mt: 4 }}>
-                  <Accordion 
-                    defaultExpanded={false}
-                    sx={{
-                      boxShadow: isDark ? '0 2px 8px rgba(0, 0, 0, 0.5)' : '0 1px 4px rgba(0, 0, 0, 0.1)',
-                      borderRadius: '8px !important',
-                      overflow: 'hidden',
-                      '&:before': { display: 'none' }, // Remove the default MUI expansion panel line
-                      border: isDark ? '1px solid rgba(255, 255, 255, 0.1)' : '1px solid rgba(0, 0, 0, 0.1)',
-                      mb: 3,
-                    }}
-                  >
-                    <AccordionSummary
-                      expandIcon={<ExpandMoreIcon />}
-                      sx={{
-                        backgroundColor: isDark ? 'rgba(25, 118, 210, 0.15)' : 'rgba(25, 118, 210, 0.08)',
-                        '&:hover': {
-                          backgroundColor: isDark ? 'rgba(25, 118, 210, 0.25)' : 'rgba(25, 118, 210, 0.12)',
-                        }
-                      }}
-                    >
-                      <Box sx={{ display: 'flex', alignItems: 'center' }}>
-                        <AssessmentIcon sx={{ mr: 1.5, color: 'primary.main' }} />
-                        <Typography variant="h6" sx={{ fontWeight: 500, color: 'primary.main' }}>
-                          Key Metrics Summary
-                        </Typography>
-                      </Box>
-                    </AccordionSummary>
-                    <AccordionDetails sx={{ p: 0 }}>
-                      <Box sx={{ p: 3 }}>
-                        {/* <MetricsTable metricsData={metricsData} /> */}
-                      </Box>
-                    </AccordionDetails>
-                  </Accordion>
-                </Box>
+                <div className={classes.accordionSection}>
+                  <FluentAccordion>
+                    <AccordionItem value="metrics">
+                      <AccordionHeader expandIcon={<ChevronDown24Regular />} className={classes.accordionHeader} aria-label="Key Metrics Summary">
+                        <div style={{ display: 'flex', alignItems: 'center' }}>
+                          <DataBarVertical24Regular style={{ marginRight: 12, color: '#1976d2' }} />
+                          <span style={{ fontWeight: 500, color: '#1976d2' }}>Key Metrics Summary</span>
+                        </div>
+                      </AccordionHeader>
+                      <AccordionPanel className={classes.accordionPanel}>
+                        <Box sx={{ p: 3 }}>
+                          {/* <MetricsTable metricsData={metricsData} /> */}
+                        </Box>
+                      </AccordionPanel>
+                    </AccordionItem>
+                  </FluentAccordion>
+                </div>
               )}
               
               {/* Collapsible Parameters Section after metrics */}
               {hasParameters && (
-                <Box sx={{ mt: 2, mb: 4 }}>
-                  <Accordion 
-                    defaultExpanded={false}
-                    sx={{
-                      boxShadow: isDark ? '0 2px 8px rgba(0, 0, 0, 0.5)' : '0 1px 4px rgba(0, 0, 0, 0.1)',
-                      borderRadius: '8px !important',
-                      overflow: 'hidden',
-                      '&:before': { display: 'none' }, // Remove the default MUI expansion panel line
-                      border: isDark ? '1px solid rgba(255, 255, 255, 0.1)' : '1px solid rgba(0, 0, 0, 0.1)',
-                      mb: 3,
-                    }}
-                  >
-                    <AccordionSummary
-                      expandIcon={<ExpandMoreIcon />}
-                      sx={{
-                        backgroundColor: isDark ? 'rgba(76, 175, 80, 0.15)' : 'rgba(76, 175, 80, 0.08)',
-                        '&:hover': {
-                          backgroundColor: isDark ? 'rgba(76, 175, 80, 0.25)' : 'rgba(76, 175, 80, 0.12)',
-                        }
-                      }}
-                    >
-                      <Box sx={{ display: 'flex', alignItems: 'center' }}>
-                        <TuneIcon sx={{ mr: 1.5, color: 'success.main' }} />
-                        <Typography variant="h6" sx={{ fontWeight: 500, color: 'success.main' }}>
-                          Recommended Parameters
-                        </Typography>
-                      </Box>
-                    </AccordionSummary>
-                    <AccordionDetails sx={{ p: 0 }}>
-                      <Box sx={{ p: 3 }}>
-                        {/* <ParametersTable parametersData={parametersData} /> */}
-                      </Box>
-                    </AccordionDetails>
-                  </Accordion>
-                </Box>
+                <div className={classes.accordionSection}>
+                  <FluentAccordion>
+                    <AccordionItem value="parameters">
+                      <AccordionHeader expandIcon={<ChevronDown24Regular />} className={classes.accordionHeader} aria-label="Recommended Parameters">
+                        <div style={{ display: 'flex', alignItems: 'center' }}>
+                          <Settings24Regular style={{ marginRight: 12, color: '#2e7d32' }} />
+                          <span style={{ fontWeight: 500, color: '#2e7d32' }}>Recommended Parameters</span>
+                        </div>
+                      </AccordionHeader>
+                      <AccordionPanel className={classes.accordionPanel}>
+                        <Box sx={{ p: 3 }}>
+                          {/* <ParametersTable parametersData={parametersData} /> */}
+                        </Box>
+                      </AccordionPanel>
+                    </AccordionItem>
+                  </FluentAccordion>
+                </div>
               )}
               
               {/* Error display if metrics failed to load */}
-              {error && (
-                <Box sx={{ 
-                  p: 2, 
-                  mt: 3,
-                  mb: 3, 
-                  borderRadius: 1, 
-                  bgcolor: isDark ? 'rgba(244, 67, 54, 0.1)' : 'rgba(244, 67, 54, 0.05)', 
-                  border: '1px solid rgba(244, 67, 54, 0.3)'
-                }}>
-                  <Typography variant="subtitle2" color="error" gutterBottom>
-                    Error loading metrics: {error}
-                  </Typography>
-                </Box>
-              )}
+              {/* No metrics error UI: setError is unused; keeping UI minimal */}
             </Box>
           ) : (
             <Box sx={{ 
@@ -1264,7 +1229,7 @@ const mdFileName = `${baseName}.md`;
               px: 4,
             }}> 
               {fileTypeInfo && fileTypeInfo.icon && React.cloneElement(fileTypeInfo.icon, { 
-                sx: { fontSize: 48, mb: 2, opacity: 0.7 } 
+                style: { fontSize: 48, marginBottom: 8, opacity: 0.7 } 
               })}
               <Typography variant="subtitle1" sx={{ fontWeight: 500, mb: 1 }}>
                 {selectedFile.name}
@@ -1291,15 +1256,15 @@ const mdFileName = `${baseName}.md`;
             </Box>
           )
         ) : (
-          <Box sx={{ textAlign: 'center', maxWidth: 400 }}>
-            <InsertDriveFileOutlinedIcon sx={{ fontSize: 64, color: 'text.disabled', mb: 2 }} />
-            <Typography variant="h6" color="text.secondary" gutterBottom>
+          <div className={classes.noFileSelected}>
+            <Document24Regular style={{ fontSize: 64, color: '#9e9e9e', marginBottom: 8 }} />
+            <div className={classes.noFileTitle}>
               No File Selected
-            </Typography>
-            <Typography variant="body2" color="text.disabled">
+            </div>
+            <div className={classes.noFileText}>
               Select a file from the list to preview its contents
-            </Typography>
-          </Box>
+            </div>
+          </div>
         )}
       </Box>
       
@@ -1310,7 +1275,7 @@ const mdFileName = `${baseName}.md`;
           documentContent={originalContent}
         />
       )}
-    </Paper>
+    </div>
   );
 };
 
