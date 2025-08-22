@@ -3,7 +3,7 @@ import { Button as FluentButton, Spinner, ProgressBar, Tooltip as FluentTooltip,
 import { makeStyles } from '@griffel/react';
 import { Alert as FluentAlert } from '@fluentui/react-alert';
 import { Toaster, useToastController, Toast, ToastTitle } from '@fluentui/react-toast';
-import { Delete24Regular, Play24Regular, Document24Regular, ChevronDown20Regular, Building24Regular, Folder24Regular, Document16Regular, DocumentPdf16Regular, Image16Regular, TextDescription16Regular } from '@fluentui/react-icons';
+import { Delete24Regular, Play24Regular, Document24Regular, ChevronDown20Regular, Building24Regular, Folder24Regular, Document16Regular, DocumentPdf16Regular, Image16Regular, TextDescription16Regular, Info16Regular, Warning16Regular, ErrorCircle16Regular, CheckmarkCircle16Regular } from '@fluentui/react-icons';
  
  
 // Replaced MUI Button with Fluent UI Button
@@ -396,12 +396,19 @@ const FileList = ({ onFileSelect, refreshTrigger, selectedFile }) => {
   
   // Keep the same API but dispatch a Fluent Toast instead
   const showSnackbar = (message, severity = 'info') => {
-    const intent = severity; // maps directly: 'success' | 'error' | 'warning' | 'info'
+    const intent = severity; // 'success' | 'error' | 'warning' | 'info'
+    const timeout = (severity === 'warning' || severity === 'error') ? 6000 : 4000;
+    const mediaIcon =
+      severity === 'success' ? <CheckmarkCircle16Regular /> :
+      severity === 'error' ? <ErrorCircle16Regular /> :
+      severity === 'warning' ? <Warning16Regular /> :
+      <Info16Regular />;
+
     dispatchToast(
       <Toast intent={intent}>
-        <ToastTitle>{message}</ToastTitle>
+        <ToastTitle media={mediaIcon}>{message}</ToastTitle>
       </Toast>,
-      { position: 'bottom', timeout: 4000 }
+      { timeout }
     );
   };
   
@@ -775,6 +782,7 @@ const FileList = ({ onFileSelect, refreshTrigger, selectedFile }) => {
         <FluentAlert 
           intent="error" 
           className={classes.alert}
+          aria-live="assertive"
           action={
             <FluentButton 
               appearance="subtle"
@@ -998,7 +1006,7 @@ const FileList = ({ onFileSelect, refreshTrigger, selectedFile }) => {
       </div>
       
       {/* Toaster for notifications */}
-      <Toaster toasterId="fileListToaster" position="bottom" />
+      <Toaster toasterId="fileListToaster" position="bottom-end" />
     </div>
   );
 };
