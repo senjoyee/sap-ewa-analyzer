@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { Button as FluentButton } from '@fluentui/react-components';
+import { Button as FluentButton, Spinner } from '@fluentui/react-components';
 import { Alert as FluentAlert } from '@fluentui/react-alert';
 import { Toaster, useToastController, Toast, ToastTitle } from '@fluentui/react-toast';
 import { Delete24Regular, Play24Regular, Document24Regular, DocumentPdf24Regular, Image24Regular, TextDescription24Regular, ChevronDown24Regular } from '@fluentui/react-icons';
@@ -10,7 +10,6 @@ import ListItem from '@mui/material/ListItem';
 import ListItemButton from '@mui/material/ListItemButton';
 import ListItemIcon from '@mui/material/ListItemIcon';
 import ListItemSecondaryAction from '@mui/material/ListItemSecondaryAction';
-import CircularProgress from '@mui/material/CircularProgress';
  
 import Box from '@mui/material/Box';
 import Chip from '@mui/material/Chip';
@@ -764,7 +763,7 @@ const FileList = ({ onFileSelect, refreshTrigger, selectedFile }) => {
   if (isLoading) {
     content = (
       <Box sx={{ display: 'flex', justifyContent: 'center', alignItems: 'center', p: 3, minHeight: 120 }}>
-        <CircularProgress size={30} thickness={4} />
+        <Spinner />
       </Box>
     );
   } else if (error) {
@@ -964,9 +963,9 @@ const FileList = ({ onFileSelect, refreshTrigger, selectedFile }) => {
                       </ListItemButton>
                       <ListItemSecondaryAction sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}>
                         {combinedProcessingStatus[file.id || file.name] === 'processing' ? (
-                          <CircularProgress size={16} thickness={4} sx={{ color: '#60a5fa' }} />
+                          <Spinner />
                         ) : reprocessingFiles[file.id || file.name] ? (
-                          <CircularProgress size={16} thickness={4} sx={{ color: '#60a5fa' }} />
+                          <Spinner />
                         ) : (combinedProcessingStatus[file.id || file.name] === 'completed' || file.ai_analyzed) ? (
                           <Box sx={{ 
                             width: 8, 
