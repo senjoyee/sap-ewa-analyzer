@@ -518,7 +518,8 @@ const JsonCodeBlockRenderer = ({ node, inline, className, children, ...props }) 
 };
 
 const FilePreview = ({ selectedFile }) => {
-  const fileTypeInfo = selectedFile ? getFileTypeInfo(selectedFile.name) : null;
+  const classes = useStyles();
+  const fileTypeInfo = selectedFile ? getFileTypeInfo(selectedFile.name, classes) : null;
   const [originalContent, setOriginalContent] = useState('');
 
   // ... (rest of the code remains the same)
@@ -541,7 +542,6 @@ const FilePreview = ({ selectedFile }) => {
     window.open(url, '_blank', 'noopener,noreferrer');
   };
 
-  const classes = useStyles();
   return (
     <div className={classes.container}>
       <div className={classes.headerBar}>

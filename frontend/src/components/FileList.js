@@ -3,7 +3,7 @@ import { Button as FluentButton, Spinner, Tooltip as FluentTooltip, CounterBadge
 import { makeStyles } from '@griffel/react';
 import { Alert as FluentAlert } from '@fluentui/react-alert';
 import { Toaster, useToastController, Toast, ToastTitle } from '@fluentui/react-toast';
-import { Delete24Regular, Play24Regular, Document24Regular, ChevronDown24Regular, Building24Regular, Folder24Regular, Document16Regular, DocumentPdf16Regular, Image16Regular, TextDescription16Regular } from '@fluentui/react-icons';
+import { Delete24Regular, Play24Regular, Document24Regular, ChevronDown20Regular, Building24Regular, Folder24Regular, Document16Regular, DocumentPdf16Regular, Image16Regular, TextDescription16Regular } from '@fluentui/react-icons';
  
  
 // Replaced MUI Button with Fluent UI Button
@@ -104,6 +104,7 @@ const useStyles = makeStyles({
     backgroundColor: tokens.colorNeutralBackground2,
     border: `1px solid ${tokens.colorNeutralStroke1}`,
     borderRadius: tokens.borderRadiusMedium,
+    boxShadow: tokens.shadow4,
     selectors: {
       '&::-webkit-scrollbar': { width: '6px' },
       '&::-webkit-scrollbar-track': { background: tokens.colorNeutralBackground2 },
@@ -188,6 +189,7 @@ const useStyles = makeStyles({
   accordionPanel: {
     padding: tokens.spacingHorizontalXS,
     backgroundColor: tokens.colorNeutralBackground1,
+    borderTop: `1px solid ${tokens.colorNeutralStroke1}`,
   },
   itemWrapper: {
     position: 'relative',
@@ -196,10 +198,11 @@ const useStyles = makeStyles({
   itemRow: {
     display: 'flex',
     alignItems: 'center',
+    paddingLeft: tokens.spacingHorizontalXS,
     paddingRight: tokens.spacingHorizontalM,
     marginInline: tokens.spacingHorizontalXS,
     borderRadius: tokens.borderRadiusMedium,
-    minHeight: 48,
+    minHeight: 44,
     transition: 'background-color 150ms ease, outline-color 150ms ease, box-shadow 150ms ease',
     cursor: 'pointer',
     selectors: {
@@ -209,6 +212,12 @@ const useStyles = makeStyles({
   },
   itemRowSelected: {
     backgroundColor: tokens.colorSubtleBackgroundSelected,
+  },
+  itemDivider: {
+    height: 1,
+    backgroundColor: tokens.colorNeutralStroke2,
+    marginLeft: tokens.spacingHorizontalXS,
+    marginRight: tokens.spacingHorizontalXS,
   },
   checkboxCell: {
     minWidth: 36,
@@ -704,7 +713,7 @@ const FileList = ({ onFileSelect, refreshTrigger, selectedFile }) => {
               <AccordionHeader
                 className={classes.accordionHeader}
                 aria-label={`${customer} files`}
-                expandIcon={<ChevronDown24Regular className={classes.brandIcon} />}
+                expandIcon={<ChevronDown20Regular className={classes.brandIcon} />}
               >
                 <div className={classes.accordionHeaderContent}>
                   <Building24Regular className={classes.leadingIcon} />
@@ -721,8 +730,9 @@ const FileList = ({ onFileSelect, refreshTrigger, selectedFile }) => {
               </AccordionHeader>
               <AccordionPanel className={classes.accordionPanel}>
                 <div>
-                  {filesByCustomer[customer].map((file) => {
+                  {filesByCustomer[customer].map((file, idx) => {
                     const isSelected = selectedFile && (selectedFile.id === file.id || selectedFile.name === file.name);
+                    const isLast = idx === filesByCustomer[customer].length - 1;
                     return (
                       <div
                         key={file.id || file.name}
@@ -782,6 +792,7 @@ const FileList = ({ onFileSelect, refreshTrigger, selectedFile }) => {
                             )}
                           </div>
                         </div>
+                        {!isLast && <div className={classes.itemDivider} role="separator" aria-hidden="true" />}
                       </div>
                     );
                   })}
