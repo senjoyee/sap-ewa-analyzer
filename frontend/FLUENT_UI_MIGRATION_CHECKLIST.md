@@ -45,13 +45,13 @@ Do not remove MUI yet; keep the app running during incremental migration. Remove
 ## 3) Theming and Providers (App Root)
 Goal: Replace MUI ThemeProvider with Fluent v9 `FluentProvider` and adopt Teams-compatible themes.
 
-- [ ] Add `FluentProvider` at the top of the app tree (e.g., wrap contents in `src/App.js` or `src/index.js`)
-- [ ] Use shipped themes from Fluent v9 (e.g., `webLightTheme`, `webDarkTheme`) or Teams variants if applicable (`teamsLightTheme`, `teamsDarkTheme`, `teamsHighContrastTheme`)
-- [ ] Wire up Teams theme awareness via `@microsoft/teams-js`:
+- [x] Add `FluentProvider` at the top of the app tree (e.g., wrap contents in `src/App.js` or `src/index.js`)
+- [x] Use shipped themes from Fluent v9 (e.g., `webLightTheme`, `webDarkTheme`) or Teams variants if applicable (`teamsLightTheme`, `teamsDarkTheme`, `teamsHighContrastTheme`)
+- [x] Wire up Teams theme awareness via `@microsoft/teams-js`:
   - Initialize the SDK when hosted in Teams
   - Read current theme and apply the matching Fluent theme
   - Subscribe to theme change events and update the provider theme dynamically
-- [ ] Remove MUI’s `ThemeProvider`, `CssBaseline`, and MUI theme configuration when the migration is complete
+- [x] Remove MUI’s `ThemeProvider`, `CssBaseline`, and MUI theme configuration when the migration is complete
 
 Notes:
 - Fluent v9 encourages tokens and design primitives (e.g., typography levels like `Title3`, `Subtitle2`, `Body1`, etc.) through components and tokens rather than a monolithic theme object.
@@ -123,11 +123,11 @@ Icons:
 ## 6) File-by-File Plan
 
 `src/App.js`
-- [ ] Replace MUI `ThemeProvider`/`CssBaseline` with `FluentProvider` and a chosen Fluent theme
-- [ ] Convert `AppBar` + `Toolbar` to Fluent `Toolbar` (and layout wrappers)
-- [ ] Replace `Drawer` with Fluent `Drawer` (or a persistent left rail using layout + `Card`/`Accordion`)
-- [ ] Replace `Typography`, `IconButton`, `Tooltip` with Fluent equivalents
-- [ ] Remove `sx` styles; migrate to `makeStyles` + tokens
+- [x] Replace MUI `ThemeProvider`/`CssBaseline` with `FluentProvider` and a chosen Fluent theme
+- [x] Convert `AppBar` + `Toolbar` to Fluent `Toolbar` (and layout wrappers)
+- [x] Replace `Drawer` with Fluent `Drawer` (or a persistent left rail using layout + `Card`/`Accordion`)
+- [x] Replace `Typography`, `IconButton`, `Tooltip` with Fluent equivalents
+- [x] Remove `sx` styles; migrate to `makeStyles` + tokens
 
 `src/components/FileUpload.js`
 - [ ] Replace `Button`, `Typography`, `Alert`, `Paper`, `TextField`, `FormHelperText`, `Select`, `InputLabel`, `MenuItem`, `Chip`, `IconButton`, `LinearProgress`, `Badge`, `Divider`

@@ -38,9 +38,14 @@ This document summarizes the concrete migration work completed so far and outlin
     - `aria-live` polite for info alert; assertive for error alert
     - Combobox `aria-label`, `aria-invalid`, `aria-describedby` for field errors
     - ProgressBar `aria-label` per file; status Tag `aria-label` (fu-7)
+  - Replaced MUI FormHelperText with Fluent `Field` wrapping `Combobox`; wired `validationMessage`/`validationState` (fu-8)
 
 - __App.js__
-  - Removed unused imports (`Container`, `Grid`) to eliminate build warnings
+  - Migrated off MUI: removed `MuiThemeProvider`, `CssBaseline`, `Box`, `Typography`, and `IconButton`
+  - Implemented header/aside/main using semantic elements + Griffel (`makeStyles`, `tokens`, `shorthands`)
+  - Kept Fluent `Toolbar`, `ToolbarButton`, `Tooltip` for the top bar
+  - Removed `ThemeContext` usage in App; theming now solely via `FluentProvider` in `src/index.js`
+  - Removed obsolete theming files: deleted `src/theme/themeConfig.js` and `src/contexts/ThemeContext.js`
 
 ## Build & Environment
 - Production builds compile successfully (no warnings at last build)
@@ -51,16 +56,12 @@ This document summarizes the concrete migration work completed so far and outlin
   - `@fluentui/react-toast` ^9.7.0
 
 ## Remaining Items / Suggestions
-- __Small – FileUpload.js__: Replace MUI `FormHelperText` with either:
-  - Semantic `<div id=... className={classes.errorText} role="alert">` (minimal), or
-  - Fluent `Field` wrapping `Combobox` with `validationMessage` and `validationState="error"` (pattern-aligned)
-- __Medium (future) – App layout__: `App.js` still uses MUI layout/typography components (`Box`, `Typography`, `Toolbar`, etc.). Consider migrating to Fluent/semantic + Griffel for consistency.
-- __Docs__: Update `FLUENT_UI_MIGRATION_CHECKLIST.md` to reflect completion of `fu-5`, `fu-6`, `fu-7` and the App.js cleanup.
+- __QA & Accessibility__: Smoke test web and Teams, verify keyboard navigation, focus-visible, Combobox validation messages, and visuals in light/dark/high-contrast
+- __Cleanup__: Remove all remaining `@mui/*` and Emotion packages once zero imports remain
 
 ## Suggested Next Steps (Order)
-1) FileUpload.js: Remove MUI `FormHelperText` (semantic or Fluent `Field`).
-2) Update docs/checklist with completed items and build status.
-3) Plan App.js container migration (replace MUI layout/typography with semantic + Griffel or Fluent v9 components).
+1) Dependency cleanup: remove `@mui/*` and Emotion packages; final doc update
+2) QA & accessibility pass in browser and Teams (keyboard, screen reader labels, contrast, focus-visible)
 
 ## Notes
 - We preserved behavior and accessibility while swapping UI primitives.
