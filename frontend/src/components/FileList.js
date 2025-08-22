@@ -1,8 +1,8 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { Button as FluentButton, Spinner, Tooltip as FluentTooltip } from '@fluentui/react-components';
+import { Button as FluentButton, Spinner, Tooltip as FluentTooltip, CounterBadge } from '@fluentui/react-components';
 import { Alert as FluentAlert } from '@fluentui/react-alert';
 import { Toaster, useToastController, Toast, ToastTitle } from '@fluentui/react-toast';
-import { Delete24Regular, Play24Regular, Document24Regular, DocumentPdf24Regular, Image24Regular, TextDescription24Regular, ChevronDown24Regular, Building24Regular } from '@fluentui/react-icons';
+import { Delete24Regular, Play24Regular, Document24Regular, DocumentPdf24Regular, Image24Regular, TextDescription24Regular, ChevronDown24Regular, Building24Regular, Folder24Regular } from '@fluentui/react-icons';
 import Paper from '@mui/material/Paper';
 import Typography from '@mui/material/Typography';
 import List from '@mui/material/List';
@@ -12,7 +12,6 @@ import ListItemIcon from '@mui/material/ListItemIcon';
 import ListItemSecondaryAction from '@mui/material/ListItemSecondaryAction';
  
 import Box from '@mui/material/Box';
-import Chip from '@mui/material/Chip';
 // Replaced MUI Button with Fluent UI Button
 import Checkbox from '@mui/material/Checkbox';
 import Accordion from '@mui/material/Accordion';
@@ -854,20 +853,11 @@ const FileList = ({ onFileSelect, refreshTrigger, selectedFile }) => {
                 }}>
                   {customer}
                 </Typography>
-                <Chip 
-                  label={filesByCustomer[customer].length} 
-                  size="small" 
-                  sx={{ 
-                    ml: 'auto',
-                    mr: 1,
-                    height: 18,
-                    minWidth: 18,
-                    fontSize: '0.65rem',
-                    fontWeight: 600,
-                    backgroundColor: 'rgba(96, 165, 250, 0.1)',
-                    color: '#60a5fa',
-                    border: '1px solid rgba(96, 165, 250, 0.3)',
-                  }}
+                <CounterBadge 
+                  count={filesByCustomer[customer].length}
+                  size="small"
+                  color="brand"
+                  style={{ marginLeft: 'auto', marginRight: 8 }}
                 />
               </Box>
             </AccordionSummary>
@@ -1024,22 +1014,14 @@ const FileList = ({ onFileSelect, refreshTrigger, selectedFile }) => {
             gap: 1
           }}
         >
-          <FolderIcon sx={{ fontSize: 18, color: '#60a5fa' }} />
+          <Folder24Regular style={{ width: 18, height: 18, color: '#60a5fa' }} />
           Uploaded Files
           {files.length > 0 && (
-            <Chip 
-              label={files.length} 
-              size="small" 
-              sx={{ 
-                ml: 0.5,
-                height: 18,
-                minWidth: 18,
-                fontSize: '0.65rem',
-                fontWeight: 600,
-                backgroundColor: 'rgba(96, 165, 250, 0.1)',
-                color: '#60a5fa',
-                border: '1px solid rgba(96, 165, 250, 0.3)',
-              }}
+            <CounterBadge 
+              count={files.length}
+              size="small"
+              color="brand"
+              style={{ marginLeft: 4 }}
             />
           )}
         </Typography>
