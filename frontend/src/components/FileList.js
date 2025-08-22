@@ -28,13 +28,13 @@ const useStyles = makeStyles({
     display: 'flex',
     flexDirection: 'column',
     height: '100%',
-    gap: '16px',
+    gap: tokens.spacingHorizontalM,
   },
   headerBar: {
     display: 'flex',
     justifyContent: 'space-between',
     alignItems: 'center',
-    marginBottom: 8,
+    marginBottom: tokens.spacingVerticalS,
   },
   title: {
     fontWeight: tokens.fontWeightSemibold,
@@ -61,6 +61,7 @@ const useStyles = makeStyles({
   },
   selectionText: {
     color: tokens.colorNeutralForeground3,
+    fontSize: tokens.fontSizeBase100,
   },
   batchActions: {
     display: 'flex',
@@ -163,7 +164,7 @@ const useStyles = makeStyles({
     alignItems: 'center',
     paddingRight: tokens.spacingHorizontalM,
     marginInline: tokens.spacingHorizontalXS,
-    borderRadius: 8,
+    borderRadius: tokens.borderRadiusMedium,
     minHeight: 48,
     transition: 'all 0.2s ease',
     cursor: 'pointer',
@@ -203,7 +204,7 @@ const useStyles = makeStyles({
     marginLeft: 'auto',
     display: 'flex',
     alignItems: 'center',
-    gap: 4,
+    gap: tokens.spacingHorizontalXS,
   },
   successIcon: {
     color: tokens.colorPaletteGreenForeground3,
