@@ -17,12 +17,12 @@ import {
   Divider
 } from '@mui/material';
 import {
-  Chat as ChatIcon,
-  Send as SendIcon,
-  Close as CloseIcon,
-  SmartToy as BotIcon,
-  Person as PersonIcon
-} from '@mui/icons-material';
+  Chat24Regular,
+  Send24Regular,
+  Dismiss24Regular,
+  Bot24Regular,
+  Person24Regular,
+} from '@fluentui/react-icons';
 import { styled } from '@mui/material/styles';
 import { apiUrl } from '../config';
 
@@ -351,7 +351,7 @@ const handleSendMessage = async () => {
         sx={{ position: 'fixed', bottom: 20, right: 20, zIndex: 1300 }}
         onClick={() => setExpanded(true)}
       >
-        <ChatIcon />
+        <Chat24Regular />
       </Fab>
     );
   }
@@ -360,7 +360,7 @@ const handleSendMessage = async () => {
     <ChatContainer elevation={8} expanded={expanded}>
       <ChatHeader>
         <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-          <BotIcon />
+          <Bot24Regular />
           <Typography variant="subtitle1" fontWeight="bold">
             Document Assistant
           </Typography>
@@ -370,14 +370,14 @@ const handleSendMessage = async () => {
           onClick={() => setExpanded(false)}
           sx={{ color: 'inherit' }}
         >
-          <CloseIcon />
+          <Dismiss24Regular style={{ width: 20, height: 20 }} />
         </IconButton>
       </ChatHeader>
 
       <MessagesContainer>
         {messages.length === 0 && (
           <Box sx={{ textAlign: 'center', py: 4, color: 'text.secondary' }}>
-            <BotIcon sx={{ fontSize: 48, mb: 1, opacity: 0.5 }} />
+            <Bot24Regular style={{ width: 48, height: 48, marginBottom: 8, opacity: 0.5 }} />
             {contentStatus === 'available' ? (
               <Typography variant="body2">
                 Ask me anything about this SAP EWA report!
@@ -411,7 +411,7 @@ const handleSendMessage = async () => {
         {messages.map((message, index) => (
           <MessageBubble key={index} isUser={message.isUser}>
             <Avatar sx={{ width: 26, height: 26, bgcolor: message.isError ? 'error.main' : (message.isUser ? 'primary.main' : 'grey.500') }}>
-              {message.isUser ? <PersonIcon fontSize="small" /> : <BotIcon fontSize="small" />}
+              {message.isUser ? <Person24Regular style={{ width: 16, height: 16 }} /> : <Bot24Regular style={{ width: 16, height: 16 }} />}
             </Avatar>
             <BubbleContent isUser={message.isUser} isError={message.isError}>
               {message.isUser ? (
@@ -430,7 +430,7 @@ const handleSendMessage = async () => {
         {loading && (
           <MessageBubble isUser={false}>
             <Avatar sx={{ width: 26, height: 26, bgcolor: 'primary.light' }}>
-              <BotIcon fontSize="small" />
+              <Bot24Regular style={{ width: 16, height: 16 }} />
             </Avatar>
             <BubbleContent isUser={false} sx={{ display: 'flex', alignItems: 'center', gap: 0.75 }}>
               <CircularProgress size={14} thickness={4} sx={{ color: 'primary.main' }} />
@@ -488,7 +488,7 @@ const handleSendMessage = async () => {
             height: 40,
           }}
         >
-          <SendIcon fontSize="small" />
+          <Send24Regular style={{ width: 16, height: 16 }} />
         </IconButton>
       </InputContainer>
     </ChatContainer>
