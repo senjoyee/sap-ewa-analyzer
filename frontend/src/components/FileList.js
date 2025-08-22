@@ -63,6 +63,15 @@ const useStyles = makeStyles({
     justifyContent: 'space-between',
     alignItems: 'center',
   },
+  selectionText: {
+    color: '#6a6d70',
+  },
+  batchActions: {
+    display: 'flex',
+    gap: 8,
+    justifyContent: 'flex-end',
+    alignItems: 'center',
+  },
   listContainer: {
     flex: 1,
     overflow: 'auto',
@@ -76,10 +85,149 @@ const useStyles = makeStyles({
       '&::-webkit-scrollbar-thumb:hover': { background: '#b0b0b0' },
     },
   },
+  loadingCenter: {
+    display: 'flex',
+    justifyContent: 'center',
+    alignItems: 'center',
+    padding: 12,
+    minHeight: 120,
+  },
+  alertWrapper: {
+    padding: 8,
+  },
+  alert: {
+    borderRadius: 8,
+  },
+  emptyState: {
+    padding: 8,
+    display: 'flex',
+    flexDirection: 'column',
+    alignItems: 'center',
+    paddingTop: 16,
+    paddingBottom: 16,
+    minHeight: 120,
+  },
+  emptyIcon: {
+    width: 40,
+    height: 40,
+    opacity: 0.6,
+    marginBottom: 8,
+  },
+  emptyText: {
+    color: '#6a6d70',
+    fontSize: '0.8rem',
+    textAlign: 'center',
+  },
+  headerFolderIcon: {
+    width: 18,
+    height: 18,
+    color: '#60a5fa',
+  },
+  titleBadgeSpacing: {
+    marginLeft: 4,
+  },
+  accordionHeader: {
+    minHeight: 44,
+    backgroundColor: '#f8f9fa',
+    borderBottom: '1px solid #e5e5e5',
+  },
+  accordionHeaderContent: {
+    display: 'flex',
+    alignItems: 'center',
+    width: '100%',
+  },
+  brandIcon: {
+    color: '#60a5fa',
+  },
+  leadingIcon: {
+    marginRight: 12,
+    width: 18,
+    height: 18,
+    color: '#60a5fa',
+  },
+  customerName: {
+    fontWeight: 500,
+    fontSize: '0.875rem',
+    color: '#32363a',
+  },
+  headerBadge: {
+    marginLeft: 'auto',
+    marginRight: 8,
+  },
+  accordionPanel: {
+    padding: 4,
+    backgroundColor: '#ffffff',
+  },
+  itemWrapper: {
+    position: 'relative',
+    marginBottom: 4,
+  },
+  itemRow: {
+    display: 'flex',
+    alignItems: 'center',
+    paddingRight: 12,
+    marginInline: 4,
+    borderRadius: 8,
+    minHeight: 48,
+    transition: 'all 0.2s ease',
+    cursor: 'pointer',
+    selectors: {
+      '&:hover': { backgroundColor: 'rgba(96, 165, 250, 0.08)' },
+      '&:focus-visible': { outline: '2px solid #60a5fa', outlineOffset: 2 },
+    },
+  },
+  itemRowSelected: {
+    backgroundColor: 'rgba(96, 165, 250, 0.1)',
+  },
+  checkboxCell: {
+    minWidth: 36,
+    display: 'flex',
+    alignItems: 'center',
+  },
+  fileIconCell: {
+    minWidth: 28,
+    color: 'rgba(0, 0, 0, 0.54)',
+  },
+  itemDetails: {
+    flex: 1,
+    minWidth: 0,
+  },
+  itemTitle: {
+    fontSize: '0.9rem',
+    color: '#32363a',
+    whiteSpace: 'nowrap',
+    overflow: 'hidden',
+    textOverflow: 'ellipsis',
+  },
+  itemMeta: {
+    color: '#6a6d70',
+    fontSize: '0.8rem',
+  },
+  itemStatus: {
+    marginLeft: 'auto',
+    display: 'flex',
+    alignItems: 'center',
+    gap: 4,
+  },
+  successIcon: {
+    color: '#10b981',
+  },
+  errorIcon: {
+    color: '#ef4444',
+  },
+  fileTypeIcon: {
+    width: 16,
+    height: 16,
+  },
+  fileTypeIconMuted: {
+    width: 16,
+    height: 16,
+    opacity: 0.6,
+  },
 });
 
 // Helper function to get appropriate icon for file type
-const getFileIcon = (filename) => {
+const getFileIcon = (filename, classes) => {
   // Extract extension from filename
   const fileExtension = filename && typeof filename === 'string' 
     ? filename.split('.').pop().toLowerCase() 
@@ -90,20 +238,20 @@ const getFileIcon = (filename) => {
   
   switch(fileExtension) {
     case 'pdf':
-      return <DocumentPdf24Regular style={{ width: 16, height: 16 }} />;
+      return <DocumentPdf24Regular className={classes.fileTypeIcon} />;
     case 'jpg':
     case 'jpeg':
     case 'png':
     case 'gif':
     case 'bmp':
-      return <Image24Regular style={{ width: 16, height: 16 }} />;
+      return <Image24Regular className={classes.fileTypeIcon} />;
     case 'doc':
     case 'docx':
-      return <Document24Regular style={{ width: 16, height: 16 }} />;
+      return <Document24Regular className={classes.fileTypeIcon} />;
     case 'txt':
-      return <TextDescription24Regular style={{ width: 16, height: 16 }} />;
+      return <TextDescription24Regular className={classes.fileTypeIcon} />;
     default:
-      return <Document24Regular style={{ width: 16, height: 16, opacity: 0.6 }} />;
+      return <Document24Regular className={classes.fileTypeIconMuted} />;
   }
 };
 
@@ -795,16 +943,16 @@ const FileList = ({ onFileSelect, refreshTrigger, selectedFile }) => {
 
   if (isLoading) {
     content = (
-      <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', padding: 12, minHeight: 120 }}>
+      <div className={classes.loadingCenter}>
         <Spinner />
       </div>
     );
   } else if (error) {
     content = (
-      <div style={{ padding: 8 }}>
+      <div className={classes.alertWrapper}>
         <FluentAlert 
           intent="error" 
-          style={{ borderRadius: 8 }}
+          className={classes.alert}
           action={
             <FluentButton 
               appearance="subtle"
@@ -821,9 +969,9 @@ const FileList = ({ onFileSelect, refreshTrigger, selectedFile }) => {
     );
   } else if (files.length === 0) {
     content = (
-      <div style={{ padding: 8, display: 'flex', flexDirection: 'column', alignItems: 'center', paddingBlock: 16, minHeight: 120 }}>
-        <Document24Regular style={{ width: 40, height: 40, opacity: 0.6, marginBottom: 8 }} />
-        <div style={{ color: '#6a6d70', fontSize: '0.8rem', textAlign: 'center' }}>
+      <div className={classes.emptyState}>
+        <Document24Regular className={classes.emptyIcon} />
+        <div className={classes.emptyText}>
           No files uploaded yet
         </div>
       </div>
@@ -844,53 +992,40 @@ const FileList = ({ onFileSelect, refreshTrigger, selectedFile }) => {
         }}>
           {Object.keys(filesByCustomer).map((customer) => (
             <AccordionItem value={customer} key={customer}>
-              <AccordionHeader expandIcon={<ChevronDown24Regular style={{ color: '#60a5fa' }} />}
-                style={{ minHeight: 44, backgroundColor: '#f8f9fa', borderBottom: '1px solid #e5e5e5' }}
+              <AccordionHeader
+                className={classes.accordionHeader}
+                expandIcon={<ChevronDown24Regular className={classes.brandIcon} />}
               >
-                <div style={{ display: 'flex', alignItems: 'center', width: '100%' }}>
-                  <Building24Regular style={{ 
-                    marginRight: 12,
-                    width: 18,
-                    height: 18,
-                    color: '#60a5fa'
-                  }} />
-                  <span style={{ fontWeight: 500, fontSize: '0.875rem', color: '#32363a' }}>
+                <div className={classes.accordionHeaderContent}>
+                  <Building24Regular className={classes.leadingIcon} />
+                  <span className={classes.customerName}>
                     {customer}
                   </span>
                   <CounterBadge 
                     count={filesByCustomer[customer].length}
                     size="small"
                     color="brand"
-                    style={{ marginLeft: 'auto', marginRight: 8 }}
+                    className={classes.headerBadge}
                   />
                 </div>
               </AccordionHeader>
-              <AccordionPanel style={{ padding: 4, backgroundColor: '#ffffff' }}>
+              <AccordionPanel className={classes.accordionPanel}>
                 <div>
                   {filesByCustomer[customer].map((file) => {
                     const isSelected = selectedFile && (selectedFile.id === file.id || selectedFile.name === file.name);
                     return (
                       <div
                         key={file.id || file.name}
-                        style={{ position: 'relative', marginBottom: 4 }}
+                        className={classes.itemWrapper}
                       >
                         <div
                           onClick={() => {
                             // Use the display handler like the original Display button
                             handleDisplayAnalysis(file);
                           }}
-                          style={{
-                            display: 'flex',
-                            alignItems: 'center',
-                            paddingRight: 12,
-                            marginInline: 4,
-                            borderRadius: 8,
-                            minHeight: 48,
-                            transition: 'all 0.2s ease',
-                            backgroundColor: isSelected ? 'rgba(96, 165, 250, 0.1)' : 'transparent'
-                          }}
+                          className={`${classes.itemRow} ${isSelected ? classes.itemRowSelected : ''}`}
                         >
-                          <div style={{ minWidth: 36, display: 'flex', alignItems: 'center' }}>
+                          <div className={classes.checkboxCell}>
                             <Checkbox
                               checked={isFileSelected(file)}
                               onChange={(e) => {
@@ -900,29 +1035,29 @@ const FileList = ({ onFileSelect, refreshTrigger, selectedFile }) => {
                               size="small"
                             />
                           </div>
-                          <div style={{ minWidth: 28, color: 'rgba(0, 0, 0, 0.54)' }}>
-                            {getFileIcon(file.name)}
+                          <div className={classes.fileIconCell}>
+                            {getFileIcon(file.name, classes)}
                           </div>
-                          <div style={{ flex: 1, minWidth: 0 }}>
-                            <div style={{ fontSize: '0.9rem', color: '#32363a', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
+                          <div className={classes.itemDetails}>
+                            <div className={classes.itemTitle}>
                               {file.name}
                             </div>
-                            <div style={{ color: '#6a6d70', fontSize: '0.8rem' }}>
+                            <div className={classes.itemMeta}>
                               {file.customer_name || 'Unknown'} • {file.report_date || 'Unknown date'} • {formatFileSize(file.size)}
                             </div>
                           </div>
-                          <div style={{ marginLeft: 'auto', display: 'flex', alignItems: 'center', gap: 4 }}>
+                          <div className={classes.itemStatus}>
                             {combinedProcessingStatus[file.id || file.name] === 'processing' && (
                               <Spinner size="tiny" />
                             )}
                             {combinedProcessingStatus[file.id || file.name] === 'completed' && (
                               <FluentTooltip content="AI analysis ready">
-                                <Play24Regular style={{ color: '#10b981' }} />
+                                <Play24Regular className={classes.successIcon} />
                               </FluentTooltip>
                             )}
                             {combinedProcessingStatus[file.id || file.name] === 'error' && (
                               <FluentTooltip content="Error in processing">
-                                <Delete24Regular style={{ color: '#ef4444' }} />
+                                <Delete24Regular className={classes.errorIcon} />
                               </FluentTooltip>
                             )}
                           </div>
@@ -943,14 +1078,14 @@ const FileList = ({ onFileSelect, refreshTrigger, selectedFile }) => {
     <div className={classes.root}>
       <div className={classes.headerBar}>
         <div className={classes.title}>
-          <Folder24Regular style={{ width: 18, height: 18, color: '#60a5fa' }} />
+          <Folder24Regular className={classes.headerFolderIcon} />
           <span>Uploaded Files</span>
           {files.length > 0 && (
             <CounterBadge 
               count={files.length}
               size="small"
               color="brand"
-              style={{ marginLeft: 4 }}
+              className={classes.titleBadgeSpacing}
             />
           )}
         </div>
@@ -979,7 +1114,7 @@ const FileList = ({ onFileSelect, refreshTrigger, selectedFile }) => {
       <div className={classes.selectionSection}>
         {/* Selection info and controls */}
         <div className={classes.selectionRow}>
-          <span style={{ color: '#6a6d70' }}>
+          <span className={classes.selectionText}>
             {selectedCount} selected ({selectedAnalyzedCount} analyzed)
           </span>
           <div className={classes.actionButtons}>
@@ -1000,7 +1135,7 @@ const FileList = ({ onFileSelect, refreshTrigger, selectedFile }) => {
         
         {/* Batch action buttons */}
         {selectedCount > 0 && (
-          <div style={{ display: 'flex', gap: 8, justifyContent: 'flex-end', alignItems: 'center' }}>
+          <div className={classes.batchActions}>
             {selectedAnalyzedCount > 0 && (
               <FluentButton
                 appearance="outline"
