@@ -19,7 +19,7 @@ import { apiUrl } from '../config';
 import { makeStyles, shorthands, tokens } from '@fluentui/react-components';
 
 // Helper function to get appropriate icon for file type
-const getFileIcon = (filename) => {
+const getFileIcon = (filename, classes) => {
   // Extract extension from filename
   const fileExtension = filename && typeof filename === 'string' 
     ? filename.split('.').pop().toLowerCase() 
@@ -27,20 +27,20 @@ const getFileIcon = (filename) => {
   
   switch(fileExtension) {
     case 'pdf':
-      return <DocumentPdf16Regular style={{ width: 16, height: 16, color: tokens.colorPaletteRedForeground1 }} />;
+      return <DocumentPdf16Regular className={`${classes.icon16} ${classes.iconError}`} />;
     case 'jpg':
     case 'jpeg':
     case 'png':
     case 'gif':
     case 'bmp':
-      return <Image16Regular style={{ width: 16, height: 16, color: tokens.colorPaletteBlueForeground1 }} />;
+      return <Image16Regular className={`${classes.icon16} ${classes.iconInfo}`} />;
     case 'doc':
     case 'docx':
-      return <DocumentText16Regular style={{ width: 16, height: 16, color: tokens.colorBrandForeground1 }} />;
+      return <DocumentText16Regular className={`${classes.icon16} ${classes.iconBrand}`} />;
     case 'txt':
-      return <DocumentText16Regular style={{ width: 16, height: 16, color: tokens.colorNeutralForeground3 }} />;
+      return <DocumentText16Regular className={`${classes.icon16} ${classes.iconNeutral}`} />;
     default:
-      return <Document16Regular style={{ width: 16, height: 16, color: tokens.colorNeutralForegroundDisabled }} />;
+      return <Document16Regular className={`${classes.icon16} ${classes.iconDisabled}`} />;
   }
 };
 
@@ -65,6 +65,48 @@ const useStyles = makeStyles({
     ...shorthands.borderRadius('16px'),
     backgroundColor: tokens.colorNeutralBackground1,
     ...shorthands.border('1px', 'solid', tokens.colorNeutralStroke1),
+  },
+  // Icon sizes
+  icon16: {
+    width: 16,
+    height: 16,
+  },
+  icon20: {
+    width: 20,
+    height: 20,
+  },
+  icon24: {
+    width: 24,
+    height: 24,
+  },
+  // Icon color semantics
+  iconBrand: {
+    color: tokens.colorBrandForeground1,
+  },
+  iconInfo: {
+    color: tokens.colorPaletteBlueForeground1,
+  },
+  iconError: {
+    color: tokens.colorPaletteRedForeground1,
+  },
+  iconSuccess: {
+    color: tokens.colorPaletteGreenForeground1,
+  },
+  iconNeutral: {
+    color: tokens.colorNeutralForeground3,
+  },
+  iconDisabled: {
+    color: tokens.colorNeutralForegroundDisabled,
+  },
+  statusIcon: {
+    marginRight: tokens.spacingHorizontalXS,
+  },
+  heroIcon: {
+    width: 44,
+    height: 44,
+    color: tokens.colorPaletteBlueForeground2,
+    marginBottom: tokens.spacingVerticalM,
+    opacity: 0.9,
   },
   center: {
     textAlign: 'center',
@@ -332,7 +374,7 @@ const FileUpload = ({ onUploadSuccess }) => {
   return (
     <div className={classes.card}>
       <div style={{ textAlign: 'center' }}>
-        <CloudArrowUp24Regular style={{ width: 44, height: 44, color: tokens.colorPaletteBlueForeground2, marginBottom: tokens.spacingVerticalM, opacity: 0.9 }} />
+        <CloudArrowUp24Regular className={classes.heroIcon} />
         <div className={classes.heroTitle}>Upload Files</div>
         <div id={instructionsId} className={classes.heroSubtext}>Drag and drop files here or click to browse</div>
         
@@ -374,7 +416,7 @@ const FileUpload = ({ onUploadSuccess }) => {
             {filesWithCustomers.map((fileData, index) => (
               <div key={index} className={classes.fileCard}>
                 <div style={{ display: 'flex', alignItems: 'center', marginBottom: tokens.spacingVerticalL }}>
-                  {getFileIcon(fileData.file.name)}
+                  {getFileIcon(fileData.file.name, classes)}
                   <div style={{ marginLeft: tokens.spacingHorizontalM, flex: 1, minWidth: 0 }}>
                     <div className={classes.fileTitle}>{fileData.file.name}</div>
                     <div className={classes.fileMeta}>{formatFileSize(fileData.file.size)}</div>
@@ -396,7 +438,7 @@ const FileUpload = ({ onUploadSuccess }) => {
                       {customers.map((customer) => (
                         <Option key={customer} text={customer} value={customer}>
                           <span style={{ display: 'flex', alignItems: 'center', gap: tokens.spacingHorizontalS }}>
-                            <Building16Regular style={{ width: 16, height: 16, color: tokens.colorBrandForeground1 }} />
+                            <Building16Regular className={`${classes.icon16} ${classes.iconBrand}`} />
                             {customer}
                           </span>
                         </Option>
@@ -482,10 +524,10 @@ const FileUpload = ({ onUploadSuccess }) => {
                 </div>
                 <div style={{ display: 'flex', alignItems: 'center' }}>
                   {fileInfo.status === 'success' && (
-                    <CheckmarkCircle16Regular style={{ width: 16, height: 16, color: tokens.colorPaletteGreenForeground1, marginRight: tokens.spacingHorizontalXS }} />
+                    <CheckmarkCircle16Regular className={`${classes.icon16} ${classes.iconSuccess} ${classes.statusIcon}`} />
                   )}
                   {fileInfo.status === 'error' && (
-                    <ErrorCircle16Regular style={{ width: 16, height: 16, color: tokens.colorPaletteRedForeground1, marginRight: tokens.spacingHorizontalXS }} />
+                    <ErrorCircle16Regular className={`${classes.icon16} ${classes.iconError} ${classes.statusIcon}`} />
                   )}
                   <Tag
                     size="small"

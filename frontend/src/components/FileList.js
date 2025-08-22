@@ -3,7 +3,7 @@ import { Button as FluentButton, Spinner, Tooltip as FluentTooltip, CounterBadge
 import { makeStyles } from '@griffel/react';
 import { Alert as FluentAlert } from '@fluentui/react-alert';
 import { Toaster, useToastController, Toast, ToastTitle } from '@fluentui/react-toast';
-import { Delete24Regular, Play24Regular, Document24Regular, DocumentPdf24Regular, Image24Regular, TextDescription24Regular, ChevronDown24Regular, Building24Regular, Folder24Regular } from '@fluentui/react-icons';
+import { Delete24Regular, Play24Regular, Document24Regular, ChevronDown24Regular, Building24Regular, Folder24Regular, Document16Regular, DocumentPdf16Regular, Image16Regular, TextDescription16Regular } from '@fluentui/react-icons';
  
  
 // Replaced MUI Button with Fluent UI Button
@@ -29,6 +29,35 @@ const useStyles = makeStyles({
     flexDirection: 'column',
     height: '100%',
     gap: tokens.spacingHorizontalM,
+  },
+  // Icon sizes
+  icon16: {
+    width: 16,
+    height: 16,
+  },
+  icon20: {
+    width: 20,
+    height: 20,
+  },
+  icon24: {
+    width: 24,
+    height: 24,
+  },
+  // Icon color semantics
+  iconBrand: {
+    color: tokens.colorBrandForeground1,
+  },
+  iconInfo: {
+    color: tokens.colorPaletteBlueForeground1,
+  },
+  iconError: {
+    color: tokens.colorPaletteRedForeground1,
+  },
+  iconNeutral: {
+    color: tokens.colorNeutralForeground3,
+  },
+  iconDisabled: {
+    color: tokens.colorNeutralForegroundDisabled,
   },
   headerBar: {
     display: 'flex',
@@ -116,8 +145,8 @@ const useStyles = makeStyles({
     textAlign: 'center',
   },
   headerFolderIcon: {
-    width: 18,
-    height: 18,
+    width: 20,
+    height: 20,
     color: tokens.colorBrandForeground1,
   },
   titleBadgeSpacing: {
@@ -143,8 +172,8 @@ const useStyles = makeStyles({
   },
   leadingIcon: {
     marginRight: tokens.spacingHorizontalM,
-    width: 18,
-    height: 18,
+    width: 20,
+    height: 20,
     color: tokens.colorBrandForeground1,
   },
   customerName: {
@@ -221,11 +250,6 @@ const useStyles = makeStyles({
     width: 16,
     height: 16,
   },
-  fileTypeIconMuted: {
-    width: 16,
-    height: 16,
-    opacity: 0.6,
-  },
 });
 
 // Helper function to get appropriate icon for file type
@@ -235,25 +259,22 @@ const getFileIcon = (filename, classes) => {
     ? filename.split('.').pop().toLowerCase() 
     : '';
   
-  // Debug the extension extraction
-  console.log(`File: ${filename}, Extension detected: ${fileExtension}`);
-  
   switch(fileExtension) {
     case 'pdf':
-      return <DocumentPdf24Regular className={classes.fileTypeIcon} />;
+      return <DocumentPdf16Regular className={`${classes.fileTypeIcon} ${classes.iconError}`} />;
     case 'jpg':
     case 'jpeg':
     case 'png':
     case 'gif':
     case 'bmp':
-      return <Image24Regular className={classes.fileTypeIcon} />;
+      return <Image16Regular className={`${classes.fileTypeIcon} ${classes.iconInfo}`} />;
     case 'doc':
     case 'docx':
-      return <Document24Regular className={classes.fileTypeIcon} />;
+      return <Document16Regular className={`${classes.fileTypeIcon} ${classes.iconBrand}`} />;
     case 'txt':
-      return <TextDescription24Regular className={classes.fileTypeIcon} />;
+      return <TextDescription16Regular className={`${classes.fileTypeIcon} ${classes.iconNeutral}`} />;
     default:
-      return <Document24Regular className={classes.fileTypeIconMuted} />;
+      return <Document16Regular className={`${classes.fileTypeIcon} ${classes.iconDisabled}`} />;
   }
 };
 

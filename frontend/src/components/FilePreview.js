@@ -21,9 +21,9 @@ import sapLogo from '../logo/sap-3.svg';
 
 // Helper function to get appropriate file type label and icon
 const API_BASE = 'http://localhost:8001';
-const getFileTypeInfo = (fileName) => {
+const getFileTypeInfo = (fileName, classes) => {
   if (!fileName || typeof fileName !== 'string') {
-    return { icon: <Document24Regular />, label: 'UNKNOWN', color: 'default' };
+    return { icon: <Document24Regular className={`${classes.icon20} ${classes.iconNeutral}`} />, label: 'UNKNOWN', color: 'default' };
   }
   
   // Extract extension safely
@@ -34,40 +34,20 @@ const getFileTypeInfo = (fileName) => {
   
   switch(extension) {
     case 'pdf':
-      return { 
-        icon: <DocumentPdf24Regular style={{ color: '#F44336' }} />, 
-        label: 'PDF',
-        color: 'error' 
-      };
+      return { icon: <DocumentPdf24Regular className={`${classes.icon20} ${classes.iconError}`} />, label: 'PDF', color: 'error' };
     case 'jpg':
     case 'jpeg':
     case 'png':
     case 'gif':
     case 'bmp':
-      return { 
-        icon: <Image24Regular style={{ color: '#29B6F6' }} />, 
-        label: 'IMAGE',
-        color: 'info' 
-      };
+      return { icon: <Image24Regular className={`${classes.icon20} ${classes.iconInfo}`} />, label: 'IMAGE', color: 'info' };
     case 'doc':
     case 'docx':
-      return { 
-        icon: <Document24Regular style={{ color: '#90CAF9' }} />, 
-        label: 'DOCUMENT',
-        color: 'primary' 
-      };
+      return { icon: <Document24Regular className={`${classes.icon20} ${classes.iconBrand}`} />, label: 'DOCUMENT', color: 'primary' };
     case 'txt':
-      return { 
-        icon: <TextDescription24Regular style={{ color: '#CE93D8' }} />, 
-        label: 'TEXT',
-        color: 'secondary' 
-      };
+      return { icon: <TextDescription24Regular className={`${classes.icon20} ${classes.iconNeutral}`} />, label: 'TEXT', color: 'secondary' };
     default:
-      return { 
-        icon: <Document24Regular style={{ color: '#9E9E9E' }} />, 
-        label: extension ? extension.toUpperCase() : 'FILE',
-        color: 'default' 
-      };
+      return { icon: <Document24Regular className={`${classes.icon20} ${classes.iconNeutral}`} />, label: extension ? extension.toUpperCase() : 'FILE', color: 'default' };
   }
 };
 
@@ -107,6 +87,16 @@ const useStyles = makeStyles({
     alignItems: 'center',
     gap: tokens.spacingHorizontalXS,
   },
+  // Icon sizing and colors
+  icon16: { width: 16, height: 16 },
+  icon20: { width: 20, height: 20 },
+  icon24: { width: 24, height: 24 },
+  iconBrand: { color: tokens.colorBrandForeground1 },
+  iconInfo: { color: tokens.colorPaletteBlueForeground2 },
+  iconError: { color: tokens.colorPaletteRedForeground2 },
+  iconNeutral: { color: tokens.colorNeutralForeground3 },
+  headerIcon: { marginRight: tokens.spacingHorizontalS, color: tokens.colorBrandForeground1 },
+  headerTextBrand: { fontWeight: tokens.fontWeightSemibold, color: tokens.colorBrandForeground1 },
   accordionSection: {
     marginTop: tokens.spacingVerticalL,
     marginBottom: tokens.spacingVerticalL,
@@ -214,7 +204,7 @@ const useStyles = makeStyles({
     fontSize: tokens.fontSizeBase200,
   },
   mdLink: {
-    color: '#2563eb',
+    color: tokens.colorBrandForeground1,
     textDecoration: 'underline',
     fontWeight: tokens.fontWeightMedium,
   },
@@ -279,6 +269,11 @@ const useStyles = makeStyles({
     display: 'flex',
     alignItems: 'stretch',
     justifyContent: 'flex-start',
+  },
+  noFileIcon: {
+    fontSize: 64,
+    color: tokens.colorNeutralForeground3,
+    marginBottom: 8,
   },
   analysisArea: {
     alignItems: 'stretch',
