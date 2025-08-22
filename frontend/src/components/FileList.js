@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useCallback } from 'react';
-import { Button as FluentButton, Spinner, Tooltip as FluentTooltip, CounterBadge, Accordion as FluentAccordion, AccordionItem, AccordionHeader, AccordionPanel, Checkbox, tokens } from '@fluentui/react-components';
+import { Button as FluentButton, Spinner, ProgressBar, Tooltip as FluentTooltip, CounterBadge, Accordion as FluentAccordion, AccordionItem, AccordionHeader, AccordionPanel, Checkbox, tokens } from '@fluentui/react-components';
 import { makeStyles } from '@griffel/react';
 import { Alert as FluentAlert } from '@fluentui/react-alert';
 import { Toaster, useToastController, Toast, ToastTitle } from '@fluentui/react-toast';
@@ -258,6 +258,83 @@ const useStyles = makeStyles({
   fileTypeIcon: {
     width: 16,
     height: 16,
+  },
+  // Loading skeletons
+  skeletonContainer: {
+    marginTop: tokens.spacingVerticalM,
+    display: 'flex',
+    flexDirection: 'column',
+    gap: tokens.spacingVerticalXS,
+    width: '100%',
+    paddingLeft: tokens.spacingHorizontalS,
+    paddingRight: tokens.spacingHorizontalS,
+  },
+  skeletonRow: {
+    display: 'flex',
+    alignItems: 'center',
+    gap: tokens.spacingHorizontalS,
+    padding: tokens.spacingHorizontalS,
+    marginInline: tokens.spacingHorizontalXS,
+    minHeight: 44,
+    borderRadius: tokens.borderRadiusMedium,
+    backgroundColor: tokens.colorNeutralBackground3,
+  },
+  skeletonCheckbox: {
+    width: 16,
+    height: 16,
+    borderRadius: tokens.borderRadiusSmall,
+    backgroundColor: tokens.colorNeutralBackground4,
+  },
+  skeletonIcon: {
+    width: 16,
+    height: 16,
+    borderRadius: tokens.borderRadiusSmall,
+    backgroundColor: tokens.colorNeutralBackground4,
+  },
+  skeletonTextBlock: {
+    flex: 1,
+    display: 'flex',
+    flexDirection: 'column',
+    gap: tokens.spacingVerticalXXS,
+  },
+  skeletonLine: {
+    height: 8,
+    borderRadius: 4,
+    backgroundColor: tokens.colorNeutralBackground4,
+  },
+  skeletonLineLong: {
+    width: '60%',
+  },
+  skeletonLineShort: {
+    width: '35%',
+  },
+  // Unified empty placeholder pattern
+  placeholderTitle: {
+    fontWeight: tokens.fontWeightSemibold,
+    color: tokens.colorNeutralForeground2,
+    fontSize: tokens.fontSizeBase500,
+    marginBottom: tokens.spacingVerticalXS,
+  },
+  placeholderSubtext: {
+    color: tokens.colorNeutralForeground3,
+    fontSize: tokens.fontSizeBase300,
+    marginBottom: tokens.spacingVerticalS,
+    textAlign: 'center',
+  },
+  placeholderFrame: {
+    border: `1px dashed ${tokens.colorNeutralStroke1}`,
+    borderRadius: tokens.borderRadiusMedium,
+    padding: tokens.spacingHorizontalL,
+    minHeight: '120px',
+    display: 'flex',
+    alignItems: 'center',
+    justifyContent: 'center',
+    width: '100%',
+    maxWidth: 520,
+  },
+  placeholderMuted: {
+    color: tokens.colorNeutralForeground3,
+    fontSize: tokens.fontSizeBase200,
   },
 });
 
@@ -663,7 +740,33 @@ const FileList = ({ onFileSelect, refreshTrigger, selectedFile }) => {
   if (isLoading) {
     content = (
       <div className={classes.loadingCenter}>
-        <Spinner />
+        <ProgressBar aria-label="Loading files" />
+        <div className={classes.skeletonContainer} aria-hidden="true">
+          <div className={classes.skeletonRow}>
+            <div className={classes.skeletonCheckbox} />
+            <div className={classes.skeletonIcon} />
+            <div className={classes.skeletonTextBlock}>
+              <div className={`${classes.skeletonLine} ${classes.skeletonLineLong}`} />
+              <div className={`${classes.skeletonLine} ${classes.skeletonLineShort}`} />
+            </div>
+          </div>
+          <div className={classes.skeletonRow}>
+            <div className={classes.skeletonCheckbox} />
+            <div className={classes.skeletonIcon} />
+            <div className={classes.skeletonTextBlock}>
+              <div className={`${classes.skeletonLine} ${classes.skeletonLineLong}`} />
+              <div className={`${classes.skeletonLine} ${classes.skeletonLineShort}`} />
+            </div>
+          </div>
+          <div className={classes.skeletonRow}>
+            <div className={classes.skeletonCheckbox} />
+            <div className={classes.skeletonIcon} />
+            <div className={classes.skeletonTextBlock}>
+              <div className={`${classes.skeletonLine} ${classes.skeletonLineLong}`} />
+              <div className={`${classes.skeletonLine} ${classes.skeletonLineShort}`} />
+            </div>
+          </div>
+        </div>
       </div>
     );
   } else if (error) {
@@ -690,8 +793,10 @@ const FileList = ({ onFileSelect, refreshTrigger, selectedFile }) => {
     content = (
       <div className={classes.emptyState}>
         <Document24Regular className={classes.emptyIcon} />
-        <div className={classes.emptyText}>
-          No files uploaded yet
+        <div className={classes.placeholderTitle}>No files uploaded</div>
+        <div className={classes.placeholderSubtext}>Upload files to see them listed here.</div>
+        <div className={classes.placeholderFrame}>
+          <div className={classes.placeholderMuted}>Your uploaded files will appear here.</div>
         </div>
       </div>
     );

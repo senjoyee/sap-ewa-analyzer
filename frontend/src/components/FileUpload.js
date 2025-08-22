@@ -177,6 +177,9 @@ const useStyles = makeStyles({
     color: tokens.colorPaletteRedForeground1,
     fontSize: tokens.fontSizeBase200,
   },
+  controlFullWidth: {
+    width: '100%',
+  },
 });
 
 const FileUpload = ({ onUploadSuccess }) => {
@@ -425,11 +428,13 @@ const FileUpload = ({ onUploadSuccess }) => {
                 
                 <div>
                   <Field
+                    label="Customer"
+                    hint="Required"
                     validationState={fileData.error ? 'error' : undefined}
                     validationMessage={fileData.error}
                   >
                     <Combobox
-                      style={{ width: '100%' }}
+                      className={classes.controlFullWidth}
                       placeholder="Choose a customer..."
                       selectedOptions={fileData.customerName ? [fileData.customerName] : []}
                       onOptionSelect={(e, data) => handleCustomerNameChange(index, data.optionValue ?? '')}

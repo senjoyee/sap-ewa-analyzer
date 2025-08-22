@@ -8,7 +8,7 @@ import {
   Bot24Regular,
   Person24Regular,
 } from '@fluentui/react-icons';
-import { Button, Textarea, Spinner, makeStyles, shorthands, tokens } from '@fluentui/react-components';
+import { Button, Textarea, Spinner, Field, makeStyles, shorthands, tokens } from '@fluentui/react-components';
 import { apiUrl } from '../config';
 
 const useStyles = makeStyles({
@@ -133,6 +133,9 @@ const useStyles = makeStyles({
   },
   inputArea: {
     flexGrow: 1,
+  },
+  controlFullWidth: {
+    width: '100%',
   },
 });
 
@@ -355,15 +358,17 @@ const handleSendMessage = async () => {
       </div>
 
       <div className={classes.inputContainer}>
-        <Textarea
-          className={classes.inputArea}
-          placeholder="Ask about this document..."
-          value={inputValue}
-          onChange={(e, data) => setInputValue(data.value)}
-          onKeyDown={handleKeyPress}
-          disabled={loading}
-          resize="none"
-        />
+        <Field label="Message" hint="Press Enter to send" className={classes.inputArea}>
+          <Textarea
+            className={classes.controlFullWidth}
+            placeholder="Ask about this document..."
+            value={inputValue}
+            onChange={(e, data) => setInputValue(data.value)}
+            onKeyDown={handleKeyPress}
+            disabled={loading}
+            resize="none"
+          />
+        </Field>
         <Button
           aria-label="Send message"
           onClick={handleSendMessage}
