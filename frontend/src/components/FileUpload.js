@@ -12,18 +12,21 @@ import MenuItem from '@mui/material/MenuItem';
 import FormLabel from '@mui/material/FormLabel';
 import LinearProgress from '@mui/material/LinearProgress';
 import Chip from '@mui/material/Chip';
-import CheckCircleIcon from '@mui/icons-material/CheckCircle';
-import ErrorIcon from '@mui/icons-material/Error';
-import BusinessIcon from '@mui/icons-material/Business';
 import Divider from '@mui/material/Divider';
 import Badge from '@mui/material/Badge';
-import { Add24Regular, Dismiss24Regular, Dismiss16Regular, CloudArrowUp24Regular } from '@fluentui/react-icons';
-// File type icons for getFileIcon function
-import PictureAsPdfIcon from '@mui/icons-material/PictureAsPdf';
-import ImageIcon from '@mui/icons-material/Image';
-import DescriptionIcon from '@mui/icons-material/Description';
-import TextSnippetIcon from '@mui/icons-material/TextSnippet';
-import InsertDriveFileIcon from '@mui/icons-material/InsertDriveFile';
+import { 
+  Add24Regular, 
+  Dismiss24Regular, 
+  Dismiss16Regular, 
+  CloudArrowUp24Regular,
+  CheckmarkCircle16Regular,
+  ErrorCircle16Regular,
+  Building16Regular,
+  DocumentPdf16Regular,
+  Image16Regular,
+  DocumentText16Regular,
+  Document16Regular,
+} from '@fluentui/react-icons';
 import { useTheme } from '../contexts/ThemeContext';
 import { apiUrl } from '../config';
 import { makeStyles, shorthands, tokens } from '@fluentui/react-components';
@@ -37,20 +40,20 @@ const getFileIcon = (filename) => {
   
   switch(fileExtension) {
     case 'pdf':
-      return <PictureAsPdfIcon color="error" fontSize="small" />;
+      return <DocumentPdf16Regular style={{ width: 16, height: 16, color: tokens.colorPaletteRedForeground1 }} />;
     case 'jpg':
     case 'jpeg':
     case 'png':
     case 'gif':
     case 'bmp':
-      return <ImageIcon color="info" fontSize="small" />;
+      return <Image16Regular style={{ width: 16, height: 16, color: tokens.colorPaletteBlueForeground1 }} />;
     case 'doc':
     case 'docx':
-      return <DescriptionIcon color="primary" fontSize="small" />;
+      return <DocumentText16Regular style={{ width: 16, height: 16, color: tokens.colorBrandForeground1 }} />;
     case 'txt':
-      return <TextSnippetIcon color="secondary" fontSize="small" />;
+      return <DocumentText16Regular style={{ width: 16, height: 16, color: tokens.colorNeutralForeground3 }} />;
     default:
-      return <InsertDriveFileIcon color="disabled" fontSize="small" />;
+      return <Document16Regular style={{ width: 16, height: 16, color: tokens.colorNeutralForegroundDisabled }} />;
   }
 };
 
@@ -447,12 +450,12 @@ const FileUpload = ({ onUploadSuccess }) => {
                     displayEmpty
                   >
                     <MenuItem value="" disabled sx={{ fontStyle: 'italic', opacity: 0.7 }}>
-                      <BusinessIcon sx={{ mr: 1, fontSize: '1rem', color: '#999' }} />
+                      <Building16Regular style={{ marginRight: 8, width: 16, height: 16, color: tokens.colorNeutralForeground3 }} />
                       Choose a customer...
                     </MenuItem>
                     {customers.map((customer) => (
                       <MenuItem key={customer} value={customer}>
-                        <BusinessIcon sx={{ mr: 1, fontSize: '1rem', color: '#1976d2' }} />
+                        <Building16Regular style={{ marginRight: 8, width: 16, height: 16, color: tokens.colorBrandForeground1 }} />
                         {customer}
                       </MenuItem>
                     ))}
@@ -538,8 +541,12 @@ const FileUpload = ({ onUploadSuccess }) => {
                   {fileInfo.name}
                 </Typography>
                 <Box sx={{ display: 'flex', alignItems: 'center' }}>
-                  {fileInfo.status === 'success' && <CheckCircleIcon sx={{ fontSize: 16, color: 'success.main', mr: 0.5 }} />}
-                  {fileInfo.status === 'error' && <ErrorIcon sx={{ fontSize: 16, color: 'error.main', mr: 0.5 }} />}
+                  {fileInfo.status === 'success' && (
+                    <CheckmarkCircle16Regular style={{ width: 16, height: 16, color: tokens.colorPaletteGreenForeground1, marginRight: 4 }} />
+                  )}
+                  {fileInfo.status === 'error' && (
+                    <ErrorCircle16Regular style={{ width: 16, height: 16, color: tokens.colorPaletteRedForeground1, marginRight: 4 }} />
+                  )}
                   <Chip
                     label={fileInfo.status === 'uploading' ? `${fileInfo.progress}%` : fileInfo.status}
                     size="small"
