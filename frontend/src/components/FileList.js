@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { Button as FluentButton, Spinner, ProgressBar, Tooltip as FluentTooltip, CounterBadge, Accordion as FluentAccordion, AccordionItem, AccordionHeader, AccordionPanel, Checkbox, tokens } from '@fluentui/react-components';
-import { makeStyles } from '@griffel/react';
+import { makeStyles, mergeClasses } from '@griffel/react';
 import { Alert as FluentAlert } from '@fluentui/react-alert';
 import { Toaster, useToastController, Toast, ToastTitle } from '@fluentui/react-toast';
 import { Delete24Regular, Play24Regular, Document24Regular, ChevronDown20Regular, Building24Regular, Folder24Regular, Document16Regular, DocumentPdf16Regular, Image16Regular, TextDescription16Regular, Info16Regular, Warning16Regular, ErrorCircle16Regular, CheckmarkCircle16Regular } from '@fluentui/react-icons';
@@ -28,9 +28,11 @@ const useStyles = makeStyles({
     display: 'flex',
     flexDirection: 'column',
     height: '100%',
-    gap: tokens.spacingHorizontalM,
+    gap: tokens.spacingHorizontalL,
     minWidth: 0,
     minHeight: 0, // allow flex children to shrink and become scrollable
+    padding: tokens.spacingVerticalM,
+    background: `linear-gradient(180deg, ${tokens.colorNeutralBackground1} 0%, ${tokens.colorNeutralBackground1Hover} 100%)`,
   },
   skipLink: {
     position: 'absolute',
@@ -83,35 +85,49 @@ const useStyles = makeStyles({
     display: 'flex',
     justifyContent: 'space-between',
     alignItems: 'center',
-    marginBottom: tokens.spacingVerticalS,
+    marginBottom: tokens.spacingVerticalM,
     flexWrap: 'wrap',
     gap: tokens.spacingHorizontalS,
+    padding: tokens.spacingVerticalM,
+    backgroundColor: tokens.colorNeutralBackground1,
+    borderRadius: tokens.borderRadiusLarge,
+    boxShadow: tokens.shadow8,
+    border: `1px solid ${tokens.colorNeutralStroke1}`,
+    background: `linear-gradient(135deg, ${tokens.colorNeutralBackground1} 0%, ${tokens.colorSubtleBackground} 100%)`,
     '@media (max-width: 600px)': {
       flexDirection: 'column',
       alignItems: 'stretch',
-      rowGap: tokens.spacingVerticalXS,
+      rowGap: tokens.spacingVerticalS,
+      padding: tokens.spacingVerticalS,
     },
   },
   title: {
-    fontWeight: tokens.fontWeightSemibold,
+    fontWeight: tokens.fontWeightBold,
     color: tokens.colorNeutralForeground1,
-    fontSize: tokens.fontSizeBase200,
+    fontSize: tokens.fontSizeBase300,
     display: 'flex',
     alignItems: 'center',
     gap: tokens.spacingHorizontalS,
     minWidth: 0,
     overflowWrap: 'anywhere',
+    letterSpacing: '-0.02em',
   },
   actionButtons: {
     display: 'flex',
-    gap: tokens.spacingHorizontalXS,
+    gap: tokens.spacingHorizontalS,
     flexWrap: 'wrap',
+    alignItems: 'center',
   },
   selectionSection: {
     display: 'flex',
     flexDirection: 'column',
     gap: tokens.spacingVerticalS,
-    marginBottom: tokens.spacingVerticalS,
+    marginBottom: tokens.spacingVerticalM,
+    padding: tokens.spacingVerticalM,
+    backgroundColor: tokens.colorNeutralBackground1,
+    borderRadius: tokens.borderRadiusMedium,
+    border: `1px solid ${tokens.colorNeutralStroke2}`,
+    boxShadow: tokens.shadow4,
   },
   selectionRow: {
     display: 'flex',
@@ -121,26 +137,33 @@ const useStyles = makeStyles({
     rowGap: tokens.spacingVerticalXS,
   },
   selectionText: {
-    color: tokens.colorNeutralForeground3,
-    fontSize: tokens.fontSizeBase100,
+    color: tokens.colorNeutralForeground2,
+    fontSize: tokens.fontSizeBase200,
+    fontWeight: tokens.fontWeightMedium,
   },
   batchActions: {
     display: 'flex',
     gap: tokens.spacingHorizontalS,
     justifyContent: 'flex-end',
     alignItems: 'center',
+    padding: tokens.spacingVerticalS,
+    backgroundColor: tokens.colorSubtleBackground,
+    borderRadius: tokens.borderRadiusMedium,
+    border: `1px solid ${tokens.colorNeutralStroke2}`,
+    marginTop: tokens.spacingVerticalS,
   },
   listContainer: {
     // Let the sidebar (parent) own scrolling to avoid nested scrollbars
     flex: 'initial',
     overflowY: 'visible',
     overflowX: 'visible',
-    backgroundColor: tokens.colorNeutralBackground2,
+    backgroundColor: tokens.colorNeutralBackground1,
     border: `1px solid ${tokens.colorNeutralStroke1}`,
-    borderRadius: tokens.borderRadiusMedium,
-    boxShadow: tokens.shadow4,
+    borderRadius: tokens.borderRadiusLarge,
+    boxShadow: tokens.shadow16,
     minHeight: 'auto',
     height: 'auto',
+    background: `linear-gradient(180deg, ${tokens.colorNeutralBackground1} 0%, ${tokens.colorNeutralBackground2} 100%)`,
   },
   loadingCenter: {
     display: 'flex',
@@ -156,41 +179,60 @@ const useStyles = makeStyles({
     borderRadius: tokens.borderRadiusMedium,
   },
   emptyState: {
-    padding: tokens.spacingVerticalS,
+    padding: tokens.spacingVerticalL,
     display: 'flex',
     flexDirection: 'column',
     alignItems: 'center',
-    paddingTop: tokens.spacingVerticalL,
-    paddingBottom: tokens.spacingVerticalL,
-    minHeight: 120,
+    paddingTop: tokens.spacingVerticalXXL,
+    paddingBottom: tokens.spacingVerticalXXL,
+    minHeight: 200,
+    background: `linear-gradient(135deg, ${tokens.colorNeutralBackground1} 0%, ${tokens.colorSubtleBackground} 100%)`,
+    borderRadius: tokens.borderRadiusLarge,
+    border: `2px dashed ${tokens.colorNeutralStroke2}`,
   },
   emptyIcon: {
-    width: 40,
-    height: 40,
-    opacity: 0.6,
-    marginBottom: tokens.spacingVerticalS,
+    width: 48,
+    height: 48,
+    opacity: 0.7,
+    marginBottom: tokens.spacingVerticalM,
+    color: tokens.colorNeutralForeground3,
+    filter: 'drop-shadow(0 2px 4px rgba(0,0,0,0.1))',
   },
   emptyText: {
-    color: tokens.colorNeutralForeground3,
-    fontSize: tokens.fontSizeBase100,
+    color: tokens.colorNeutralForeground2,
+    fontSize: tokens.fontSizeBase300,
     textAlign: 'center',
+    fontWeight: tokens.fontWeightMedium,
+    lineHeight: tokens.lineHeightBase300,
   },
   headerFolderIcon: {
-    width: 20,
-    height: 20,
+    width: 22,
+    height: 22,
     color: tokens.colorBrandForeground1,
+    filter: 'drop-shadow(0 1px 2px rgba(0,0,0,0.1))',
   },
   titleBadgeSpacing: {
     marginLeft: tokens.spacingHorizontalXS,
   },
   accordionHeader: {
-    minHeight: 44,
-    backgroundColor: tokens.colorNeutralBackground2,
-    borderBottom: `1px solid ${tokens.colorNeutralStroke1}`,
-    transition: 'background-color 150ms ease, border-color 150ms ease',
+    minHeight: 52,
+    backgroundColor: tokens.colorNeutralBackground1,
+    borderBottom: `1px solid ${tokens.colorNeutralStroke2}`,
+    borderRadius: `${tokens.borderRadiusMedium} ${tokens.borderRadiusMedium} 0 0`,
+    transition: 'all 200ms cubic-bezier(0.4, 0, 0.2, 1)',
+    background: `linear-gradient(135deg, ${tokens.colorNeutralBackground1} 0%, ${tokens.colorSubtleBackground} 100%)`,
+    boxShadow: `0 1px 3px ${tokens.colorNeutralShadowAmbient}`,
     selectors: {
-      '&:hover': { backgroundColor: tokens.colorSubtleBackgroundHover },
-      '&:focus-visible': { outline: `${tokens.strokeWidthThick} solid ${tokens.colorBrandStroke1}`, outlineOffset: 2 },
+      '&:hover': { 
+        backgroundColor: tokens.colorSubtleBackgroundHover,
+        transform: 'translateY(-1px)',
+        boxShadow: `0 4px 12px ${tokens.colorNeutralShadowAmbient}`,
+      },
+      '&:focus-visible': { 
+        outline: `${tokens.strokeWidthThick} solid ${tokens.colorBrandStroke1}`, 
+        outlineOffset: 2,
+        boxShadow: `0 0 0 2px ${tokens.colorBrandBackground}`,
+      },
     },
   },
   accordionHeaderContent: {
@@ -203,45 +245,92 @@ const useStyles = makeStyles({
   },
   leadingIcon: {
     marginRight: tokens.spacingHorizontalM,
-    width: 20,
-    height: 20,
+    width: 22,
+    height: 22,
     color: tokens.colorBrandForeground1,
+    filter: 'drop-shadow(0 1px 2px rgba(0,0,0,0.1))',
   },
   customerName: {
-    fontWeight: tokens.fontWeightMedium,
-    fontSize: tokens.fontSizeBase200,
+    fontWeight: tokens.fontWeightSemibold,
+    fontSize: tokens.fontSizeBase300,
     color: tokens.colorNeutralForeground1,
+    letterSpacing: '-0.01em',
   },
   headerBadge: {
     marginLeft: 'auto',
     marginRight: tokens.spacingHorizontalS,
   },
   accordionPanel: {
-    padding: tokens.spacingHorizontalXS,
+    padding: tokens.spacingHorizontalM,
     backgroundColor: tokens.colorNeutralBackground1,
-    borderTop: `1px solid ${tokens.colorNeutralStroke1}`,
+    borderTop: `1px solid ${tokens.colorNeutralStroke2}`,
+    borderRadius: `0 0 ${tokens.borderRadiusMedium} ${tokens.borderRadiusMedium}`,
+    boxShadow: `inset 0 1px 3px ${tokens.colorNeutralShadowAmbient}`,
   },
   itemWrapper: {
     position: 'relative',
-    marginBottom: tokens.spacingVerticalXS,
+    marginBottom: tokens.spacingVerticalS,
+    borderRadius: tokens.borderRadiusMedium,
+    overflow: 'hidden',
+    backgroundColor: 'transparent',
+    transition: 'all 150ms ease',
+    selectors: {
+      '&:hover': {
+        backgroundColor: tokens.colorSubtleBackgroundHover,
+        transform: 'translateX(2px)',
+        boxShadow: `0 2px 8px ${tokens.colorNeutralShadowAmbient}`,
+      },
+      '&:hover [data-checkbox]': { opacity: 1, pointerEvents: 'auto' },
+      '&:focus-within [data-checkbox]': { opacity: 1, pointerEvents: 'auto' },
+      '&:focus-within': {
+        backgroundColor: tokens.colorSubtleBackgroundHover,
+        boxShadow: `0 0 0 2px ${tokens.colorBrandStroke1}`,
+      },
+    },
   },
   itemRow: {
     display: 'flex',
     alignItems: 'center',
-    paddingLeft: tokens.spacingHorizontalXS,
+    paddingLeft: tokens.spacingHorizontalM,
     paddingRight: tokens.spacingHorizontalM,
+    paddingTop: tokens.spacingVerticalS,
+    paddingBottom: tokens.spacingVerticalS,
     marginInline: tokens.spacingHorizontalXS,
     borderRadius: tokens.borderRadiusMedium,
-    minHeight: 44,
-    transition: 'background-color 150ms ease, outline-color 150ms ease, box-shadow 150ms ease',
+    minHeight: 48,
+    transition: 'all 200ms cubic-bezier(0.4, 0, 0.2, 1)',
     cursor: 'pointer',
+    position: 'relative',
+    border: `1px solid transparent`,
     selectors: {
-      '&:hover': { backgroundColor: tokens.colorSubtleBackgroundHover },
-      '&:focus-visible': { outline: `${tokens.strokeWidthThick} solid ${tokens.colorBrandStroke1}`, outlineOffset: 2 },
+      '&:hover': { 
+        backgroundColor: 'transparent',
+        borderColor: tokens.colorNeutralStroke2,
+      },
+      '&:focus-visible': { 
+        outline: `${tokens.strokeWidthThick} solid ${tokens.colorBrandStroke1}`, 
+        outlineOffset: 2,
+        backgroundColor: tokens.colorSubtleBackgroundPressed,
+      },
+      '&:hover [data-checkbox]': { opacity: 1, pointerEvents: 'auto' },
+      '&:focus-within [data-checkbox]': { opacity: 1, pointerEvents: 'auto' },
+      '&[data-checked="true"] [data-checkbox]': { opacity: 1, pointerEvents: 'auto' },
+      '&[data-checked="true"]': {
+        backgroundColor: tokens.colorBrandBackgroundStatic,
+        borderColor: tokens.colorBrandStroke1,
+        color: tokens.colorNeutralForegroundOnBrand,
+      },
     },
   },
   itemRowSelected: {
-    backgroundColor: tokens.colorSubtleBackgroundSelected,
+    backgroundColor: tokens.colorBrandBackgroundStatic,
+    borderColor: tokens.colorBrandStroke1,
+    boxShadow: `0 0 0 1px ${tokens.colorBrandStroke1}`,
+    selectors: {
+      '& *': {
+        color: `${tokens.colorNeutralForegroundOnBrand} !important`,
+      },
+    },
   },
   itemDivider: {
     height: 1,
@@ -250,9 +339,35 @@ const useStyles = makeStyles({
     marginRight: tokens.spacingHorizontalXS,
   },
   checkboxCell: {
-    minWidth: 36,
+    minWidth: 32,
+    width: 32,
     display: 'flex',
     alignItems: 'center',
+    justifyContent: 'center',
+    opacity: 0,
+    pointerEvents: 'none',
+    transition: 'opacity 120ms ease',
+    zIndex: 1,
+    selectors: {
+      // Make the Fluent Checkbox visual indicator round
+      '& :global(.fui-Checkbox__indicator)': {
+        borderRadius: '9999px',
+        border: `1.5px solid ${tokens.colorNeutralStrokeAccessible}`,
+        backgroundColor: 'transparent',
+        width: '18px',
+        height: '18px',
+      },
+      '& :global(.fui-Checkbox__input)': { margin: 0 },
+    },
+    '@media (hover: none)': {
+      // On touch devices, always show the checkbox since hover isn't available
+      opacity: 1,
+      pointerEvents: 'auto',
+    },
+  },
+  checkboxVisible: {
+    opacity: 1,
+    pointerEvents: 'auto',
   },
   fileIconCell: {
     minWidth: 28,
@@ -263,15 +378,13 @@ const useStyles = makeStyles({
     minWidth: 0,
   },
   itemTitle: {
-    fontSize: tokens.fontSizeBase200,
+    fontSize: tokens.fontSizeBase300,
+    fontWeight: tokens.fontWeightMedium,
     color: tokens.colorNeutralForeground1,
     whiteSpace: 'nowrap',
     overflow: 'hidden',
     textOverflow: 'ellipsis',
-  },
-  itemMeta: {
-    color: tokens.colorNeutralForeground3,
-    fontSize: tokens.fontSizeBase100,
+    letterSpacing: '-0.01em',
   },
   itemStatus: {
     marginLeft: 'auto',
@@ -280,14 +393,17 @@ const useStyles = makeStyles({
     gap: tokens.spacingHorizontalXS,
   },
   successIcon: {
-    color: tokens.colorPaletteGreenForeground3,
+    color: tokens.colorPaletteGreenForeground2,
+    filter: 'drop-shadow(0 1px 1px rgba(0,0,0,0.1))',
   },
   errorIcon: {
-    color: tokens.colorPaletteRedForeground3,
+    color: tokens.colorPaletteRedForeground2,
+    filter: 'drop-shadow(0 1px 1px rgba(0,0,0,0.1))',
   },
   fileTypeIcon: {
-    width: 16,
-    height: 16,
+    width: 18,
+    height: 18,
+    filter: 'drop-shadow(0 1px 1px rgba(0,0,0,0.1))',
   },
   // Loading skeletons
   skeletonContainer: {
@@ -340,16 +456,18 @@ const useStyles = makeStyles({
   },
   // Unified empty placeholder pattern
   placeholderTitle: {
-    fontWeight: tokens.fontWeightSemibold,
-    color: tokens.colorNeutralForeground2,
-    fontSize: tokens.fontSizeBase500,
-    marginBottom: tokens.spacingVerticalXS,
+    fontWeight: tokens.fontWeightBold,
+    color: tokens.colorNeutralForeground1,
+    fontSize: tokens.fontSizeBase600,
+    marginBottom: tokens.spacingVerticalS,
+    letterSpacing: '-0.02em',
   },
   placeholderSubtext: {
-    color: tokens.colorNeutralForeground3,
-    fontSize: tokens.fontSizeBase300,
-    marginBottom: tokens.spacingVerticalS,
+    color: tokens.colorNeutralForeground2,
+    fontSize: tokens.fontSizeBase400,
+    marginBottom: tokens.spacingVerticalL,
     textAlign: 'center',
+    lineHeight: tokens.lineHeightBase400,
   },
   placeholderFrame: {
     border: `1px dashed ${tokens.colorNeutralStroke1}`,
@@ -393,19 +511,7 @@ const getFileIcon = (filename, classes) => {
       return <Document16Regular className={`${classes.fileTypeIcon} ${classes.iconDisabled}`} />;
   }
 };
-
-// Helper function to format file size
-const formatFileSize = (sizeInBytes) => {
-  if (sizeInBytes === undefined) return '';
-  
-  if (sizeInBytes < 1024) {
-    return `${sizeInBytes} B`;
-  } else if (sizeInBytes < 1024 * 1024) {
-    return `${(sizeInBytes / 1024).toFixed(1)} KB`;
-  } else {
-    return `${(sizeInBytes / (1024 * 1024)).toFixed(1)} MB`;
-  }
-};
+ 
 
 // API base is centralized in src/config.js
 
@@ -419,6 +525,7 @@ const FileList = ({ onFileSelect, refreshTrigger, selectedFile }) => {
   const [expandedCustomers, setExpandedCustomers] = useState({});
   const [combinedProcessingStatus, setCombinedProcessingStatus] = useState({}); // Track combined processing & AI analysis status
   const [selectedFiles, setSelectedFiles] = useState([]);
+  const [hoveredId, setHoveredId] = useState(null);
   const classes = useStyles();
   
   // Toast controller (Fluent UI Toast)
@@ -880,6 +987,8 @@ const FileList = ({ onFileSelect, refreshTrigger, selectedFile }) => {
                       <div
                         key={file.id || file.name}
                         className={classes.itemWrapper}
+                        onMouseEnter={() => setHoveredId(file.id || file.name)}
+                        onMouseLeave={() => setHoveredId(null)}
                       >
                         <div
                           onClick={() => {
@@ -890,6 +999,11 @@ const FileList = ({ onFileSelect, refreshTrigger, selectedFile }) => {
                           role="button"
                           tabIndex={0}
                           aria-label={`Open analysis for ${file.name}`}
+                          onMouseEnter={() => setHoveredId(file.id || file.name)}
+                          onMouseLeave={() => setHoveredId(null)}
+                          onFocus={() => setHoveredId(file.id || file.name)}
+                          onBlur={() => setHoveredId(null)}
+                          data-checked={isFileSelected(file) ? 'true' : 'false'}
                           onKeyDown={(e) => {
                             if (e.key === 'Enter' || e.key === ' ') {
                               e.preventDefault();
@@ -897,7 +1011,14 @@ const FileList = ({ onFileSelect, refreshTrigger, selectedFile }) => {
                             }
                           }}
                         >
-                          <div className={classes.checkboxCell}>
+                          <div
+                            className={classes.checkboxCell}
+                            style={{
+                              opacity: (isFileSelected(file) || hoveredId === (file.id || file.name)) ? 1 : 0,
+                              pointerEvents: (isFileSelected(file) || hoveredId === (file.id || file.name)) ? 'auto' : 'none',
+                            }}
+                            data-checkbox
+                          >
                             <Checkbox
                               checked={isFileSelected(file)}
                               onChange={(e) => {
