@@ -1073,7 +1073,7 @@ const FileList = ({ onFileSelect, refreshTrigger, selectedFile }) => {
       <div className={classes.headerBar}>
         <div className={classes.title}>
           <Folder24Regular className={classes.headerFolderIcon} />
-          <span>Uploaded Files</span>
+          <span>Uploaded files</span>
           {files.length > 0 && (
             <CounterBadge 
               count={files.length}
@@ -1095,13 +1095,13 @@ const FileList = ({ onFileSelect, refreshTrigger, selectedFile }) => {
               setExpandedCustomers(allExpanded);
             }}
           >
-            EXPAND ALL
+            Expand all
           </FluentButton>
           <FluentButton
             size="small"
             onClick={() => setExpandedCustomers({})}
           >
-            COLLAPSE ALL
+            Collapse all
           </FluentButton>
         </div>
       </div>
@@ -1116,13 +1116,13 @@ const FileList = ({ onFileSelect, refreshTrigger, selectedFile }) => {
               size="small"
               onClick={() => handleSelectAllFiles()}
             >
-              SELECT ALL
+              Select all
             </FluentButton>
             <FluentButton
               size="small"
               onClick={() => handleDeselectAllFiles()}
             >
-              DESELECT ALL
+              Deselect all
             </FluentButton>
           </div>
         </div>

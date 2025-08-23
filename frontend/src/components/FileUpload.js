@@ -425,7 +425,7 @@ const FileUpload = ({ onUploadSuccess }) => {
     <div className={classes.card}>
       <div style={{ textAlign: 'center' }}>
         <CloudArrowUp24Regular className={classes.heroIcon} />
-        <div className={classes.heroTitle}>Upload Files</div>
+        <div className={classes.heroTitle}>Upload files</div>
         <div id={instructionsId} className={classes.heroSubtext}>Click to browse</div>
         
         <input
@@ -445,7 +445,7 @@ const FileUpload = ({ onUploadSuccess }) => {
           onClick={handleAddClick}
           aria-describedby={instructionsId}
         >
-          Browse Files
+          Browse files
         </FluentButton>
       </div>
 
@@ -453,7 +453,7 @@ const FileUpload = ({ onUploadSuccess }) => {
       {showCustomerFields && filesWithCustomers.length > 0 && (
         <div className={classes.sectionCard}>
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: tokens.spacingVerticalL }}>
-            <h2 className={classes.sectionHeader} style={{ margin: 0 }}>📋 Customer Assignment</h2>
+            <h2 className={classes.sectionHeader} style={{ margin: 0 }}>📋 Customer assignment</h2>
             <Tag size="small" appearance="outline" style={{ fontWeight: 500 }}>
               {`${filesWithCustomers.length} file${filesWithCustomers.length > 1 ? 's' : ''}`}
             </Tag>
@@ -509,25 +509,24 @@ const FileUpload = ({ onUploadSuccess }) => {
               onClick={handleCancelUpload}
               icon={<Dismiss24Regular />}
             >
-              Cancel
+              Cancel upload
             </FluentButton>
             <FluentButton
-              appearance="primary"
-              size="small"
-              onClick={handleProceedWithUpload}
-              disabled={filesWithCustomers.every(f => !f.customerName.trim())}
-              icon={<CloudArrowUp24Regular />}
-            >
-              Upload Files ({filesWithCustomers.length})
-            </FluentButton>
-          </div>
+            appearance="primary"
+            size="small"
+            onClick={handleProceedWithUpload}
+            disabled={filesWithCustomers.every(f => !f.customerName.trim())}
+            icon={<CloudArrowUp24Regular />}
+          >
+            Upload files ({filesWithCustomers.length})
+          </FluentButton>
+        </div>
         </div>
       )}
-
+      
       {/* Overall status alerts */}
       {overallStatus.message && !overallStatus.error && (
         <FluentAlert 
-          intent="info" 
           style={{ marginTop: tokens.spacingVerticalL, borderRadius: 8 }}
           icon={<CloudArrowUp24Regular />}
           action={
