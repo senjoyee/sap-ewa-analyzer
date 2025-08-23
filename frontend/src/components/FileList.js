@@ -915,9 +915,6 @@ const FileList = ({ onFileSelect, refreshTrigger, selectedFile }) => {
                             <div className={classes.itemTitle}>
                               {file.name}
                             </div>
-                            <div className={classes.itemMeta}>
-                              {file.customer_name || 'Unknown'} • {file.report_date || 'Unknown date'} • {formatFileSize(file.size)}
-                            </div>
                           </div>
                           <div className={classes.itemStatus}>
                             {combinedProcessingStatus[file.id || file.name] === 'processing' && (
