@@ -44,6 +44,24 @@ const useStyles = makeStyles({
       bottom: '16px',
     },
   },
+  skipLink: {
+    position: 'absolute',
+    left: tokens.spacingHorizontalS,
+    top: tokens.spacingVerticalS,
+    backgroundColor: tokens.colorNeutralBackground1,
+    color: tokens.colorNeutralForeground1,
+    padding: tokens.spacingHorizontalS,
+    borderRadius: tokens.borderRadiusSmall,
+    boxShadow: tokens.shadow4,
+    zIndex: 2000,
+    clip: 'rect(1px, 1px, 1px, 1px)',
+    height: 1,
+    width: 1,
+    overflow: 'hidden',
+    selectors: {
+      ':focus': { clip: 'auto', height: 'auto', width: 'auto', overflow: 'visible' },
+    },
+  },
   header: {
     ...shorthands.padding('10px', '16px'),
     ...shorthands.borderBottom('1px', 'solid', tokens.colorNeutralStroke1),
@@ -340,6 +358,7 @@ const handleSendMessage = async () => {
 
   return (
     <div className={classes.chatContainer} role="dialog" aria-label="Document Assistant chat">
+      <a href="#documentchat-input" className={classes.skipLink}>Skip to message input</a>
       <div className={classes.header}>
         <div className={classes.headerLeft}>
           <Bot24Regular />
@@ -354,7 +373,7 @@ const handleSendMessage = async () => {
         />
       </div>
 
-      <div className={classes.messages}>
+      <div className={classes.messages} role="region" aria-label="Chat messages" tabIndex={-1}>
         {messages.length === 0 && (
           <div className={classes.emptyState} role="status" aria-live="polite">
             <Bot24Regular className={classes.emptyIcon} />
@@ -443,6 +462,7 @@ const handleSendMessage = async () => {
       <div className={classes.inputContainer}>
         <Field label="Message" hint="Press Enter to send" className={classes.inputArea}>
           <Textarea
+            id="documentchat-input"
             className={classes.controlFullWidth}
             placeholder="Ask about this document..."
             value={inputValue}

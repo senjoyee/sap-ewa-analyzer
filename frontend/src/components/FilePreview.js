@@ -65,6 +65,24 @@ const useStyles = makeStyles({
     border: `1px solid ${tokens.colorNeutralStroke1}`,
     minWidth: 0,
   },
+  skipLink: {
+    position: 'absolute',
+    left: tokens.spacingHorizontalS,
+    top: tokens.spacingVerticalS,
+    backgroundColor: tokens.colorNeutralBackground1,
+    color: tokens.colorNeutralForeground1,
+    padding: tokens.spacingHorizontalS,
+    borderRadius: tokens.borderRadiusSmall,
+    boxShadow: tokens.shadow4,
+    zIndex: 2000,
+    clip: 'rect(1px, 1px, 1px, 1px)',
+    height: 1,
+    width: 1,
+    overflow: 'hidden',
+    selectors: {
+      ':focus': { clip: 'auto', height: 'auto', width: 'auto', overflow: 'visible' },
+    },
+  },
   headerBar: {
     paddingLeft: tokens.spacingHorizontalM,
     paddingRight: tokens.spacingHorizontalM,
@@ -592,6 +610,7 @@ const FilePreview = ({ selectedFile }) => {
 
   return (
     <div className={classes.container}>
+      <a href="#filepreview-content" className={classes.skipLink}>Skip to content</a>
       <div className={classes.headerBar}>
         <div className={classes.title}>
           {isAnalysisView ? 'AI Analysis' : 'File Preview'}
@@ -625,7 +644,13 @@ const FilePreview = ({ selectedFile }) => {
         )}
       </div>
 
-      <div className={`${classes.contentArea} ${isAnalysisView ? classes.analysisArea : classes.centerArea}`}>
+      <div
+        className={`${classes.contentArea} ${isAnalysisView ? classes.analysisArea : classes.centerArea}`}
+        id="filepreview-content"
+        role="region"
+        aria-label="File preview content"
+        tabIndex={-1}
+      >
         {selectedFile ? (
           isAnalysisView ? (
             <div className={classes.analysisInner}>

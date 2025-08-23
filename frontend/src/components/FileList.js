@@ -30,6 +30,25 @@ const useStyles = makeStyles({
     height: '100%',
     gap: tokens.spacingHorizontalM,
     minWidth: 0,
+    minHeight: 0, // allow flex children to shrink and become scrollable
+  },
+  skipLink: {
+    position: 'absolute',
+    left: tokens.spacingHorizontalS,
+    top: tokens.spacingVerticalS,
+    backgroundColor: tokens.colorNeutralBackground1,
+    color: tokens.colorNeutralForeground1,
+    padding: tokens.spacingHorizontalS,
+    borderRadius: tokens.borderRadiusSmall,
+    boxShadow: tokens.shadow4,
+    zIndex: 2000,
+    clip: 'rect(1px, 1px, 1px, 1px)',
+    height: 1,
+    width: 1,
+    overflow: 'hidden',
+    selectors: {
+      ':focus': { clip: 'auto', height: 'auto', width: 'auto', overflow: 'visible' },
+    },
   },
   // Icon sizes
   icon16: {
@@ -112,22 +131,16 @@ const useStyles = makeStyles({
     alignItems: 'center',
   },
   listContainer: {
-    flex: 1,
-    overflow: 'auto',
+    // Let the sidebar (parent) own scrolling to avoid nested scrollbars
+    flex: 'initial',
+    overflowY: 'visible',
+    overflowX: 'visible',
     backgroundColor: tokens.colorNeutralBackground2,
     border: `1px solid ${tokens.colorNeutralStroke1}`,
     borderRadius: tokens.borderRadiusMedium,
     boxShadow: tokens.shadow4,
-    // Subtle custom scrollbar (Firefox + WebKit)
-    scrollbarWidth: 'thin',
-    scrollbarColor: `${tokens.colorNeutralStroke1} ${tokens.colorNeutralBackground2}`,
-    msOverflowStyle: 'auto',
-    selectors: {
-      '&::-webkit-scrollbar': { width: '6px' },
-      '&::-webkit-scrollbar-track': { background: tokens.colorNeutralBackground2 },
-      '&::-webkit-scrollbar-thumb': { background: tokens.colorNeutralStroke1, borderRadius: '3px' },
-      '&::-webkit-scrollbar-thumb:hover': { background: tokens.colorNeutralStroke1Hover },
-    },
+    minHeight: 'auto',
+    height: 'auto',
   },
   loadingCenter: {
     display: 'flex',
@@ -937,6 +950,7 @@ const FileList = ({ onFileSelect, refreshTrigger, selectedFile }) => {
 
   return (
     <div className={classes.root}>
+      <a href="#filelist-main" className={classes.skipLink}>Skip to file list</a>
       <div className={classes.headerBar}>
         <div className={classes.title}>
           <Folder24Regular className={classes.headerFolderIcon} />
@@ -1018,7 +1032,7 @@ const FileList = ({ onFileSelect, refreshTrigger, selectedFile }) => {
           </div>
         )}
       </div>
-      <div className={classes.listContainer}>
+      <div className={classes.listContainer} id="filelist-main" role="main" tabIndex={-1}>
         {content}
       </div>
       

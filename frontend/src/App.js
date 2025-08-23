@@ -38,13 +38,21 @@ const useStyles = makeStyles({
   sidebar: {
     flexShrink: 0,
     transition: 'width 225ms cubic-bezier(0.4, 0, 0.6, 1) 0ms',
-    height: '100vh',
+    height: 'auto',
     boxSizing: 'border-box',
     backgroundColor: tokens.colorNeutralBackground1,
     borderRight: `1px solid ${tokens.colorNeutralStroke1}`,
     overflow: 'hidden',
     boxShadow: tokens.shadow8,
     color: tokens.colorNeutralForeground1,
+    display: 'flex',
+    flexDirection: 'column',
+    minHeight: 0, // allow inner content to shrink and scroll
+    // no scrollbar here; inner content owns scrolling
+    position: 'fixed',
+    top: `${topBarHeight}px`,
+    bottom: 0,
+    left: 0,
   },
   toolbarSpacer: {
     height: `${topBarHeight}px`,
@@ -64,7 +72,7 @@ const useStyles = makeStyles({
     fontSize: '1.1rem',
   },
   sidebarContent: {
-    overflow: 'auto',
+    overflowY: 'auto',
     paddingLeft: '16px',
     paddingRight: '16px',
     paddingBottom: '16px',
@@ -72,20 +80,15 @@ const useStyles = makeStyles({
     flexDirection: 'column',
     gap: '24px',
     backgroundColor: tokens.colorNeutralBackground1,
+    flex: 1,
+    minHeight: 0,
+    // Make dragging the scrollbar responsive and prevent scroll chaining to the page
+    overscrollBehavior: 'contain',
     selectors: {
-      '&::-webkit-scrollbar': {
-        width: '6px',
-      },
-      '&::-webkit-scrollbar-track': {
-        background: tokens.colorNeutralBackground2,
-      },
-      '&::-webkit-scrollbar-thumb': {
-        background: tokens.colorNeutralStroke1,
-        borderRadius: '3px',
-      },
-      '&::-webkit-scrollbar-thumb:hover': {
-        background: tokens.colorNeutralForeground3,
-      },
+      '&::-webkit-scrollbar': { width: '12px' },
+      '&::-webkit-scrollbar-track': { background: tokens.colorNeutralBackground2 },
+      '&::-webkit-scrollbar-thumb': { background: tokens.colorNeutralStroke1, borderRadius: '6px' },
+      '&::-webkit-scrollbar-thumb:hover': { background: tokens.colorNeutralForeground3 },
     },
   },
   collapseEdge: {
@@ -147,7 +150,6 @@ const AppContent = () => {
       </div>
 
       <aside className={classes.sidebar} style={{ width: sidebarCollapsed ? collapsedDrawerWidth : drawerWidth }}>
-        <div className={classes.toolbarSpacer} />
         <div className={classes.sidebarHeaderRow}>
           <span className={classes.sidebarTitle}>File Management</span>
           <FluentButton
@@ -183,7 +185,13 @@ const AppContent = () => {
         </div>
       )}
 
-      <main className={classes.main} style={{ width: `calc(100% - ${sidebarCollapsed ? collapsedDrawerWidth : drawerWidth}px)` }}>
+      <main
+        className={classes.main}
+        style={{
+          width: `calc(100% - ${sidebarCollapsed ? collapsedDrawerWidth : drawerWidth}px)`,
+          marginLeft: `${sidebarCollapsed ? collapsedDrawerWidth : drawerWidth}px`,
+        }}
+      >
         <div className={classes.toolbarSpacer} />
         <div className={classes.mainInner}>
           <FilePreview selectedFile={selectedFileForPreview} />

@@ -28,6 +28,12 @@
   padding: 20px;
   border-right: 1px solid #333333;
   color: #ffffff;
+  /* Make sidebar a scrollable column */
+  display: flex;
+  flex-direction: column;
+  height: calc(100vh - 70px); /* match App-body header offset */
+  min-height: 0; /* allow inner panels to shrink */
+  overflow-y: auto; /* enable vertical scrolling */
 }
 
 .main-content {
