@@ -19,6 +19,9 @@ import DocumentChat from './DocumentChat';
 // Import the SAP logo
 import sapLogo from '../logo/sap-3.svg';
 
+// Formatting utilities (dates/numbers + truncation tooltip)
+import { TruncatedText, formatDisplay } from '../utils/format';
+
 // Helper function to get appropriate file type label and icon
 const API_BASE = 'http://localhost:8001';
 const getFileTypeInfo = (fileName, classes) => {
@@ -420,7 +423,7 @@ const JsonCodeBlockRenderer = ({ node, inline, className, children, ...props }) 
                     return (
                       <tr key={index}>
                         <td className={classes.mdTd} style={{ fontWeight: 500 }}>{item.parameter}</td>
-                        <td className={classes.mdTd} style={{ textAlign: isNumericOrShort ? 'center' : 'left' }}>{item.value}</td>
+                        <td className={classes.mdTd} style={{ textAlign: isNumericOrShort ? 'center' : 'left' }}>{formatDisplay(item.value)}</td>
                       </tr>
                     );
                   })}
@@ -464,7 +467,8 @@ const JsonCodeBlockRenderer = ({ node, inline, className, children, ...props }) 
                   {jsonData.rows.map((row, rowIndex) => (
                     <tr key={rowIndex}>
                       {jsonData.headers.map((header, cellIndex) => {
-                        const cellValue = String(row[header] === undefined || row[header] === null ? '' : row[header]);
+                        const rawCell = row[header] === undefined || row[header] === null ? '' : row[header];
+                        const cellValue = String(rawCell);
                         const hasLongTextInColumn = jsonData.rows.some(r => {
                           const val = String(r[header] === undefined || r[header] === null ? '' : r[header]);
                           return val.length > 20 && /[a-zA-Z]/.test(val);
@@ -480,7 +484,11 @@ const JsonCodeBlockRenderer = ({ node, inline, className, children, ...props }) 
                         const extraStyle = cellValue.length > 50 ? { maxWidth: '300px', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' } : {};
                         return (
                           <td key={cellIndex} className={classes.mdTd} style={{ textAlign: isNumeric ? 'center' : 'left', ...extraStyle }}>
-                            {cellValue}
+                            {cellValue.length > 50 ? (
+                              <TruncatedText text={formatDisplay(rawCell)} maxWidth="300px" />
+                            ) : (
+                              formatDisplay(rawCell)
+                            )}
                           </td>
                         );
                       })}
@@ -536,7 +544,8 @@ const JsonCodeBlockRenderer = ({ node, inline, className, children, ...props }) 
                       {tableData.map((row, rowIndex) => (
                         <tr key={rowIndex}>
                           {headers.map((header, cellIndex) => {
-                            const cellValue = String(row[header] === undefined || row[header] === null ? '' : row[header]);
+                            const rawCell = row[header] === undefined || row[header] === null ? '' : row[header];
+                            const cellValue = String(rawCell);
                             const hasLongTextInColumn = tableData.some(r => {
                               const val = String(r[header] === undefined || r[header] === null ? '' : r[header]);
                               return val.length > 20 && /[a-zA-Z]/.test(val);
@@ -552,7 +561,11 @@ const JsonCodeBlockRenderer = ({ node, inline, className, children, ...props }) 
                             const extraStyle = cellValue.length > 50 ? { maxWidth: '300px', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' } : {};
                             return (
                               <td key={cellIndex} className={classes.mdTd} style={{ textAlign: isNumeric ? 'center' : 'left', ...extraStyle }}>
-                                {cellValue}
+                                {cellValue.length > 50 ? (
+                                  <TruncatedText text={formatDisplay(rawCell)} maxWidth="300px" />
+                                ) : (
+                                  formatDisplay(rawCell)
+                                )}
                               </td>
                             );
                           })}

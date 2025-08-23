@@ -13,6 +13,7 @@ import { apiUrl } from '../config';
 
 
 
+import { TruncatedText, formatNumber } from '../utils/format';
 // File type icons
  
 
@@ -1034,7 +1035,7 @@ const FileList = ({ onFileSelect, refreshTrigger, selectedFile }) => {
                           </div>
                           <div className={classes.itemDetails}>
                             <div className={classes.itemTitle}>
-                              {file.name}
+                              <TruncatedText text={file.name} />
                             </div>
                           </div>
                           <div className={classes.itemStatus}>
@@ -1108,7 +1109,7 @@ const FileList = ({ onFileSelect, refreshTrigger, selectedFile }) => {
         {/* Selection info and controls */}
         <div className={classes.selectionRow}>
           <span className={classes.selectionText}>
-            {selectedCount} selected ({selectedAnalyzedCount} analyzed)
+            {formatNumber(selectedCount)} selected ({formatNumber(selectedAnalyzedCount)} analyzed)
           </span>
           <div className={classes.actionButtons}>
             <FluentButton
@@ -1136,7 +1137,7 @@ const FileList = ({ onFileSelect, refreshTrigger, selectedFile }) => {
                 icon={<Delete24Regular />}
                 onClick={handleBatchDelete}
               >
-                Delete ({selectedAnalyzedCount})
+                Delete ({formatNumber(selectedAnalyzedCount)})
               </FluentButton>
             )}
             <FluentButton
@@ -1145,7 +1146,7 @@ const FileList = ({ onFileSelect, refreshTrigger, selectedFile }) => {
               icon={<Play24Regular />}
               onClick={handleBatchProcess}
             >
-              Process ({selectedCount})
+              Process ({formatNumber(selectedCount)})
             </FluentButton>
           </div>
         )}

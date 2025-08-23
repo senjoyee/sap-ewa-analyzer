@@ -8,8 +8,9 @@ import {
   Bot24Regular,
   Person24Regular,
 } from '@fluentui/react-icons';
-import { Button, Textarea, ProgressBar, Field, makeStyles, shorthands, tokens } from '@fluentui/react-components';
+import { Button, Textarea, ProgressBar, Field, makeStyles, shorthands, tokens, Tooltip } from '@fluentui/react-components';
 import { apiUrl } from '../config';
+import { formatDateDDMMYYYY } from '../utils/format';
 
 const useStyles = makeStyles({
   chatContainer: {
@@ -428,21 +429,23 @@ const handleSendMessage = async () => {
                 <Bot24Regular style={{ width: 16, height: 16 }} />
               )}
             </div>
-            <div
-              className={`${classes.bubble} ${message.isUser ? classes.bubbleUser : ''} ${message.isError ? classes.bubbleError : ''}`}
-              role="group"
-              aria-label={message.isUser ? 'User message' : message.isError ? 'Error message' : 'Assistant message'}
-            >
-              {message.isUser ? (
-                <div style={{ whiteSpace: 'pre-wrap', fontSize: '0.85rem', lineHeight: 1.4 }}>
-                  {message.text}
-                </div>
-              ) : (
-                <ReactMarkdown remarkPlugins={[remarkGfm]}>
-                  {message.text}
-                </ReactMarkdown>
-              )}
-            </div>
+            <Tooltip content={formatDateDDMMYYYY(message.timestamp)} relationship="label">
+              <div
+                className={`${classes.bubble} ${message.isUser ? classes.bubbleUser : ''} ${message.isError ? classes.bubbleError : ''}`}
+                role="group"
+                aria-label={`${message.isUser ? 'User message' : message.isError ? 'Error message' : 'Assistant message'}, sent ${formatDateDDMMYYYY(message.timestamp)}`}
+              >
+                {message.isUser ? (
+                  <div style={{ whiteSpace: 'pre-wrap', fontSize: '0.85rem', lineHeight: 1.4 }}>
+                    {message.text}
+                  </div>
+                ) : (
+                  <ReactMarkdown remarkPlugins={[remarkGfm]}>
+                    {message.text}
+                  </ReactMarkdown>
+                )}
+              </div>
+            </Tooltip>
           </div>
         ))}
         
