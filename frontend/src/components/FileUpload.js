@@ -426,7 +426,7 @@ const FileUpload = ({ onUploadSuccess }) => {
       <div style={{ textAlign: 'center' }}>
         <CloudArrowUp24Regular className={classes.heroIcon} />
         <div className={classes.heroTitle}>Upload Files</div>
-        <div id={instructionsId} className={classes.heroSubtext}>Drag and drop files here or click to browse</div>
+        <div id={instructionsId} className={classes.heroSubtext}>Click to browse</div>
         
         <input
           ref={fileInputRef}
