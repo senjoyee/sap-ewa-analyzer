@@ -10,6 +10,7 @@ import { DocumentPdf24Regular, ChevronDown24Regular, DataBarVertical24Regular, S
 import { Image24Regular, Document24Regular, TextDescription24Regular } from '@fluentui/react-icons';
  
  
+import { useTypographyStyles } from '../styles/typography';
 
 // Import our custom table components
 // import MetricsTable from './MetricsTable';
@@ -395,6 +396,7 @@ const useStyles = makeStyles({
 
 const JsonCodeBlockRenderer = ({ node, inline, className, children, ...props }) => {
   const classes = useStyles();
+  const typography = useTypographyStyles();
   const match = /language-(\w+)/.exec(className || '');
   const lang = match && match[1];
 
@@ -407,7 +409,7 @@ const JsonCodeBlockRenderer = ({ node, inline, className, children, ...props }) 
       if (jsonData && jsonData.tableTitle && Array.isArray(jsonData.items)) {
         return (
           <div className={classes.tableCard}>
-            <div className={classes.tableTitle}>{jsonData.tableTitle}</div>
+            <div className={`${classes.tableTitle} ${typography.headingL}`}>{jsonData.tableTitle}</div>
             <div className={classes.tableScroll} tabIndex={0} role="group" aria-label={`${jsonData.tableTitle} table`}>
               <table className={classes.mdTable} aria-label={`${jsonData.tableTitle} data`}>
                 <thead>
@@ -438,7 +440,7 @@ const JsonCodeBlockRenderer = ({ node, inline, className, children, ...props }) 
       else if (jsonData && jsonData.tableTitle && Array.isArray(jsonData.headers) && Array.isArray(jsonData.rows)) {
         return (
           <div className={classes.tableCard}>
-            <div className={classes.tableTitle}>{jsonData.tableTitle}</div>
+            <div className={`${classes.tableTitle} ${typography.headingL}`}>{jsonData.tableTitle}</div>
             <div className={classes.tableScroll} tabIndex={0} role="group" aria-label={`${jsonData.tableTitle} table`}>
               <table className={classes.mdTable} aria-label={`${jsonData.tableTitle} data`}>
                 <thead>
@@ -515,7 +517,7 @@ const JsonCodeBlockRenderer = ({ node, inline, className, children, ...props }) 
           if (headers.length > 0) {
             return (
               <div className={classes.tableCard}>
-                <div className={classes.tableTitle}>{tableTitle}</div>
+                <div className={`${classes.tableTitle} ${typography.headingL}`}>{tableTitle}</div>
                 <div className={classes.tableScroll} tabIndex={0} role="group" aria-label={`${tableTitle} table`}>
                   <table className={classes.mdTable} aria-label={`${tableTitle} data`}>
                     <thead>
@@ -598,6 +600,7 @@ const JsonCodeBlockRenderer = ({ node, inline, className, children, ...props }) 
 
 const FilePreview = ({ selectedFile }) => {
   const classes = useStyles();
+  const typography = useTypographyStyles();
   const fileTypeInfo = selectedFile ? getFileTypeInfo(selectedFile.name, classes) : null;
   const [originalContent, setOriginalContent] = useState('');
 
@@ -625,7 +628,7 @@ const FilePreview = ({ selectedFile }) => {
     <div className={classes.container}>
       <a href="#filepreview-content" className={classes.skipLink}>Skip to content</a>
       <div className={classes.headerBar}>
-        <div className={classes.title}>
+        <div className={`${classes.title} ${typography.headingL}`}>
           {isAnalysisView ? 'AI Analysis' : 'File Preview'}
         </div>
         {selectedFile && (
@@ -650,7 +653,7 @@ const FilePreview = ({ selectedFile }) => {
                 )}
               </span>
               {!isAnalysisView && (
-                <span className={classes.badgeLabel}>{fileTypeInfo?.label}</span>
+                <span className={`${classes.badgeLabel} ${typography.bodyS}`}>{fileTypeInfo?.label}</span>
               )}
             </div>
           </div>
@@ -789,14 +792,14 @@ const FilePreview = ({ selectedFile }) => {
               {fileTypeInfo && fileTypeInfo.icon && React.cloneElement(fileTypeInfo.icon, { 
                 style: { fontSize: 48, marginBottom: 8, opacity: 0.7 } 
               })}
-              <div className={classes.placeholderTitle}>
+              <div className={`${classes.placeholderTitle} ${typography.headingL}`}>
                 {selectedFile.name}
               </div>
-              <div className={classes.placeholderText}>
+              <div className={`${classes.placeholderText} ${typography.bodyM}`}>
                 Preview functionality will be added in a future update
               </div>
               <div className={classes.placeholderFrame}>
-                <div className={classes.placeholderMuted}>
+                <div className={`${classes.placeholderMuted} ${typography.bodyS}`}>
                   Content preview placeholder
                 </div>
               </div>
@@ -805,10 +808,10 @@ const FilePreview = ({ selectedFile }) => {
         ) : (
           <div className={classes.placeholderContainer} role="status" aria-live="polite">
             <Document24Regular style={{ fontSize: 48, marginBottom: 8, opacity: 0.7 }} />
-            <div className={classes.placeholderTitle}>No File Selected</div>
-            <div className={classes.placeholderText}>Select a file from the list to preview its contents</div>
+            <div className={`${classes.placeholderTitle} ${typography.headingL}`}>No File Selected</div>
+            <div className={`${classes.placeholderText} ${typography.bodyM}`}>Select a file from the list to preview its contents</div>
             <div className={classes.placeholderFrame}>
-              <div className={classes.placeholderMuted}>Content preview will show here.</div>
+              <div className={`${classes.placeholderMuted} ${typography.bodyS}`}>Content preview will show here.</div>
             </div>
           </div>
         )}

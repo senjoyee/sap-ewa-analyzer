@@ -11,6 +11,7 @@ import {
 import { Button, Textarea, ProgressBar, Field, makeStyles, shorthands, tokens, Tooltip } from '@fluentui/react-components';
 import { apiUrl } from '../config';
 import { formatDateDDMMYYYY } from '../utils/format';
+import { useTypographyStyles } from '../styles/typography';
 
 const useStyles = makeStyles({
   chatContainer: {
@@ -343,6 +344,7 @@ const handleSendMessage = async () => {
   };
 
   const classes = useStyles();
+  const typography = useTypographyStyles();
 
   if (!expanded) {
     return (
@@ -363,7 +365,7 @@ const handleSendMessage = async () => {
       <div className={classes.header}>
         <div className={classes.headerLeft}>
           <Bot24Regular />
-          <div className={classes.headerTitle}>Document Assistant</div>
+          <div className={`${classes.headerTitle} ${typography.headingS}`}>Document Assistant</div>
         </div>
         <Button
           aria-label="Close chat"
@@ -380,34 +382,34 @@ const handleSendMessage = async () => {
             <Bot24Regular className={classes.emptyIcon} />
             {contentStatus === 'available' ? (
               <>
-                <div className={classes.placeholderTitle}>Ask about this report</div>
-                <div className={classes.placeholderSubtext}>Ask me anything about this SAP EWA report.</div>
+                <div className={`${classes.placeholderTitle} ${typography.headingL}`}>Ask about this report</div>
+                <div className={`${classes.placeholderSubtext} ${typography.bodyM}`}>Ask me anything about this SAP EWA report.</div>
                 <div className={classes.placeholderFrame}>
-                  <div className={classes.placeholderMuted}>Your conversation will appear here.</div>
+                  <div className={`${classes.placeholderMuted} ${typography.bodyS}`}>Your conversation will appear here.</div>
                 </div>
               </>
             ) : contentStatus === 'missing' || contentStatus === 'minimal' ? (
               <>
-                <div className={classes.placeholderTitle} style={{ color: tokens.colorPaletteRedForeground1 }}>Document content is limited or missing</div>
-                <div className={classes.placeholderSubtext}>Please process the document first by clicking “Process file”.</div>
+                <div className={`${classes.placeholderTitle} ${typography.headingL}`} style={{ color: tokens.colorPaletteRedForeground1 }}>Document content is limited or missing</div>
+                <div className={`${classes.placeholderSubtext} ${typography.bodyM}`}>Please process the document first by clicking “Process file”.</div>
                 <div className={classes.placeholderFrame}>
-                  <div className={classes.placeholderMuted}>Once processed, content will be available for chat.</div>
+                  <div className={`${classes.placeholderMuted} ${typography.bodyS}`}>Once processed, content will be available for chat.</div>
                 </div>
               </>
             ) : contentStatus === 'error' ? (
               <>
-                <div className={classes.placeholderTitle} style={{ color: tokens.colorPaletteRedForeground1 }}>Error loading content</div>
-                <div className={classes.placeholderSubtext}>Try reprocessing the document or check server logs.</div>
+                <div className={`${classes.placeholderTitle} ${typography.headingL}`} style={{ color: tokens.colorPaletteRedForeground1 }}>Error loading content</div>
+                <div className={`${classes.placeholderSubtext} ${typography.bodyM}`}>Try reprocessing the document or check server logs.</div>
                 <div className={classes.placeholderFrame}>
-                  <div className={classes.placeholderMuted}>If the problem persists, contact an administrator.</div>
+                  <div className={`${classes.placeholderMuted} ${typography.bodyS}`}>If the problem persists, contact an administrator.</div>
                 </div>
               </>
             ) : (
               <>
-                <div className={classes.placeholderTitle}>Ask about this document</div>
-                <div className={classes.placeholderSubtext}>Start the conversation using the input below.</div>
+                <div className={`${classes.placeholderTitle} ${typography.headingL}`}>Ask about this document</div>
+                <div className={`${classes.placeholderSubtext} ${typography.bodyM}`}>Start the conversation using the input below.</div>
                 <div className={classes.placeholderFrame}>
-                  <div className={classes.placeholderMuted}>Tips: be specific to get better answers.</div>
+                  <div className={`${classes.placeholderMuted} ${typography.bodyS}`}>Tips: be specific to get better answers.</div>
                 </div>
               </>
             )}

@@ -17,6 +17,7 @@ import {
 } from '@fluentui/react-icons';
 import { apiUrl } from '../config';
 import { makeStyles, shorthands, tokens } from '@fluentui/react-components';
+import { useTypographyStyles } from '../styles/typography';
 
 // Helper function to get appropriate icon for file type
 const getFileIcon = (filename, classes) => {
@@ -244,6 +245,7 @@ const FileUpload = ({ onUploadSuccess }) => {
   ]); // Predefined customer list
   const fileInputRef = useRef(null);
   const classes = useStyles();
+  const typography = useTypographyStyles();
   const instructionsId = 'upload-instructions';
   
   // Function to dismiss overall status message
@@ -425,8 +427,8 @@ const FileUpload = ({ onUploadSuccess }) => {
     <div className={classes.card}>
       <div style={{ textAlign: 'center' }}>
         <CloudArrowUp24Regular className={classes.heroIcon} />
-        <div className={classes.heroTitle}>Upload files</div>
-        <div id={instructionsId} className={classes.heroSubtext}>Click to browse</div>
+        <div className={`${classes.heroTitle} ${typography.headingL}`}>Upload files</div>
+        <div id={instructionsId} className={`${classes.heroSubtext} ${typography.bodyM}`}>Click to browse</div>
         
         <input
           ref={fileInputRef}
@@ -453,13 +455,13 @@ const FileUpload = ({ onUploadSuccess }) => {
       {showCustomerFields && filesWithCustomers.length > 0 && (
         <div className={classes.sectionCard}>
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: tokens.spacingVerticalL }}>
-            <h2 className={classes.sectionHeader} style={{ margin: 0 }}>📋 Customer assignment</h2>
+            <h2 className={`${classes.sectionHeader} ${typography.headingM}`} style={{ margin: 0 }}>📋 Customer assignment</h2>
             <Tag size="small" appearance="outline" style={{ fontWeight: 500 }}>
               {`${filesWithCustomers.length} file${filesWithCustomers.length > 1 ? 's' : ''}`}
             </Tag>
           </div>
           
-          <div className={classes.sectionDescription}>Please select the appropriate customer for each file to ensure proper processing.</div>
+          <div className={`${classes.sectionDescription} ${typography.bodyM}`}>Please select the appropriate customer for each file to ensure proper processing.</div>
           
           {/* Compact grid layout for multiple files */}
           <div className={classes.grid} style={{ gridTemplateColumns: filesWithCustomers.length > 2 ? 'repeat(auto-fit, minmax(320px, 1fr))' : '1fr' }}>
@@ -468,8 +470,8 @@ const FileUpload = ({ onUploadSuccess }) => {
                 <div style={{ display: 'flex', alignItems: 'center', marginBottom: tokens.spacingVerticalL }}>
                   {getFileIcon(fileData.file.name, classes)}
                   <div style={{ marginLeft: tokens.spacingHorizontalM, flex: 1, minWidth: 0 }}>
-                    <div className={classes.fileTitle}>{fileData.file.name}</div>
-                    <div className={classes.fileMeta}>{formatFileSize(fileData.file.size)}</div>
+                    <div className={`${classes.fileTitle} ${typography.headingS}`}>{fileData.file.name}</div>
+                    <div className={`${classes.fileMeta} ${typography.bodyS}`}>{formatFileSize(fileData.file.size)}</div>
                   </div>
                 </div>
                 
@@ -570,7 +572,7 @@ const FileUpload = ({ onUploadSuccess }) => {
           {uploadingFilesInfo.map((fileInfo, index) => (
             <div key={index} style={{ marginTop: tokens.spacingVerticalM, marginBottom: tokens.spacingVerticalS }}>
               <div style={{ display: 'flex', alignItems: 'center', marginBottom: tokens.spacingVerticalXS }}>
-                <div style={{ flexGrow: 1, fontSize: tokens.fontSizeBase300 }}>
+                <div style={{ flexGrow: 1 }} className={typography.bodyM}>
                   {fileInfo.name}
                 </div>
                 <div style={{ display: 'flex', alignItems: 'center' }}>
@@ -598,7 +600,7 @@ const FileUpload = ({ onUploadSuccess }) => {
                 aria-label={`Upload progress for ${fileInfo.name}`}
               />
               {fileInfo.status === 'error' && fileInfo.error && (
-                <div className={classes.errorText} role="alert">
+                <div className={`${classes.errorText} ${typography.caption}`} role="alert">
                   Error: {fileInfo.error}
                 </div>
               )}
