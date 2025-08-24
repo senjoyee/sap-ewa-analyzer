@@ -333,6 +333,9 @@ const useStyles = makeStyles({
       },
     },
   },
+  zebraRow: {
+    backgroundColor: tokens.colorNeutralBackground2,
+  },
   itemDivider: {
     height: 1,
     backgroundColor: tokens.colorNeutralStroke2,
@@ -996,7 +999,11 @@ const FileList = ({ onFileSelect, refreshTrigger, selectedFile }) => {
                             // Use the display handler like the original Display button
                             handleDisplayAnalysis(file);
                           }}
-                          className={`${classes.itemRow} ${isSelected ? classes.itemRowSelected : ''}`}
+                          className={mergeClasses(
+                            classes.itemRow,
+                            isSelected && classes.itemRowSelected,
+                            !isSelected && idx % 2 === 1 && classes.zebraRow
+                          )}
                           role="button"
                           tabIndex={0}
                           aria-label={`Open analysis for ${file.name}`}

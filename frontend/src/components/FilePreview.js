@@ -282,6 +282,11 @@ const useStyles = makeStyles({
     width: '100%',
     borderCollapse: 'collapse',
     tableLayout: 'auto',
+    selectors: {
+      'tbody tr:nth-child(even)': {
+        backgroundColor: tokens.colorNeutralBackground2,
+      },
+    },
   },
   mdTh: {
     textAlign: 'left',
@@ -419,16 +424,12 @@ const JsonCodeBlockRenderer = ({ node, inline, className, children, ...props }) 
                   </tr>
                 </thead>
                 <tbody>
-                  {jsonData.items.map((item, index) => {
-                    const isLongText = item.value.length > 20 && /[a-zA-Z]/.test(item.value);
-                    const isNumericOrShort = !isLongText && (/^[\d.,\s%]+$/.test(item.value) || item.value.length < 10);
-                    return (
-                      <tr key={index}>
-                        <td className={classes.mdTd} style={{ fontWeight: 500 }}>{item.parameter}</td>
-                        <td className={classes.mdTd} style={{ textAlign: isNumericOrShort ? 'center' : 'left' }}>{formatDisplay(item.value)}</td>
-                      </tr>
-                    );
-                  })}
+                  {jsonData.items.map((item, index) => (
+                    <tr key={index}>
+                      <td className={classes.mdTd} style={{ fontWeight: 500 }}>{item.parameter}</td>
+                      <td className={classes.mdTd} style={{ textAlign: 'left' }}>{formatDisplay(item.value)}</td>
+                    </tr>
+                  ))}
                 </tbody>
               </table>
             </div>
@@ -445,24 +446,11 @@ const JsonCodeBlockRenderer = ({ node, inline, className, children, ...props }) 
               <table className={classes.mdTable} aria-label={`${jsonData.tableTitle} data`}>
                 <thead>
                   <tr>
-                    {jsonData.headers.map((header, index) => {
-                      const hasLongTextInColumn = jsonData.rows.some(row => {
-                        const val = String(row[header] === undefined || row[header] === null ? '' : row[header]);
-                        return val.length > 20 && /[a-zA-Z]/.test(val);
-                      });
-                      const isNumericHeader = !hasLongTextInColumn && (
-                        header.toLowerCase().includes('count') || 
-                        header.toLowerCase().includes('value') ||
-                        header.toLowerCase().includes('qty') ||
-                        header.toLowerCase().includes('mhz') ||
-                        header.toLowerCase().includes('cpus')
-                      );
-                      return (
-                        <th key={index} className={classes.mdTh} style={{ textAlign: isNumericHeader ? 'center' : 'left' }} scope="col">
-                          {header.charAt(0).toUpperCase() + header.slice(1).replace(/_/g, ' ')}
-                        </th>
-                      );
-                    })}
+                    {jsonData.headers.map((header, index) => (
+                      <th key={index} className={classes.mdTh} style={{ textAlign: 'left' }} scope="col">
+                        {header.charAt(0).toUpperCase() + header.slice(1).replace(/_/g, ' ')}
+                      </th>
+                    ))}
                   </tr>
                 </thead>
                 <tbody>
@@ -471,21 +459,9 @@ const JsonCodeBlockRenderer = ({ node, inline, className, children, ...props }) 
                       {jsonData.headers.map((header, cellIndex) => {
                         const rawCell = row[header] === undefined || row[header] === null ? '' : row[header];
                         const cellValue = String(rawCell);
-                        const hasLongTextInColumn = jsonData.rows.some(r => {
-                          const val = String(r[header] === undefined || r[header] === null ? '' : r[header]);
-                          return val.length > 20 && /[a-zA-Z]/.test(val);
-                        });
-                        const isNumeric = !hasLongTextInColumn && (
-                          /^[\d.,\s%]+$/.test(cellValue) || 
-                          header.toLowerCase().includes('count') || 
-                          header.toLowerCase().includes('value') ||
-                          header.toLowerCase().includes('qty') ||
-                          header.toLowerCase().includes('mhz') ||
-                          header.toLowerCase().includes('cpus')
-                        );
                         const extraStyle = cellValue.length > 50 ? { maxWidth: '300px', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' } : {};
                         return (
-                          <td key={cellIndex} className={classes.mdTd} style={{ textAlign: isNumeric ? 'center' : 'left', ...extraStyle }}>
+                          <td key={cellIndex} className={classes.mdTd} style={{ textAlign: 'left', ...extraStyle }}>
                             {cellValue.length > 50 ? (
                               <TruncatedText text={formatDisplay(rawCell)} maxWidth="300px" />
                             ) : (
@@ -522,24 +498,11 @@ const JsonCodeBlockRenderer = ({ node, inline, className, children, ...props }) 
                   <table className={classes.mdTable} aria-label={`${tableTitle} data`}>
                     <thead>
                       <tr>
-                        {headers.map((header, idx) => {
-                          const hasLongTextInColumn = tableData.some(row => {
-                            const val = String(row[header] === undefined || row[header] === null ? '' : row[header]);
-                            return val.length > 20 && /[a-zA-Z]/.test(val);
-                          });
-                          const isNumericHeader = !hasLongTextInColumn && (
-                            header.toLowerCase().includes('count') || 
-                            header.toLowerCase().includes('value') ||
-                            header.toLowerCase().includes('qty') ||
-                            header.toLowerCase().includes('mhz') ||
-                            header.toLowerCase().includes('cpus')
-                          );
-                          return (
-                            <th key={idx} className={classes.mdTh} style={{ textAlign: isNumericHeader ? 'center' : 'left' }} scope="col">
-                              {header}
-                            </th>
-                          );
-                        })}
+                        {headers.map((header, idx) => (
+                          <th key={idx} className={classes.mdTh} style={{ textAlign: 'left' }} scope="col">
+                            {header}
+                          </th>
+                        ))}
                       </tr>
                     </thead>
                     <tbody>
@@ -548,21 +511,9 @@ const JsonCodeBlockRenderer = ({ node, inline, className, children, ...props }) 
                           {headers.map((header, cellIndex) => {
                             const rawCell = row[header] === undefined || row[header] === null ? '' : row[header];
                             const cellValue = String(rawCell);
-                            const hasLongTextInColumn = tableData.some(r => {
-                              const val = String(r[header] === undefined || r[header] === null ? '' : r[header]);
-                              return val.length > 20 && /[a-zA-Z]/.test(val);
-                            });
-                            const isNumeric = !hasLongTextInColumn && (
-                              /^[\d.,\s%]+$/.test(cellValue) || 
-                              header.toLowerCase().includes('count') || 
-                              header.toLowerCase().includes('value') ||
-                              header.toLowerCase().includes('qty') ||
-                              header.toLowerCase().includes('mhz') ||
-                              header.toLowerCase().includes('cpus')
-                            );
                             const extraStyle = cellValue.length > 50 ? { maxWidth: '300px', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' } : {};
                             return (
-                              <td key={cellIndex} className={classes.mdTd} style={{ textAlign: isNumeric ? 'center' : 'left', ...extraStyle }}>
+                              <td key={cellIndex} className={classes.mdTd} style={{ textAlign: 'left', ...extraStyle }}>
                                 {cellValue.length > 50 ? (
                                   <TruncatedText text={formatDisplay(rawCell)} maxWidth="300px" />
                                 ) : (
@@ -695,7 +646,20 @@ const FilePreview = ({ selectedFile }) => {
                       ),
                       thead: ({ children }) => <thead>{children}</thead>,
                       th: ({ children }) => <th className={classes.mdTh} scope="col">{children}</th>,
-                      td: ({ children }) => <td className={classes.mdTd}>{children}</td>,
+                      td: ({ children, ...props }) => {
+                        const plain = String(children).replace(/\s+/g, ' ').trim();
+                        return (
+                          <td
+                            className={classes.mdTd}
+                            title={plain}
+                            {...props}
+                          >
+                            <span style={{ display: 'inline-block', maxWidth: 360, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
+                              {children}
+                            </span>
+                          </td>
+                        );
+                      },
                       tbody: ({ children }) => <tbody>{children}</tbody>,
                       code: JsonCodeBlockRenderer,
                       h1: ({ children }) => (

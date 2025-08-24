@@ -189,6 +189,44 @@ const useStyles = makeStyles({
   controlFullWidth: {
     width: '100%',
   },
+  // Markdown table polish inside chat bubbles
+  mdTable: {
+    borderCollapse: 'collapse',
+    width: '100%',
+    marginTop: tokens.spacingVerticalXS,
+    marginBottom: tokens.spacingVerticalXS,
+    fontSize: '0.82rem',
+  },
+  mdThead: {
+    backgroundColor: tokens.colorSubtleBackground,
+  },
+  mdTh: {
+    padding: '6px 8px',
+    textAlign: 'left',
+    borderBottom: `1px solid ${tokens.colorNeutralStroke1}`,
+    color: tokens.colorNeutralForeground2,
+    whiteSpace: 'nowrap',
+  },
+  mdTbody: {
+    selectors: {
+      '& tr:nth-child(even) td': {
+        backgroundColor: tokens.colorNeutralBackground3,
+      },
+    },
+  },
+  mdTr: {
+    // hairline between rows (top border on cells covers this)
+  },
+  mdTd: {
+    padding: '6px 8px',
+    borderTop: `1px solid ${tokens.colorNeutralStroke2}`,
+    color: tokens.colorNeutralForeground1,
+    // truncation with tooltip
+    whiteSpace: 'nowrap',
+    overflow: 'hidden',
+    textOverflow: 'ellipsis',
+    maxWidth: '360px',
+  },
   // Unified empty placeholder pattern (ui-cos-11)
   emptyState: {
     paddingTop: '32px',
@@ -442,7 +480,38 @@ const handleSendMessage = async () => {
                     {message.text}
                   </div>
                 ) : (
-                  <ReactMarkdown remarkPlugins={[remarkGfm]}>
+                  <ReactMarkdown
+                    remarkPlugins={[remarkGfm]}
+                    components={{
+                      table: ({node, ...props}) => (
+                        <table className={classes.mdTable} {...props} />
+                      ),
+                      thead: ({node, ...props}) => (
+                        <thead className={classes.mdThead} {...props} />
+                      ),
+                      tbody: ({node, ...props}) => (
+                        <tbody className={classes.mdTbody} {...props} />
+                      ),
+                      tr: ({node, ...props}) => (
+                        <tr className={classes.mdTr} {...props} />
+                      ),
+                      th: ({node, ...props}) => (
+                        <th className={classes.mdTh} {...props} />
+                      ),
+                      td: ({node, children, ...props}) => {
+                        const plain = String(children).trim();
+                        return (
+                          <td
+                            className={classes.mdTd}
+                            title={plain}
+                            {...props}
+                          >
+                            {children}
+                          </td>
+                        );
+                      },
+                    }}
+                  >
                     {message.text}
                   </ReactMarkdown>
                 )}
