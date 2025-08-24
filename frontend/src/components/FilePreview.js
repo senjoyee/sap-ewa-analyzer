@@ -20,8 +20,8 @@ import DocumentChat from './DocumentChat';
 // Import the SAP logo
 import sapLogo from '../logo/sap-3.svg';
 
-// Formatting utilities (dates/numbers + truncation tooltip)
-import { TruncatedText, formatDisplay } from '../utils/format';
+// Formatting utilities (dates/numbers)
+import { formatDisplay } from '../utils/format';
 
 // Helper function to get appropriate file type label and icon
 const API_BASE = 'http://localhost:8001';
@@ -439,6 +439,7 @@ const JsonCodeBlockRenderer = ({ node, inline, className, children, ...props }) 
       
       // Case 2: Check if it's our table structure with headers and rows
       else if (jsonData && jsonData.tableTitle && Array.isArray(jsonData.headers) && Array.isArray(jsonData.rows)) {
+        const wrapStyle = { whiteSpace: 'normal', overflow: 'visible', textOverflow: 'clip', wordBreak: 'break-word', overflowWrap: 'anywhere' };
         return (
           <div className={classes.tableCard}>
             <div className={`${classes.tableTitle} ${typography.headingL}`}>{jsonData.tableTitle}</div>
@@ -459,14 +460,10 @@ const JsonCodeBlockRenderer = ({ node, inline, className, children, ...props }) 
                       {jsonData.headers.map((header, cellIndex) => {
                         const rawCell = row[header] === undefined || row[header] === null ? '' : row[header];
                         const cellValue = String(rawCell);
-                        const extraStyle = cellValue.length > 50 ? { maxWidth: '300px', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' } : {};
+                        const isLong = cellValue.length > 50;
                         return (
-                          <td key={cellIndex} className={classes.mdTd} style={{ textAlign: 'left', ...extraStyle }}>
-                            {cellValue.length > 50 ? (
-                              <TruncatedText text={formatDisplay(rawCell)} maxWidth="300px" />
-                            ) : (
-                              formatDisplay(rawCell)
-                            )}
+                          <td key={cellIndex} className={classes.mdTd} style={{ textAlign: 'left', ...(isLong ? wrapStyle : {}) }}>
+                            {formatDisplay(rawCell)}
                           </td>
                         );
                       })}
@@ -491,6 +488,7 @@ const JsonCodeBlockRenderer = ({ node, inline, className, children, ...props }) 
           const firstItem = tableData[0] || {};
           const headers = Object.keys(firstItem);
           if (headers.length > 0) {
+            const wrapStyle = { whiteSpace: 'normal', overflow: 'visible', textOverflow: 'clip', wordBreak: 'break-word', overflowWrap: 'anywhere' };
             return (
               <div className={classes.tableCard}>
                 <div className={`${classes.tableTitle} ${typography.headingL}`}>{tableTitle}</div>
@@ -511,14 +509,10 @@ const JsonCodeBlockRenderer = ({ node, inline, className, children, ...props }) 
                           {headers.map((header, cellIndex) => {
                             const rawCell = row[header] === undefined || row[header] === null ? '' : row[header];
                             const cellValue = String(rawCell);
-                            const extraStyle = cellValue.length > 50 ? { maxWidth: '300px', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' } : {};
+                            const isLong = cellValue.length > 50;
                             return (
-                              <td key={cellIndex} className={classes.mdTd} style={{ textAlign: 'left', ...extraStyle }}>
-                                {cellValue.length > 50 ? (
-                                  <TruncatedText text={formatDisplay(rawCell)} maxWidth="300px" />
-                                ) : (
-                                  formatDisplay(rawCell)
-                                )}
+                              <td key={cellIndex} className={classes.mdTd} style={{ textAlign: 'left', ...(isLong ? wrapStyle : {}) }}>
+                                {formatDisplay(rawCell)}
                               </td>
                             );
                           })}
@@ -648,15 +642,16 @@ const FilePreview = ({ selectedFile }) => {
                       th: ({ children }) => <th className={classes.mdTh} scope="col">{children}</th>,
                       td: ({ children, ...props }) => {
                         const plain = String(children).replace(/\s+/g, ' ').trim();
+                        const isLong = plain.length > 50;
+                        const wrapStyle = isLong ? { whiteSpace: 'normal', overflow: 'visible', textOverflow: 'clip', wordBreak: 'break-word', overflowWrap: 'anywhere' } : {};
                         return (
                           <td
                             className={classes.mdTd}
                             title={plain}
+                            style={wrapStyle}
                             {...props}
                           >
-                            <span style={{ display: 'inline-block', maxWidth: 360, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
-                              {children}
-                            </span>
+                            {children}
                           </td>
                         );
                       },

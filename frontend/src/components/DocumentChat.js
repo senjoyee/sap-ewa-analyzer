@@ -221,11 +221,6 @@ const useStyles = makeStyles({
     padding: '6px 8px',
     borderTop: `1px solid ${tokens.colorNeutralStroke2}`,
     color: tokens.colorNeutralForeground1,
-    // truncation with tooltip
-    whiteSpace: 'nowrap',
-    overflow: 'hidden',
-    textOverflow: 'ellipsis',
-    maxWidth: '360px',
   },
   // Unified empty placeholder pattern (ui-cos-11)
   emptyState: {
@@ -499,11 +494,14 @@ const handleSendMessage = async () => {
                         <th className={classes.mdTh} {...props} />
                       ),
                       td: ({node, children, ...props}) => {
-                        const plain = String(children).trim();
+                        const plain = String(children).replace(/\s+/g, ' ').trim();
+                        const isLong = plain.length > 50;
+                        const wrapStyle = isLong ? { whiteSpace: 'normal', overflow: 'visible', textOverflow: 'clip', wordBreak: 'break-word', overflowWrap: 'anywhere' } : {};
                         return (
                           <td
                             className={classes.mdTd}
                             title={plain}
+                            style={wrapStyle}
                             {...props}
                           >
                             {children}

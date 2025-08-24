@@ -1,4 +1,4 @@
-import { makeStyles, shorthands } from '@griffel/react';
+import { makeStyles } from '@griffel/react';
 import { tokens } from '@fluentui/react-components';
 
 // Shared typography roles mapped to current component sizes to avoid layout changes
