@@ -1,0 +1,166 @@
+EWA Analyzer – Visual Refresh Checklist (Step-by-Step)
+Date: 2025-08-24
+Primary UX intent: Primarily Read reports; Upload is a secondary but frequent task. Chat is invoked ad‑hoc (modal), not persistent. Statuses (Good/Fair/Poor) are qualitative. Export/Share does not need constant prominence. Brand guidelines unknown (allow proposing a light micro‑brand). No strict WCAG target, but maintain good readability and contrast.
+
+Format: Each step lists Objectives, What "Done" Looks Like, and Deliverables. Use this as an execution tracker.
+
+0) Orientation and Success Criteria
+[ ] Objective: Align stakeholders on the visual goals and guardrails.
+    • Done looks like: One-page brief with goals (calm reading-first UI, modern surfaces, simplified actions), audience, and constraints.
+    • Deliverables: 1‑page brief; before/after reference screenshots.
+
+PHASE 1 — Foundations (Theme, Grid, Spacing, Typography)
+1) Establish Micro‑brand (fallback visual language)
+[ ] Objective: Define a lightweight palette, radius, elevation, and neutral ramps suitable for a calm, content-first UI.
+    • Done looks like: Color tokens with a primary brand blue used sparingly; soft neutral surfaces; 6–8px corner radius; gentle shadows; subtle dividers.
+    • Deliverables: Palette swatches (primary, neutral ramp, semantic: success/warn/danger/info), radius/elevation spec.
+
+2) Spacing & Grid System
+[ ] Objective: Adopt a consistent spacing scale and a responsive grid.
+    • Done looks like: 4/8/12/16 spacing scale; 12‑column grid; consistent gutters; clear vertical rhythm across panels and sections.
+    • Deliverables: Grid overlays on key screens; spacing guide with examples.
+
+3) Type Scale & Hierarchy
+[ ] Objective: Clarify headings, section titles, body, and meta text for reading.
+    • Done looks like: 4–5 levels (Display/H1/H2/Body/Caption) with comfortable line-height and max line length (60–75 chars). Section subtitles styled as muted meta.
+    • Deliverables: Type specimen sheet; updated section/header styles on the report.
+
+PHASE 2 — Shell & App Bar
+4) Top App Bar Simplification
+[ ] Objective: Reduce visual noise and prioritize the product title.
+    • Done looks like: Title with generous padding; secondary icons grouped in an overflow; aligned hit areas; subdued background.
+    • Deliverables: App bar mock with overflow pattern; icon and spacing spec.
+
+PHASE 3 — Left Rail (File Management)
+5) Harmonize Rail Cards
+[ ] Objective: Make "Upload files" and "Uploaded files" visually consistent.
+[ ] Done looks like: Identical card shells (radius, shadow, header style). Title + helper text pattern. Even vertical spacing between cards.
+    • Deliverables: Card header style (icon, title, subtext), spacing tokens.
+
+6) Control Grouping for Bulk Actions
+[ ] Objective: Convert scattered buttons into a coherent toolbar/segmented control.
+    • Done looks like: "Expand all", "Collapse all", "Select all", "Deselect all" grouped; primary vs secondary emphasis clear; compact density.
+    • Deliverables: Toolbar layout mock; hover/pressed states sheet.
+
+7) Accordion Headers with Context
+[ ] Objective: Improve scannability of file groups.
+    • Done looks like: Chevron + title + count chip (e.g., 5 PDFs, 2 processed); consistent hit area; aligned icons.
+    • Deliverables: Header pattern spec; examples for multiple groups.
+
+PHASE 4 — Upload Experience (secondary but frequent)
+8) Upload Card CTA & Helper Text
+[ ] Objective: Present one clear primary action and supportive context.
+    • Done looks like: Primary "Browse files" CTA; light cloud illustration/icon; concise helper text; reduced chroma.
+    • Deliverables: Card mock with empty state; icon treatment.
+
+9) File Intake Feedback
+[ ] Objective: Show immediate, unobtrusive feedback on selection and readiness to process.
+    • Done looks like: After selection, filenames appear with subtle chips for size/date; clear secondary action to Process when applicable.
+    • Deliverables: Intake row pattern; feedback micro-states.
+
+PHASE 5 — Uploaded File List (Rows)
+10) Row Affordance & Actions
+[ ] Objective: Replace tiny icon-only controls with a clearer row interaction model.
+    • Done looks like: Clickable row area (thumbnail/extension, filename), right‑aligned action cluster (process/delete/more); consistent height; hover background.
+    • Deliverables: Row anatomy; iconography set; hover/active states.
+
+11) Metadata Presentation
+[ ] Objective: Improve scan with compact, readable metadata.
+    • Done looks like: Filename on first line; second line shows size • date • status chip; optional zebra striping or soft dividers.
+    • Deliverables: Metadata style guide; truncation/wrap rules.
+
+PHASE 6 — Report Header (Main Content)
+12) Title, Meta Row, and Actions
+[ ] Objective: Create a strong yet calm header that prioritizes reading.
+    • Done looks like: Report title (H1), metadata row beneath (Analysis period, Overall risk as chip), subtle divider; export/share hidden in overflow or tertiary spot.
+    • Deliverables: Header mock; chip spec for risk levels.
+
+PHASE 7 — System Health Overview (Statuses)
+13) Status Chips in Table
+[ ] Objective: Replace long color bars with concise semantic chips.
+    • Done looks like: Table with Area + Status chip (Good/Fair/Poor); consistent color ramp and icons; balanced column widths; reduced border weight.
+    • Deliverables: Status chip scale (colors, icons); table specimen with zebra and sticky header.
+
+PHASE 8 — Executive Summary (Readability)
+14) Chunking & Callouts
+[ ] Objective: Turn dense paragraphs into readable bullet groups with highlights.
+    • Done looks like: Short bullet clusters with mini‑headings; critical risks in subtle callout cards; improved line-height.
+    • Deliverables: Summary layout mock; callout card style.
+
+PHASE 9 — Other Tables (Positive Findings, etc.)
+15) Uniform Table Language
+[ ] Objective: Standardize headers, padding, alignment, and multiline cells.
+    • Done looks like: Consistent header weight; left-aligned cells; comfortable row height; multiline bullets rendered clearly; optional "Show more" expanders for very long cells.
+    • Deliverables: Table guidelines; examples with long content.
+
+PHASE 10 — Document Assistant (Ad‑hoc Chat)
+16) Modal Chat (invoked ad‑hoc)
+[ ] Objective: Provide a focused chat as a modal, not persistent side‑sheet.
+    • Done looks like: Centered or side modal with scrim, sticky header, and always-visible input area; rich empty state with a single CTA ("Process file").
+    • Deliverables: Modal layout; empty state illustration/message; CTA copy.
+
+PHASE 11 — Customer Assignment Overlay
+17) Guided Step Card / Small Modal
+[ ] Objective: Make selection fast and obvious for up to ~50 items.
+    • Done looks like: Title + short description; searchable combobox with clear options (optional avatars/icons); selection confirmation as a chip/pill; normalized paddings.
+    • Deliverables: Small modal/card mock; combobox interaction notes.
+
+PHASE 12 — Buttons & Icons
+18) Action Hierarchy & Consistency
+[ ] Objective: One primary per view; neutrals for secondary/tertiary.
+    • Done looks like: Primary reserved for the main task (e.g., Process when applicable, otherwise none in read mode); secondary buttons are subtle/ghost; icon-only actions all have labels (tooltips), consistent size and family.
+    • Deliverables: Button matrix (states, sizes); iconography inventory and replacements (single style family).
+
+PHASE 13 — Color & Status System
+19) Semantic Color Ramp
+[ ] Objective: Calm, readable status communication without harsh slabs.
+    • Done looks like: Chips, small progress where needed; backgrounds remain primarily neutral; consistent success/warn/danger/info hues.
+    • Deliverables: Semantic color sheet with sample components.
+
+PHASE 14 — Micro‑interactions & Motion
+20) Subtle Motion and Focus
+[ ] Objective: Add polish without distraction.
+    • Done looks like: 150–200ms ease transitions on rows, chips, buttons; visible focus outlines; gentle elevation on overlays.
+    • Deliverables: Motion spec; focus states sheet.
+
+PHASE 15 — Responsive Behavior
+21) Breakpoints & Adaptations
+[ ] Objective: Ensure excellent reading on narrow viewports.
+    • Done looks like: Left rail collapses under ~1024px into a drawer; chat modal becomes full‑width on small screens; tables offer horizontal scroll with edge shadows and sticky headers/first column.
+    • Deliverables: Responsive mocks at key breakpoints; table overflow patterns.
+
+PHASE 16 — Review & Polish
+22) Density and Contrast Audit
+[ ] Objective: Tune spacing, dividers, and contrast for comfort.
+    • Done looks like: Consistent section spacing; dividers used sparingly; text contrast comfortable even without strict WCAG targets; blue reduced to accents.
+    • Deliverables: Before/after compare board; final style snapshot.
+
+23) Readability Validation
+[ ] Objective: Validate that reading remains the primary, least-effort task.
+    • Done looks like: Users can scan the report quickly; actions don’t compete with content; export/share is discoverable but not dominant.
+    • Deliverables: Heuristic review notes; small user feedback sample if available.
+
+Execution Notes
+• Prioritize phases 1, 6, 7, and 14 to make the biggest impact on reading quality quickly.
+• Retain current structure where possible; this is a visual refresh, not an IA rewrite.
+• For statuses (Good/Fair/Poor), define only visual semantics (color/icon) since thresholds are qualitative.
+• Since export/share isn’t critical, tuck into overflow in the report header.
+• Brand is flexible—start with a soft micro‑brand; keep tokens easy to swap if brand guidance arrives later.
+
+Acceptance Checklist (high level)
+[ ] Foundations documented (palette, type, spacing, grid)
+[ ] App bar simplified
+[ ] Left rail unified (cards, toolbar, accordions)
+[ ] Upload card clarified (CTA + helper text)
+[ ] File rows redesigned (affordance + metadata)
+[ ] Report header restructured (title/meta/chips)
+[ ] System Health table uses status chips
+[ ] Executive Summary chunked with callouts
+[ ] Tables standardized with multiline support
+[ ] Chat implemented as ad‑hoc modal with rich empty state
+[ ] Customer assignment modal refined
+[ ] Buttons and icons standardized
+[ ] Semantic color/status system applied
+[ ] Motion and focus polish added
+[ ] Responsive patterns verified at breakpoints
+[ ] Final density/contrast/readability pass complete

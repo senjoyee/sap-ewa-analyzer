@@ -33,7 +33,23 @@ const useStyles = makeStyles({
     minWidth: 0,
     minHeight: 0, // allow flex children to shrink and become scrollable
     padding: tokens.spacingVerticalM,
-    background: `linear-gradient(180deg, ${tokens.colorNeutralBackground1} 0%, ${tokens.colorNeutralBackground1Hover} 100%)`,
+    background: tokens.colorNeutralBackground1,
+    position: 'relative',
+    // Sticky offset for group headers (kept conservative)
+    '--sidebar-sticky-offset': '56px',
+    selectors: {
+      '&::before': {
+        content: '""',
+        position: 'absolute',
+        left: 0,
+        top: 0,
+        bottom: 0,
+        width: 4,
+        backgroundColor: tokens.colorBrandStroke1,
+        opacity: 0.7,
+        pointerEvents: 'none',
+      },
+    },
   },
   skipLink: {
     position: 'absolute',
@@ -89,12 +105,15 @@ const useStyles = makeStyles({
     marginBottom: tokens.spacingVerticalM,
     flexWrap: 'wrap',
     gap: tokens.spacingHorizontalS,
-    padding: tokens.spacingVerticalM,
+    padding: tokens.spacingVerticalS,
     backgroundColor: tokens.colorNeutralBackground1,
     borderRadius: tokens.borderRadiusLarge,
-    boxShadow: tokens.shadow8,
-    border: `1px solid ${tokens.colorNeutralStroke1}`,
-    background: `linear-gradient(135deg, ${tokens.colorNeutralBackground1} 0%, ${tokens.colorSubtleBackground} 100%)`,
+    boxShadow: tokens.shadow4,
+    border: `1px solid ${tokens.colorNeutralStroke2}`,
+    background: tokens.colorNeutralBackground1,
+    position: 'sticky',
+    top: 0,
+    zIndex: 1,
     '@media (max-width: 600px)': {
       flexDirection: 'column',
       alignItems: 'stretch',
@@ -125,10 +144,10 @@ const useStyles = makeStyles({
     gap: tokens.spacingVerticalS,
     marginBottom: tokens.spacingVerticalM,
     padding: tokens.spacingVerticalM,
-    backgroundColor: tokens.colorNeutralBackground1,
+    backgroundColor: tokens.colorSubtleBackground,
     borderRadius: tokens.borderRadiusMedium,
     border: `1px solid ${tokens.colorNeutralStroke2}`,
-    boxShadow: tokens.shadow4,
+    boxShadow: 'none',
   },
   selectionRow: {
     display: 'flex',
@@ -138,9 +157,9 @@ const useStyles = makeStyles({
     rowGap: tokens.spacingVerticalXS,
   },
   selectionText: {
-    color: tokens.colorNeutralForeground2,
-    fontSize: tokens.fontSizeBase200,
-    fontWeight: tokens.fontWeightMedium,
+    color: tokens.colorNeutralForeground3,
+    fontSize: tokens.fontSizeBase100,
+    fontWeight: tokens.fontWeightRegular,
   },
   batchActions: {
     display: 'flex',
@@ -161,10 +180,10 @@ const useStyles = makeStyles({
     backgroundColor: tokens.colorNeutralBackground1,
     border: `1px solid ${tokens.colorNeutralStroke1}`,
     borderRadius: tokens.borderRadiusLarge,
-    boxShadow: tokens.shadow16,
+    boxShadow: tokens.shadow8,
     minHeight: 'auto',
     height: 'auto',
-    background: `linear-gradient(180deg, ${tokens.colorNeutralBackground1} 0%, ${tokens.colorNeutralBackground2} 100%)`,
+    background: tokens.colorNeutralBackground1,
   },
   loadingCenter: {
     display: 'flex',
@@ -220,19 +239,22 @@ const useStyles = makeStyles({
     backgroundColor: tokens.colorNeutralBackground1,
     borderBottom: `1px solid ${tokens.colorNeutralStroke2}`,
     borderRadius: `${tokens.borderRadiusMedium} ${tokens.borderRadiusMedium} 0 0`,
-    transition: 'all 200ms cubic-bezier(0.4, 0, 0.2, 1)',
-    background: `linear-gradient(135deg, ${tokens.colorNeutralBackground1} 0%, ${tokens.colorSubtleBackground} 100%)`,
-    boxShadow: `0 1px 3px ${tokens.colorNeutralShadowAmbient}`,
+    transition: 'all 150ms ease',
+    background: tokens.colorNeutralBackground1,
+    boxShadow: `0 1px 2px ${tokens.colorNeutralShadowAmbient}`,
+    position: 'sticky',
+    top: 'var(--sidebar-sticky-offset)',
+    zIndex: 1,
     selectors: {
       '&:hover': { 
         backgroundColor: tokens.colorSubtleBackgroundHover,
         transform: 'translateY(-1px)',
-        boxShadow: `0 4px 12px ${tokens.colorNeutralShadowAmbient}`,
+        boxShadow: `0 2px 6px ${tokens.colorNeutralShadowAmbient}`,
       },
       '&:focus-visible': { 
         outline: `${tokens.strokeWidthThick} solid ${tokens.colorBrandStroke1}`, 
         outlineOffset: 2,
-        boxShadow: `0 0 0 2px ${tokens.colorBrandBackground}`,
+        boxShadow: 'none',
       },
     },
   },
@@ -278,8 +300,8 @@ const useStyles = makeStyles({
     selectors: {
       '&:hover': {
         backgroundColor: tokens.colorSubtleBackgroundHover,
-        transform: 'translateX(2px)',
-        boxShadow: `0 2px 8px ${tokens.colorNeutralShadowAmbient}`,
+        transform: 'translateX(1px)',
+        boxShadow: `0 1px 4px ${tokens.colorNeutralShadowAmbient}`,
       },
       '&:hover [data-checkbox]': { opacity: 1, pointerEvents: 'auto' },
       '&:focus-within [data-checkbox]': { opacity: 1, pointerEvents: 'auto' },
@@ -298,8 +320,8 @@ const useStyles = makeStyles({
     paddingBottom: tokens.spacingVerticalS,
     marginInline: tokens.spacingHorizontalXS,
     borderRadius: tokens.borderRadiusMedium,
-    minHeight: 48,
-    transition: 'all 200ms cubic-bezier(0.4, 0, 0.2, 1)',
+    minHeight: 44,
+    transition: 'all 150ms ease',
     cursor: 'pointer',
     position: 'relative',
     border: `1px solid transparent`,
@@ -317,28 +339,24 @@ const useStyles = makeStyles({
       '&:focus-within [data-checkbox]': { opacity: 1, pointerEvents: 'auto' },
       '&[data-checked="true"] [data-checkbox]': { opacity: 1, pointerEvents: 'auto' },
       '&[data-checked="true"]': {
-        backgroundColor: tokens.colorBrandBackgroundStatic,
+        backgroundColor: tokens.colorNeutralBackground3,
         borderColor: tokens.colorBrandStroke1,
-        color: tokens.colorNeutralForegroundOnBrand,
+        boxShadow: `inset 2px 0 0 0 ${tokens.colorBrandStroke1}`,
       },
     },
   },
   itemRowSelected: {
-    backgroundColor: tokens.colorBrandBackgroundStatic,
+    backgroundColor: tokens.colorNeutralBackground3,
     borderColor: tokens.colorBrandStroke1,
-    boxShadow: `0 0 0 1px ${tokens.colorBrandStroke1}`,
-    selectors: {
-      '& *': {
-        color: `${tokens.colorNeutralForegroundOnBrand} !important`,
-      },
-    },
+    boxShadow: `inset 2px 0 0 0 ${tokens.colorBrandStroke1}`,
   },
   zebraRow: {
     backgroundColor: tokens.colorNeutralBackground2,
   },
   itemDivider: {
     height: 1,
-    backgroundColor: tokens.colorNeutralStroke2,
+    backgroundImage: `linear-gradient(to right, transparent, ${tokens.colorNeutralStroke2}, transparent)`,
+    backgroundRepeat: 'no-repeat',
     marginLeft: tokens.spacingHorizontalXS,
     marginRight: tokens.spacingHorizontalXS,
   },
@@ -376,6 +394,9 @@ const useStyles = makeStyles({
   fileIconCell: {
     minWidth: 28,
     color: tokens.colorNeutralForeground3,
+    display: 'flex',
+    alignItems: 'center',
+    marginRight: tokens.spacingHorizontalS,
   },
   itemDetails: {
     flex: 1,
@@ -398,6 +419,13 @@ const useStyles = makeStyles({
   },
   successIcon: {
     color: tokens.colorPaletteGreenForeground2,
+    filter: 'drop-shadow(0 1px 1px rgba(0,0,0,0.1))',
+  },
+  statusDot: {
+    width: 8,
+    height: 8,
+    borderRadius: '50%',
+    backgroundColor: tokens.colorPaletteGreenForeground2,
     filter: 'drop-shadow(0 1px 1px rgba(0,0,0,0.1))',
   },
   errorIcon: {
@@ -977,7 +1005,7 @@ const FileList = ({ onFileSelect, refreshTrigger, selectedFile }) => {
                   <CounterBadge 
                     count={filesByCustomer[customer].length}
                     size="small"
-                    color="brand"
+                    color="neutral"
                     className={classes.headerBadge}
                   />
                 </div>
@@ -1050,13 +1078,11 @@ const FileList = ({ onFileSelect, refreshTrigger, selectedFile }) => {
                               <Spinner size="tiny" />
                             )}
                             {combinedProcessingStatus[file.id || file.name] === 'completed' && (
-                              <FluentTooltip content="AI analysis ready">
-                                <Play24Regular className={classes.successIcon} />
-                              </FluentTooltip>
+                              <span className={classes.statusDot} aria-label="AI analysis ready" />
                             )}
                             {combinedProcessingStatus[file.id || file.name] === 'error' && (
                               <FluentTooltip content="Error in processing">
-                                <Delete24Regular className={classes.errorIcon} />
+                                <ErrorCircle16Regular className={classes.errorIcon} />
                               </FluentTooltip>
                             )}
                           </div>
@@ -1085,13 +1111,19 @@ const FileList = ({ onFileSelect, refreshTrigger, selectedFile }) => {
             <CounterBadge 
               count={files.length}
               size="small"
-              color="brand"
-              className={classes.titleBadgeSpacing}
+              color="neutral"
             />
           )}
+          <CounterBadge 
+            count={files.length}
+            size="small"
+            color="neutral"
+            className={classes.titleBadgeSpacing}
+          />
         </div>
         <div className={classes.actionButtons}>
           <FluentButton
+            appearance="subtle"
             size="small"
             onClick={() => {
               const allExpanded = {};
@@ -1105,6 +1137,7 @@ const FileList = ({ onFileSelect, refreshTrigger, selectedFile }) => {
             Expand all
           </FluentButton>
           <FluentButton
+            appearance="subtle"
             size="small"
             onClick={() => setExpandedCustomers({})}
           >
@@ -1120,12 +1153,14 @@ const FileList = ({ onFileSelect, refreshTrigger, selectedFile }) => {
           </span>
           <div className={classes.actionButtons}>
             <FluentButton
+              appearance="subtle"
               size="small"
               onClick={() => handleSelectAllFiles()}
             >
               Select all
             </FluentButton>
             <FluentButton
+              appearance="subtle"
               size="small"
               onClick={() => handleDeselectAllFiles()}
             >

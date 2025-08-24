@@ -66,13 +66,13 @@ const useStyles = makeStyles({
     ...shorthands.borderRadius(tokens.borderRadiusXLarge),
     backgroundColor: tokens.colorNeutralBackground1,
     ...shorthands.border('1px', 'solid', tokens.colorNeutralStroke1),
-    boxShadow: tokens.shadow16,
-    background: `linear-gradient(135deg, ${tokens.colorNeutralBackground1} 0%, ${tokens.colorSubtleBackground} 100%)`,
-    transition: 'all 200ms cubic-bezier(0.4, 0, 0.2, 1)',
+    boxShadow: tokens.shadow8,
+    background: tokens.colorNeutralBackground1,
+    transition: 'all 150ms ease',
     selectors: {
       '&:hover': {
-        transform: 'translateY(-2px)',
-        boxShadow: tokens.shadow28,
+        transform: 'translateY(-1px)',
+        boxShadow: tokens.shadow16,
       },
     },
   },
@@ -98,10 +98,10 @@ const useStyles = makeStyles({
     color: tokens.colorPaletteBlueForeground1,
   },
   iconError: {
-    color: tokens.colorPaletteRedForeground1,
+    color: tokens.colorPaletteRedForeground2,
   },
   iconSuccess: {
-    color: tokens.colorPaletteGreenForeground1,
+    color: tokens.colorPaletteGreenForeground2,
   },
   iconNeutral: {
     color: tokens.colorNeutralForeground3,
@@ -113,16 +113,16 @@ const useStyles = makeStyles({
     marginRight: tokens.spacingHorizontalXS,
   },
   heroIcon: {
-    width: 56,
-    height: 56,
+    width: 48,
+    height: 48,
     color: tokens.colorBrandForeground1,
     marginBottom: tokens.spacingVerticalL,
     opacity: 1,
-    filter: 'drop-shadow(0 4px 8px rgba(0,0,0,0.15))',
-    transition: 'transform 200ms ease',
+    filter: 'drop-shadow(0 2px 4px rgba(0,0,0,0.12))',
+    transition: 'transform 150ms ease',
     selectors: {
       '&:hover': {
-        transform: 'scale(1.05)',
+        transform: 'scale(1.03)',
       },
     },
   },
@@ -136,19 +136,19 @@ const useStyles = makeStyles({
     backgroundColor: tokens.colorNeutralBackground1,
     ...shorthands.borderRadius(tokens.borderRadiusLarge),
     ...shorthands.border('1px', 'solid', tokens.colorNeutralStroke1),
-    boxShadow: tokens.shadow16,
-    background: `linear-gradient(135deg, ${tokens.colorNeutralBackground1} 0%, ${tokens.colorSubtleBackground} 100%)`,
-    transition: 'all 200ms cubic-bezier(0.4, 0, 0.2, 1)',
+    boxShadow: tokens.shadow8,
+    background: tokens.colorNeutralBackground1,
+    transition: 'all 150ms ease',
     selectors: {
       '&:hover': { 
         backgroundColor: tokens.colorSubtleBackgroundHover,
         transform: 'translateY(-1px)',
-        boxShadow: tokens.shadow28,
+        boxShadow: tokens.shadow16,
       },
       '&:focus-within': { 
         outline: `${tokens.strokeWidthThick} solid ${tokens.colorBrandStroke1}`, 
         outlineOffset: 2,
-        boxShadow: `0 0 0 2px ${tokens.colorBrandBackground}`,
+        // remove extra glow for a cleaner focus ring
       },
     },
   },
@@ -162,7 +162,7 @@ const useStyles = makeStyles({
     ...shorthands.borderRadius(tokens.borderRadiusMedium),
     ...shorthands.border('1px', 'solid', tokens.colorNeutralStroke2),
     boxShadow: tokens.shadow8,
-    transition: 'all 200ms cubic-bezier(0.4, 0, 0.2, 1)',
+    transition: 'all 150ms ease',
     selectors: {
       '&:hover': { 
         backgroundColor: tokens.colorSubtleBackgroundHover,
@@ -187,7 +187,7 @@ const useStyles = makeStyles({
   },
   heroSubtext: {
     color: tokens.colorNeutralForeground2,
-    marginBottom: tokens.spacingVerticalXL,
+    marginBottom: tokens.spacingVerticalL,
     fontSize: tokens.fontSizeBase400,
     fontWeight: tokens.fontWeightMedium,
     lineHeight: tokens.lineHeightBase400,
@@ -506,7 +506,7 @@ const FileUpload = ({ onUploadSuccess }) => {
           
           <div style={{ display: 'flex', justifyContent: 'space-between', marginTop: tokens.spacingVerticalXL, paddingTop: tokens.spacingVerticalS }}>
             <FluentButton
-              appearance="outline"
+              appearance="subtle"
               size="small"
               onClick={handleCancelUpload}
               icon={<Dismiss24Regular />}

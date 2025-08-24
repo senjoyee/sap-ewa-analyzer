@@ -187,7 +187,7 @@ const useStyles = makeStyles({
     marginTop: tokens.spacingVerticalXL,
     marginBottom: tokens.spacingVerticalM,
     fontWeight: tokens.fontWeightSemibold,
-    fontSize: tokens.fontSizeBase700,
+    fontSize: tokens.fontSizeBase500,
     letterSpacing: '-0.02em',
     color: tokens.colorNeutralForeground1,
   },
@@ -195,7 +195,7 @@ const useStyles = makeStyles({
     marginTop: tokens.spacingVerticalL,
     marginBottom: tokens.spacingVerticalS,
     fontWeight: tokens.fontWeightSemibold,
-    fontSize: tokens.fontSizeBase600,
+    fontSize: tokens.fontSizeBase500,
     letterSpacing: '-0.01em',
     color: tokens.colorNeutralForeground1,
   },
@@ -203,7 +203,7 @@ const useStyles = makeStyles({
     marginTop: tokens.spacingVerticalM,
     marginBottom: tokens.spacingVerticalXS,
     fontWeight: tokens.fontWeightSemibold,
-    fontSize: tokens.fontSizeBase500,
+    fontSize: tokens.fontSizeBase300,
     color: tokens.colorNeutralForeground1,
   },
   mdP: {
@@ -268,7 +268,7 @@ const useStyles = makeStyles({
     backgroundColor: tokens.colorNeutralBackground2,
     color: tokens.colorNeutralForeground1,
     fontWeight: tokens.fontWeightSemibold,
-    fontSize: tokens.fontSizeBase500,
+    fontSize: tokens.fontSizeBase300,
   },
   tableScroll: {
     overflowX: 'auto',
@@ -292,8 +292,8 @@ const useStyles = makeStyles({
     textAlign: 'left',
     padding: tokens.spacingHorizontalM,
     fontWeight: tokens.fontWeightSemibold,
-    fontSize: tokens.fontSizeBase200,
-    color: tokens.colorNeutralForeground1,
+    fontSize: tokens.fontSizeBase300,
+    color: tokens.colorNeutralForeground2,
     borderBottom: `1px solid ${tokens.colorNeutralStroke1}`,
     backgroundColor: tokens.colorNeutralBackground2,
   },
@@ -303,6 +303,7 @@ const useStyles = makeStyles({
     color: tokens.colorNeutralForeground2,
     borderBottom: `1px solid ${tokens.colorNeutralStroke1}`,
     verticalAlign: 'top',
+    lineHeight: '1.4',
   },
   contentArea: {
     flex: 1,
@@ -376,7 +377,7 @@ const useStyles = makeStyles({
   },
   placeholderMuted: {
     color: tokens.colorNeutralForeground3,
-    fontSize: tokens.fontSizeBase200,
+    fontSize: tokens.fontSizeBase100,
   },
   // Lightweight skeleton styles (no animation for simplicity)
   skeletonContainer: {
@@ -414,7 +415,7 @@ const JsonCodeBlockRenderer = ({ node, inline, className, children, ...props }) 
       if (jsonData && jsonData.tableTitle && Array.isArray(jsonData.items)) {
         return (
           <div className={classes.tableCard}>
-            <div className={`${classes.tableTitle} ${typography.headingL}`}>{jsonData.tableTitle}</div>
+            <div className={`${classes.tableTitle} ${typography.headingM}`}>{jsonData.tableTitle}</div>
             <div className={classes.tableScroll} tabIndex={0} role="group" aria-label={`${jsonData.tableTitle} table`}>
               <table className={classes.mdTable} aria-label={`${jsonData.tableTitle} data`}>
                 <thead>
@@ -442,7 +443,7 @@ const JsonCodeBlockRenderer = ({ node, inline, className, children, ...props }) 
         const wrapStyle = { whiteSpace: 'normal', overflow: 'visible', textOverflow: 'clip', wordBreak: 'break-word', overflowWrap: 'anywhere' };
         return (
           <div className={classes.tableCard}>
-            <div className={`${classes.tableTitle} ${typography.headingL}`}>{jsonData.tableTitle}</div>
+            <div className={`${classes.tableTitle} ${typography.headingM}`}>{jsonData.tableTitle}</div>
             <div className={classes.tableScroll} tabIndex={0} role="group" aria-label={`${jsonData.tableTitle} table`}>
               <table className={classes.mdTable} aria-label={`${jsonData.tableTitle} data`}>
                 <thead>
@@ -491,7 +492,7 @@ const JsonCodeBlockRenderer = ({ node, inline, className, children, ...props }) 
             const wrapStyle = { whiteSpace: 'normal', overflow: 'visible', textOverflow: 'clip', wordBreak: 'break-word', overflowWrap: 'anywhere' };
             return (
               <div className={classes.tableCard}>
-                <div className={`${classes.tableTitle} ${typography.headingL}`}>{tableTitle}</div>
+                <div className={`${classes.tableTitle} ${typography.headingM}`}>{tableTitle}</div>
                 <div className={classes.tableScroll} tabIndex={0} role="group" aria-label={`${tableTitle} table`}>
                   <table className={classes.mdTable} aria-label={`${tableTitle} data`}>
                     <thead>
