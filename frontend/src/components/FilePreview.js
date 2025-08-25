@@ -153,7 +153,6 @@ const useStyles = makeStyles({
     flexGrow: 1,
     minWidth: 0,
     overflowWrap: 'anywhere',
-    textShadow: '0 2px 4px rgba(0, 0, 0, 0.1)',
     letterSpacing: '-0.01em',
     fontFeatureSettings: '"ss01", "ss02"',
     textRendering: 'optimizeLegibility',
@@ -287,7 +286,6 @@ const useStyles = makeStyles({
     fontSize: tokens.fontSizeBase600,
     letterSpacing: '-0.02em',
     color: tokens.colorNeutralForeground1,
-    textShadow: '0 2px 4px rgba(0, 0, 0, 0.1)',
     position: 'relative',
     paddingBottom: 0,
     '::after': {
@@ -502,7 +500,7 @@ const useStyles = makeStyles({
   contentArea: {
     flex: 1,
     padding: tokens.spacingHorizontalXL,
-    backgroundColor: '#F9FAFB',
+    backgroundColor: '#FFFFFF',
     overflowY: 'auto',
     display: 'flex',
     alignItems: 'stretch',
@@ -531,6 +529,28 @@ const useStyles = makeStyles({
     },
     '@media (max-width: 600px)': {
       padding: tokens.spacingHorizontalM,
+    },
+  },
+  // High-quality text rendering to match PDF appearance
+  previewTextRoot: {
+    fontFamily: '"Inter", system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif',
+    fontKerning: 'normal',
+    fontVariantLigatures: 'common-ligatures contextual',
+    fontFeatureSettings: '"liga" 1, "calt" 1, "kern" 1',
+    fontOpticalSizing: 'auto',
+    textRendering: 'optimizeLegibility',
+    WebkitFontSmoothing: 'antialiased',
+    MozOsxFontSmoothing: 'grayscale',
+    // Prevent synthetic styles that can blur glyph edges
+    fontSynthesis: 'none',
+    color: tokens.colorNeutralForeground1,
+    selectors: {
+      '& code, & pre': {
+        fontFamily: '"JetBrains Mono", Consolas, "Courier New", monospace',
+      },
+      '& h1, & h2': {
+        letterSpacing: '-0.01em',
+      },
     },
   },
   noFileIcon: {
@@ -964,7 +984,7 @@ const FilePreview = ({ selectedFile }) => {
       >
         {selectedFile ? (
           isAnalysisView ? (
-            <div className={classes.analysisInner}>
+            <div className={`${classes.analysisInner} ${classes.previewTextRoot}`}>
               {selectedFile.analysisLoading ? (
                 <div className={classes.skeletonContainer} role="status" aria-live="polite" aria-busy="true">
                   <ProgressBar thickness="small" />

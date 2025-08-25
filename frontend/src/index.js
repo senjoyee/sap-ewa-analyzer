@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import './index.css'; // Global dark theme styles
+import './index.css';
 import ReactDOM from 'react-dom/client';
 import './App.css'; // We'll create this next
 import App from './App'; // And this one too
@@ -8,13 +8,19 @@ import { FluentProvider, webLightTheme, teamsLightTheme, teamsDarkTheme, teamsHi
 import * as microsoftTeams from '@microsoft/teams-js';
 
 function Root() {
-  const [fluentTheme, setFluentTheme] = useState(webLightTheme);
+  const withInter = (t) => ({
+    ...t,
+    fontFamilyBase: '"Inter", system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif',
+    fontFamilyMonospace: '"JetBrains Mono", Consolas, "Courier New", monospace',
+  });
+  // Initialize with Inter immediately so non-Teams environments get the font
+  const [fluentTheme, setFluentTheme] = useState(withInter(webLightTheme));
 
   useEffect(() => {
     let mounted = true;
     const applyTeamsTheme = (themeName) => {
-      const t = themeName === 'dark' ? teamsDarkTheme : themeName === 'contrast' ? teamsHighContrastTheme : teamsLightTheme;
-      if (mounted) setFluentTheme(t);
+      const base = themeName === 'dark' ? teamsDarkTheme : themeName === 'contrast' ? teamsHighContrastTheme : teamsLightTheme;
+      if (mounted) setFluentTheme(withInter(base));
     };
 
     const init = async () => {
@@ -24,7 +30,8 @@ function Root() {
         applyTeamsTheme((ctx.app && ctx.app.theme) || ctx.theme || 'default');
         microsoftTeams.app.registerOnThemeChangeHandler((theme) => applyTeamsTheme(theme));
       } catch (e) {
-        // Not running inside Teams, keep webLightTheme
+        // Not running inside Teams, ensure Inter override is applied
+        if (mounted) setFluentTheme(withInter(webLightTheme));
       }
     };
     init();
