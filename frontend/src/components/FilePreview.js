@@ -24,7 +24,7 @@ import sapLogo from '../logo/sap-3.svg';
 import { formatDisplay } from '../utils/format';
 
 // Import additional icons for status indicators
-import { CheckmarkCircle20Regular, Warning20Regular, ErrorCircle20Regular } from '@fluentui/react-icons';
+// Icons removed for status/risk to match PDF styling (text-only for status, filled chips for risk)
 
 // Helper function to detect and style status/severity values
 const getStatusStyle = (value, classes) => {
@@ -34,19 +34,19 @@ const getStatusStyle = (value, classes) => {
   // Status mappings with enhanced visual styles
   const statusMap = {
     // Health statuses
-    'good': { class: classes.statusGood, icon: <CheckmarkCircle20Regular />, label: 'GOOD', color: tokens.colorPaletteGreenForeground1 },
-    'excellent': { class: classes.statusGood, icon: <CheckmarkCircle20Regular />, label: 'EXCELLENT', color: tokens.colorPaletteGreenForeground1 },
-    'fair': { class: classes.statusFair, icon: <Warning20Regular />, label: 'FAIR', color: tokens.colorPaletteYellowForeground1 },
-    'warning': { class: classes.statusFair, icon: <Warning20Regular />, label: 'WARNING', color: tokens.colorPaletteYellowForeground1 },
-    'poor': { class: classes.statusPoor, icon: <ErrorCircle20Regular />, label: 'POOR', color: tokens.colorPaletteRedForeground1 },
+    'good': { class: classes.statusGood, icon: null, label: 'GOOD', color: tokens.colorPaletteGreenForeground1 },
+    'excellent': { class: classes.statusGood, icon: null, label: 'EXCELLENT', color: tokens.colorPaletteGreenForeground1 },
+    'fair': { class: classes.statusFair, icon: null, label: 'FAIR', color: tokens.colorPaletteYellowForeground1 },
+    'warning': { class: classes.statusFair, icon: null, label: 'WARNING', color: tokens.colorPaletteYellowForeground1 },
+    'poor': { class: classes.statusPoor, icon: null, label: 'POOR', color: tokens.colorPaletteRedForeground1 },
     // Risk levels use distinct outlined chip styles
-    'critical': { class: `${classes.riskBase} ${classes.riskCritical}`, icon: <ErrorCircle20Regular />, label: 'CRITICAL', color: tokens.colorPaletteRedForeground1 },
-    'error': { class: classes.statusPoor, icon: <ErrorCircle20Regular />, label: 'ERROR', color: tokens.colorPaletteRedForeground1 },
+    'critical': { class: `${classes.riskBase} ${classes.riskCritical}`, icon: null, label: 'CRITICAL', color: tokens.colorPaletteRedForeground1 },
+    'error': { class: classes.statusPoor, icon: null, label: 'ERROR', color: tokens.colorPaletteRedForeground1 },
 
     // Risk levels (map to closest visual chips used in PDF)
-    'high': { class: `${classes.riskBase} ${classes.riskHigh}`, icon: <Warning20Regular />, label: 'HIGH', color: tokens.colorPaletteYellowForeground1 },
-    'medium': { class: `${classes.riskBase} ${classes.riskMedium}`, icon: <Warning20Regular />, label: 'MEDIUM', color: tokens.colorBrandForeground1 },
-    'low': { class: `${classes.riskBase} ${classes.riskLow}`, icon: <CheckmarkCircle20Regular />, label: 'LOW', color: tokens.colorPaletteGreenForeground1 },
+    'high': { class: `${classes.riskBase} ${classes.riskHigh}`, icon: null, label: 'HIGH', color: tokens.colorPaletteYellowForeground1 },
+    'medium': { class: `${classes.riskBase} ${classes.riskMedium}`, icon: null, label: 'MEDIUM', color: tokens.colorBrandForeground1 },
+    'low': { class: `${classes.riskBase} ${classes.riskLow}`, icon: null, label: 'LOW', color: tokens.colorPaletteGreenForeground1 },
   };
   
   return statusMap[lowerValue] || null;
@@ -613,85 +613,58 @@ const useStyles = makeStyles({
     display: 'inline-flex',
     alignItems: 'center',
     gap: tokens.spacingHorizontalXXS,
-    padding: `${tokens.spacingVerticalXXS} ${tokens.spacingHorizontalXS}`,
-    borderRadius: tokens.borderRadiusMedium,
     fontSize: tokens.fontSizeBase100,
     fontWeight: tokens.fontWeightSemibold,
     letterSpacing: '0.02em',
     textTransform: 'uppercase',
-    border: '1px solid',
     position: 'relative',
-    overflow: 'hidden',
-    transition: 'all 200ms cubic-bezier(0.34, 1.56, 0.64, 1)',
-    '::before': {
-      content: '""',
-      position: 'absolute',
-      top: 0,
-      left: '-100%',
-      width: '100%',
-      height: '100%',
-      background: 'linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.3), transparent)',
-      transition: 'left 500ms ease',
-    },
-    ':hover::before': {
-      left: '100%',
-    },
+    overflow: 'visible',
+    transition: 'none',
   },
   statusGood: {
-    backgroundColor: tokens.colorPaletteGreenBackground2,
-    borderColor: tokens.colorPaletteGreenBorder2,
-    color: tokens.colorPaletteGreenForeground1,
-    ':hover': {
-      backgroundColor: tokens.colorPaletteGreenBackground3,
-      transform: 'scale(1.05)',
-      boxShadow: `0 4px 12px ${tokens.colorPaletteGreenBackground3}40`,
-    },
+    backgroundColor: 'transparent',
+    color: '#38a169', // match PDF status-good color
+    border: 'none',
   },
   statusFair: {
-    backgroundColor: tokens.colorPaletteYellowBackground2,
-    borderColor: tokens.colorPaletteYellowBorder2,
-    color: tokens.colorPaletteYellowForeground1,
-    ':hover': {
-      backgroundColor: tokens.colorPaletteYellowBackground3,
-      transform: 'scale(1.05)',
-      boxShadow: `0 4px 12px ${tokens.colorPaletteYellowBackground3}40`,
-    },
+    backgroundColor: 'transparent',
+    color: '#d69e2e', // match PDF status-fair color
+    border: 'none',
   },
   statusPoor: {
-    backgroundColor: tokens.colorPaletteRedBackground2,
-    borderColor: tokens.colorPaletteRedBorder2,
-    color: tokens.colorPaletteRedForeground1,
-    ':hover': {
-      backgroundColor: tokens.colorPaletteRedBackground3,
-      transform: 'scale(1.05)',
-      boxShadow: `0 4px 12px ${tokens.colorPaletteRedBackground3}40`,
-    },
-  },
-  // Risk chip variants (visually distinct from status chips)
-  riskBase: {
     backgroundColor: 'transparent',
-    borderWidth: '2px',
+    color: '#e53e3e', // match PDF status-poor color
+    border: 'none',
+  },
+  // Risk chip variants (match PDF gradient-filled style)
+  riskBase: {
+    display: 'inline-flex',
+    alignItems: 'center',
+    gap: tokens.spacingHorizontalXXS,
+    padding: `${tokens.spacingVerticalXXS} ${tokens.spacingHorizontalXS}`,
+    borderRadius: tokens.borderRadiusSmall,
+    fontSize: tokens.fontSizeBase100,
+    fontWeight: tokens.fontWeightSemibold,
+    letterSpacing: '0.02em',
+    textTransform: 'uppercase',
+    border: 'none',
     boxShadow: 'none',
   },
   riskCritical: {
-    borderColor: tokens.colorPaletteRedBorder2,
-    color: tokens.colorPaletteRedForeground1,
-    backgroundColor: `${tokens.colorPaletteRedBackground1}`,
+    background: 'linear-gradient(135deg, #fed7d7, #feb2b2)',
+    color: '#742a2a',
   },
   riskHigh: {
-    borderColor: tokens.colorPaletteYellowBorder2,
-    color: tokens.colorPaletteYellowForeground1,
-    backgroundColor: `${tokens.colorPaletteYellowBackground1}`,
+    background: 'linear-gradient(135deg, #feebc8, #fbd38d)',
+    color: '#7b341e',
   },
   riskMedium: {
-    borderColor: tokens.colorBrandStroke1,
-    color: tokens.colorBrandForeground1,
-    backgroundColor: tokens.colorSubtleBackground,
+    background: 'linear-gradient(135deg, #fefcbf, #faf089)',
+    color: '#744210',
   },
   riskLow: {
-    borderColor: tokens.colorPaletteGreenBorder2,
-    color: tokens.colorPaletteGreenForeground1,
-    backgroundColor: `${tokens.colorPaletteGreenBackground1}`,
+    background: 'linear-gradient(135deg, #c6f6d5, #9ae6b4)',
+    color: '#22543d',
   },
   // Enhanced skeleton styles with shimmer animation
   skeletonContainer: {
