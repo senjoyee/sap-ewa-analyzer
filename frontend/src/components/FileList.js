@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { Button as FluentButton, Spinner, ProgressBar, Tooltip as FluentTooltip, CounterBadge, Accordion as FluentAccordion, AccordionItem, AccordionHeader, AccordionPanel, Checkbox, tokens } from '@fluentui/react-components';
-import { makeStyles, mergeClasses } from '@griffel/react';
+import { makeStyles, mergeClasses, shorthands } from '@griffel/react';
 import { Alert as FluentAlert } from '@fluentui/react-alert';
 import { Toaster, useToastController, Toast, ToastTitle } from '@fluentui/react-toast';
 import { Delete24Regular, Play24Regular, Document24Regular, ChevronDown20Regular, Building24Regular, Folder24Regular, Document16Regular, DocumentPdf16Regular, Image16Regular, TextDescription16Regular, Info16Regular, Warning16Regular, ErrorCircle16Regular, CheckmarkCircle16Regular } from '@fluentui/react-icons';
@@ -87,10 +87,10 @@ const useStyles = makeStyles({
     color: tokens.colorBrandForeground1,
   },
   iconInfo: {
-    color: tokens.colorPaletteBlueForeground1,
+    color: tokens.colorPaletteBlueForeground2,
   },
   iconError: {
-    color: tokens.colorPaletteRedForeground1,
+    color: tokens.colorPaletteRedForeground2,
   },
   iconNeutral: {
     color: tokens.colorNeutralForeground3,
@@ -122,7 +122,7 @@ const useStyles = makeStyles({
     },
   },
   title: {
-    fontWeight: tokens.fontWeightBold,
+    fontWeight: 700,
     color: tokens.colorNeutralForeground1,
     fontSize: tokens.fontSizeBase300,
     display: 'flex',
@@ -130,7 +130,10 @@ const useStyles = makeStyles({
     gap: tokens.spacingHorizontalS,
     minWidth: 0,
     overflowWrap: 'anywhere',
-    letterSpacing: '-0.02em',
+    letterSpacing: '-0.03em',
+    textShadow: '0 1px 2px rgba(0,0,0,0.08)',
+    fontFeatureSettings: '"kern" 1, "liga" 1',
+    textRendering: 'optimizeLegibility',
   },
   actionButtons: {
     display: 'flex',
@@ -274,10 +277,12 @@ const useStyles = makeStyles({
     filter: 'drop-shadow(0 1px 2px rgba(0,0,0,0.1))',
   },
   customerName: {
-    fontWeight: tokens.fontWeightSemibold,
+    fontWeight: 600,
     fontSize: tokens.fontSizeBase300,
     color: tokens.colorNeutralForeground1,
-    letterSpacing: '-0.01em',
+    letterSpacing: '-0.02em',
+    fontFeatureSettings: '"kern" 1',
+    textRendering: 'optimizeLegibility',
   },
   headerBadge: {
     marginLeft: 'auto',
@@ -404,12 +409,14 @@ const useStyles = makeStyles({
   },
   itemTitle: {
     fontSize: tokens.fontSizeBase300,
-    fontWeight: tokens.fontWeightMedium,
+    fontWeight: 500,
     color: tokens.colorNeutralForeground1,
     whiteSpace: 'nowrap',
     overflow: 'hidden',
     textOverflow: 'ellipsis',
     letterSpacing: '-0.01em',
+    fontFeatureSettings: '"kern" 1',
+    textRendering: 'optimizeLegibility',
   },
   itemStatus: {
     marginLeft: 'auto',
@@ -515,6 +522,111 @@ const useStyles = makeStyles({
   placeholderMuted: {
     color: tokens.colorNeutralForeground3,
     fontSize: tokens.fontSizeBase200,
+  },
+  enhancedButton: {
+    fontWeight: 500,
+    letterSpacing: '0.01em',
+    transition: 'all 180ms cubic-bezier(0.4, 0, 0.2, 1)',
+    position: 'relative',
+    selectors: {
+      '&:hover': {
+        backgroundColor: tokens.colorSubtleBackgroundHover,
+        transform: 'translateY(-1px)',
+        boxShadow: `0 2px 8px ${tokens.colorNeutralShadowAmbient}`,
+      },
+      '&:active': {
+        transform: 'translateY(0)',
+        transition: 'all 100ms ease',
+      },
+      '&:focus-visible': {
+        outline: `2px solid ${tokens.colorBrandStroke1}`,
+        outlineOffset: 2,
+        backgroundColor: tokens.colorSubtleBackgroundPressed,
+      },
+    },
+  },
+  primaryActionButton: {
+    background: `linear-gradient(135deg, ${tokens.colorBrandBackground} 0%, ${tokens.colorBrandBackground2} 100%)`,
+    boxShadow: `0 2px 6px ${tokens.colorBrandShadowAmbient}, 0 1px 2px ${tokens.colorBrandShadowKey}`,
+    fontWeight: 600,
+    letterSpacing: '0.01em',
+    transition: 'all 200ms cubic-bezier(0.4, 0, 0.2, 1)',
+    position: 'relative',
+    overflow: 'hidden',
+    selectors: {
+      '&::before': {
+        content: '""',
+        position: 'absolute',
+        top: 0,
+        left: '-100%',
+        width: '100%',
+        height: '100%',
+        background: `linear-gradient(90deg, transparent, rgba(255,255,255,0.2), transparent)`,
+        transition: 'left 400ms ease',
+      },
+      '&:hover': {
+        background: `linear-gradient(135deg, ${tokens.colorBrandBackgroundHover} 0%, ${tokens.colorBrandBackground} 100%)`,
+        boxShadow: `0 4px 12px ${tokens.colorBrandShadowAmbient}, 0 2px 4px ${tokens.colorBrandShadowKey}`,
+        transform: 'translateY(-2px) scale(1.02)',
+      },
+      '&:hover::before': {
+        left: '100%',
+      },
+      '&:active': {
+        transform: 'translateY(-1px) scale(1.01)',
+        transition: 'all 100ms ease',
+      },
+      '&:focus-visible': {
+        outline: `2px solid ${tokens.colorNeutralForegroundOnBrand}`,
+        outlineOffset: 2,
+        boxShadow: `0 0 0 4px ${tokens.colorBrandBackground2}60, 0 4px 12px ${tokens.colorBrandShadowAmbient}`,
+      },
+    },
+  },
+  outlineActionButton: {
+    ...shorthands.border('1px', 'solid', tokens.colorBrandStroke1),
+    backgroundColor: 'transparent',
+    color: tokens.colorBrandForeground1,
+    fontWeight: 500,
+    letterSpacing: '0.01em',
+    transition: 'all 180ms cubic-bezier(0.4, 0, 0.2, 1)',
+    position: 'relative',
+    overflow: 'hidden',
+    selectors: {
+      '&::before': {
+        content: '""',
+        position: 'absolute',
+        top: 0,
+        left: 0,
+        right: 0,
+        bottom: 0,
+        background: tokens.colorBrandBackground2,
+        opacity: 0,
+        transition: 'opacity 200ms ease',
+      },
+      '& > *': {
+        position: 'relative',
+        zIndex: 1,
+      },
+      '&:hover': {
+        borderColor: tokens.colorBrandStroke1,
+        color: tokens.colorBrandForeground1,
+        transform: 'translateY(-1px)',
+        boxShadow: `0 3px 8px ${tokens.colorBrandShadowAmbient}`,
+      },
+      '&:hover::before': {
+        opacity: 0.1,
+      },
+      '&:active': {
+        transform: 'translateY(0)',
+        transition: 'all 100ms ease',
+      },
+      '&:focus-visible': {
+        outline: `2px solid ${tokens.colorBrandStroke1}`,
+        outlineOffset: 2,
+        boxShadow: `0 0 0 4px ${tokens.colorBrandBackground2}40`,
+      },
+    },
   },
 });
 
@@ -1075,14 +1187,16 @@ const FileList = ({ onFileSelect, refreshTrigger, selectedFile }) => {
                           </div>
                           <div className={classes.itemStatus}>
                             {combinedProcessingStatus[file.id || file.name] === 'processing' && (
-                              <Spinner size="tiny" />
+                              <Spinner size="tiny" aria-label="Analyzing" />
                             )}
                             {combinedProcessingStatus[file.id || file.name] === 'completed' && (
-                              <span className={classes.statusDot} aria-label="AI analysis ready" />
+                              <FluentTooltip content="Analyzed">
+                                <CheckmarkCircle16Regular className={`${classes.icon16} ${classes.successIcon}`} aria-label="Analyzed" />
+                              </FluentTooltip>
                             )}
                             {combinedProcessingStatus[file.id || file.name] === 'error' && (
                               <FluentTooltip content="Error in processing">
-                                <ErrorCircle16Regular className={classes.errorIcon} />
+                                <ErrorCircle16Regular className={`${classes.icon16} ${classes.errorIcon}`} aria-label="Error" />
                               </FluentTooltip>
                             )}
                           </div>
@@ -1114,17 +1228,12 @@ const FileList = ({ onFileSelect, refreshTrigger, selectedFile }) => {
               color="neutral"
             />
           )}
-          <CounterBadge 
-            count={files.length}
-            size="small"
-            color="neutral"
-            className={classes.titleBadgeSpacing}
-          />
         </div>
         <div className={classes.actionButtons}>
           <FluentButton
             appearance="subtle"
             size="small"
+            className={classes.enhancedButton}
             onClick={() => {
               const allExpanded = {};
               const filesByCustomer = groupByCustomer(files);
@@ -1139,6 +1248,7 @@ const FileList = ({ onFileSelect, refreshTrigger, selectedFile }) => {
           <FluentButton
             appearance="subtle"
             size="small"
+            className={classes.enhancedButton}
             onClick={() => setExpandedCustomers({})}
           >
             Collapse all
@@ -1155,6 +1265,7 @@ const FileList = ({ onFileSelect, refreshTrigger, selectedFile }) => {
             <FluentButton
               appearance="subtle"
               size="small"
+              className={classes.enhancedButton}
               onClick={() => handleSelectAllFiles()}
             >
               Select all
@@ -1162,6 +1273,7 @@ const FileList = ({ onFileSelect, refreshTrigger, selectedFile }) => {
             <FluentButton
               appearance="subtle"
               size="small"
+              className={classes.enhancedButton}
               onClick={() => handleDeselectAllFiles()}
             >
               Deselect all
@@ -1176,6 +1288,7 @@ const FileList = ({ onFileSelect, refreshTrigger, selectedFile }) => {
               <FluentButton
                 appearance="outline"
                 size="small"
+                className={classes.outlineActionButton}
                 icon={<Delete24Regular />}
                 onClick={handleBatchDelete}
               >
@@ -1183,8 +1296,9 @@ const FileList = ({ onFileSelect, refreshTrigger, selectedFile }) => {
               </FluentButton>
             )}
             <FluentButton
-              appearance="outline"
+              appearance="primary"
               size="small"
+              className={classes.primaryActionButton}
               icon={<Play24Regular />}
               onClick={handleBatchProcess}
             >

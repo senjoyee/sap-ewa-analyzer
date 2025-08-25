@@ -23,6 +23,63 @@ import sapLogo from '../logo/sap-3.svg';
 // Formatting utilities (dates/numbers)
 import { formatDisplay } from '../utils/format';
 
+// Import additional icons for status indicators
+import { CheckmarkCircle20Regular, Warning20Regular, ErrorCircle20Regular } from '@fluentui/react-icons';
+
+// Helper function to detect and style status values
+const getStatusStyle = (value, classes) => {
+  if (!value || typeof value !== 'string') return null;
+  const lowerValue = value.toLowerCase().trim();
+  
+  // Status mappings with enhanced visual styles
+  const statusMap = {
+    'good': { 
+      class: classes.statusGood, 
+      icon: <CheckmarkCircle20Regular />, 
+      label: 'Good',
+      color: tokens.colorPaletteGreenForeground1 
+    },
+    'excellent': { 
+      class: classes.statusGood, 
+      icon: <CheckmarkCircle20Regular />, 
+      label: 'Excellent',
+      color: tokens.colorPaletteGreenForeground1 
+    },
+    'fair': { 
+      class: classes.statusFair, 
+      icon: <Warning20Regular />, 
+      label: 'Fair',
+      color: tokens.colorPaletteYellowForeground1 
+    },
+    'warning': { 
+      class: classes.statusFair, 
+      icon: <Warning20Regular />, 
+      label: 'Warning',
+      color: tokens.colorPaletteYellowForeground1 
+    },
+    'poor': { 
+      class: classes.statusPoor, 
+      icon: <ErrorCircle20Regular />, 
+      label: 'Poor',
+      color: tokens.colorPaletteRedForeground1 
+    },
+    'critical': { 
+      class: classes.statusPoor, 
+      icon: <ErrorCircle20Regular />, 
+      label: 'Critical',
+      color: tokens.colorPaletteRedForeground1 
+    },
+    'error': { 
+      class: classes.statusPoor, 
+      icon: <ErrorCircle20Regular />, 
+      label: 'Error',
+      color: tokens.colorPaletteRedForeground1 
+    }
+  };
+  
+  return statusMap[lowerValue] || null;
+};
+
 // Helper function to get appropriate file type label and icon
 const API_BASE = 'http://localhost:8001';
 const getFileTypeInfo = (fileName, classes) => {
@@ -55,19 +112,24 @@ const getFileTypeInfo = (fileName, classes) => {
   }
 };
 
-// Styles for Fluent migration
+// Enhanced styles for visual appeal
 const useStyles = makeStyles({
   container: {
     padding: '0px',
-    backgroundColor: tokens.colorNeutralBackground1,
-    borderRadius: tokens.borderRadiusMedium,
+    background: `linear-gradient(135deg, ${tokens.colorNeutralBackground1} 0%, ${tokens.colorNeutralBackground2} 100%)`,
+    borderRadius: tokens.borderRadiusLarge,
     height: '100%',
     width: '100%',
     display: 'flex',
     flexDirection: 'column',
     overflow: 'hidden',
-    border: `1px solid ${tokens.colorNeutralStroke1}`,
+    border: `1px solid ${tokens.colorNeutralStroke2}`,
+    boxShadow: `0 8px 32px rgba(0, 0, 0, 0.08), 0 4px 16px rgba(0, 0, 0, 0.04)`,
     minWidth: 0,
+    position: 'relative',
+    '::before': {
+      content: 'none',
+    },
   },
   skipLink: {
     position: 'absolute',
@@ -88,17 +150,20 @@ const useStyles = makeStyles({
     },
   },
   headerBar: {
-    paddingLeft: tokens.spacingHorizontalM,
-    paddingRight: tokens.spacingHorizontalM,
-    paddingTop: tokens.spacingVerticalS,
-    paddingBottom: tokens.spacingVerticalS,
-    borderBottom: `1px solid ${tokens.colorNeutralStroke1}`,
+    paddingLeft: tokens.spacingHorizontalL,
+    paddingRight: tokens.spacingHorizontalL,
+    paddingTop: tokens.spacingVerticalM,
+    paddingBottom: tokens.spacingVerticalM,
+    borderBottom: `1px solid ${tokens.colorNeutralStroke2}`,
     display: 'flex',
     alignItems: 'center',
-    backgroundColor: tokens.colorNeutralBackground2,
+    background: 'transparent',
     gap: tokens.spacingHorizontalS,
     flexWrap: 'wrap',
     rowGap: tokens.spacingVerticalXS,
+    position: 'relative',
+    backdropFilter: 'none',
+    '::after': { content: 'none' },
     '@media (max-width: 600px)': {
       flexDirection: 'column',
       alignItems: 'stretch',
@@ -106,13 +171,20 @@ const useStyles = makeStyles({
     },
   },
   title: {
-    fontWeight: tokens.fontWeightSemibold,
-    color: tokens.colorNeutralForeground1,
-    fontSize: tokens.fontSizeBase500,
-    lineHeight: '24px',
+    fontWeight: tokens.fontWeightBold,
+    background: `linear-gradient(135deg, ${tokens.colorBrandForeground1} 0%, ${tokens.colorCompoundBrandForeground1} 70%, ${tokens.colorBrandForeground2} 100%)`,
+    backgroundClip: 'text',
+    WebkitBackgroundClip: 'text',
+    WebkitTextFillColor: 'transparent',
+    fontSize: tokens.fontSizeBase600,
+    lineHeight: '28px',
     flexGrow: 1,
     minWidth: 0,
     overflowWrap: 'anywhere',
+    textShadow: '0 2px 4px rgba(0, 0, 0, 0.1)',
+    letterSpacing: '-0.01em',
+    fontFeatureSettings: '"ss01", "ss02"',
+    textRendering: 'optimizeLegibility',
   },
   actionBar: {
     display: 'flex',
@@ -140,23 +212,76 @@ const useStyles = makeStyles({
     marginBottom: tokens.spacingVerticalL,
   },
   accordionHeader: {
-    backgroundColor: tokens.colorNeutralBackground2,
-    transition: 'background-color 150ms ease, border-color 150ms ease',
+    background: `linear-gradient(135deg, ${tokens.colorNeutralBackground2} 0%, ${tokens.colorSubtleBackground} 100%)`,
+    borderRadius: tokens.borderRadiusMedium,
+    border: `1px solid ${tokens.colorNeutralStroke2}`,
+    boxShadow: `0 2px 4px rgba(0, 0, 0, 0.04)`,
+    transition: 'all 300ms cubic-bezier(0.4, 0, 0.2, 1)',
+    position: 'relative',
+    overflow: 'hidden',
     selectors: {
-      '&:hover': { backgroundColor: tokens.colorSubtleBackgroundHover },
-      '&:focus-visible': { outline: `${tokens.strokeWidthThick} solid ${tokens.colorBrandStroke1}`, outlineOffset: 2 },
+      '&:hover': { 
+        backgroundColor: tokens.colorSubtleBackgroundHover,
+        transform: 'translateY(-1px)',
+        boxShadow: `0 4px 12px rgba(0, 0, 0, 0.08)`,
+      },
+      '&:focus-visible': { 
+        outline: `${tokens.strokeWidthThick} solid ${tokens.colorBrandStroke1}`, 
+        outlineOffset: 2,
+        boxShadow: `0 0 0 4px ${tokens.colorBrandBackground2}`,
+      },
+      '::before': {
+        content: '""',
+        position: 'absolute',
+        top: 0,
+        left: 0,
+        right: 0,
+        height: '2px',
+        background: `linear-gradient(90deg, ${tokens.colorBrandForeground1}, ${tokens.colorBrandForeground2})`,
+        opacity: 0,
+        transition: 'opacity 300ms ease',
+      },
+      '&:hover::before': {
+        opacity: 1,
+      },
     },
   },
   accordionPanel: {
-    padding: tokens.spacingHorizontalL,
+    padding: tokens.spacingHorizontalXL,
+    background: `linear-gradient(135deg, ${tokens.colorNeutralBackground1} 0%, ${tokens.colorSubtleBackground} 100%)`,
+    borderRadius: `0 0 ${tokens.borderRadiusMedium} ${tokens.borderRadiusMedium}`,
+    border: `1px solid ${tokens.colorNeutralStroke2}`,
+    borderTop: 'none',
+    boxShadow: `inset 0 2px 4px rgba(0, 0, 0, 0.04)`,
   },
   fileBadge: {
     display: 'inline-flex',
     alignItems: 'center',
-    borderRadius: '6px',
-    padding: `${tokens.spacingVerticalXXS} ${tokens.spacingHorizontalS}`,
-    border: `1px solid ${tokens.colorNeutralStroke1}`,
-    backgroundColor: tokens.colorNeutralBackground1,
+    borderRadius: tokens.borderRadiusMedium,
+    padding: `${tokens.spacingVerticalXS} ${tokens.spacingHorizontalS}`,
+    border: `1px solid ${tokens.colorNeutralStroke2}`,
+    background: `linear-gradient(135deg, ${tokens.colorNeutralBackground1} 0%, ${tokens.colorNeutralBackground2} 100%)`,
+    boxShadow: `0 2px 8px rgba(0, 0, 0, 0.06), inset 0 1px 0 rgba(255, 255, 255, 0.1)`,
+    transition: 'all 200ms cubic-bezier(0.34, 1.56, 0.64, 1)',
+    position: 'relative',
+    overflow: 'hidden',
+    '::before': {
+      content: '""',
+      position: 'absolute',
+      top: 0,
+      left: '-100%',
+      width: '100%',
+      height: '100%',
+      background: `linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.2), transparent)`,
+      transition: 'left 600ms ease',
+    },
+    ':hover::before': {
+      left: '100%',
+    },
+    ':hover': {
+      transform: 'translateY(-1px)',
+      boxShadow: `0 4px 16px rgba(0, 0, 0, 0.12), inset 0 1px 0 rgba(255, 255, 255, 0.2)`,
+    },
   },
   badgeIcon: {
     display: 'inline-flex',
@@ -184,44 +309,79 @@ const useStyles = makeStyles({
     fontSize: tokens.fontSizeBase300,
   },
   mdH1: {
-    marginTop: tokens.spacingVerticalXL,
-    marginBottom: tokens.spacingVerticalM,
-    fontWeight: tokens.fontWeightSemibold,
-    fontSize: tokens.fontSizeBase500,
+    marginTop: tokens.spacingVerticalXXL,
+    marginBottom: tokens.spacingVerticalL,
+    fontWeight: tokens.fontWeightBold,
+    fontSize: tokens.fontSizeBase600,
     letterSpacing: '-0.02em',
     color: tokens.colorNeutralForeground1,
+    textShadow: '0 2px 4px rgba(0, 0, 0, 0.1)',
+    position: 'relative',
+    paddingBottom: 0,
+    '::after': {
+      content: 'none',
+    },
   },
   mdH2: {
-    marginTop: tokens.spacingVerticalL,
-    marginBottom: tokens.spacingVerticalS,
-    fontWeight: tokens.fontWeightSemibold,
+    marginTop: tokens.spacingVerticalXL,
+    marginBottom: tokens.spacingVerticalM,
+    fontWeight: tokens.fontWeightBold,
     fontSize: tokens.fontSizeBase500,
     letterSpacing: '-0.01em',
     color: tokens.colorNeutralForeground1,
+    position: 'relative',
+    paddingLeft: tokens.spacingHorizontalM,
+    '::before': {
+      content: '""',
+      position: 'absolute',
+      left: 0,
+      top: '50%',
+      transform: 'translateY(-50%)',
+      width: '4px',
+      height: '24px',
+      background: `linear-gradient(180deg, ${tokens.colorBrandForeground1}, ${tokens.colorBrandForeground2})`,
+      borderRadius: tokens.borderRadiusSmall,
+    },
   },
   mdH3: {
-    marginTop: tokens.spacingVerticalM,
-    marginBottom: tokens.spacingVerticalXS,
+    marginTop: tokens.spacingVerticalL,
+    marginBottom: tokens.spacingVerticalS,
     fontWeight: tokens.fontWeightSemibold,
-    fontSize: tokens.fontSizeBase300,
-    color: tokens.colorNeutralForeground1,
+    fontSize: tokens.fontSizeBase200,
+    color: tokens.colorBrandForeground1,
+    letterSpacing: '0.01em',
+    textTransform: 'uppercase',
   },
   mdP: {
-    marginBottom: tokens.spacingVerticalS,
-    fontSize: tokens.fontSizeBase200,
-    lineHeight: '1.7',
-    color: tokens.colorNeutralForeground2,
+    marginBottom: tokens.spacingVerticalM,
+    fontSize: tokens.fontSizeBase300,
+    lineHeight: '1.6',
+    color: tokens.colorNeutralForeground1,
+    fontWeight: tokens.fontWeightRegular,
   },
   mdUl: {
     marginBottom: tokens.spacingVerticalM,
     paddingLeft: tokens.spacingHorizontalXL,
+    fontSize: tokens.fontSizeBase300,
+    lineHeight: '1.6',
   },
   mdOl: {
     marginBottom: tokens.spacingVerticalM,
     paddingLeft: tokens.spacingHorizontalXL,
+    fontSize: tokens.fontSizeBase300,
+    lineHeight: '1.6',
   },
   mdLi: {
-    marginBottom: tokens.spacingVerticalXXS,
+    marginBottom: tokens.spacingVerticalS,
+    fontSize: tokens.fontSizeBase300,
+    color: tokens.colorNeutralForeground1,
+    fontWeight: tokens.fontWeightRegular,
+    lineHeight: '1.6',
+    position: 'relative',
+    '::marker': {
+      color: tokens.colorBrandForeground1,
+      fontWeight: tokens.fontWeightBold,
+    },
   },
   mdStrong: {
     fontWeight: tokens.fontWeightSemibold,
@@ -256,19 +416,49 @@ const useStyles = makeStyles({
     fontSize: tokens.fontSizeBase200,
   },
   tableCard: {
-    marginTop: tokens.spacingVerticalM,
-    marginBottom: tokens.spacingVerticalM,
-    borderRadius: tokens.borderRadiusMedium,
+    marginTop: tokens.spacingVerticalL,
+    marginBottom: tokens.spacingVerticalL,
+    borderRadius: tokens.borderRadiusLarge,
     overflow: 'hidden',
-    backgroundColor: tokens.colorNeutralBackground1,
-    border: `1px solid ${tokens.colorNeutralStroke1}`,
+    background: `linear-gradient(135deg, ${tokens.colorNeutralBackground1} 0%, ${tokens.colorSubtleBackground} 100%)`,
+    border: `1px solid ${tokens.colorNeutralStroke2}`,
+    boxShadow: `0 8px 24px rgba(0, 0, 0, 0.06), 0 2px 8px rgba(0, 0, 0, 0.04)`,
+    position: 'relative',
+    transition: 'all 300ms cubic-bezier(0.4, 0, 0.2, 1)',
+    ':hover': {
+      transform: 'translateY(-2px)',
+      boxShadow: `0 12px 32px rgba(0, 0, 0, 0.08), 0 4px 16px rgba(0, 0, 0, 0.06)`,
+    },
+    '::before': {
+      content: '""',
+      position: 'absolute',
+      top: 0,
+      left: 0,
+      right: 0,
+      height: '3px',
+      background: `linear-gradient(90deg, ${tokens.colorBrandForeground1}, ${tokens.colorCompoundBrandForeground1}, ${tokens.colorBrandForeground2})`,
+      borderRadius: `${tokens.borderRadiusLarge} ${tokens.borderRadiusLarge} 0 0`,
+    },
   },
   tableTitle: {
-    padding: tokens.spacingHorizontalM,
-    backgroundColor: tokens.colorNeutralBackground2,
+    padding: `${tokens.spacingVerticalM} ${tokens.spacingHorizontalL}`,
+    background: `linear-gradient(135deg, ${tokens.colorSubtleBackground} 0%, ${tokens.colorNeutralBackground2} 100%)`,
     color: tokens.colorNeutralForeground1,
-    fontWeight: tokens.fontWeightSemibold,
-    fontSize: tokens.fontSizeBase300,
+    fontWeight: tokens.fontWeightBold,
+    fontSize: tokens.fontSizeBase400,
+    letterSpacing: '-0.01em',
+    borderBottom: `1px solid ${tokens.colorNeutralStroke2}`,
+    position: 'relative',
+    '::after': {
+      content: '""',
+      position: 'absolute',
+      bottom: 0,
+      left: tokens.spacingHorizontalL,
+      right: tokens.spacingHorizontalL,
+      height: '2px',
+      background: `linear-gradient(90deg, ${tokens.colorBrandForeground2}, transparent)`,
+      opacity: 0.6,
+    },
   },
   tableScroll: {
     overflowX: 'auto',
@@ -282,46 +472,90 @@ const useStyles = makeStyles({
     width: '100%',
     borderCollapse: 'collapse',
     tableLayout: 'auto',
+    fontSize: tokens.fontSizeBase300,
     selectors: {
+      'tbody tr': {
+        transition: 'all 200ms ease',
+        position: 'relative',
+      },
       'tbody tr:nth-child(even)': {
-        backgroundColor: tokens.colorNeutralBackground2,
+        backgroundColor: tokens.colorSubtleBackground,
+      },
+      'tbody tr:hover': {
+        backgroundColor: tokens.colorSubtleBackgroundHover,
+        transform: 'scale(1.005)',
+        boxShadow: `0 2px 8px rgba(0, 0, 0, 0.08)`,
+        zIndex: 1,
+      },
+      'tbody tr:hover td': {
+        borderColor: tokens.colorBrandStroke2,
       },
     },
   },
   mdTh: {
     textAlign: 'left',
-    padding: tokens.spacingHorizontalM,
-    fontWeight: tokens.fontWeightSemibold,
+    padding: `${tokens.spacingVerticalM} ${tokens.spacingHorizontalM}`,
+    fontWeight: tokens.fontWeightBold,
     fontSize: tokens.fontSizeBase300,
-    color: tokens.colorNeutralForeground2,
-    borderBottom: `1px solid ${tokens.colorNeutralStroke1}`,
-    backgroundColor: tokens.colorNeutralBackground2,
+    color: tokens.colorNeutralForeground1,
+    borderBottom: `2px solid ${tokens.colorNeutralStroke2}`,
+    background: `linear-gradient(135deg, ${tokens.colorNeutralBackground2} 0%, ${tokens.colorSubtleBackground} 100%)`,
+    letterSpacing: '0.02em',
+    textTransform: 'uppercase',
+    position: 'sticky',
+    top: 0,
+    zIndex: 2,
+    '::after': {
+      content: '""',
+      position: 'absolute',
+      bottom: 0,
+      left: 0,
+      right: 0,
+      height: '1px',
+      background: `linear-gradient(90deg, transparent, ${tokens.colorBrandForeground2}, transparent)`,
+      opacity: 0.5,
+    },
   },
   mdTd: {
-    padding: `${tokens.spacingVerticalS} ${tokens.spacingHorizontalM}`,
-    fontSize: tokens.fontSizeBase200,
-    color: tokens.colorNeutralForeground2,
+    padding: `${tokens.spacingVerticalM} ${tokens.spacingHorizontalM}`,
+    fontSize: tokens.fontSizeBase300,
+    color: tokens.colorNeutralForeground1,
+    fontWeight: tokens.fontWeightRegular,
     borderBottom: `1px solid ${tokens.colorNeutralStroke1}`,
     verticalAlign: 'top',
-    lineHeight: '1.4',
+    lineHeight: '1.6',
+    transition: 'all 200ms ease',
+    position: 'relative',
   },
   contentArea: {
     flex: 1,
-    padding: tokens.spacingHorizontalL,
-    backgroundColor: tokens.colorNeutralBackground1,
+    padding: tokens.spacingHorizontalXL,
+    background: `linear-gradient(180deg, ${tokens.colorNeutralBackground1} 0%, ${tokens.colorSubtleBackground} 100%)`,
     overflowY: 'auto',
     display: 'flex',
     alignItems: 'stretch',
     justifyContent: 'flex-start',
-    // Subtle custom scrollbar (Firefox + WebKit)
+    position: 'relative',
+    // Enhanced custom scrollbar
     scrollbarWidth: 'thin',
-    scrollbarColor: `${tokens.colorNeutralStroke1} ${tokens.colorNeutralBackground1}`,
+    scrollbarColor: `${tokens.colorBrandStroke1} transparent`,
     msOverflowStyle: 'auto',
     selectors: {
-      '&::-webkit-scrollbar': { width: '6px' },
-      '&::-webkit-scrollbar-track': { background: tokens.colorNeutralBackground1 },
-      '&::-webkit-scrollbar-thumb': { background: tokens.colorNeutralStroke1, borderRadius: '3px' },
-      '&::-webkit-scrollbar-thumb:hover': { background: tokens.colorNeutralStroke1Hover },
+      '&::-webkit-scrollbar': { width: '8px' },
+      '&::-webkit-scrollbar-track': { 
+        background: 'transparent',
+        borderRadius: '4px',
+      },
+      '&::-webkit-scrollbar-thumb': { 
+        background: `linear-gradient(180deg, ${tokens.colorBrandForeground1}, ${tokens.colorBrandForeground2})`,
+        borderRadius: '4px',
+        border: '1px solid transparent',
+        backgroundClip: 'padding-box',
+      },
+      '&::-webkit-scrollbar-thumb:hover': { 
+        background: `linear-gradient(180deg, ${tokens.colorCompoundBrandForeground1}, ${tokens.colorBrandForeground1})`,
+        boxShadow: '0 2px 8px rgba(0, 0, 0, 0.2)',
+      },
     },
     '@media (max-width: 600px)': {
       padding: tokens.spacingHorizontalM,
@@ -339,6 +573,7 @@ const useStyles = makeStyles({
   centerArea: {
     alignItems: 'center',
     justifyContent: 'center',
+    flexDirection: 'column',
   },
   analysisInner: {
     width: '100%',
@@ -354,16 +589,18 @@ const useStyles = makeStyles({
   placeholderContainer: {
     textAlign: 'center',
     color: tokens.colorNeutralForeground3,
+    maxWidth: '560px',
+    margin: '0 auto',
   },
   placeholderTitle: {
     fontWeight: tokens.fontWeightSemibold,
     color: tokens.colorNeutralForeground2,
-    fontSize: tokens.fontSizeBase500,
+    fontSize: tokens.fontSizeBase600,
     marginBottom: tokens.spacingVerticalXS,
   },
   placeholderText: {
     color: tokens.colorNeutralForeground3,
-    fontSize: tokens.fontSizeBase300,
+    fontSize: tokens.fontSizeBase400,
     marginBottom: tokens.spacingVerticalS,
   },
   placeholderFrame: {
@@ -379,7 +616,66 @@ const useStyles = makeStyles({
     color: tokens.colorNeutralForeground3,
     fontSize: tokens.fontSizeBase100,
   },
-  // Lightweight skeleton styles (no animation for simplicity)
+  // Enhanced status chip styles
+  statusChip: {
+    display: 'inline-flex',
+    alignItems: 'center',
+    gap: tokens.spacingHorizontalXXS,
+    padding: `${tokens.spacingVerticalXXS} ${tokens.spacingHorizontalXS}`,
+    borderRadius: tokens.borderRadiusMedium,
+    fontSize: tokens.fontSizeBase100,
+    fontWeight: tokens.fontWeightSemibold,
+    letterSpacing: '0.02em',
+    textTransform: 'uppercase',
+    border: '1px solid',
+    position: 'relative',
+    overflow: 'hidden',
+    transition: 'all 200ms cubic-bezier(0.34, 1.56, 0.64, 1)',
+    '::before': {
+      content: '""',
+      position: 'absolute',
+      top: 0,
+      left: '-100%',
+      width: '100%',
+      height: '100%',
+      background: 'linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.3), transparent)',
+      transition: 'left 500ms ease',
+    },
+    ':hover::before': {
+      left: '100%',
+    },
+  },
+  statusGood: {
+    backgroundColor: tokens.colorPaletteGreenBackground2,
+    borderColor: tokens.colorPaletteGreenBorder2,
+    color: tokens.colorPaletteGreenForeground1,
+    ':hover': {
+      backgroundColor: tokens.colorPaletteGreenBackground3,
+      transform: 'scale(1.05)',
+      boxShadow: `0 4px 12px ${tokens.colorPaletteGreenBackground3}40`,
+    },
+  },
+  statusFair: {
+    backgroundColor: tokens.colorPaletteYellowBackground2,
+    borderColor: tokens.colorPaletteYellowBorder2,
+    color: tokens.colorPaletteYellowForeground1,
+    ':hover': {
+      backgroundColor: tokens.colorPaletteYellowBackground3,
+      transform: 'scale(1.05)',
+      boxShadow: `0 4px 12px ${tokens.colorPaletteYellowBackground3}40`,
+    },
+  },
+  statusPoor: {
+    backgroundColor: tokens.colorPaletteRedBackground2,
+    borderColor: tokens.colorPaletteRedBorder2,
+    color: tokens.colorPaletteRedForeground1,
+    ':hover': {
+      backgroundColor: tokens.colorPaletteRedBackground3,
+      transform: 'scale(1.05)',
+      boxShadow: `0 4px 12px ${tokens.colorPaletteRedBackground3}40`,
+    },
+  },
+  // Enhanced skeleton styles with shimmer animation
   skeletonContainer: {
     display: 'flex',
     flexDirection: 'column',
@@ -389,14 +685,27 @@ const useStyles = makeStyles({
     width: '100%',
     height: '12px',
     borderRadius: tokens.borderRadiusSmall,
-    backgroundColor: tokens.colorNeutralBackground3,
+    background: `linear-gradient(90deg, ${tokens.colorNeutralBackground3} 25%, ${tokens.colorNeutralBackground2} 50%, ${tokens.colorNeutralBackground3} 75%)`,
+    backgroundSize: '200% 100%',
+    animation: 'shimmer 1.5s infinite',
+    position: 'relative',
+    overflow: 'hidden',
   },
   skeletonBlock: {
     width: '100%',
     height: '120px',
     borderRadius: tokens.borderRadiusMedium,
-    backgroundColor: tokens.colorNeutralBackground3,
+    background: `linear-gradient(90deg, ${tokens.colorNeutralBackground3} 25%, ${tokens.colorNeutralBackground2} 50%, ${tokens.colorNeutralBackground3} 75%)`,
+    backgroundSize: '200% 100%',
+    animation: 'shimmer 1.5s infinite',
     border: `1px solid ${tokens.colorNeutralStroke2}`,
+    position: 'relative',
+    overflow: 'hidden',
+  },
+  // Animation keyframes
+  '@keyframes shimmer': {
+    '0%': { backgroundPosition: '200% 0' },
+    '100%': { backgroundPosition: '-200% 0' },
   },
 });
 
@@ -428,7 +737,19 @@ const JsonCodeBlockRenderer = ({ node, inline, className, children, ...props }) 
                   {jsonData.items.map((item, index) => (
                     <tr key={index}>
                       <td className={classes.mdTd} style={{ fontWeight: 500 }}>{item.parameter}</td>
-                      <td className={classes.mdTd} style={{ textAlign: 'left' }}>{formatDisplay(item.value)}</td>
+                      <td className={classes.mdTd} style={{ textAlign: 'left' }}>
+                        {(() => {
+                          const statusStyle = getStatusStyle(item.value, classes);
+                          return statusStyle ? (
+                            <span className={`${classes.statusChip} ${statusStyle.class}`}>
+                              {statusStyle.icon}
+                              {statusStyle.label}
+                            </span>
+                          ) : (
+                            formatDisplay(item.value)
+                          );
+                        })()}
+                      </td>
                     </tr>
                   ))}
                 </tbody>
@@ -462,9 +783,18 @@ const JsonCodeBlockRenderer = ({ node, inline, className, children, ...props }) 
                         const rawCell = row[header] === undefined || row[header] === null ? '' : row[header];
                         const cellValue = String(rawCell);
                         const isLong = cellValue.length > 50;
+                        const statusStyle = getStatusStyle(cellValue, classes);
+                        
                         return (
                           <td key={cellIndex} className={classes.mdTd} style={{ textAlign: 'left', ...(isLong ? wrapStyle : {}) }}>
-                            {formatDisplay(rawCell)}
+                            {statusStyle ? (
+                              <span className={`${classes.statusChip} ${statusStyle.class}`}>
+                                {statusStyle.icon}
+                                {statusStyle.label}
+                              </span>
+                            ) : (
+                              formatDisplay(rawCell)
+                            )}
                           </td>
                         );
                       })}
@@ -511,9 +841,18 @@ const JsonCodeBlockRenderer = ({ node, inline, className, children, ...props }) 
                             const rawCell = row[header] === undefined || row[header] === null ? '' : row[header];
                             const cellValue = String(rawCell);
                             const isLong = cellValue.length > 50;
+                            const statusStyle = getStatusStyle(cellValue, classes);
+                            
                             return (
                               <td key={cellIndex} className={classes.mdTd} style={{ textAlign: 'left', ...(isLong ? wrapStyle : {}) }}>
-                                {formatDisplay(rawCell)}
+                                {statusStyle ? (
+                                  <span className={`${classes.statusChip} ${statusStyle.class}`}>
+                                    {statusStyle.icon}
+                                    {statusStyle.label}
+                                  </span>
+                                ) : (
+                                  formatDisplay(rawCell)
+                                )}
                               </td>
                             );
                           })}
@@ -750,12 +1089,12 @@ const FilePreview = ({ selectedFile }) => {
           ) : (
             <div className={classes.placeholderContainer}> 
               {fileTypeInfo && fileTypeInfo.icon && React.cloneElement(fileTypeInfo.icon, { 
-                style: { fontSize: 48, marginBottom: 8, opacity: 0.7 } 
+                style: { fontSize: 64, marginBottom: 8, opacity: 0.7 } 
               })}
-              <div className={`${classes.placeholderTitle} ${typography.headingL}`}>
+              <div className={`${classes.placeholderTitle} ${typography.headingL}`} style={{ fontSize: tokens.fontSizeBase600 }}>
                 {selectedFile.name}
               </div>
-              <div className={`${classes.placeholderText} ${typography.bodyM}`}>
+              <div className={`${classes.placeholderText} ${typography.bodyM}`} style={{ fontSize: tokens.fontSizeBase400 }}>
                 Preview functionality will be added in a future update
               </div>
               <div className={classes.placeholderFrame}>
@@ -767,9 +1106,9 @@ const FilePreview = ({ selectedFile }) => {
           )
         ) : (
           <div className={classes.placeholderContainer} role="status" aria-live="polite">
-            <Document24Regular style={{ fontSize: 48, marginBottom: 8, opacity: 0.7 }} />
-            <div className={`${classes.placeholderTitle} ${typography.headingL}`}>No File Selected</div>
-            <div className={`${classes.placeholderText} ${typography.bodyM}`}>Select a file from the list to preview its contents</div>
+            <Document24Regular style={{ fontSize: 64, marginBottom: 8, opacity: 0.7 }} />
+            <div className={`${classes.placeholderTitle} ${typography.headingL}`} style={{ fontSize: tokens.fontSizeBase600 }}>No File Selected</div>
+            <div className={`${classes.placeholderText} ${typography.bodyM}`} style={{ fontSize: tokens.fontSizeBase400 }}>Select a file from the list to preview its contents</div>
             <div className={classes.placeholderFrame}>
               <div className={`${classes.placeholderMuted} ${typography.bodyS}`}>Content preview will show here.</div>
             </div>

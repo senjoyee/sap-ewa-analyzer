@@ -9,7 +9,7 @@ import FilePreview from './components/FilePreview';
 
 const drawerWidth = 480; // Increased width to accommodate analyze buttons and status and show more file details
 const collapsedDrawerWidth = 0; // Width when drawer is collapsed
-const topBarHeight = 56;
+const topBarHeight = 0;
 
 const useStyles = makeStyles({
   root: {
@@ -22,8 +22,9 @@ const useStyles = makeStyles({
     left: 0,
     right: 0,
     zIndex: 1000,
-    backgroundColor: tokens.colorBrandBackground,
-    borderBottom: `1px solid ${tokens.colorNeutralStroke1}`,
+    display: 'none',
+    backgroundColor: 'transparent',
+    borderBottom: 'none',
   },
   topBarInner: {
     display: 'flex',

@@ -1,5 +1,5 @@
 import React, { useState, useRef } from 'react';
-import { Button as FluentButton, Combobox, Option, Field, Tag, ProgressBar } from '@fluentui/react-components';
+import { Button as FluentButton, Combobox, Option, Field, Tag, ProgressBar, Tooltip } from '@fluentui/react-components';
 import { Alert as FluentAlert } from '@fluentui/react-alert';
 // Replaced MUI LinearProgress with Fluent ProgressBar
 // Removed MUI Chip in favor of Fluent Tag
@@ -95,7 +95,7 @@ const useStyles = makeStyles({
     color: tokens.colorBrandForeground1,
   },
   iconInfo: {
-    color: tokens.colorPaletteBlueForeground1,
+    color: tokens.colorPaletteBlueForeground2,
   },
   iconError: {
     color: tokens.colorPaletteRedForeground2,
@@ -179,24 +179,36 @@ const useStyles = makeStyles({
   },
   heroTitle: {
     marginBottom: tokens.spacingVerticalS,
-    fontWeight: tokens.fontWeightBold,
+    fontWeight: 800,
     color: tokens.colorNeutralForeground1,
     fontSize: tokens.fontSizeBase600,
-    letterSpacing: '-0.02em',
-    textShadow: '0 1px 2px rgba(0,0,0,0.1)',
+    letterSpacing: '-0.03em',
+    textShadow: '0 2px 4px rgba(0,0,0,0.12)',
+    background: `linear-gradient(135deg, ${tokens.colorNeutralForeground1} 0%, ${tokens.colorBrandForeground1} 100%)`,
+    backgroundClip: 'text',
+    WebkitBackgroundClip: 'text',
+    WebkitTextFillColor: 'transparent',
+    fontFeatureSettings: '"kern" 1, "liga" 1',
+    textRendering: 'optimizeLegibility',
   },
   heroSubtext: {
     color: tokens.colorNeutralForeground2,
     marginBottom: tokens.spacingVerticalL,
     fontSize: tokens.fontSizeBase400,
-    fontWeight: tokens.fontWeightMedium,
+    fontWeight: 500,
     lineHeight: tokens.lineHeightBase400,
+    letterSpacing: '0.01em',
+    fontFeatureSettings: '"kern" 1',
+    textRendering: 'optimizeLegibility',
   },
   sectionHeader: {
-    fontWeight: tokens.fontWeightBold,
+    fontWeight: 700,
     fontSize: tokens.fontSizeBase500,
     color: tokens.colorBrandForeground1,
-    letterSpacing: '-0.01em',
+    letterSpacing: '-0.02em',
+    textShadow: '0 1px 2px rgba(0,0,0,0.08)',
+    fontFeatureSettings: '"kern" 1, "liga" 1',
+    textRendering: 'optimizeLegibility',
   },
   sectionDescription: {
     color: tokens.colorNeutralForeground2,
@@ -227,6 +239,119 @@ const useStyles = makeStyles({
   },
   controlFullWidth: {
     width: '100%',
+  },
+  browseButton: {
+    ...shorthands.border('1px', 'solid', tokens.colorNeutralStroke2),
+    ...shorthands.borderRadius(tokens.borderRadiusLarge),
+    transition: 'all 200ms cubic-bezier(0.4, 0, 0.2, 1)',
+    fontWeight: 600,
+    background: `linear-gradient(135deg, ${tokens.colorNeutralBackground1} 0%, ${tokens.colorSubtleBackground} 100%)`,
+    boxShadow: `0 2px 4px ${tokens.colorNeutralShadowAmbient}, 0 1px 2px ${tokens.colorNeutralShadowKey}`,
+    position: 'relative',
+    overflow: 'hidden',
+    selectors: {
+      '&::before': {
+        content: '""',
+        position: 'absolute',
+        top: 0,
+        left: '-100%',
+        width: '100%',
+        height: '100%',
+        background: `linear-gradient(90deg, transparent, ${tokens.colorBrandBackground2}40, transparent)`,
+        transition: 'left 600ms ease',
+      },
+      '& svg': { 
+        transition: 'transform 200ms cubic-bezier(0.4, 0, 0.2, 1)',
+        filter: 'drop-shadow(0 1px 2px rgba(0,0,0,0.1))',
+      },
+      '&:hover': {
+        backgroundColor: tokens.colorSubtleBackgroundHover,
+        background: `linear-gradient(135deg, ${tokens.colorSubtleBackgroundHover} 0%, ${tokens.colorBrandBackground2}20 100%)`,
+        boxShadow: `0 4px 12px ${tokens.colorNeutralShadowAmbient}, 0 2px 4px ${tokens.colorNeutralShadowKey}`,
+        transform: 'translateY(-2px) scale(1.02)',
+        borderColor: tokens.colorBrandStroke1,
+      },
+      '&:hover::before': {
+        left: '100%',
+      },
+      '&:hover svg': { 
+        transform: 'translateX(3px) scale(1.1)',
+        color: tokens.colorBrandForeground1,
+      },
+      '&:active': {
+        transform: 'translateY(-1px) scale(1.01)',
+        backgroundColor: tokens.colorSubtleBackgroundPressed,
+        transition: 'all 100ms ease',
+      },
+      '&:focus-visible': {
+        outline: `2px solid ${tokens.colorBrandStroke1}`,
+        outlineOffset: 3,
+        boxShadow: `0 0 0 4px ${tokens.colorBrandBackground2}40, 0 4px 12px ${tokens.colorNeutralShadowAmbient}`,
+      },
+    },
+  },
+  primaryButton: {
+    background: `linear-gradient(135deg, ${tokens.colorBrandBackground} 0%, ${tokens.colorBrandBackground2} 100%)`,
+    boxShadow: `0 3px 8px ${tokens.colorBrandShadowAmbient}, 0 1px 3px ${tokens.colorBrandShadowKey}`,
+    fontWeight: 700,
+    letterSpacing: '0.02em',
+    transition: 'all 200ms cubic-bezier(0.4, 0, 0.2, 1)',
+    position: 'relative',
+    overflow: 'hidden',
+    selectors: {
+      '&::after': {
+        content: '""',
+        position: 'absolute',
+        top: '50%',
+        left: '50%',
+        width: 0,
+        height: 0,
+        borderRadius: '50%',
+        background: 'rgba(255,255,255,0.3)',
+        transform: 'translate(-50%, -50%)',
+        transition: 'width 400ms ease, height 400ms ease',
+      },
+      '&:hover': {
+        background: `linear-gradient(135deg, ${tokens.colorBrandBackgroundHover} 0%, ${tokens.colorBrandBackground} 100%)`,
+        boxShadow: `0 5px 16px ${tokens.colorBrandShadowAmbient}, 0 3px 6px ${tokens.colorBrandShadowKey}`,
+        transform: 'translateY(-2px) scale(1.03)',
+      },
+      '&:hover::after': {
+        width: '200px',
+        height: '200px',
+      },
+      '&:active': {
+        transform: 'translateY(-1px) scale(1.01)',
+        transition: 'all 100ms ease',
+      },
+      '&:focus-visible': {
+        outline: `2px solid ${tokens.colorNeutralForegroundOnBrand}`,
+        outlineOffset: 3,
+        boxShadow: `0 0 0 4px ${tokens.colorBrandBackground2}60, 0 5px 16px ${tokens.colorBrandShadowAmbient}`,
+      },
+    },
+  },
+  subtleButton: {
+    fontWeight: 500,
+    letterSpacing: '0.01em',
+    transition: 'all 180ms cubic-bezier(0.4, 0, 0.2, 1)',
+    position: 'relative',
+    selectors: {
+      '&:hover': {
+        backgroundColor: tokens.colorSubtleBackgroundHover,
+        transform: 'translateY(-1px)',
+        boxShadow: `0 2px 8px ${tokens.colorNeutralShadowAmbient}`,
+      },
+      '&:active': {
+        transform: 'translateY(0)',
+        transition: 'all 100ms ease',
+      },
+      '&:focus-visible': {
+        outline: `2px solid ${tokens.colorBrandStroke1}`,
+        outlineOffset: 2,
+        backgroundColor: tokens.colorSubtleBackgroundPressed,
+      },
+    },
   },
 });
 
@@ -441,9 +566,10 @@ const FileUpload = ({ onUploadSuccess }) => {
         />
         
         <FluentButton
-          appearance="secondary"
-          size="small"
-          icon={<Add24Regular />}
+          appearance="subtle"
+          size="medium"
+          className={`${classes.browseButton} ${classes.subtleButton}`}
+          icon={<Add24Regular className={`${classes.icon24} ${classes.iconBrand}`} />}
           onClick={handleAddClick}
           aria-describedby={instructionsId}
         >
@@ -507,7 +633,8 @@ const FileUpload = ({ onUploadSuccess }) => {
           <div style={{ display: 'flex', justifyContent: 'space-between', marginTop: tokens.spacingVerticalXL, paddingTop: tokens.spacingVerticalS }}>
             <FluentButton
               appearance="subtle"
-              size="small"
+              size="medium"
+              className={classes.subtleButton}
               onClick={handleCancelUpload}
               icon={<Dismiss24Regular />}
             >
@@ -515,7 +642,8 @@ const FileUpload = ({ onUploadSuccess }) => {
             </FluentButton>
             <FluentButton
             appearance="primary"
-            size="small"
+            size="medium"
+            className={classes.primaryButton}
             onClick={handleProceedWithUpload}
             disabled={filesWithCustomers.every(f => !f.customerName.trim())}
             icon={<CloudArrowUp24Regular />}
@@ -532,14 +660,16 @@ const FileUpload = ({ onUploadSuccess }) => {
           style={{ marginTop: tokens.spacingVerticalL, borderRadius: 8 }}
           icon={<CloudArrowUp24Regular />}
           action={
-            <FluentButton
-              appearance="subtle"
-              size="small"
-              shape="circular"
-              aria-label="close"
-              onClick={dismissOverallStatus}
-              icon={<Dismiss24Regular />}
-            />
+            <Tooltip content="Close" relationship="label">
+              <FluentButton
+                appearance="subtle"
+                size="small"
+                shape="circular"
+                aria-label="close"
+                onClick={dismissOverallStatus}
+                icon={<Dismiss24Regular />}
+              />
+            </Tooltip>
           }
           aria-live="polite"
         >
@@ -551,14 +681,16 @@ const FileUpload = ({ onUploadSuccess }) => {
           intent="error" 
           style={{ marginTop: tokens.spacingVerticalL, borderRadius: 8 }}
           action={
-            <FluentButton
-              appearance="subtle"
-              size="small"
-              shape="circular"
-              aria-label="close"
-              onClick={dismissOverallStatus}
-              icon={<Dismiss24Regular />}
-            />
+            <Tooltip content="Close" relationship="label">
+              <FluentButton
+                appearance="subtle"
+                size="small"
+                shape="circular"
+                aria-label="close"
+                onClick={dismissOverallStatus}
+                icon={<Dismiss24Regular />}
+              />
+            </Tooltip>
           }
           aria-live="assertive"
         >
