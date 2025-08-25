@@ -26,55 +26,27 @@ import { formatDisplay } from '../utils/format';
 // Import additional icons for status indicators
 import { CheckmarkCircle20Regular, Warning20Regular, ErrorCircle20Regular } from '@fluentui/react-icons';
 
-// Helper function to detect and style status values
+// Helper function to detect and style status/severity values
 const getStatusStyle = (value, classes) => {
   if (!value || typeof value !== 'string') return null;
   const lowerValue = value.toLowerCase().trim();
   
   // Status mappings with enhanced visual styles
   const statusMap = {
-    'good': { 
-      class: classes.statusGood, 
-      icon: <CheckmarkCircle20Regular />, 
-      label: 'Good',
-      color: tokens.colorPaletteGreenForeground1 
-    },
-    'excellent': { 
-      class: classes.statusGood, 
-      icon: <CheckmarkCircle20Regular />, 
-      label: 'Excellent',
-      color: tokens.colorPaletteGreenForeground1 
-    },
-    'fair': { 
-      class: classes.statusFair, 
-      icon: <Warning20Regular />, 
-      label: 'Fair',
-      color: tokens.colorPaletteYellowForeground1 
-    },
-    'warning': { 
-      class: classes.statusFair, 
-      icon: <Warning20Regular />, 
-      label: 'Warning',
-      color: tokens.colorPaletteYellowForeground1 
-    },
-    'poor': { 
-      class: classes.statusPoor, 
-      icon: <ErrorCircle20Regular />, 
-      label: 'Poor',
-      color: tokens.colorPaletteRedForeground1 
-    },
-    'critical': { 
-      class: classes.statusPoor, 
-      icon: <ErrorCircle20Regular />, 
-      label: 'Critical',
-      color: tokens.colorPaletteRedForeground1 
-    },
-    'error': { 
-      class: classes.statusPoor, 
-      icon: <ErrorCircle20Regular />, 
-      label: 'Error',
-      color: tokens.colorPaletteRedForeground1 
-    }
+    // Health statuses
+    'good': { class: classes.statusGood, icon: <CheckmarkCircle20Regular />, label: 'GOOD', color: tokens.colorPaletteGreenForeground1 },
+    'excellent': { class: classes.statusGood, icon: <CheckmarkCircle20Regular />, label: 'EXCELLENT', color: tokens.colorPaletteGreenForeground1 },
+    'fair': { class: classes.statusFair, icon: <Warning20Regular />, label: 'FAIR', color: tokens.colorPaletteYellowForeground1 },
+    'warning': { class: classes.statusFair, icon: <Warning20Regular />, label: 'WARNING', color: tokens.colorPaletteYellowForeground1 },
+    'poor': { class: classes.statusPoor, icon: <ErrorCircle20Regular />, label: 'POOR', color: tokens.colorPaletteRedForeground1 },
+    // Risk levels use distinct outlined chip styles
+    'critical': { class: `${classes.riskBase} ${classes.riskCritical}`, icon: <ErrorCircle20Regular />, label: 'CRITICAL', color: tokens.colorPaletteRedForeground1 },
+    'error': { class: classes.statusPoor, icon: <ErrorCircle20Regular />, label: 'ERROR', color: tokens.colorPaletteRedForeground1 },
+
+    // Risk levels (map to closest visual chips used in PDF)
+    'high': { class: `${classes.riskBase} ${classes.riskHigh}`, icon: <Warning20Regular />, label: 'HIGH', color: tokens.colorPaletteYellowForeground1 },
+    'medium': { class: `${classes.riskBase} ${classes.riskMedium}`, icon: <Warning20Regular />, label: 'MEDIUM', color: tokens.colorBrandForeground1 },
+    'low': { class: `${classes.riskBase} ${classes.riskLow}`, icon: <CheckmarkCircle20Regular />, label: 'LOW', color: tokens.colorPaletteGreenForeground1 },
   };
   
   return statusMap[lowerValue] || null;
@@ -116,7 +88,7 @@ const getFileTypeInfo = (fileName, classes) => {
 const useStyles = makeStyles({
   container: {
     padding: '0px',
-    background: `linear-gradient(135deg, ${tokens.colorNeutralBackground1} 0%, ${tokens.colorNeutralBackground2} 100%)`,
+    backgroundColor: '#F9FAFB',
     borderRadius: tokens.borderRadiusLarge,
     height: '100%',
     width: '100%',
@@ -530,7 +502,7 @@ const useStyles = makeStyles({
   contentArea: {
     flex: 1,
     padding: tokens.spacingHorizontalXL,
-    background: `linear-gradient(180deg, ${tokens.colorNeutralBackground1} 0%, ${tokens.colorSubtleBackground} 100%)`,
+    backgroundColor: '#F9FAFB',
     overflowY: 'auto',
     display: 'flex',
     alignItems: 'stretch',
@@ -674,6 +646,32 @@ const useStyles = makeStyles({
       transform: 'scale(1.05)',
       boxShadow: `0 4px 12px ${tokens.colorPaletteRedBackground3}40`,
     },
+  },
+  // Risk chip variants (visually distinct from status chips)
+  riskBase: {
+    backgroundColor: 'transparent',
+    borderWidth: '2px',
+    boxShadow: 'none',
+  },
+  riskCritical: {
+    borderColor: tokens.colorPaletteRedBorder2,
+    color: tokens.colorPaletteRedForeground1,
+    backgroundColor: `${tokens.colorPaletteRedBackground1}`,
+  },
+  riskHigh: {
+    borderColor: tokens.colorPaletteYellowBorder2,
+    color: tokens.colorPaletteYellowForeground1,
+    backgroundColor: `${tokens.colorPaletteYellowBackground1}`,
+  },
+  riskMedium: {
+    borderColor: tokens.colorBrandStroke1,
+    color: tokens.colorBrandForeground1,
+    backgroundColor: tokens.colorSubtleBackground,
+  },
+  riskLow: {
+    borderColor: tokens.colorPaletteGreenBorder2,
+    color: tokens.colorPaletteGreenForeground1,
+    backgroundColor: `${tokens.colorPaletteGreenBackground1}`,
   },
   // Enhanced skeleton styles with shimmer animation
   skeletonContainer: {
@@ -905,7 +903,19 @@ const FilePreview = ({ selectedFile }) => {
 
   const handleExportPDF = (file) => {
     if (!file?.name) return;
-    const url = `${API_BASE}/export/pdf?file=${encodeURIComponent(file.name)}`;
+    // Determine the correct markdown blob name the backend expects
+    // Priority: explicit analysis_file -> derived <base>_AI.md for non-MD -> original .md
+    let mdName;
+    if (file.analysis_file && typeof file.analysis_file === 'string') {
+      mdName = file.analysis_file;
+    } else if (!file.name.toLowerCase().endsWith('.md')) {
+      // Preserve folder prefixes while switching extension and adding _AI
+      mdName = file.name.replace(/\.[^.]+$/, '_AI.md');
+    } else {
+      mdName = file.name;
+    }
+    // Use the enhanced export endpoint under /api with the expected query param
+    const url = `${API_BASE}/api/export-pdf-enhanced?blob_name=${encodeURIComponent(mdName)}`;
     window.open(url, '_blank', 'noopener,noreferrer');
   };
 
@@ -973,29 +983,68 @@ const FilePreview = ({ selectedFile }) => {
                     remarkPlugins={[remarkGfm]}
                     rehypePlugins={[rehypeRaw]}
                     components={{
-                      table: ({ children }) => (
-                        <div className={classes.tableScroll} tabIndex={0} role="group" aria-label="Markdown table">
-                          <table className={classes.mdTable} aria-label="Markdown data table">{children}</table>
-                        </div>
-                      ),
-                      thead: ({ children }) => <thead>{children}</thead>,
-                      th: ({ children }) => <th className={classes.mdTh} scope="col">{children}</th>,
-                      td: ({ children, ...props }) => {
-                        const plain = String(children).replace(/\s+/g, ' ').trim();
-                        const isLong = plain.length > 50;
-                        const wrapStyle = isLong ? { whiteSpace: 'normal', overflow: 'visible', textOverflow: 'clip', wordBreak: 'break-word', overflowWrap: 'anywhere' } : {};
-                        return (
-                          <td
-                            className={classes.mdTd}
-                            title={plain}
-                            style={wrapStyle}
-                            {...props}
-                          >
-                            {children}
-                          </td>
-                        );
-                      },
-                      tbody: ({ children }) => <tbody>{children}</tbody>,
+                      ...(function () {
+                        let currentHeaders = [];
+                        let currentColIndex = 0;
+                        const middleHeaders = new Set([
+                          'issue id',
+                          'area',
+                          'severity',
+                          // Recommendations table columns
+                          'recommendation id',
+                          'estimated effort',
+                          'responsible area',
+                          'linked issue id',
+                        ]);
+                        return {
+                          table: ({ children }) => (
+                            <div className={classes.tableScroll} tabIndex={0} role="group" aria-label="Markdown table">
+                              <table className={classes.mdTable} aria-label="Markdown data table">{children}</table>
+                            </div>
+                          ),
+                          thead: ({ children }) => {
+                            currentHeaders = [];
+                            return <thead>{children}</thead>;
+                          },
+                          th: ({ children }) => {
+                            const text = String(children).replace(/\s+/g, ' ').trim();
+                            currentHeaders.push(text);
+                            return <th className={classes.mdTh} scope="col">{children}</th>;
+                          },
+                          tr: ({ children }) => {
+                            currentColIndex = 0;
+                            return <tr>{children}</tr>;
+                          },
+                          td: ({ children, ...props }) => {
+                            const plain = String(children).replace(/\s+/g, ' ').trim();
+                            const isLong = plain.length > 50;
+                            const wrapStyle = isLong ? { whiteSpace: 'normal', overflow: 'visible', textOverflow: 'clip', wordBreak: 'break-word', overflowWrap: 'anywhere' } : {};
+                            const statusStyle = getStatusStyle(plain, classes);
+                            const headerName = (currentHeaders[currentColIndex] || '').toLowerCase().trim();
+                            const shouldMiddle = middleHeaders.has(headerName);
+                            const cell = (
+                              <td
+                                className={classes.mdTd}
+                                title={plain}
+                                style={{ ...(shouldMiddle ? { verticalAlign: 'middle' } : {}), ...wrapStyle }}
+                                {...props}
+                              >
+                                {statusStyle ? (
+                                  <span className={`${classes.statusChip} ${statusStyle.class}`}>
+                                    {statusStyle.icon}
+                                    {statusStyle.label}
+                                  </span>
+                                ) : (
+                                  children
+                                )}
+                              </td>
+                            );
+                            currentColIndex += 1;
+                            return cell;
+                          },
+                          tbody: ({ children }) => <tbody>{children}</tbody>,
+                        };
+                      })(),
                       code: JsonCodeBlockRenderer,
                       h1: ({ children }) => (
                         <h1 className={classes.mdH1}>{children}</h1>
@@ -1109,9 +1158,6 @@ const FilePreview = ({ selectedFile }) => {
             <Document24Regular style={{ fontSize: 64, marginBottom: 8, opacity: 0.7 }} />
             <div className={`${classes.placeholderTitle} ${typography.headingL}`} style={{ fontSize: tokens.fontSizeBase600 }}>No File Selected</div>
             <div className={`${classes.placeholderText} ${typography.bodyM}`} style={{ fontSize: tokens.fontSizeBase400 }}>Select a file from the list to preview its contents</div>
-            <div className={classes.placeholderFrame}>
-              <div className={`${classes.placeholderMuted} ${typography.bodyS}`}>Content preview will show here.</div>
-            </div>
           </div>
         )}
       </div>
@@ -1120,7 +1166,7 @@ const FilePreview = ({ selectedFile }) => {
       {selectedFile && (
         <DocumentChat 
           fileName={selectedFile.name}
-          documentContent={originalContent}
+          documentContent={selectedFile.analysisContent || originalContent}
         />
       )}
     </div>

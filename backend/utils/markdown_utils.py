@@ -64,6 +64,21 @@ def _format_date_ddmmyyyy(dt: datetime) -> str:
     return dt.strftime("%d.%m.%Y")
 
 
+def _to_title_case(s: Any) -> str:
+    """Conservatively convert a value to Title Case for display.
+
+    - Non-string values are returned as-is cast to str.
+    - Simple word capitalization; extend later for special acronyms if needed.
+    """
+    try:
+        text = str(s)
+    except Exception:
+        return "N/A"
+    # Normalize whitespace then title-case words
+    text = re.sub(r"\s+", " ", text.strip())
+    return text.title()
+
+
 def _normalize_report_date(meta: Dict[str, Any]) -> str:
     """Render a clean Report Date. If the direct value is malformed, fall back to the end of Analysis Period."""
     report_date_raw = meta.get("Report Date", meta.get("report_date"))
@@ -183,7 +198,7 @@ def json_to_markdown(data: Dict[str, Any]) -> str:
     health = data.get("System Health Overview", data.get("system_health_overview", {}))
     if health:
         rows = [
-            [k, v] for k, v in health.items() if v is not None
+            [_to_title_case(k), v] for k, v in health.items() if v is not None
         ]
         if rows:
             md.extend(_format_table(["Area", "Status"], rows))
@@ -292,6 +307,8 @@ def json_to_markdown(data: Dict[str, Any]) -> str:
         md.append(f"- **Capacity Summary:** {capacity.get('Summary', 'N/A')}")
     else:
         md.append("No capacity outlook data provided.")
+    # End-of-report separator
+    md.append("\n---\n")
 
 
     # ── Done ─────────────────────────────────────────────────────────────────

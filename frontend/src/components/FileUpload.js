@@ -183,11 +183,7 @@ const useStyles = makeStyles({
     color: tokens.colorNeutralForeground1,
     fontSize: tokens.fontSizeBase600,
     letterSpacing: '-0.03em',
-    textShadow: '0 2px 4px rgba(0,0,0,0.12)',
-    background: `linear-gradient(135deg, ${tokens.colorNeutralForeground1} 0%, ${tokens.colorBrandForeground1} 100%)`,
-    backgroundClip: 'text',
-    WebkitBackgroundClip: 'text',
-    WebkitTextFillColor: 'transparent',
+    // Use solid color for crisper rendering on light backgrounds
     fontFeatureSettings: '"kern" 1, "liga" 1',
     textRendering: 'optimizeLegibility',
   },

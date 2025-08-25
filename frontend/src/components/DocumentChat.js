@@ -8,7 +8,7 @@ import {
   Bot24Regular,
   Person24Regular,
 } from '@fluentui/react-icons';
-import { Button, Textarea, ProgressBar, Field, makeStyles, shorthands, tokens, Tooltip } from '@fluentui/react-components';
+import { Button, Textarea, Field, makeStyles, shorthands, tokens, Tooltip, Spinner } from '@fluentui/react-components';
 import { apiUrl } from '../config';
 import { formatDateDDMMYYYY } from '../utils/format';
 import { useTypographyStyles } from '../styles/typography';
@@ -168,6 +168,15 @@ const useStyles = makeStyles({
     backgroundColor: tokens.colorPaletteRedBackground2,
     color: tokens.colorPaletteRedForeground2,
     ...shorthands.border('1px', 'solid', tokens.colorPaletteRedBorderActive),
+  },
+  typingIndicator: {
+    display: 'inline-flex',
+    alignItems: 'center',
+    columnGap: '8px',
+  },
+  thinkingText: {
+    color: tokens.colorNeutralForeground2,
+    fontSize: '0.82rem',
   },
   inputContainer: {
     ...shorthands.padding('10px'),
@@ -524,7 +533,10 @@ const handleSendMessage = async () => {
               <Bot24Regular style={{ width: 16, height: 16 }} />
             </div>
             <div className={classes.bubble} role="status" aria-live="polite" aria-busy="true">
-              <ProgressBar thickness="small" />
+              <div className={classes.typingIndicator}>
+                <Spinner size="tiny" />
+                <span className={classes.thinkingText}>Thinking…</span>
+              </div>
             </div>
           </div>
         )}

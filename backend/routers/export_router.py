@@ -422,7 +422,7 @@ async def export_markdown_to_pdf_enhanced(
                     size: {page_size}{orientation};
                     margin: 20mm 15mm;
                     @top-center {{
-                        content: "Enterprise Workload Analysis Report";
+                        content: "EarlyWatch Alert Deep Dive";
                         font-size: 10pt;
                         color: #4a5568;
                         border-bottom: 1px solid #e2e8f0;
