@@ -8,7 +8,7 @@ COPY package*.json ./
 RUN npm install
 
 # Accept API base as a build argument and expose as env for the build step
-ARG REACT_APP_API_BASE="http://localhost:8001"
+ARG REACT_APP_API_BASE="https://sap-ewa-analyzer-backend.azurewebsites.net/"
 ENV REACT_APP_API_BASE=${REACT_APP_API_BASE}
 
 # Copy the rest of the frontend code
