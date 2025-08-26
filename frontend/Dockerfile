@@ -16,10 +16,13 @@ COPY . .
 
 RUN npm run build
 
-# Serve static build with 'serve'
-FROM node:20-alpine as prod
-WORKDIR /app
-RUN npm install -g serve
-COPY --from=build /app/build ./build
+# Serve static build with Nginx (adds CSP for Teams via nginx.conf)
+FROM nginx:alpine as prod
+
+# Copy React build output to default nginx web root
+COPY --from=build /app/build /usr/share/nginx/html
+
+# Provide custom nginx configuration (CSP + SPA fallback)
+COPY nginx.conf /etc/nginx/nginx.conf
+
 EXPOSE 80
-CMD ["serve", "-s", "build", "-l", "80"]

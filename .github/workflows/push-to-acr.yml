@@ -4,7 +4,7 @@ on:
   push:
     branches:
       - main
-      - file-rename-upload
+      - teams-integration-02
   workflow_dispatch:
 
 jobs:
