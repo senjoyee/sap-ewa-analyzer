@@ -408,7 +408,7 @@ const useStyles = makeStyles({
     minWidth: 0,
   },
   itemTitle: {
-    fontSize: tokens.fontSizeBase100,
+    fontSize: '12px',
     fontWeight: 600,
     color: tokens.colorNeutralForeground1,
     whiteSpace: 'nowrap',
