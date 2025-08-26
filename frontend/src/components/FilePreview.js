@@ -1247,7 +1247,7 @@ const FilePreview = ({ selectedFile }) => {
       {selectedFile && (
         <DocumentChat 
           fileName={selectedFile.name}
-          documentContent={selectedFile.analysisContent || originalContent}
+          documentContent={originalContent}
         />
       )}
     </div>
