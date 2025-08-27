@@ -18,8 +18,8 @@ const useStyles = makeStyles({
     position: 'fixed',
     bottom: '20px',
     right: '20px',
-    width: '550px',
-    height: '600px',
+    width: '820px',
+    height: '80vh',
     zIndex: 1300,
     display: 'flex',
     flexDirection: 'column',
@@ -279,7 +279,6 @@ const DocumentChat = ({ fileName, documentContent }) => {
   const [messages, setMessages] = useState([]);
   const [inputValue, setInputValue] = useState('');
   const [loading, setLoading] = useState(false);
-  const [contentStatus, setContentStatus] = useState('unknown');
   const messagesEndRef = useRef(null);
 
   const scrollToBottom = () => {
@@ -290,24 +289,10 @@ const DocumentChat = ({ fileName, documentContent }) => {
     scrollToBottom();
   }, [messages]);
 
-  // Check document content and reset chat when document changes
+  // Reset chat when document changes
   useEffect(() => {
     setMessages([]);
     setInputValue('');
-    
-    // Check document content status
-    if (!documentContent) {
-      setContentStatus('missing');
-    } else if (documentContent.length < 100) {
-      setContentStatus('minimal');
-      console.warn(`Very short document content (${documentContent.length} chars) for ${fileName}`); 
-    } else if (documentContent.includes('Could not load content')) {
-      setContentStatus('error');
-      console.error(`Error loading content for ${fileName}`); 
-    } else {
-      setContentStatus('available');
-      console.log(`Document content available for ${fileName}: ${documentContent.length} chars`);
-    }
   }, [fileName, documentContent]);
 
   // API base is centralized in src/config.js
@@ -422,39 +407,13 @@ const handleSendMessage = async () => {
         {messages.length === 0 && (
           <div className={classes.emptyState} role="status" aria-live="polite">
             <Bot24Regular className={classes.emptyIcon} />
-            {contentStatus === 'available' ? (
-              <>
-                <div className={`${classes.placeholderTitle} ${typography.headingL}`}>Ask about this report</div>
-                <div className={`${classes.placeholderSubtext} ${typography.bodyM}`}>Ask me anything about this SAP EWA report.</div>
-                <div className={classes.placeholderFrame}>
-                  <div className={`${classes.placeholderMuted} ${typography.bodyS}`}>Your conversation will appear here.</div>
-                </div>
-              </>
-            ) : contentStatus === 'missing' || contentStatus === 'minimal' ? (
-              <>
-                <div className={`${classes.placeholderTitle} ${typography.headingL}`} style={{ color: tokens.colorPaletteRedForeground1 }}>Document content is limited or missing</div>
-                <div className={`${classes.placeholderSubtext} ${typography.bodyM}`}>Please process the document first by clicking “Process file”.</div>
-                <div className={classes.placeholderFrame}>
-                  <div className={`${classes.placeholderMuted} ${typography.bodyS}`}>Once processed, content will be available for chat.</div>
-                </div>
-              </>
-            ) : contentStatus === 'error' ? (
-              <>
-                <div className={`${classes.placeholderTitle} ${typography.headingL}`} style={{ color: tokens.colorPaletteRedForeground1 }}>Error loading content</div>
-                <div className={`${classes.placeholderSubtext} ${typography.bodyM}`}>Try reprocessing the document or check server logs.</div>
-                <div className={classes.placeholderFrame}>
-                  <div className={`${classes.placeholderMuted} ${typography.bodyS}`}>If the problem persists, contact an administrator.</div>
-                </div>
-              </>
-            ) : (
-              <>
-                <div className={`${classes.placeholderTitle} ${typography.headingL}`}>Ask about this document</div>
-                <div className={`${classes.placeholderSubtext} ${typography.bodyM}`}>Start the conversation using the input below.</div>
-                <div className={classes.placeholderFrame}>
-                  <div className={`${classes.placeholderMuted} ${typography.bodyS}`}>Tips: be specific to get better answers.</div>
-                </div>
-              </>
-            )}
+            <>
+              <div className={`${classes.placeholderTitle} ${typography.headingL}`}>Ask about this report</div>
+              <div className={`${classes.placeholderSubtext} ${typography.bodyM}`}>Ask me anything about this SAP EWA report.</div>
+              <div className={classes.placeholderFrame}>
+                <div className={`${classes.placeholderMuted} ${typography.bodyS}`}>Your conversation will appear here.</div>
+              </div>
+            </>
           </div>
         )}
         
