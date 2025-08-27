@@ -148,7 +148,7 @@ const useStyles = makeStyles({
   },
   bubble: {
     padding: '8px 12px',
-    maxWidth: '90%',
+    maxWidth: '100%',
     wordWrap: 'break-word',
     overflowWrap: 'anywhere',
     boxShadow: tokens.shadow4,
@@ -202,6 +202,7 @@ const useStyles = makeStyles({
   mdTable: {
     borderCollapse: 'collapse',
     width: '100%',
+    tableLayout: 'fixed',
     marginTop: tokens.spacingVerticalXS,
     marginBottom: tokens.spacingVerticalXS,
     fontSize: '0.82rem',
@@ -214,7 +215,9 @@ const useStyles = makeStyles({
     textAlign: 'left',
     borderBottom: `1px solid ${tokens.colorNeutralStroke1}`,
     color: tokens.colorNeutralForeground2,
-    whiteSpace: 'nowrap',
+    whiteSpace: 'normal',
+    overflowWrap: 'anywhere',
+    wordBreak: 'break-word',
   },
   mdTbody: {
     selectors: {
@@ -230,6 +233,9 @@ const useStyles = makeStyles({
     padding: '6px 8px',
     borderTop: `1px solid ${tokens.colorNeutralStroke2}`,
     color: tokens.colorNeutralForeground1,
+    whiteSpace: 'normal',
+    overflowWrap: 'anywhere',
+    wordBreak: 'break-word',
   },
   // Unified empty placeholder pattern (ui-cos-11)
   emptyState: {
