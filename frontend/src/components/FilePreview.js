@@ -11,6 +11,7 @@ import { Image24Regular, Document24Regular, TextDescription24Regular } from '@fl
  
  
 import { useTypographyStyles } from '../styles/typography';
+import { API_BASE } from '../config';
 
 // Import our custom table components
 // import MetricsTable from './MetricsTable';
@@ -53,7 +54,6 @@ const getStatusStyle = (value, classes) => {
 };
 
 // Helper function to get appropriate file type label and icon
-const API_BASE = 'http://localhost:8001';
 const getFileTypeInfo = (fileName, classes) => {
   if (!fileName || typeof fileName !== 'string') {
     return { icon: <Document24Regular className={`${classes.icon20} ${classes.iconNeutral}`} />, label: 'UNKNOWN', color: 'default' };
