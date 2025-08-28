@@ -21,7 +21,7 @@ function Root() {
       return `${scaled}px`;
     };
     const keys = [
-      'fontSizeBase200','fontSizeBase300','fontSizeBase400','fontSizeBase500','fontSizeBase600','fontSizeBase700',
+      'fontSizeBase100','fontSizeBase200','fontSizeBase300','fontSizeBase400','fontSizeBase500','fontSizeBase600','fontSizeBase700',
       'fontSizeHero700','fontSizeHero800','fontSizeHero900','fontSizeHero1000'
     ];
     const overrides = {};
