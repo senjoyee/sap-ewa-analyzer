@@ -13,6 +13,21 @@ function Root() {
     fontFamilyBase: '"Inter", system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif',
     fontFamilyMonospace: '"JetBrains Mono", Consolas, "Courier New", monospace',
   });
+  const withScaledFonts = (t, factor) => {
+    const scale = (px) => {
+      if (typeof px !== 'string' || !px.endsWith('px')) return px;
+      const n = parseFloat(px);
+      const scaled = Math.round(n * factor * 100) / 100;
+      return `${scaled}px`;
+    };
+    const keys = [
+      'fontSizeBase200','fontSizeBase300','fontSizeBase400','fontSizeBase500','fontSizeBase600','fontSizeBase700',
+      'fontSizeHero700','fontSizeHero800','fontSizeHero900','fontSizeHero1000'
+    ];
+    const overrides = {};
+    keys.forEach(k => { if (t[k]) overrides[k] = scale(t[k]); });
+    return { ...t, ...overrides };
+  };
   // Initialize with Inter immediately so non-Teams environments get the font
   const [fluentTheme, setFluentTheme] = useState(withInter(webLightTheme));
 
@@ -20,7 +35,8 @@ function Root() {
     let mounted = true;
     const applyTeamsTheme = (themeName) => {
       const base = themeName === 'dark' ? teamsDarkTheme : themeName === 'contrast' ? teamsHighContrastTheme : teamsLightTheme;
-      if (mounted) setFluentTheme(withInter(base));
+      const adjusted = withScaledFonts(base, 0.95);
+      if (mounted) setFluentTheme(withInter(adjusted));
     };
 
     const init = async () => {
