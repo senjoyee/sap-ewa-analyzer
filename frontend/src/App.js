@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { Toolbar as FluentToolbar, ToolbarButton, Tooltip as FluentTooltip, Button as FluentButton, makeStyles, shorthands, tokens } from '@fluentui/react-components';
-import { Document24Regular, Settings24Regular, QuestionCircle24Regular, ChevronLeft24Regular, ChevronRight24Regular } from '@fluentui/react-icons';
+import { Document24Regular, Settings24Regular, QuestionCircle24Regular } from '@fluentui/react-icons';
 
 import FileUpload from './components/FileUpload';
 import FileList from './components/FileList';
@@ -153,14 +153,6 @@ const AppContent = () => {
       <aside className={classes.sidebar} style={{ width: sidebarCollapsed ? collapsedDrawerWidth : drawerWidth }}>
         <div className={classes.sidebarHeaderRow}>
           <span className={classes.sidebarTitle}>File Management</span>
-          <FluentButton
-            appearance="subtle"
-            size="small"
-            shape="circular"
-            aria-label="Collapse sidebar"
-            onClick={() => setSidebarCollapsed(true)}
-            icon={<ChevronLeft24Regular />}
-          />
         </div>
         <div className={classes.sidebarContent}>
           <FileUpload onUploadSuccess={handleUploadSuccess} />
@@ -172,19 +164,7 @@ const AppContent = () => {
         </div>
       </aside>
 
-      {sidebarCollapsed && (
-        <div className={classes.collapseEdge}>
-          <FluentButton
-            onClick={() => setSidebarCollapsed(false)}
-            size="small"
-            shape="circular"
-            appearance="transparent"
-            aria-label="Expand sidebar"
-            icon={<ChevronRight24Regular />}
-            style={{ color: tokens.colorNeutralForegroundOnBrand, padding: '12px 4px', borderRadius: '0 4px 4px 0' }}
-          />
-        </div>
-      )}
+      {/* Sidebar toggle removed by design */}
 
       <main
         className={classes.main}

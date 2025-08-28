@@ -912,19 +912,14 @@ const FilePreview = ({ selectedFile }) => {
     }
   }, [selectedFile]);
 
-  // Handle Escape to exit fullscreen and lock body scroll while active
   useEffect(() => {
-    if (!isFullscreen) return;
-    const onKeyDown = (e) => {
-      if (e.key === 'Escape') setIsFullscreen(false);
+    const handleKeyDown = (e) => {
+      if (e.key === 'Escape' && isFullscreen) {
+        setIsFullscreen(false);
+      }
     };
-    window.addEventListener('keydown', onKeyDown);
-    const prevOverflow = document.body.style.overflow;
-    document.body.style.overflow = 'hidden';
-    return () => {
-      window.removeEventListener('keydown', onKeyDown);
-      document.body.style.overflow = prevOverflow;
-    };
+    document.addEventListener('keydown', handleKeyDown);
+    return () => document.removeEventListener('keydown', handleKeyDown);
   }, [isFullscreen]);
 
   const isAnalysisView = !!selectedFile?.analysisContent;
@@ -954,15 +949,17 @@ const FilePreview = ({ selectedFile }) => {
       <a href="#filepreview-content" className={classes.skipLink}>Skip to content</a>
       <div className={classes.headerBar}>
         <div className={classes.titleSlot}>
-          <Tooltip content={isFullscreen ? 'Exit full screen' : 'Enter full screen'} relationship="label">
-            <Button
-              appearance="subtle"
-              size="small"
-              aria-label={isFullscreen ? 'Exit full screen' : 'Enter full screen'}
-              icon={isFullscreen ? <FullScreenMinimize24Regular /> : <FullScreenMaximize24Regular />}
-              onClick={() => setIsFullscreen(v => !v)}
-            />
-          </Tooltip>
+          {selectedFile && (
+            <Tooltip content={isFullscreen ? 'Exit full screen' : 'Enter full screen'} relationship="label">
+              <Button
+                appearance="subtle"
+                size="small"
+                aria-label={isFullscreen ? 'Exit full screen' : 'Enter full screen'}
+                icon={isFullscreen ? <FullScreenMinimize24Regular /> : <FullScreenMaximize24Regular />}
+                onClick={() => setIsFullscreen(v => !v)}
+              />
+            </Tooltip>
+          )}
         </div>
         {selectedFile && (
           <div className={classes.actionBar}>
