@@ -125,7 +125,11 @@ const AppContent = () => {
   const [fileListRefreshTrigger, setFileListRefreshTrigger] = useState(0);
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
   const [fontPrefUI, setFontPrefUI] = useState(() => {
-    try { return window.localStorage.getItem('fontPref') === 'teams' ? 'teams' : 'inter'; } catch { return 'inter'; }
+    try {
+      const allowed = ['inter', 'roboto', 'open-sans', 'source-sans-3', 'system-ui', 'teams'];
+      const v = window.localStorage.getItem('fontPref');
+      return allowed.includes(v) ? v : 'inter';
+    } catch { return 'inter'; }
   });
   const classes = useStyles();
 
@@ -178,6 +182,10 @@ const AppContent = () => {
             <MenuPopover>
               <MenuList>
                 <MenuItemRadio name="font" value="inter">Inter</MenuItemRadio>
+                <MenuItemRadio name="font" value="roboto">Roboto</MenuItemRadio>
+                <MenuItemRadio name="font" value="open-sans">Open Sans</MenuItemRadio>
+                <MenuItemRadio name="font" value="source-sans-3">Source Sans 3</MenuItemRadio>
+                <MenuItemRadio name="font" value="system-ui">System UI</MenuItemRadio>
                 <MenuItemRadio name="font" value="teams">Teams Default</MenuItemRadio>
               </MenuList>
             </MenuPopover>

@@ -8,11 +8,23 @@ import { FluentProvider, webLightTheme, teamsLightTheme, teamsDarkTheme, teamsHi
 import * as microsoftTeams from '@microsoft/teams-js';
 
 function Root() {
-  const withInter = (t) => ({
-    ...t,
-    fontFamilyBase: '"Inter", system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif',
-    fontFamilyMonospace: '"JetBrains Mono", Consolas, "Courier New", monospace',
-  });
+  const fontFamilies = {
+    'inter': '"Inter", system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif',
+    'roboto': '"Roboto", system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif',
+    'open-sans': '"Open Sans", system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif',
+    'source-sans-3': '"Source Sans 3", system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif',
+    'system-ui': 'system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif',
+  };
+  const allowedFontPrefs = ['inter', 'roboto', 'open-sans', 'source-sans-3', 'system-ui', 'teams'];
+  const withFontPref = (t, pref) => {
+    const base = fontFamilies[pref];
+    if (!base) return t; // teams or unknown
+    return {
+      ...t,
+      fontFamilyBase: base,
+      fontFamilyMonospace: '"JetBrains Mono", Consolas, "Courier New", monospace',
+    };
+  };
   const withScaledFonts = (t, factor) => {
     const scale = (px) => {
       if (typeof px !== 'string' || !px.endsWith('px')) return px;
@@ -28,22 +40,25 @@ function Root() {
     keys.forEach(k => { if (t[k]) overrides[k] = scale(t[k]); });
     return { ...t, ...overrides };
   };
-  // Persisted font preference: 'inter' | 'teams'
+  // Persisted font preference
   const getInitialFontPref = () => {
     const v = typeof window !== 'undefined' ? window.localStorage.getItem('fontPref') : null;
-    return v === 'teams' ? 'teams' : 'inter';
+    return allowedFontPrefs.includes(v) ? v : 'inter';
   };
   const [fontPref, setFontPref] = useState(getInitialFontPref);
-  const [fluentTheme, setFluentTheme] = useState(() => (getInitialFontPref() === 'inter' ? withInter(webLightTheme) : webLightTheme));
+  const [fluentTheme, setFluentTheme] = useState(() => {
+    const init = getInitialFontPref();
+    return init === 'teams' ? webLightTheme : withFontPref(webLightTheme, init);
+  });
   const [inTeams, setInTeams] = useState(false);
   const [currentTeamsTheme, setCurrentTeamsTheme] = useState('default');
 
-  const applyFontPref = (theme) => (fontPref === 'inter' ? withInter(theme) : theme);
+  const applyFontPref = (theme) => (fontPref === 'teams' ? theme : withFontPref(theme, fontPref));
 
   // Expose a global setter for app-level font preference changes
   useEffect(() => {
     window.__setAppFontPref = (pref) => {
-      const next = pref === 'teams' ? 'teams' : 'inter';
+      const next = allowedFontPrefs.includes(pref) ? pref : 'inter';
       try { window.localStorage.setItem('fontPref', next); } catch {}
       setFontPref(next);
     };
