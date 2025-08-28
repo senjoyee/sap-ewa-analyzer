@@ -4,7 +4,7 @@ import rehypeRaw from 'rehype-raw';
 import remarkGfm from 'remark-gfm';
 import { makeStyles } from '@griffel/react';
 import { tokens, Button, Tooltip, Accordion as FluentAccordion, AccordionItem, AccordionHeader, AccordionPanel, ProgressBar } from '@fluentui/react-components';
-import { DocumentPdf24Regular, ChevronDown24Regular, DataBarVertical24Regular, Settings24Regular, FullScreenMaximize24Regular, FullScreenMinimize24Regular } from '@fluentui/react-icons';
+import { DocumentPdf24Regular, ChevronDown20Filled, DataBarVertical24Regular, Settings24Regular, FullScreenMaximize24Regular, FullScreenMinimize24Regular } from '@fluentui/react-icons';
  
  
 import { Image24Regular, Document24Regular, TextDescription24Regular } from '@fluentui/react-icons';
@@ -1239,7 +1239,7 @@ const FilePreview = ({ selectedFile }) => {
                     <div className={classes.accordionSection}>
                       <FluentAccordion>
                         <AccordionItem value="metrics">
-                          <AccordionHeader expandIcon={<ChevronDown24Regular />} className={classes.accordionHeader} aria-label="Key Metrics Summary">
+                          <AccordionHeader expandIcon={<ChevronDown20Filled />} className={classes.accordionHeader} aria-label="Key Metrics Summary">
                             <div style={{ display: 'flex', alignItems: 'center' }}>
                               <DataBarVertical24Regular style={{ marginRight: 12, color: '#1976d2' }} />
                               <span style={{ fontWeight: 500, color: '#1976d2' }}>Key Metrics Summary</span>
@@ -1260,7 +1260,7 @@ const FilePreview = ({ selectedFile }) => {
                     <div className={classes.accordionSection}>
                       <FluentAccordion>
                         <AccordionItem value="parameters">
-                          <AccordionHeader expandIcon={<ChevronDown24Regular />} className={classes.accordionHeader} aria-label="Recommended Parameters">
+                          <AccordionHeader expandIcon={<ChevronDown20Filled />} className={classes.accordionHeader} aria-label="Recommended Parameters">
                             <div style={{ display: 'flex', alignItems: 'center' }}>
                               <Settings24Regular style={{ marginRight: 12, color: '#2e7d32' }} />
                               <span style={{ fontWeight: 500, color: '#2e7d32' }}>Recommended Parameters</span>
