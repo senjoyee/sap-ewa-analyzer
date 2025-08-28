@@ -35,7 +35,7 @@ function Root() {
     let mounted = true;
     const applyTeamsTheme = (themeName) => {
       const base = themeName === 'dark' ? teamsDarkTheme : themeName === 'contrast' ? teamsHighContrastTheme : teamsLightTheme;
-      const adjusted = withScaledFonts(base, 0.95);
+      const adjusted = withScaledFonts(base, 0.9);
       if (mounted) setFluentTheme(withInter(adjusted));
     };
 
