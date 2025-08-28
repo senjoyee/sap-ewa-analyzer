@@ -103,6 +103,15 @@ const useStyles = makeStyles({
       content: 'none',
     },
   },
+  fullscreenContainer: {
+    position: 'fixed',
+    inset: 0,
+    zIndex: 10000,
+    backgroundColor: '#FFFFFF',
+    borderRadius: 0,
+    border: 'none',
+    boxShadow: 'none',
+  },
   skipLink: {
     position: 'absolute',
     left: tokens.spacingHorizontalS,
@@ -531,6 +540,12 @@ const useStyles = makeStyles({
       padding: tokens.spacingHorizontalM,
     },
   },
+  fullscreenContentArea: {
+    padding: tokens.spacingHorizontalM,
+    '@media (max-width: 600px)': {
+      padding: tokens.spacingHorizontalS,
+    },
+  },
   // High-quality text rendering to match PDF appearance
   previewTextRoot: {
     fontFamily: '"Inter", system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif',
@@ -879,6 +894,7 @@ const FilePreview = ({ selectedFile }) => {
   const typography = useTypographyStyles();
   const fileTypeInfo = selectedFile ? getFileTypeInfo(selectedFile.name, classes) : null;
   const [originalContent, setOriginalContent] = useState('');
+  const [isFullscreen, setIsFullscreen] = useState(false);
 
   // ... (rest of the code remains the same)
   useEffect(() => {
@@ -889,6 +905,21 @@ const FilePreview = ({ selectedFile }) => {
       setOriginalContent('');
     }
   }, [selectedFile]);
+
+  // Handle Escape to exit fullscreen and lock body scroll while active
+  useEffect(() => {
+    if (!isFullscreen) return;
+    const onKeyDown = (e) => {
+      if (e.key === 'Escape') setIsFullscreen(false);
+    };
+    window.addEventListener('keydown', onKeyDown);
+    const prevOverflow = document.body.style.overflow;
+    document.body.style.overflow = 'hidden';
+    return () => {
+      window.removeEventListener('keydown', onKeyDown);
+      document.body.style.overflow = prevOverflow;
+    };
+  }, [isFullscreen]);
 
   const isAnalysisView = !!selectedFile?.analysisContent;
   const hasMetrics = Array.isArray(selectedFile?.metricsData) && selectedFile.metricsData.length > 0;
@@ -913,7 +944,7 @@ const FilePreview = ({ selectedFile }) => {
   };
 
   return (
-    <div className={classes.container}>
+    <div className={`${classes.container} ${isFullscreen ? classes.fullscreenContainer : ''}`}>
       <a href="#filepreview-content" className={classes.skipLink}>Skip to content</a>
       <div className={classes.headerBar}>
         <div className={`${classes.title} ${typography.headingL}`}>
@@ -932,6 +963,16 @@ const FilePreview = ({ selectedFile }) => {
                 />
               </Tooltip>
             )}
+            <Tooltip content={isFullscreen ? 'Exit full screen' : 'Expand to full screen'} relationship="label">
+              <Button
+                appearance="subtle"
+                size="small"
+                aria-label={isFullscreen ? 'Exit full screen' : 'Expand to full screen'}
+                onClick={() => setIsFullscreen(v => !v)}
+              >
+                {isFullscreen ? 'Exit full screen' : 'Expand'}
+              </Button>
+            </Tooltip>
             <div className={classes.fileBadge} aria-label={isAnalysisView ? 'SAP Analysis' : `File type ${fileTypeInfo?.label || ''}`}>
               <span className={classes.badgeIcon}>
                 {isAnalysisView ? (
@@ -949,7 +990,7 @@ const FilePreview = ({ selectedFile }) => {
       </div>
 
       <div
-        className={`${classes.contentArea} ${isAnalysisView ? classes.analysisArea : classes.centerArea}`}
+        className={`${classes.contentArea} ${isFullscreen ? classes.fullscreenContentArea : ''} ${isAnalysisView ? classes.analysisArea : classes.centerArea}`}
         id="filepreview-content"
         role="region"
         aria-label="File preview content"
