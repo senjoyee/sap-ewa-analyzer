@@ -292,7 +292,7 @@ def json_to_markdown(data: Dict[str, Any]) -> str:
                 md.append(f"- {kpi}")
     else:
         md.append("No KPIs provided.")
-    md.append("\n---\n")
+    # Removed separator before Capacity Outlook to avoid extra horizontal rule under the KPI table
 
     # ── Capacity Outlook ──────────────────────────────────────────────────────
     md.append("<div style='page-break-before: always;'></div>")
@@ -307,8 +307,7 @@ def json_to_markdown(data: Dict[str, Any]) -> str:
         md.append(f"- **Capacity Summary:** {capacity.get('Summary', 'N/A')}")
     else:
         md.append("No capacity outlook data provided.")
-    # End-of-report separator
-    md.append("\n---\n")
+    # Removed trailing separator after Capacity Outlook
 
 
     # ── Done ─────────────────────────────────────────────────────────────────
