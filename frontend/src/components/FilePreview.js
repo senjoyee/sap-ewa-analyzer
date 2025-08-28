@@ -516,9 +516,11 @@ const useStyles = makeStyles({
   contentArea: {
     flex: 1,
     padding: tokens.spacingHorizontalXL,
+    paddingBottom: 48, // explicit bottom space for a clear visual gap
     backgroundColor: '#FFFFFF',
     overflowY: 'auto',
     display: 'flex',
+    flexDirection: 'column', // stack content vertically so spacers appear at the bottom
     alignItems: 'stretch',
     justifyContent: 'flex-start',
     position: 'relative',
@@ -603,6 +605,13 @@ const useStyles = makeStyles({
     maxWidth: '100%',
     margin: '0 auto',
     paddingBottom: tokens.spacingVerticalXL,
+  },
+  endSpacer: {
+    height: 48, // ensure clearly visible gap without being excessive
+    flexShrink: 0,
+  },
+  chatGap: {
+    marginTop: tokens.spacingVerticalXXL,
   },
   panelInner: {
     backgroundColor: tokens.colorNeutralBackground1,
@@ -1266,6 +1275,8 @@ const FilePreview = ({ selectedFile }) => {
                       </FluentAccordion>
                     </div>
                   )}
+                  {/* Explicit end spacer for a clean visual gap at the bottom */}
+                  <div className={classes.endSpacer} aria-hidden="true" />
                 </>
               )}
             </div>
@@ -1298,10 +1309,12 @@ const FilePreview = ({ selectedFile }) => {
       
       {/* Document Chat Component */}
       {selectedFile && (
-        <DocumentChat 
-          fileName={selectedFile.name}
-          documentContent={originalContent}
-        />
+        <div className={classes.chatGap}>
+          <DocumentChat 
+            fileName={selectedFile.name}
+            documentContent={originalContent}
+          />
+        </div>
       )}
     </div>
   );
