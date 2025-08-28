@@ -4,7 +4,7 @@ import rehypeRaw from 'rehype-raw';
 import remarkGfm from 'remark-gfm';
 import { makeStyles } from '@griffel/react';
 import { tokens, Button, Tooltip, Accordion as FluentAccordion, AccordionItem, AccordionHeader, AccordionPanel, ProgressBar } from '@fluentui/react-components';
-import { DocumentPdf24Regular, ChevronDown24Regular, DataBarVertical24Regular, Settings24Regular } from '@fluentui/react-icons';
+import { DocumentPdf24Regular, ChevronDown24Regular, DataBarVertical24Regular, Settings24Regular, FullScreenMaximize24Regular, FullScreenMinimize24Regular } from '@fluentui/react-icons';
  
  
 import { Image24Regular, Document24Regular, TextDescription24Regular } from '@fluentui/react-icons';
@@ -165,6 +165,12 @@ const useStyles = makeStyles({
     letterSpacing: '-0.01em',
     fontFeatureSettings: '"ss01", "ss02"',
     textRendering: 'optimizeLegibility',
+  },
+  titleSlot: {
+    flexGrow: 1,
+    minWidth: 0,
+    display: 'flex',
+    alignItems: 'center',
   },
   actionBar: {
     display: 'flex',
@@ -947,8 +953,16 @@ const FilePreview = ({ selectedFile }) => {
     <div className={`${classes.container} ${isFullscreen ? classes.fullscreenContainer : ''}`}>
       <a href="#filepreview-content" className={classes.skipLink}>Skip to content</a>
       <div className={classes.headerBar}>
-        <div className={`${classes.title} ${typography.headingL}`}>
-          {isAnalysisView ? 'AI Analysis' : 'File Preview'}
+        <div className={classes.titleSlot}>
+          <Tooltip content={isFullscreen ? 'Exit full screen' : 'Enter full screen'} relationship="label">
+            <Button
+              appearance="subtle"
+              size="small"
+              aria-label={isFullscreen ? 'Exit full screen' : 'Enter full screen'}
+              icon={isFullscreen ? <FullScreenMinimize24Regular /> : <FullScreenMaximize24Regular />}
+              onClick={() => setIsFullscreen(v => !v)}
+            />
+          </Tooltip>
         </div>
         {selectedFile && (
           <div className={classes.actionBar}>
@@ -963,16 +977,6 @@ const FilePreview = ({ selectedFile }) => {
                 />
               </Tooltip>
             )}
-            <Tooltip content={isFullscreen ? 'Exit full screen' : 'Expand to full screen'} relationship="label">
-              <Button
-                appearance="subtle"
-                size="small"
-                aria-label={isFullscreen ? 'Exit full screen' : 'Expand to full screen'}
-                onClick={() => setIsFullscreen(v => !v)}
-              >
-                {isFullscreen ? 'Exit full screen' : 'Expand'}
-              </Button>
-            </Tooltip>
             <div className={classes.fileBadge} aria-label={isAnalysisView ? 'SAP Analysis' : `File type ${fileTypeInfo?.label || ''}`}>
               <span className={classes.badgeIcon}>
                 {isAnalysisView ? (
