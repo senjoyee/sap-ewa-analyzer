@@ -96,6 +96,7 @@ const useStyles = makeStyles({
     flexDirection: 'column',
     overflow: 'hidden',
     border: `1px solid ${tokens.colorNeutralStroke2}`,
+    borderBottom: 'none',
     boxShadow: `0 8px 32px rgba(0, 0, 0, 0.08), 0 4px 16px rgba(0, 0, 0, 0.04)`,
     minWidth: 0,
     position: 'relative',
