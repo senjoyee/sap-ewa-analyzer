@@ -542,6 +542,13 @@ const useStyles = makeStyles({
         background: `linear-gradient(180deg, ${tokens.colorCompoundBrandForeground1}, ${tokens.colorBrandForeground1})`,
         boxShadow: '0 2px 8px rgba(0, 0, 0, 0.2)',
       },
+      // Ensure a consistent bottom gap after the last content line
+      '&::after': {
+        content: '""',
+        display: 'block',
+        height: tokens.spacingVerticalXXL,
+        flexShrink: 0,
+      },
     },
     '@media (max-width: 600px)': {
       padding: tokens.spacingHorizontalM,
