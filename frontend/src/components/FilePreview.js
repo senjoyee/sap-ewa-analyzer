@@ -555,7 +555,8 @@ const useStyles = makeStyles({
   },
   // High-quality text rendering to match PDF appearance
   previewTextRoot: {
-    fontFamily: '"Inter", system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif',
+    // Bind to Fluent theme base font with safe fallback
+    fontFamily: 'var(--fontFamilyBase, "Inter", system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif)',
     fontKerning: 'normal',
     fontVariantLigatures: 'common-ligatures contextual',
     fontFeatureSettings: '"liga" 1, "calt" 1, "kern" 1',
@@ -568,7 +569,8 @@ const useStyles = makeStyles({
     color: tokens.colorNeutralForeground1,
     selectors: {
       '& code, & pre': {
-        fontFamily: '"JetBrains Mono", Consolas, "Courier New", monospace',
+        // Bind to Fluent theme monospace font with safe fallback
+        fontFamily: 'var(--fontFamilyMonospace, "JetBrains Mono", Consolas, "Courier New", monospace)',
       },
       '& h1, & h2': {
         letterSpacing: '-0.01em',
