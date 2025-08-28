@@ -29,6 +29,12 @@ function Root() {
         const ctx = await microsoftTeams.app.getContext();
         applyTeamsTheme((ctx.app && ctx.app.theme) || ctx.theme || 'default');
         microsoftTeams.app.registerOnThemeChangeHandler((theme) => applyTeamsTheme(theme));
+        // Notify Teams host that the tab has initialized successfully to avoid the
+        // Desktop banner: "There was a problem reaching this app".
+        // Safe to call only when running inside Teams (we're inside the try block).
+        if (microsoftTeams?.appInitialization?.notifySuccess) {
+          microsoftTeams.appInitialization.notifySuccess();
+        }
       } catch (e) {
         // Not running inside Teams, ensure Inter override is applied
         if (mounted) setFluentTheme(withInter(webLightTheme));
