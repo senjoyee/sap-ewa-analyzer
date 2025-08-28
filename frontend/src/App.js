@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Toolbar as FluentToolbar, ToolbarButton, Tooltip as FluentTooltip, Button as FluentButton, makeStyles, shorthands, tokens } from '@fluentui/react-components';
+import { Toolbar as FluentToolbar, ToolbarButton, Tooltip as FluentTooltip, Button as FluentButton, makeStyles, shorthands, tokens, Menu, MenuTrigger, MenuPopover, MenuList, MenuItemRadio } from '@fluentui/react-components';
 import { Document24Regular, Settings24Regular, QuestionCircle24Regular } from '@fluentui/react-icons';
 
 import FileUpload from './components/FileUpload';
@@ -124,6 +124,9 @@ const AppContent = () => {
   const [selectedFileForPreview, setSelectedFileForPreview] = useState(null);
   const [fileListRefreshTrigger, setFileListRefreshTrigger] = useState(0);
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
+  const [fontPrefUI, setFontPrefUI] = useState(() => {
+    try { return window.localStorage.getItem('fontPref') === 'teams' ? 'teams' : 'inter'; } catch { return 'inter'; }
+  });
   const classes = useStyles();
 
   const handleUploadSuccess = () => {
@@ -153,6 +156,32 @@ const AppContent = () => {
       <aside className={classes.sidebar} style={{ width: sidebarCollapsed ? collapsedDrawerWidth : drawerWidth }}>
         <div className={classes.sidebarHeaderRow}>
           <span className={classes.sidebarTitle}>File Management</span>
+          <Menu
+            checkedValues={{ font: [fontPrefUI] }}
+            onCheckedValueChange={(e, { name, checkedItems }) => {
+              if (name === 'font') {
+                const next = checkedItems[0] || 'inter';
+                setFontPrefUI(next);
+                try { window.localStorage.setItem('fontPref', next); } catch {}
+                if (typeof window.__setAppFontPref === 'function') window.__setAppFontPref(next);
+              }
+            }}
+          >
+            <MenuTrigger disableButtonEnhancement>
+              <FluentButton
+                appearance="subtle"
+                size="small"
+                aria-label="App settings"
+                icon={<Settings24Regular />}
+              />
+            </MenuTrigger>
+            <MenuPopover>
+              <MenuList>
+                <MenuItemRadio name="font" value="inter">Inter</MenuItemRadio>
+                <MenuItemRadio name="font" value="teams">Teams Default</MenuItemRadio>
+              </MenuList>
+            </MenuPopover>
+          </Menu>
         </div>
         <div className={classes.sidebarContent}>
           <FileUpload onUploadSuccess={handleUploadSuccess} />

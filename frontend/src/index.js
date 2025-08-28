@@ -28,22 +28,53 @@ function Root() {
     keys.forEach(k => { if (t[k]) overrides[k] = scale(t[k]); });
     return { ...t, ...overrides };
   };
-  // Initialize with Inter immediately so non-Teams environments get the font
-  const [fluentTheme, setFluentTheme] = useState(withInter(webLightTheme));
+  // Persisted font preference: 'inter' | 'teams'
+  const getInitialFontPref = () => {
+    const v = typeof window !== 'undefined' ? window.localStorage.getItem('fontPref') : null;
+    return v === 'teams' ? 'teams' : 'inter';
+  };
+  const [fontPref, setFontPref] = useState(getInitialFontPref);
+  const [fluentTheme, setFluentTheme] = useState(() => (getInitialFontPref() === 'inter' ? withInter(webLightTheme) : webLightTheme));
+  const [inTeams, setInTeams] = useState(false);
+  const [currentTeamsTheme, setCurrentTeamsTheme] = useState('default');
+
+  const applyFontPref = (theme) => (fontPref === 'inter' ? withInter(theme) : theme);
+
+  // Expose a global setter for app-level font preference changes
+  useEffect(() => {
+    window.__setAppFontPref = (pref) => {
+      const next = pref === 'teams' ? 'teams' : 'inter';
+      try { window.localStorage.setItem('fontPref', next); } catch {}
+      setFontPref(next);
+    };
+    return () => { delete window.__setAppFontPref; };
+  }, []);
+
+  // Recompute theme when font preference or Teams theme changes
+  useEffect(() => {
+    if (inTeams) {
+      const base = currentTeamsTheme === 'dark' ? teamsDarkTheme : currentTeamsTheme === 'contrast' ? teamsHighContrastTheme : teamsLightTheme;
+      const adjusted = withScaledFonts(base, 0.9);
+      setFluentTheme(applyFontPref(adjusted));
+    } else {
+      setFluentTheme(applyFontPref(webLightTheme));
+    }
+  }, [fontPref, inTeams, currentTeamsTheme]);
 
   useEffect(() => {
     let mounted = true;
     const applyTeamsTheme = (themeName) => {
+      if (!mounted) return;
+      setInTeams(true);
+      setCurrentTeamsTheme(themeName);
       const base = themeName === 'dark' ? teamsDarkTheme : themeName === 'contrast' ? teamsHighContrastTheme : teamsLightTheme;
       const adjusted = withScaledFonts(base, 0.9);
-      if (mounted) setFluentTheme(withInter(adjusted));
+      setFluentTheme(applyFontPref(adjusted));
     };
 
     const init = async () => {
       try {
         await microsoftTeams.app.initialize();
-        // Notify Teams host as soon as initialization completes to avoid
-        // transient desktop banners if getContext is slow/intermittent.
         if (microsoftTeams?.appInitialization?.notifySuccess) {
           microsoftTeams.appInitialization.notifySuccess();
         }
@@ -51,14 +82,15 @@ function Root() {
         applyTeamsTheme((ctx.app && ctx.app.theme) || ctx.theme || 'default');
         microsoftTeams.app.registerOnThemeChangeHandler((theme) => applyTeamsTheme(theme));
       } catch (e) {
-        // Not running inside Teams, ensure Inter override is applied
-        if (mounted) setFluentTheme(withInter(webLightTheme));
+        // Not running inside Teams
+        if (mounted) {
+          setInTeams(false);
+          setFluentTheme(applyFontPref(webLightTheme));
+        }
       }
     };
     init();
-    return () => {
-      mounted = false;
-    };
+    return () => { mounted = false; };
   }, []);
 
   return (
