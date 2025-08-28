@@ -595,6 +595,7 @@ const useStyles = makeStyles({
     width: '100%',
     maxWidth: '100%',
     margin: '0 auto',
+    paddingBottom: tokens.spacingVerticalXL,
   },
   panelInner: {
     backgroundColor: tokens.colorNeutralBackground1,
