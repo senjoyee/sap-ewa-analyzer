@@ -5,6 +5,7 @@ import remarkGfm from 'remark-gfm';
 import { makeStyles } from '@griffel/react';
 import { tokens, Button, Tooltip, Accordion as FluentAccordion, AccordionItem, AccordionHeader, AccordionPanel, ProgressBar } from '@fluentui/react-components';
 import { DocumentPdf24Regular, ChevronDown24Regular, DataBarVertical24Regular, Settings24Regular, FullScreenMaximize24Regular, FullScreenMinimize24Regular } from '@fluentui/react-icons';
+import { ChevronUp16Regular, ChevronDown16Regular, ChevronRight16Regular } from '@fluentui/react-icons';
  
  
 import { Image24Regular, Document24Regular, TextDescription24Regular } from '@fluentui/react-icons';
@@ -77,13 +78,13 @@ const parseTrend = (value, headerName) => {
   return null;
 };
 
-// Map a trend direction to icon-only rendering info
+// Map a trend direction to icon-only rendering info (chevrons)
 const getTrendStyle = (dir, classes) => {
   if (!dir) return null;
   const map = {
-    up: { wrapper: classes.trendIcon, aria: 'Upward trend', arrow: '↗' },
-    down: { wrapper: classes.trendIcon, aria: 'Downward trend', arrow: '↘' },
-    flat: { wrapper: classes.trendIcon, aria: 'Flat trend', arrow: '→' },
+    up: { wrapper: classes.trendIcon, aria: 'Upward trend', icon: <ChevronUp16Regular aria-hidden="true" /> },
+    down: { wrapper: classes.trendIcon, aria: 'Downward trend', icon: <ChevronDown16Regular aria-hidden="true" /> },
+    flat: { wrapper: classes.trendIcon, aria: 'Flat trend', icon: <ChevronRight16Regular aria-hidden="true" /> },
   };
   return map[dir] || null;
 };
@@ -827,7 +828,7 @@ const JsonCodeBlockRenderer = ({ node, inline, className, children, ...props }) 
                           } else if (trendStyle) {
                             return (
                               <span className={trendStyle.wrapper} aria-label={trendStyle.aria} title={String(item.value)}>
-                                {trendStyle.arrow}
+                                {trendStyle.icon}
                               </span>
                             );
                           }
@@ -880,7 +881,7 @@ const JsonCodeBlockRenderer = ({ node, inline, className, children, ...props }) 
                               </span>
                             ) : trendStyle ? (
                               <span className={trendStyle.wrapper} aria-label={trendStyle.aria} title={cellValue}>
-                                {trendStyle.arrow}
+                                {trendStyle.icon}
                               </span>
                             ) : (
                               formatDisplay(rawCell)
@@ -944,7 +945,7 @@ const JsonCodeBlockRenderer = ({ node, inline, className, children, ...props }) 
                                   </span>
                                 ) : trendStyle ? (
                                   <span className={trendStyle.wrapper} aria-label={trendStyle.aria} title={cellValue}>
-                                    {trendStyle.arrow}
+                                    {trendStyle.icon}
                                   </span>
                                 ) : (
                                   formatDisplay(rawCell)
