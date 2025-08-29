@@ -77,13 +77,13 @@ const parseTrend = (value, headerName) => {
   return null;
 };
 
-// Map a trend direction to visual style and label
+// Map a trend direction to icon-only rendering info
 const getTrendStyle = (dir, classes) => {
   if (!dir) return null;
   const map = {
-    up: { class: `${classes.trendChip} ${classes.trendUp}`, label: 'UP', arrow: '↗' },
-    down: { class: `${classes.trendChip} ${classes.trendDown}`, label: 'DOWN', arrow: '↘' },
-    flat: { class: `${classes.trendChip} ${classes.trendFlat}`, label: 'FLAT', arrow: '→' },
+    up: { wrapper: classes.trendIcon, aria: 'Upward trend', arrow: '↗' },
+    down: { wrapper: classes.trendIcon, aria: 'Downward trend', arrow: '↘' },
+    flat: { wrapper: classes.trendIcon, aria: 'Flat trend', arrow: '→' },
   };
   return map[dir] || null;
 };
@@ -742,35 +742,13 @@ const useStyles = makeStyles({
     background: 'linear-gradient(135deg, #c6f6d5, #9ae6b4)',
     color: '#22543d',
   },
-  // Trend chip variants (pill with arrow + label)
-  trendChip: {
-    display: 'inline-flex',
-    alignItems: 'center',
-    gap: tokens.spacingHorizontalXXS,
-    padding: `${tokens.spacingVerticalXXS} ${tokens.spacingHorizontalXS}`,
-    borderRadius: tokens.borderRadiusMedium,
-    fontSize: 'inherit',
-    fontWeight: tokens.fontWeightSemibold,
-    letterSpacing: '0.02em',
-    textTransform: 'uppercase',
-    border: `1px solid ${tokens.colorNeutralStroke2}`,
-    boxShadow: 'none',
+  // Icon-only trend indicator (uniform blue color, 16px)
+  trendIcon: {
+    display: 'inline-block',
+    fontSize: '16px',
     lineHeight: 1,
-  },
-  trendUp: {
-    background: 'linear-gradient(135deg, #c6f6d5, #9ae6b4)',
-    color: '#22543d',
-    borderColor: '#9ae6b4',
-  },
-  trendDown: {
-    background: 'linear-gradient(135deg, #fed7d7, #feb2b2)',
-    color: '#742a2a',
-    borderColor: '#feb2b2',
-  },
-  trendFlat: {
-    background: 'linear-gradient(135deg, #e2e8f0, #cbd5e1)',
-    color: '#334155',
-    borderColor: '#cbd5e1',
+    color: tokens.colorBrandForeground1,
+    verticalAlign: 'middle',
   },
   // Enhanced skeleton styles with shimmer animation
   skeletonContainer: {
@@ -848,9 +826,8 @@ const JsonCodeBlockRenderer = ({ node, inline, className, children, ...props }) 
                             );
                           } else if (trendStyle) {
                             return (
-                              <span className={trendStyle.class} aria-label={`Trend: ${trendStyle.label}`} title={String(item.value)}>
-                                <span aria-hidden="true">{trendStyle.arrow}</span>
-                                {trendStyle.label}
+                              <span className={trendStyle.wrapper} aria-label={trendStyle.aria} title={String(item.value)}>
+                                {trendStyle.arrow}
                               </span>
                             );
                           }
@@ -902,9 +879,8 @@ const JsonCodeBlockRenderer = ({ node, inline, className, children, ...props }) 
                                 {statusStyle.label}
                               </span>
                             ) : trendStyle ? (
-                              <span className={trendStyle.class} aria-label={`Trend: ${trendStyle.label}`} title={cellValue}>
-                                <span aria-hidden="true">{trendStyle.arrow}</span>
-                                {trendStyle.label}
+                              <span className={trendStyle.wrapper} aria-label={trendStyle.aria} title={cellValue}>
+                                {trendStyle.arrow}
                               </span>
                             ) : (
                               formatDisplay(rawCell)
@@ -967,9 +943,8 @@ const JsonCodeBlockRenderer = ({ node, inline, className, children, ...props }) 
                                     {statusStyle.label}
                                   </span>
                                 ) : trendStyle ? (
-                                  <span className={trendStyle.class} aria-label={`Trend: ${trendStyle.label}`} title={cellValue}>
-                                    <span aria-hidden="true">{trendStyle.arrow}</span>
-                                    {trendStyle.label}
+                                  <span className={trendStyle.wrapper} aria-label={trendStyle.aria} title={cellValue}>
+                                    {trendStyle.arrow}
                                   </span>
                                 ) : (
                                   formatDisplay(rawCell)
@@ -1181,9 +1156,8 @@ const FilePreview = ({ selectedFile }) => {
                                     {statusStyle.label}
                                   </span>
                                 ) : trendStyle ? (
-                                  <span className={trendStyle.class} aria-label={`Trend: ${trendStyle.label}`} title={plain}>
-                                    <span aria-hidden="true">{trendStyle.arrow}</span>
-                                    {trendStyle.label}
+                                  <span className={trendStyle.wrapper} aria-label={trendStyle.aria} title={plain}>
+                                    {trendStyle.arrow}
                                   </span>
                                 ) : (
                                   children
