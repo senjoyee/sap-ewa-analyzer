@@ -5,7 +5,6 @@ import remarkGfm from 'remark-gfm';
 import { makeStyles } from '@griffel/react';
 import { tokens, Button, Tooltip, Accordion as FluentAccordion, AccordionItem, AccordionHeader, AccordionPanel, ProgressBar } from '@fluentui/react-components';
 import { DocumentPdf24Regular, ChevronDown24Regular, DataBarVertical24Regular, Settings24Regular, FullScreenMaximize24Regular, FullScreenMinimize24Regular } from '@fluentui/react-icons';
-import { ChevronUp16Regular, ChevronDown16Regular, ChevronRight16Regular } from '@fluentui/react-icons';
  
  
 import { Image24Regular, Document24Regular, TextDescription24Regular } from '@fluentui/react-icons';
@@ -52,41 +51,6 @@ const getStatusStyle = (value, classes) => {
   };
   
   return statusMap[lowerValue] || null;
-};
-
-// Helper to detect trend direction from a value (and optional header name)
-// Returns one of 'up' | 'down' | 'flat' | null
-const parseTrend = (value, headerName) => {
-  if (value === null || value === undefined) return null;
-  const text = String(value).trim().toLowerCase();
-  const header = (headerName || '').toString().toLowerCase();
-
-  // Only interpret obvious textual/arrow cues to avoid false positives
-  // Up indicators
-  if (/↗|↑|▲|\b(up|increase|improv|growing)\b/.test(text)) return 'up';
-  // Down indicators
-  if (/↘|↓|▼|\b(down|decrease|declin|worsen|drop)\b/.test(text)) return 'down';
-  // Flat indicators
-  if (/→|↔|\b(flat|stable|no\s*change|same)\b/.test(text)) return 'flat';
-
-  // If header strongly suggests trend but value is a plain arrow-like char
-  if (header.includes('trend') || header.includes('direction') || header.includes('change')) {
-    if (/^\+/.test(text)) return 'up';
-    if (/^-/.test(text)) return 'down';
-    if (/^0%?$/.test(text)) return 'flat';
-  }
-  return null;
-};
-
-// Map a trend direction to icon-only rendering info (chevrons)
-const getTrendStyle = (dir, classes) => {
-  if (!dir) return null;
-  const map = {
-    up: { wrapper: classes.trendIcon, aria: 'Upward trend', icon: <ChevronUp16Regular aria-hidden="true" /> },
-    down: { wrapper: classes.trendIcon, aria: 'Downward trend', icon: <ChevronDown16Regular aria-hidden="true" /> },
-    flat: { wrapper: classes.trendIcon, aria: 'Flat trend', icon: <ChevronRight16Regular aria-hidden="true" /> },
-  };
-  return map[dir] || null;
 };
 
 // Helper function to get appropriate file type label and icon
@@ -743,14 +707,6 @@ const useStyles = makeStyles({
     background: 'linear-gradient(135deg, #c6f6d5, #9ae6b4)',
     color: '#22543d',
   },
-  // Icon-only trend indicator (uniform blue color, 16px)
-  trendIcon: {
-    display: 'inline-block',
-    fontSize: '16px',
-    lineHeight: 1,
-    color: tokens.colorBrandForeground1,
-    verticalAlign: 'middle',
-  },
   // Enhanced skeleton styles with shimmer animation
   skeletonContainer: {
     display: 'flex',
@@ -815,24 +771,15 @@ const JsonCodeBlockRenderer = ({ node, inline, className, children, ...props }) 
                       <td className={classes.mdTd} style={{ fontWeight: 500 }}>{item.parameter}</td>
                       <td className={classes.mdTd} style={{ textAlign: 'left' }}>
                         {(() => {
-                          const trendDir = parseTrend(item.value, 'value');
-                          const trendStyle = getTrendStyle(trendDir, classes);
                           const statusStyle = getStatusStyle(item.value, classes);
-                          if (statusStyle) {
-                            return (
-                              <span className={`${classes.statusChip} ${statusStyle.class}`}>
-                                {statusStyle.icon}
-                                {statusStyle.label}
-                              </span>
-                            );
-                          } else if (trendStyle) {
-                            return (
-                              <span className={trendStyle.wrapper} aria-label={trendStyle.aria} title={String(item.value)}>
-                                {trendStyle.icon}
-                              </span>
-                            );
-                          }
-                          return formatDisplay(item.value);
+                          return statusStyle ? (
+                            <span className={`${classes.statusChip} ${statusStyle.class}`}>
+                              {statusStyle.icon}
+                              {statusStyle.label}
+                            </span>
+                          ) : (
+                            formatDisplay(item.value)
+                          );
                         })()}
                       </td>
                     </tr>
@@ -869,8 +816,6 @@ const JsonCodeBlockRenderer = ({ node, inline, className, children, ...props }) 
                         const cellValue = String(rawCell);
                         const isLong = cellValue.length > 50;
                         const statusStyle = getStatusStyle(cellValue, classes);
-                        const trendDir = parseTrend(cellValue, header);
-                        const trendStyle = getTrendStyle(trendDir, classes);
                         
                         return (
                           <td key={cellIndex} className={classes.mdTd} style={{ textAlign: 'left', ...(isLong ? wrapStyle : {}) }}>
@@ -878,10 +823,6 @@ const JsonCodeBlockRenderer = ({ node, inline, className, children, ...props }) 
                               <span className={`${classes.statusChip} ${statusStyle.class}`}>
                                 {statusStyle.icon}
                                 {statusStyle.label}
-                              </span>
-                            ) : trendStyle ? (
-                              <span className={trendStyle.wrapper} aria-label={trendStyle.aria} title={cellValue}>
-                                {trendStyle.icon}
                               </span>
                             ) : (
                               formatDisplay(rawCell)
@@ -933,8 +874,6 @@ const JsonCodeBlockRenderer = ({ node, inline, className, children, ...props }) 
                             const cellValue = String(rawCell);
                             const isLong = cellValue.length > 50;
                             const statusStyle = getStatusStyle(cellValue, classes);
-                            const trendDir = parseTrend(cellValue, header);
-                            const trendStyle = getTrendStyle(trendDir, classes);
                             
                             return (
                               <td key={cellIndex} className={classes.mdTd} style={{ textAlign: 'left', ...(isLong ? wrapStyle : {}) }}>
@@ -942,10 +881,6 @@ const JsonCodeBlockRenderer = ({ node, inline, className, children, ...props }) 
                                   <span className={`${classes.statusChip} ${statusStyle.class}`}>
                                     {statusStyle.icon}
                                     {statusStyle.label}
-                                  </span>
-                                ) : trendStyle ? (
-                                  <span className={trendStyle.wrapper} aria-label={trendStyle.aria} title={cellValue}>
-                                    {trendStyle.icon}
                                   </span>
                                 ) : (
                                   formatDisplay(rawCell)
@@ -1142,8 +1077,6 @@ const FilePreview = ({ selectedFile }) => {
                             const statusStyle = getStatusStyle(plain, classes);
                             const headerName = (currentHeaders[currentColIndex] || '').toLowerCase().trim();
                             const shouldMiddle = middleHeaders.has(headerName);
-                            const trendDir = parseTrend(plain, headerName);
-                            const trendStyle = getTrendStyle(trendDir, classes);
                             const cell = (
                               <td
                                 className={classes.mdTd}
@@ -1155,10 +1088,6 @@ const FilePreview = ({ selectedFile }) => {
                                   <span className={`${classes.statusChip} ${statusStyle.class}`}>
                                     {statusStyle.icon}
                                     {statusStyle.label}
-                                  </span>
-                                ) : trendStyle ? (
-                                  <span className={trendStyle.wrapper} aria-label={trendStyle.aria} title={plain}>
-                                    {trendStyle.arrow}
                                   </span>
                                 ) : (
                                   children
