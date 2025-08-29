@@ -43,7 +43,7 @@ function Root() {
   // Persisted font preference
   const getInitialFontPref = () => {
     const v = typeof window !== 'undefined' ? window.localStorage.getItem('fontPref') : null;
-    return allowedFontPrefs.includes(v) ? v : 'inter';
+    return allowedFontPrefs.includes(v) ? v : 'open-sans';
   };
   const [fontPref, setFontPref] = useState(getInitialFontPref);
   const [fluentTheme, setFluentTheme] = useState(() => {
@@ -58,7 +58,7 @@ function Root() {
   // Expose a global setter for app-level font preference changes
   useEffect(() => {
     window.__setAppFontPref = (pref) => {
-      const next = allowedFontPrefs.includes(pref) ? pref : 'inter';
+      const next = allowedFontPrefs.includes(pref) ? pref : 'open-sans';
       try { window.localStorage.setItem('fontPref', next); } catch {}
       setFontPref(next);
     };

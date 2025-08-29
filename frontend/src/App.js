@@ -128,8 +128,8 @@ const AppContent = () => {
     try {
       const allowed = ['inter', 'roboto', 'open-sans', 'source-sans-3', 'system-ui', 'teams'];
       const v = window.localStorage.getItem('fontPref');
-      return allowed.includes(v) ? v : 'inter';
-    } catch { return 'inter'; }
+      return allowed.includes(v) ? v : 'open-sans';
+    } catch { return 'open-sans'; }
   });
   const classes = useStyles();
 
