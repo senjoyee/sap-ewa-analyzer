@@ -1104,9 +1104,17 @@ const FileList = ({ onFileSelect, refreshTrigger, selectedFile }) => {
     content = (
       <div>
         <FluentAccordion multiple openItems={openItems} onToggle={(e, data) => {
+          const oi = data.openItems;
+          // When all sections are collapsed, Fluent may provide undefined or an empty array.
+          if (!oi || (Array.isArray(oi) && oi.length === 0)) {
+            setExpandedCustomers({});
+            return;
+          }
+          const items = Array.isArray(oi) ? oi : [oi];
           const next = {};
-          const items = Array.isArray(data.openItems) ? data.openItems : [data.openItems];
-          items.forEach(k => { next[k] = true; });
+          items.forEach(k => {
+            if (k !== undefined && k !== null) next[k] = true;
+          });
           setExpandedCustomers(next);
         }}>
           {Object.keys(filesByCustomer).map((customer) => (
