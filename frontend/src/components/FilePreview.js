@@ -1289,13 +1289,9 @@ const FilePreview = ({ selectedFile }) => {
                 {selectedFile.name}
               </div>
               <div className={`${classes.placeholderText} ${typography.bodyM}`} style={{ fontSize: tokens.fontSizeBase400 }}>
-                Analysis not available for this report
+                Analysis not available. Please process the report first to see the analysis.
               </div>
-              <div className={classes.placeholderFrame}>
-                <div className={`${classes.placeholderMuted} ${typography.bodyS}`}>
-                  Content preview placeholder
-                </div>
-              </div>
+              {/* Removed dotted placeholder frame as requested */}
             </div>
           )
         ) : (
