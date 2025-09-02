@@ -1099,30 +1099,35 @@ const FileList = ({ onFileSelect, refreshTrigger, selectedFile }) => {
   } else {
     // Group files by customer
     const filesByCustomer = groupByCustomer(files);
+    const toggleCustomer = (customer) => {
+      setExpandedCustomers(prev => ({
+        ...prev,
+        [customer]: !prev[customer],
+      }));
+    };
     
     const openItems = Object.keys(expandedCustomers).filter(k => expandedCustomers[k]);
     content = (
       <div>
-        <FluentAccordion multiple openItems={openItems} onToggle={(e, data) => {
-          const oi = data.openItems;
-          // When all sections are collapsed, Fluent may provide undefined or an empty array.
-          if (!oi || (Array.isArray(oi) && oi.length === 0)) {
-            setExpandedCustomers({});
-            return;
-          }
-          const items = Array.isArray(oi) ? oi : [oi];
-          const next = {};
-          items.forEach(k => {
-            if (k !== undefined && k !== null) next[k] = true;
-          });
-          setExpandedCustomers(next);
-        }}>
+        <FluentAccordion multiple openItems={openItems}>
           {Object.keys(filesByCustomer).map((customer) => (
             <AccordionItem value={customer} key={customer}>
               <AccordionHeader
                 className={classes.accordionHeader}
                 aria-label={`${customer} files`}
                 expandIcon={<ChevronDown20Regular className={classes.brandIcon} />}
+                onClick={(e) => {
+                  e.preventDefault();
+                  e.stopPropagation();
+                  toggleCustomer(customer);
+                }}
+                onKeyDown={(e) => {
+                  if (e.key === 'Enter' || e.key === ' ') {
+                    e.preventDefault();
+                    e.stopPropagation();
+                    toggleCustomer(customer);
+                  }
+                }}
               >
                 <div className={classes.accordionHeaderContent}>
                   <Building24Regular className={classes.leadingIcon} />
