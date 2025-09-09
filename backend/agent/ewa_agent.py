@@ -194,7 +194,7 @@ class EWAAgent:
                     "schema": strict_schema,
                     "strict": True,
                 },
-                "verbosity": "high",
+                "verbosity": "low",
             }
 
             # Single-path call using text.format; offload blocking call to a thread
@@ -204,7 +204,7 @@ class EWAAgent:
                     input=[{"role": "user", "content": user_content}],
                     text=text_format,
                     max_output_tokens=32768,
-                    reasoning={"effort": "low"},
+                    reasoning={"effort": "high"},
                 )
             )
             # Log token usage for visibility
