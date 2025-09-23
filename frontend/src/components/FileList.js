@@ -903,6 +903,63 @@ const FileList = ({ onFileSelect, refreshTrigger, selectedFile }) => {
 
   // PDF export functionality moved to FilePreview component
 
+  // Polling helper to reconcile status if initial request fails due to network interruption
+  const pollForAnalysisCompletion = async (
+    file,
+    { intervalMs = 5000, maxIntervalMs = 15000, timeoutMs = 15 * 60 * 1000 } = {}
+  ) => {
+    let interval = intervalMs;
+    const start = Date.now();
+    try {
+      while (Date.now() - start < timeoutMs) {
+        try {
+          const resp = await fetch(apiUrl('/api/files'));
+          if (resp.ok) {
+            const data = await resp.json();
+            const filesList = Array.isArray(data) ? data : data.files || [];
+            const targetId = file.id || file.name;
+            const found = filesList.find(
+              (f) => (f.id || f.name) === targetId || f.name === file.name
+            );
+            if (found && found.ai_analyzed) {
+              setCombinedProcessingStatus((prev) => ({
+                ...prev,
+                [targetId]: 'completed',
+              }));
+              setFiles((currentFiles) =>
+                currentFiles.map((f) =>
+                  (f.id || f.name) === targetId
+                    ? { ...f, processed: true, ai_analyzed: true }
+                    : f
+                )
+              );
+              showSnackbar(`Processing and AI Analysis for ${file.name} completed successfully!`, 'success');
+              return;
+            }
+          }
+        } catch (pollErr) {
+          // ignore transient polling failures and continue
+        }
+        await new Promise((r) => setTimeout(r, interval));
+        interval = Math.min(Math.floor(interval * 1.5), maxIntervalMs);
+      }
+      // Timed out waiting for completion
+      setCombinedProcessingStatus((prev) => ({
+        ...prev,
+        [file.id || file.name]: 'error',
+      }));
+      showSnackbar(
+        `Timed out waiting for analysis completion for ${file.name}.`,
+        'error'
+      );
+    } catch (e) {
+      setCombinedProcessingStatus((prev) => ({
+        ...prev,
+        [file.id || file.name]: 'error',
+      }));
+    }
+  };
+
   // Function to handle combined processing and AI analysis
   const handleProcessAndAnalyze = async (file) => {
     console.log(`Starting combined processing and AI analysis for file: ${file.name}`);
@@ -921,10 +978,23 @@ const FileList = ({ onFileSelect, refreshTrigger, selectedFile }) => {
       });
 
       if (!response.ok) {
-        const errorData = await response.json();
-        // Try to get a specific message from the backend, otherwise use a generic one
-        const message = errorData.detail || (errorData.message || `Combined processing and analysis failed: ${response.status}`);
-        throw new Error(message);
+        // Attempt to parse error JSON; fall back to text
+        let message = `Combined processing and analysis failed: ${response.status}`;
+        try {
+          const errorText = await response.text();
+          try {
+            const errorData = JSON.parse(errorText);
+            message = errorData.detail || errorData.message || message;
+          } catch {
+            if (errorText) message = errorText;
+          }
+        } catch {
+          // ignore
+        }
+        const err = new Error(message);
+        // Mark as server error (as opposed to network error) for downstream handling
+        err.isServerError = true;
+        throw err;
       }
 
       const result = await response.json();
@@ -952,11 +1022,25 @@ const FileList = ({ onFileSelect, refreshTrigger, selectedFile }) => {
 
     } catch (error) {
       console.error(`Error in combined processing and AI analysis for file ${file.name}:`, error);
-      setCombinedProcessingStatus(prev => ({
-        ...prev,
-        [file.id || file.name]: 'error'
-      }));
-      showSnackbar(`Error in combined processing and AI analysis for ${file.name}: ${error.message}`, 'error');
+      const isNetworkError =
+        (error && (error.name === 'TypeError')) ||
+        /Failed to fetch|NetworkError|Load failed/i.test(String(error && error.message));
+
+      if (isNetworkError && !error.isServerError) {
+        // Keep the status as 'processing' and start background polling
+        showSnackbar(
+          `Connection interrupted while processing ${file.name}. Continuing in background...`,
+          'warning'
+        );
+        // Start polling but do not block
+        pollForAnalysisCompletion(file);
+      } else {
+        setCombinedProcessingStatus(prev => ({
+          ...prev,
+          [file.id || file.name]: 'error'
+        }));
+        showSnackbar(`Error in combined processing and AI analysis for ${file.name}: ${error.message}`, 'error');
+      }
     }
   };
   const fetchFiles = useCallback(async () => {
