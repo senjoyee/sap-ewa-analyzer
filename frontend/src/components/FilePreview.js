@@ -1104,7 +1104,6 @@ const FilePreview = ({ selectedFile }) => {
                       inlineCode: ({ children }) => {
                         // Special handling for risk assessment values that appear in backticks
                         const value = String(children).trim();
-                        console.log('Found inline code value:', value);
                         
                         // Force match for well-known risk levels regardless of case
                         let forcedStyle = null;
@@ -1143,8 +1142,10 @@ const FilePreview = ({ selectedFile }) => {
                       h1: ({ children }) => {
                         // Inject Analysis Period immediately after the title
                         let periodNode = null;
+                        let riskNode = null;
                         try {
-                          const periodMatch = (selectedFile?.analysisContent || '').match(/\*\*Analysis Period:\*\*\s+([^\n]+)/i);
+                          // Extract Analysis Period (end-of-line, tolerant to CRLF)
+                          const periodMatch = (selectedFile?.analysisContent || '').match(/^\s*\*\*Analysis Period:\*\*\s*(.+)$/im);
                           if (periodMatch && periodMatch[1]) {
                             const periodValue = periodMatch[1].trim();
                             periodNode = (
@@ -1154,6 +1155,31 @@ const FilePreview = ({ selectedFile }) => {
                               </p>
                             );
                           }
+                          // Extract Overall Risk Assessment value (optionally wrapped in backticks)
+                          const riskMatch = (selectedFile?.analysisContent || '').match(/^\s*\*\*Overall Risk Assessment:\*\*\s*`?([a-zA-Z]+)`?/im);
+                          if (riskMatch && riskMatch[1]) {
+                            const riskValue = riskMatch[1].toLowerCase().trim();
+                            let riskClass = '';
+                            if (riskValue === 'high') {
+                              riskClass = classes.riskHigh;
+                            } else if (riskValue === 'medium') {
+                              riskClass = classes.riskMedium;
+                            } else if (riskValue === 'low') {
+                              riskClass = classes.riskLow;
+                            } else if (riskValue === 'critical') {
+                              riskClass = classes.riskCritical;
+                            }
+                            if (riskClass) {
+                              riskNode = (
+                                <p className={classes.mdP}>
+                                  <strong>Overall Risk Assessment: </strong>
+                                  <span className={`${classes.riskBase} ${riskClass}`}>
+                                    {riskValue.toUpperCase()}
+                                  </span>
+                                </p>
+                              );
+                            }
+                          }
                         } catch (e) {
                           // noop
                         }
@@ -1161,6 +1187,7 @@ const FilePreview = ({ selectedFile }) => {
                           <>
                             <h1 className={classes.mdH1}>{children}</h1>
                             {periodNode}
+                            {riskNode}
                           </>
                         );
                       },
@@ -1171,44 +1198,16 @@ const FilePreview = ({ selectedFile }) => {
                         <h3 className={classes.mdH3}>{children}</h3>
                       ),
                       p: ({ children }) => {
-                        // Check if this paragraph contains the Overall Risk Assessment text
-                        const childStr = String(React.Children.toArray(children).map(c => 
-                          typeof c === 'string' ? c : (c?.props?.children || '')).join(''));
-                        // Suppress the original Analysis Period paragraph since we render it after H1
-                        if (/\bAnalysis Period:\b/i.test(childStr)) {
+                        // Flatten children to plain text for detection
+                        const childStr = String(
+                          React.Children.toArray(children)
+                            .map(c => (typeof c === 'string' ? c : (Array.isArray(c?.props?.children) ? c.props.children.join('') : (c?.props?.children || ''))))
+                            .join('')
+                        );
+                        // Suppress original lines for Analysis Period and Overall Risk Assessment
+                        if (/\bAnalysis\s*Period:\b/i.test(childStr) || /\bOverall\s*Risk\s*Assessment:\b/i.test(childStr)) {
                           return null;
                         }
-                        
-                        if (childStr.includes('Overall Risk Assessment:')) {
-                          // Extract the risk value - it's likely after the colon and might be wrapped in backticks
-                          const riskMatch = childStr.match(/Overall Risk Assessment:.*?([a-zA-Z]+)[`\s]*$/i);
-                          if (riskMatch && riskMatch[1]) {
-                            const riskValue = riskMatch[1].toLowerCase().trim();
-                            let riskClass = '';
-                            
-                            // Apply styling based on risk level
-                            if (riskValue === 'high') {
-                              riskClass = classes.riskHigh;
-                            } else if (riskValue === 'medium') {
-                              riskClass = classes.riskMedium;
-                            } else if (riskValue === 'low') {
-                              riskClass = classes.riskLow;
-                            }
-                            
-                            // Return paragraph with styled risk chip
-                            if (riskClass) {
-                              return (
-                                <p className={classes.mdP}>
-                                  <strong>Overall Risk Assessment: </strong>
-                                  <span className={`${classes.riskBase} ${riskClass}`}>
-                                    {riskValue.toUpperCase()}
-                                  </span>
-                                </p>
-                              );
-                            }
-                          }
-                        }
-                        
                         // Default paragraph rendering
                         return <p className={classes.mdP}>{children}</p>;
                       },
