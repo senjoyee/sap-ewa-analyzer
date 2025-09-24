@@ -432,8 +432,40 @@ const useStyles = makeStyles({
     gap: tokens.spacingHorizontalXS,
   },
   successIcon: {
-    color: tokens.colorPaletteGreenForeground2,
-    filter: 'drop-shadow(0 1px 1px rgba(0,0,0,0.1))',
+    color: 'white', // White icon on gradient background for better contrast
+    filter: 'drop-shadow(0 1px 3px rgba(0,0,0,0.2))',
+    transition: 'all 200ms cubic-bezier(0.4, 0, 0.2, 1)',
+    backgroundColor: 'transparent',
+    borderRadius: '50%',
+    padding: '3px',
+    boxShadow: `0 0 0 1px ${tokens.colorPaletteGreenBorder1}, 0 2px 4px ${tokens.colorNeutralShadowAmbient}`,
+    background: `linear-gradient(135deg, ${tokens.colorPaletteGreenBackground1} 0%, ${tokens.colorPaletteGreenForeground1} 100%)`,
+    width: '20px',
+    height: '20px',
+    display: 'flex',
+    alignItems: 'center',
+    justifyContent: 'center',
+    animation: 'pulse-success 2s infinite',
+    position: 'relative',
+    overflow: 'hidden',
+    selectors: {
+      ':hover': {
+        transform: 'scale(1.15)',
+        filter: 'drop-shadow(0 2px 5px rgba(0,120,0,0.3))',
+        boxShadow: `0 0 0 2px ${tokens.colorPaletteGreenBorder1}60, 0 3px 6px ${tokens.colorNeutralShadowAmbient}`,
+      },
+      '::before': {
+        content: '""',
+        position: 'absolute',
+        top: '-50%',
+        left: '-50%',
+        width: '200%',
+        height: '200%',
+        background: 'linear-gradient(transparent, rgba(255,255,255,0.2), transparent)',
+        transform: 'rotate(30deg)',
+        animation: 'shimmer 3s linear infinite',
+      }
+    },
   },
   statusDot: {
     width: 8,
@@ -668,6 +700,26 @@ const getFileIcon = (filename, classes) => {
 
  
 
+// Define keyframe animations for sophisticated effects
+const keyframeStyles = `
+  @keyframes pop-in {
+    0% { opacity: 0; transform: scale(0.6) rotate(-20deg); }
+    50% { transform: scale(1.1) rotate(10deg); }
+    100% { opacity: 1; transform: scale(1) rotate(0); }
+  }
+  
+  @keyframes pulse-success {
+    0% { box-shadow: 0 0 0 0 rgba(49, 162, 76, 0.5); }
+    70% { box-shadow: 0 0 0 8px rgba(49, 162, 76, 0); }
+    100% { box-shadow: 0 0 0 0 rgba(49, 162, 76, 0); }
+  }
+
+  @keyframes shimmer {
+    0% { transform: translateX(-150%) rotate(30deg); }
+    100% { transform: translateX(150%) rotate(30deg); }
+  }
+`;
+
 const FileList = ({ onFileSelect, refreshTrigger, selectedFile }) => {
   const [files, setFiles] = useState([]);
   const [isLoading, setIsLoading] = useState(true);
@@ -678,6 +730,26 @@ const FileList = ({ onFileSelect, refreshTrigger, selectedFile }) => {
   const [selectedFiles, setSelectedFiles] = useState([]);
   const [hoveredId, setHoveredId] = useState(null);
   const classes = useStyles();
+  
+  // Inject keyframe animations when component mounts
+  useEffect(() => {
+    // Create style element for animations if it doesn't exist
+    const styleId = 'file-list-animations';
+    if (!document.getElementById(styleId)) {
+      const styleEl = document.createElement('style');
+      styleEl.id = styleId;
+      styleEl.innerHTML = keyframeStyles;
+      document.head.appendChild(styleEl);
+    }
+    
+    // Clean up on unmount
+    return () => {
+      const styleEl = document.getElementById(styleId);
+      if (styleEl) {
+        styleEl.parentNode.removeChild(styleEl);
+      }
+    };
+  }, []);
   
   // Toast controller (Fluent UI Toast)
   const { dispatchToast } = useToastController('fileListToaster');
@@ -1294,8 +1366,20 @@ const FileList = ({ onFileSelect, refreshTrigger, selectedFile }) => {
                               <Spinner size="tiny" aria-label="Analyzing" />
                             )}
                             {combinedProcessingStatus[file.id || file.name] === 'completed' && (
-                              <FluentTooltip content="Analyzed">
-                                <CheckmarkCircle16Regular className={`${classes.icon16} ${classes.successIcon}`} aria-label="Analyzed" />
+                              <FluentTooltip content="Analyzed Successfully">
+                                <div className="checkmark-container" style={{
+                                  display: 'flex',
+                                  alignItems: 'center',
+                                  justifyContent: 'center',
+                                  animation: 'pop-in 0.5s cubic-bezier(0.175, 0.885, 0.32, 1.275) forwards'
+                                }}>
+                                  <div className={classes.successIcon}>
+                                    <CheckmarkCircle16Regular 
+                                      style={{ fontSize: '14px', width: '14px', height: '14px' }}
+                                      aria-label="Analysis completed successfully" 
+                                    />
+                                  </div>
+                                </div>
                               </FluentTooltip>
                             )}
                             {combinedProcessingStatus[file.id || file.name] === 'error' && (
