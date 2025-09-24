@@ -99,6 +99,7 @@ class WorkflowState:
     markdown_content: str = ""
     summary_result: str = ""
     summary_json: dict = None
+    pdf_bytes: bytes | None = None
     error: str = ""
 
 class EWAWorkflowOrchestrator:
@@ -283,25 +284,27 @@ class EWAWorkflowOrchestrator:
             
             # Run AI analysis for all sections except KPIs
             agent = self._create_agent(AZURE_OPENAI_SUMMARY_MODEL, ai_prompt)
-            
+
+            if state.pdf_bytes is None:
+                state.pdf_bytes = await self.download_pdf_from_blob(state.blob_name)
+
+            pdf_length = len(state.pdf_bytes) if state.pdf_bytes is not None else 0
+
             # Determine input type based on model
             if is_gemini_model(AZURE_OPENAI_SUMMARY_MODEL):
                 # For Gemini models, use original PDF. On failure, propagate error (no markdown fallback).
-                pdf_data = await self.download_pdf_from_blob(state.blob_name)
-                print(f"[Gemini Workflow] Using original PDF ({len(pdf_data)} bytes) for analysis")
-                ai_result = await agent.run(state.markdown_content, pdf_data=pdf_data)
+                print(f"[Gemini Workflow] Using original PDF ({pdf_length} bytes) for analysis")
+                ai_result = await agent.run(state.markdown_content, pdf_data=state.pdf_bytes)
             else:
                 # For OpenAI models, use original PDF via Responses API. On failure, propagate error (no markdown fallback).
-                pdf_data = await self.download_pdf_from_blob(state.blob_name)
-                print(f"[OpenAI Workflow] Using original PDF ({len(pdf_data)} bytes) for analysis via Responses API")
-                ai_result = await agent.run(state.markdown_content, pdf_data=pdf_data)
-            
+                print(f"[OpenAI Workflow] Using original PDF ({pdf_length} bytes) for analysis via Responses API")
+                ai_result = await agent.run(state.markdown_content, pdf_data=state.pdf_bytes)
+
             # Step 2: Extract KPIs via image-based agent (single high-res page to GPT-5)
             final_json = ai_result.copy() if ai_result else {}
             try:
-                pdf_data = await self.download_pdf_from_blob(state.blob_name)
                 kpi_agent = KPIImageAgent(client=self.client)
-                kpi_result = await asyncio.to_thread(kpi_agent.extract_kpis_from_pdf_bytes, pdf_data)
+                kpi_result = await asyncio.to_thread(kpi_agent.extract_kpis_from_pdf_bytes, state.pdf_bytes)
                 final_json['kpis'] = kpi_result.get('kpis', [])
                 print(f"[KPI IMAGE AGENT] Extracted {len(final_json['kpis'])} KPI rows")
             except Exception as kpi_e:

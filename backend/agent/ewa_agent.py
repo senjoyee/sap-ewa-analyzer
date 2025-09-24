@@ -37,6 +37,8 @@ _OPENAI_PROMPT_PATH = os.path.join(_PROMPT_DIR, "ewa_summary_prompt_openai.md")
 _GEMINI_PROMPT_PATH = os.path.join(_PROMPT_DIR, "ewa_summary_prompt_openai_google.md")
 _OPENAI_GPT5_PROMPT_PATH = os.path.join(_PROMPT_DIR, "ewa_summary_prompt_openai_gpt5.md")
 
+_FUNCTION_NAME = "create_ewa_summary"
+
 # Fallback: if specific prompt files are unavailable, use inline DEFAULT_PROMPT above
 _DEFAULT_FALLBACK_PROMPT_PATH = _OPENAI_PROMPT_PATH  # prefer OpenAI template for fallback
 if os.path.exists(_DEFAULT_FALLBACK_PROMPT_PATH):
@@ -96,12 +98,7 @@ class EWAAgent:
         with open(schema_path, "r", encoding="utf-8") as f:
             self.schema: Dict[str, Any] = json.load(f)
 
-        # Prepare function definition for function-calling
-        self.function_def = {
-            "name": "create_ewa_summary",
-            "description": "Return the structured executive summary for an EWA report in JSON that conforms to the schema.",
-            "parameters": self.schema,
-        }
+        self.function_name = _FUNCTION_NAME
         
         # Local JSON repair utility (non-LLM)
         self.json_repair = JSONRepair()
@@ -157,13 +154,10 @@ class EWAAgent:
                 with tempfile.NamedTemporaryFile(delete=False, suffix=".pdf") as tmp:
                     tmp.write(pdf_data)
                     temp_path = tmp.name
-                file_obj = open(temp_path, "rb")
-                try:
+                with open(temp_path, "rb") as file_obj:
                     # Offload blocking Files API upload to a thread
                     uploaded = await asyncio.to_thread(lambda: self.client.files.create(file=file_obj, purpose="assistants"))
                     file_id = uploaded.id
-                finally:
-                    file_obj.close()
 
             instruction_text = (
                 f"{self.summary_prompt}\n\n"
@@ -175,13 +169,10 @@ class EWAAgent:
             if file_id:
                 user_content.append({"type": "input_file", "file_id": file_id})
                 user_content.append({"type": "input_text", "text": "Please analyze the attached EWA PDF and produce the structured JSON."})
+                user_content.append({"type": "input_text", "text": instruction_text})
             else:
                 # Use markdown input
                 user_content.append({"type": "input_text", "text": f"{instruction_text}\n\nAnalyze this EWA markdown document:\n\n{markdown}"})
-
-            # If file was attached, include instructions as separate text to steer the function call
-            if file_id:
-                user_content.append({"type": "input_text", "text": instruction_text})
 
             # Prepare a STRICT schema for Structured Outputs by forcing additionalProperties: false on all objects
             strict_schema = self._make_strict_schema_for_structured_outputs(self.schema)
@@ -190,7 +181,7 @@ class EWAAgent:
             text_format = {
                 "format": {
                     "type": "json_schema",
-                    "name": self.function_def["name"],
+                    "name": self.function_name,
                     "schema": strict_schema,
                     "strict": True,
                 },
