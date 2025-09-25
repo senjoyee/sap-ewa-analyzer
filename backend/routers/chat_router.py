@@ -7,10 +7,12 @@ that main stays slim.  No behavioural changes.
 from __future__ import annotations
 
 import os
-import traceback
-from typing import List, Dict, Any
 import asyncio
+import logging
 import tempfile
+import traceback
+from functools import lru_cache
+from typing import List, Dict, Any
 
 from fastapi import APIRouter, HTTPException
 from pydantic import BaseModel
@@ -20,6 +22,51 @@ from azure.storage.blob import BlobServiceClient
 # Lazy import AzureOpenAI only when needed to avoid cost at module load
 
 router = APIRouter(prefix="/api", tags=["chat"])
+
+logger = logging.getLogger(__name__)
+
+
+@lru_cache(maxsize=1)
+def _azure_openai_settings() -> tuple[str, str, str]:
+    load_dotenv()
+    api_key = os.getenv("AZURE_OPENAI_API_KEY")
+    api_version = os.getenv("AZURE_OPENAI_API_VERSION", "2024-12-01-preview")
+    endpoint = os.getenv("AZURE_OPENAI_ENDPOINT")
+    if not api_key or not endpoint:
+        raise RuntimeError("Azure OpenAI environment variables missing.")
+    return api_key, api_version, endpoint
+
+
+@lru_cache(maxsize=1)
+def _model_name() -> str:
+    load_dotenv()
+    return (
+        os.getenv("AZURE_OPENAI_SUMMARY_MODEL")
+        or os.getenv("AZURE_OPENAI_FAST_MODEL")
+        or os.getenv("AZURE_OPENAI_DEPLOYMENT_NAME", "gpt-4.1")
+    )
+
+
+@lru_cache(maxsize=1)
+def _storage_settings() -> tuple[str, str]:
+    load_dotenv()
+    connection_string = os.getenv("AZURE_STORAGE_CONNECTION_STRING")
+    container_name = os.getenv("AZURE_STORAGE_CONTAINER_NAME")
+    if not connection_string or not container_name:
+        raise RuntimeError("Azure Storage environment variables missing.")
+    return connection_string, container_name
+
+
+def _get_blob_service_client() -> BlobServiceClient:
+    try:
+        connection_string, _ = _storage_settings()
+        return BlobServiceClient.from_connection_string(connection_string)
+    except RuntimeError as exc:
+        logger.error("Azure Storage configuration missing: %s", exc)
+        raise HTTPException(status_code=500, detail="Azure Storage configuration missing.")
+    except Exception as exc:  # pragma: no cover - defensive
+        logger.exception("Failed to initialise Azure Blob Service client")
+        raise HTTPException(status_code=500, detail="Azure Blob Service client not initialized.")
 
 
 class ChatHistoryItem(BaseModel):

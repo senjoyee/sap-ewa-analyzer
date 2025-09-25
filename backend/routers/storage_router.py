@@ -11,19 +11,54 @@ This is a straight extraction; functionality is unchanged so existing frontend c
 from __future__ import annotations
 
 import os
+import logging
+import re
+from datetime import datetime
+from functools import lru_cache
 from typing import Dict, Any, List
 
 from fastapi import APIRouter, UploadFile, File, HTTPException, Form, Response, Body
 from pydantic import BaseModel
 from azure.storage.blob import BlobServiceClient
-from dotenv import load_dotenv
-import json
-import os
-import re
 from azure.core.exceptions import ResourceNotFoundError
-from datetime import datetime
+from dotenv import load_dotenv
 
-from workflow_orchestrator import EWAWorkflowOrchestrator
+logger = logging.getLogger(__name__)
+
+
+@lru_cache(maxsize=1)
+def _storage_settings() -> tuple[str, str]:
+    load_dotenv()
+    connection_string = os.getenv("AZURE_STORAGE_CONNECTION_STRING")
+    container_name = os.getenv("AZURE_STORAGE_CONTAINER_NAME")
+    if not connection_string or not container_name:
+        raise RuntimeError(
+            "Azure storage environment variables not found. Please set them in the .env file."
+        )
+    return connection_string, container_name
+
+
+@lru_cache(maxsize=1)
+def _blob_service_client() -> BlobServiceClient:
+    connection_string, _ = _storage_settings()
+    return BlobServiceClient.from_connection_string(connection_string)
+
+
+def _get_blob_service_client() -> BlobServiceClient:
+    try:
+        return _blob_service_client()
+    except RuntimeError as exc:
+        logger.error("Azure storage configuration missing: %s", exc)
+        raise HTTPException(status_code=500, detail="Azure storage configuration missing.")
+    except Exception as exc:  # pragma: no cover - defensive logging
+        logger.exception("Failed to initialise Azure Blob Service client")
+        raise HTTPException(status_code=500, detail="Azure Blob Service client not initialized.")
+
+
+def _get_container_client():
+    client = _get_blob_service_client()
+    _, container_name = _storage_settings()
+    return client.get_container_client(container_name)
 
 # ---------------------------------------------------------------------------
 # Filename validation and metadata extraction

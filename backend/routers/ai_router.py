@@ -4,14 +4,13 @@ Endpoints:
 - POST /api/process-and-analyze        (combined conversion + analysis)
 - POST /api/analyze-ai                 (analyze markdown with AI)
 - POST /api/reprocess-ai               (delete old AI files then analyze again)
-
-NOTE: For simplicity we re-initialise BlobServiceClient here just like in storage_router.
 """
 
 from __future__ import annotations
 
 import os
-from typing import Dict, Any
+import logging
+from functools import lru_cache
 
 from fastapi import APIRouter, HTTPException
 from models import BlobNameRequest
@@ -21,18 +20,41 @@ from dotenv import load_dotenv
 
 from workflow_orchestrator import ewa_orchestrator
 
-load_dotenv()
-AZURE_STORAGE_CONNECTION_STRING = os.getenv("AZURE_STORAGE_CONNECTION_STRING")
-AZURE_STORAGE_CONTAINER_NAME = os.getenv("AZURE_STORAGE_CONTAINER_NAME")
+logger = logging.getLogger(__name__)
 
-if not AZURE_STORAGE_CONNECTION_STRING or not AZURE_STORAGE_CONTAINER_NAME:
-    raise ValueError("Azure storage env vars not set")
 
-try:
-    blob_service_client = BlobServiceClient.from_connection_string(AZURE_STORAGE_CONNECTION_STRING)
-except Exception as e:
-    print(f"Error initializing BlobServiceClient in ai_router: {e}")
-    blob_service_client = None
+@lru_cache(maxsize=1)
+def _storage_settings() -> tuple[str, str]:
+    """Return Azure storage connection string and container name."""
+    load_dotenv()
+    connection_string = os.getenv("AZURE_STORAGE_CONNECTION_STRING")
+    container_name = os.getenv("AZURE_STORAGE_CONTAINER_NAME")
+    if not connection_string or not container_name:
+        raise RuntimeError("Azure storage environment variables not set")
+    return connection_string, container_name
+
+
+@lru_cache(maxsize=1)
+def _blob_service_client() -> BlobServiceClient:
+    connection_string, _ = _storage_settings()
+    return BlobServiceClient.from_connection_string(connection_string)
+
+
+def _get_blob_service_client() -> BlobServiceClient:
+    try:
+        return _blob_service_client()
+    except RuntimeError as exc:
+        logger.error("Azure storage configuration missing: %s", exc)
+        raise HTTPException(status_code=500, detail="Azure storage configuration missing.")
+    except Exception as exc:  # pragma: no cover - defensive logging
+        logger.exception("Failed to initialise Azure Blob Service client")
+        raise HTTPException(status_code=500, detail="Azure Blob Service client not initialized.")
+
+
+def _get_container_client():
+    client = _get_blob_service_client()
+    _, container_name = _storage_settings()
+    return client.get_container_client(container_name)
 
 router = APIRouter(prefix="/api", tags=["ai-workflow"])
 
@@ -45,8 +67,7 @@ router = APIRouter(prefix="/api", tags=["ai-workflow"])
 
 @router.post("/process-and-analyze")
 async def process_and_analyze_document_endpoint(request: ProcessAnalyzeRequest):
-    if not blob_service_client:
-        raise HTTPException(status_code=500, detail="Azure Blob Service client not initialized.")
+    _get_blob_service_client()
     try:
         # Always analyze directly from PDF (skip markdown conversion)
         result = await ewa_orchestrator.execute_workflow(request.blob_name, skip_markdown=True)
@@ -65,14 +86,11 @@ async def process_and_analyze_document_endpoint(request: ProcessAnalyzeRequest):
 
 @router.post("/analyze-ai")
 async def analyze_document_with_ai_endpoint(request: BlobNameRequest):
-    if not blob_service_client:
-        raise HTTPException(status_code=500, detail="Azure Blob Service client not initialized.")
-
     blob_name = request.blob_name
     base_name, extension = os.path.splitext(blob_name)
     markdown_file = blob_name if extension.lower() == ".md" else f"{base_name}.md"
 
-    container_client = blob_service_client.get_container_client(AZURE_STORAGE_CONTAINER_NAME)
+    container_client = _get_container_client()
     try:
         blob_client = container_client.get_blob_client(markdown_file)
         blob_client.get_blob_properties()
@@ -103,9 +121,6 @@ async def analyze_document_with_ai_endpoint(request: BlobNameRequest):
 
 @router.post("/reprocess-ai")
 async def reprocess_document_with_ai(request: BlobNameRequest):
-    if not blob_service_client:
-        raise HTTPException(status_code=500, detail="Azure Blob Service client not initialized.")
-
     original_blob_name = request.blob_name
     base_name, ext = os.path.splitext(original_blob_name)
 
@@ -113,16 +128,16 @@ async def reprocess_document_with_ai(request: BlobNameRequest):
     ai_md_blob = f"{base_name}_AI.md"
     ai_json_blob = f"{base_name}_AI.json"
 
-    container_client = blob_service_client.get_container_client(AZURE_STORAGE_CONTAINER_NAME)
+    container_client = _get_container_client()
 
     try:
         for blob_name in (ai_md_blob, ai_json_blob):
             blob_client = container_client.get_blob_client(blob_name)
             if blob_client.exists():
                 blob_client.delete_blob()
-                print(f"Deleted existing {blob_name}")
+                logger.info("Deleted existing blob during reprocess: %s", blob_name)
     except Exception as e:
-        print(f"Error deleting old AI blobs: {e}")
+        logger.warning("Error deleting old AI blobs: %s", e)
         # Proceed anyway
 
     # Run analysis again (always from PDF)

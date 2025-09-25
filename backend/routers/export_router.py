@@ -7,6 +7,8 @@ from __future__ import annotations
 
 import os
 import re
+import logging
+from functools import lru_cache
 from typing import Dict, Any, List
 from fastapi import APIRouter, HTTPException, Response, Query
 from azure.storage.blob import BlobServiceClient
@@ -14,18 +16,40 @@ from dotenv import load_dotenv
 from weasyprint import HTML
 from markdown2 import markdown
 
-load_dotenv()
-AZURE_STORAGE_CONNECTION_STRING = os.getenv("AZURE_STORAGE_CONNECTION_STRING")
-AZURE_STORAGE_CONTAINER_NAME = os.getenv("AZURE_STORAGE_CONTAINER_NAME")
+logger = logging.getLogger(__name__)
 
-if not AZURE_STORAGE_CONNECTION_STRING or not AZURE_STORAGE_CONTAINER_NAME:
-    raise ValueError("Azure storage env vars not set")
 
-try:
-    blob_service_client = BlobServiceClient.from_connection_string(AZURE_STORAGE_CONNECTION_STRING)
-except Exception as e:
-    print(f"Error initializing BlobServiceClient in export_router: {e}")
-    blob_service_client = None
+@lru_cache(maxsize=1)
+def _storage_settings() -> tuple[str, str]:
+    load_dotenv()
+    connection_string = os.getenv("AZURE_STORAGE_CONNECTION_STRING")
+    container_name = os.getenv("AZURE_STORAGE_CONTAINER_NAME")
+    if not connection_string or not container_name:
+        raise RuntimeError("Azure storage environment variables not set")
+    return connection_string, container_name
+
+
+@lru_cache(maxsize=1)
+def _blob_service_client() -> BlobServiceClient:
+    connection_string, _ = _storage_settings()
+    return BlobServiceClient.from_connection_string(connection_string)
+
+
+def _get_blob_service_client() -> BlobServiceClient:
+    try:
+        return _blob_service_client()
+    except RuntimeError as exc:
+        logger.error("Azure storage configuration missing: %s", exc)
+        raise HTTPException(status_code=500, detail="Azure storage configuration missing.")
+    except Exception as exc:  # pragma: no cover - defensive logging
+        logger.exception("Failed to initialise Azure Blob Service client")
+        raise HTTPException(status_code=500, detail="Azure Blob Service client not initialized")
+
+
+def _get_blob_client(blob_name: str):
+    client = _get_blob_service_client()
+    _, container_name = _storage_settings()
+    return client.get_blob_client(container=container_name, blob=blob_name)
 
 router = APIRouter(prefix="/api", tags=["export"])
 
