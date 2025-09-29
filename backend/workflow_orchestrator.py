@@ -27,6 +27,7 @@ from openai import AzureOpenAI
 from dotenv import load_dotenv
 from agent.ewa_agent import EWAAgent
 from agent.kpi_image_agent import KPIImageAgent
+from agent.document_structure_agent import DocumentStructureAgent
 from utils.markdown_utils import json_to_markdown
 from models.gemini_client import GeminiClient, is_gemini_model, create_gemini_client
 
@@ -99,6 +100,8 @@ class WorkflowState:
     markdown_content: str = ""
     summary_result: str = ""
     summary_json: dict = None
+    pdf_bytes: bytes = None
+    chapters: list = None
     error: str = ""
 
 class EWAWorkflowOrchestrator:
@@ -146,6 +149,60 @@ class EWAWorkflowOrchestrator:
         except Exception as e:
             print(f"Error creating agent for model {model}: {str(e)}")
             raise
+    
+    def _validate_chapter_coverage(self, expected_chapters: list[str], analysis_json: dict) -> None:
+        """Validate that the analysis covered all expected chapters and log results."""
+        try:
+            analyzed_chapters = analysis_json.get("Chapters Analyzed", [])
+            
+            if not analyzed_chapters:
+                print("[CHAPTER COVERAGE] WARNING: No 'Chapters Analyzed' field in output")
+                return
+            
+            print(f"[CHAPTER COVERAGE] Expected {len(expected_chapters)} chapters, analyzed {len(analyzed_chapters)} chapters")
+            
+            # Normalize chapter names for comparison (case-insensitive, strip whitespace)
+            def normalize(ch: str) -> str:
+                return ch.lower().strip()
+            
+            expected_set = {normalize(ch) for ch in expected_chapters}
+            analyzed_set = {normalize(ch) for ch in analyzed_chapters}
+            
+            # Find missing chapters
+            missing = expected_set - analyzed_set
+            if missing:
+                print(f"[CHAPTER COVERAGE] WARNING: {len(missing)} chapters may have been missed:")
+                for ch in missing:
+                    # Find original casing
+                    original = next((c for c in expected_chapters if normalize(c) == ch), ch)
+                    print(f"  - {original}")
+            else:
+                print("[CHAPTER COVERAGE] ✓ All expected chapters were analyzed")
+            
+            # Check for extra chapters (informational only)
+            extra = analyzed_set - expected_set
+            if extra:
+                print(f"[CHAPTER COVERAGE] INFO: {len(extra)} additional chapters were analyzed:")
+                for ch in extra:
+                    original = next((c for c in analyzed_chapters if normalize(c) == ch), ch)
+                    print(f"  - {original}")
+            
+            # Validate source chapter tracking in findings
+            key_findings = analysis_json.get("Key Findings", [])
+            findings_without_source = [
+                f.get("Issue ID", "Unknown") 
+                for f in key_findings 
+                if not f.get("Source Chapter")
+            ]
+            if findings_without_source:
+                print(f"[CHAPTER COVERAGE] WARNING: {len(findings_without_source)} Key Findings missing 'Source Chapter':")
+                for fid in findings_without_source[:5]:  # Show first 5
+                    print(f"  - {fid}")
+            else:
+                print(f"[CHAPTER COVERAGE] ✓ All {len(key_findings)} Key Findings have source chapter tracking")
+                
+        except Exception as e:
+            print(f"[CHAPTER COVERAGE] Error during validation: {e}")
     
     async def download_markdown_from_blob(self, blob_name: str) -> str:
         """Download markdown content from Azure Blob Storage"""
@@ -258,10 +315,46 @@ class EWAWorkflowOrchestrator:
             return state
     
 
-    async def run_analysis_step(self, state: WorkflowState) -> WorkflowState:
-        """Step 2: Generate comprehensive EWA analysis; then extract KPIs via image agent"""
+    async def extract_document_structure_step(self, state: WorkflowState) -> WorkflowState:
+        """Step 1.5: Extract document chapter structure for comprehensive analysis coverage"""
         try:
-            print(f"[STEP 2] Running EWA analysis for {state.blob_name}")
+            print(f"[STEP 1.5] Extracting document structure for {state.blob_name}")
+            
+            # Ensure PDF is downloaded
+            if state.pdf_bytes is None:
+                state.pdf_bytes = await self.download_pdf_from_blob(state.blob_name)
+            
+            # Extract chapter structure
+            structure_agent = DocumentStructureAgent(client=self.client)
+            structure_result = await asyncio.to_thread(
+                structure_agent.extract_structure_from_pdf_bytes,
+                state.pdf_bytes
+            )
+            
+            # Extract chapter names from the result
+            chapters_data = structure_result.get("chapters", [])
+            state.chapters = []
+            for ch in chapters_data:
+                ch_num = ch.get("chapter_number", "")
+                ch_name = ch.get("chapter_name", "")
+                if ch_num and ch_name:
+                    state.chapters.append(f"{ch_num} {ch_name}")
+                elif ch_name:
+                    state.chapters.append(ch_name)
+            
+            print(f"[STEP 1.5] Extracted {len(state.chapters)} chapters for analysis coverage")
+            return state
+        except Exception as e:
+            # Non-fatal: continue without chapter structure if extraction fails
+            print(f"[STEP 1.5] Warning: Chapter extraction failed: {e}")
+            print("[STEP 1.5] Continuing analysis without chapter structure guidance")
+            state.chapters = []
+            return state
+
+    async def run_analysis_step(self, state: WorkflowState) -> WorkflowState:
+        """Step 2: Generate comprehensive EWA analysis with chapter awareness; then extract KPIs via image agent"""
+        try:
+            print(f"[STEP 2] Running chapter-aware EWA analysis for {state.blob_name}")
             
             # Get metadata from original blob for KPI management
             original_metadata = await self.get_blob_metadata(state.blob_name)
@@ -284,24 +377,29 @@ class EWAWorkflowOrchestrator:
             # Run AI analysis for all sections except KPIs
             agent = self._create_agent(AZURE_OPENAI_SUMMARY_MODEL, ai_prompt)
             
+            # Ensure PDF is downloaded if not already
+            if state.pdf_bytes is None:
+                state.pdf_bytes = await self.download_pdf_from_blob(state.blob_name)
+            
+            pdf_length = len(state.pdf_bytes) if state.pdf_bytes is not None else 0
+            
             # Determine input type based on model
             if is_gemini_model(AZURE_OPENAI_SUMMARY_MODEL):
                 # For Gemini models, use original PDF. On failure, propagate error (no markdown fallback).
-                pdf_data = await self.download_pdf_from_blob(state.blob_name)
-                print(f"[Gemini Workflow] Using original PDF ({len(pdf_data)} bytes) for analysis")
-                ai_result = await agent.run(state.markdown_content, pdf_data=pdf_data)
+                print(f"[Gemini Workflow] Using original PDF ({pdf_length} bytes) for analysis")
+                ai_result = await agent.run(state.markdown_content, pdf_data=state.pdf_bytes, chapters=state.chapters)
             else:
                 # For OpenAI models, use original PDF via Responses API. On failure, propagate error (no markdown fallback).
-                pdf_data = await self.download_pdf_from_blob(state.blob_name)
-                print(f"[OpenAI Workflow] Using original PDF ({len(pdf_data)} bytes) for analysis via Responses API")
-                ai_result = await agent.run(state.markdown_content, pdf_data=pdf_data)
+                print(f"[OpenAI Workflow] Using original PDF ({pdf_length} bytes) for analysis via Responses API")
+                if state.chapters:
+                    print(f"[OpenAI Workflow] Providing {len(state.chapters)} chapters for comprehensive coverage")
+                ai_result = await agent.run(state.markdown_content, pdf_data=state.pdf_bytes, chapters=state.chapters)
             
             # Step 2: Extract KPIs via image-based agent (single high-res page to GPT-5)
             final_json = ai_result.copy() if ai_result else {}
             try:
-                pdf_data = await self.download_pdf_from_blob(state.blob_name)
                 kpi_agent = KPIImageAgent(client=self.client)
-                kpi_result = await asyncio.to_thread(kpi_agent.extract_kpis_from_pdf_bytes, pdf_data)
+                kpi_result = await asyncio.to_thread(kpi_agent.extract_kpis_from_pdf_bytes, state.pdf_bytes)
                 final_json['kpis'] = kpi_result.get('kpis', [])
                 print(f"[KPI IMAGE AGENT] Extracted {len(final_json['kpis'])} KPI rows")
             except Exception as kpi_e:
@@ -309,6 +407,11 @@ class EWAWorkflowOrchestrator:
             
             state.summary_json = final_json
             state.summary_result = json_to_markdown(final_json)
+            
+            # Validate chapter coverage if chapters were provided
+            if state.chapters:
+                self._validate_chapter_coverage(state.chapters, final_json)
+            
             return state
         except Exception as e:
             state.error = str(e)
@@ -385,7 +488,11 @@ class EWAWorkflowOrchestrator:
                 if state.error:
                     raise Exception(state.error)
             
-            # Run the EWA analysis using single enhanced agent
+            # Extract document structure for chapter-aware analysis
+            state = await self.extract_document_structure_step(state)
+            # Note: structure extraction errors are non-fatal; we continue even if it fails
+            
+            # Run the EWA analysis using single enhanced agent (now chapter-aware)
             summary_state = await self.run_analysis_step(state)
             
             # Check for errors

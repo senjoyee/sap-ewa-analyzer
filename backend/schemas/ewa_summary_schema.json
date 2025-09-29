@@ -62,7 +62,7 @@
       "type": "array",
       "items": {
         "type": "object",
-        "required": ["Issue ID", "Area", "Finding", "Impact", "Business impact", "Severity"],
+        "required": ["Issue ID", "Area", "Finding", "Impact", "Business impact", "Severity", "Source Chapter"],
         "properties": {
           "Issue ID": {
             "type": "string",
@@ -88,7 +88,8 @@
           "Finding":         { "type": "string" },
           "Impact":          { "type": "string", "description": "Potential technical impact." },
           "Business impact": { "type": "string", "description": "Translated business risk." },
-          "Severity":        { "type": "string", "enum": ["medium", "high", "critical"] }
+          "Severity":        { "type": "string", "enum": ["medium", "high", "critical"] },
+          "Source Chapter":  { "type": "string", "description": "Chapter or section where this finding was identified." }
         }
       }
     },
@@ -104,7 +105,8 @@
           "Responsible Area",
           "Linked issue ID",
           "Action",
-          "Preventative Action"
+          "Preventative Action",
+          "Source Chapter"
         ],
         "properties": {
           "Recommendation ID": {
@@ -140,7 +142,8 @@
             "description": "Key finding this recommendation addresses."
           },
           "Action":             { "type": "string", "description": "Specific steps to execute." },
-          "Preventative Action":{ "type": "string", "description": "Measure to prevent recurrence." }
+          "Preventative Action":{ "type": "string", "description": "Measure to prevent recurrence." },
+          "Source Chapter":     { "type": "string", "description": "Chapter or section this recommendation relates to." }
         }
       }
     },
@@ -163,6 +166,14 @@
     "Overall Risk": {
       "type": "string",
       "enum": ["low", "medium", "high", "critical"]
+    },
+
+    "Chapters Analyzed": {
+      "type": "array",
+      "description": "List of all document chapters that were analyzed to ensure comprehensive coverage.",
+      "items": {
+        "type": "string"
+      }
     }
   },
 
@@ -175,7 +186,8 @@
     "Key Findings",
     "Recommendations",
     "Capacity Outlook",
-    "Overall Risk"
+    "Overall Risk",
+    "Chapters Analyzed"
   ]
 
 

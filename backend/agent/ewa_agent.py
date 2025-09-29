@@ -107,11 +107,20 @@ class EWAAgent:
         self.json_repair = JSONRepair()
 
     # ----------------------------- Public API ----------------------------- #
-    async def run(self, markdown: str, pdf_data: bytes = None) -> Dict[str, Any]:
+    async def run(self, markdown: str, pdf_data: bytes = None, chapters: list[str] = None) -> Dict[str, Any]:
         """Return a validated summary JSON object.
+        
+        Args:
+            markdown: Markdown content (legacy; may be empty if pdf_data provided)
+            pdf_data: PDF bytes for multimodal analysis
+            chapters: List of chapter names identified in the document structure
+            
+        Returns:
+            Validated summary JSON dict
+            
         Attempts a single local (non-LLM) repair if initial output is invalid.
         """
-        summary_json = await self._call_llm(markdown, pdf_data)
+        summary_json = await self._call_llm(markdown, pdf_data, chapters)
         if self._is_valid(summary_json):
             print("[EWAAgent.run] Initial JSON valid; skipping repair")
             return summary_json
@@ -132,16 +141,16 @@ class EWAAgent:
     # ----------------------------- Internal helpers ----------------------------- #
 
 
-    async def _call_llm(self, markdown: str, pdf_data: bytes = None) -> Dict[str, Any]:
+    async def _call_llm(self, markdown: str, pdf_data: bytes = None, chapters: list[str] = None) -> Dict[str, Any]:
         """Call either OpenAI or Gemini based on model type"""
         if self.is_gemini:
             return await self._call_gemini(markdown, pdf_data)
         else:
             # Use Responses API with optional PDF input for OpenAI path
-            return await self._call_openai_responses(markdown, pdf_data)
+            return await self._call_openai_responses(markdown, pdf_data, chapters)
     
 
-    async def _call_openai_responses(self, markdown: str, pdf_data: bytes | None) -> Dict[str, Any]:
+    async def _call_openai_responses(self, markdown: str, pdf_data: bytes | None, chapters: list[str] | None) -> Dict[str, Any]:
         """Use Azure OpenAI Responses API with Structured Outputs via text.format and optional PDF input.
         Returns the parsed JSON directly when available; otherwise falls back to output_text parsing/repair.
         """
@@ -165,8 +174,23 @@ class EWAAgent:
                 finally:
                     file_obj.close()
 
+            # Build instruction with chapter awareness if available
+            chapter_context = ""
+            if chapters:
+                chapter_list = "\n".join(f"  - {ch}" for ch in chapters)
+                chapter_context = (
+                    f"\n\n**DOCUMENT STRUCTURE IDENTIFIED:**\n"
+                    f"The following chapters/sections were found in this EWA report:\n{chapter_list}\n\n"
+                    f"**CRITICAL ANALYSIS REQUIREMENTS:**\n"
+                    f"- You MUST systematically examine EACH chapter listed above\n"
+                    f"- For every Key Finding, populate the 'Source Chapter' field with the chapter name\n"
+                    f"- For every Recommendation, populate the 'Source Chapter' field\n"
+                    f"- At the end, populate 'Chapters Analyzed' array with ALL chapters you reviewed\n"
+                    f"- This ensures comprehensive coverage and traceability\n"
+                )
+            
             instruction_text = (
-                f"{self.summary_prompt}\n\n"
+                f"{self.summary_prompt}{chapter_context}\n\n"
                 "Return ONLY a valid JSON object that strictly conforms to the provided JSON schema. "
                 "Do not include any text outside of the JSON. Use double-quoted keys and strings, no trailing commas, and no comments. "
                 "Emit ONLY keys defined by the schema (treat additionalProperties as false across all objects) — do not add any extra properties anywhere. "
