@@ -28,7 +28,6 @@ from dotenv import load_dotenv
 from agent.ewa_agent import EWAAgent
 from agent.kpi_image_agent import KPIImageAgent
 from utils.markdown_utils import json_to_markdown
-from models.gemini_client import GeminiClient, is_gemini_model, create_gemini_client
 
 # Load environment variables
 load_dotenv()
@@ -50,29 +49,15 @@ AZURE_STORAGE_CONTAINER_NAME = os.getenv("AZURE_STORAGE_CONTAINER_NAME")
 # System prompts for each workflow
 def load_summary_prompt() -> str | None:
     """Return the first available summary prompt content, or None if none found.
-    Preference order:
-    - If Gemini model is configured, prefer the Gemini-specific prompt.
-    - Otherwise, prefer the GPT-5 optimized OpenAI prompt when present.
-    - Fallback to OpenAI or legacy prompts.
-    """
+    Preference order favors OpenAI prompts (GPT-5 optimized, then general OpenAI, then legacy)."""
     current_dir = os.path.dirname(os.path.abspath(__file__))
     prompt_dir = os.path.join(current_dir, "prompts")
 
-    # Prefer model-appropriate prompt
-    if is_gemini_model(AZURE_OPENAI_SUMMARY_MODEL):
-        candidate_files = [
-            "ewa_summary_prompt_openai_google.md", # Gemini-specific
-            "ewa_summary_prompt_openai_gpt5.md",   # Fallback to GPT-5 optimized
-            "ewa_summary_prompt_openai.md",        # OpenAI-specific
-            "ewa_summary_prompt.md",               # legacy path
-        ]
-    else:
-        candidate_files = [
-            "ewa_summary_prompt_openai_gpt5.md",   # GPT-5 optimized (preferred for OpenAI models)
-            "ewa_summary_prompt_openai.md",        # OpenAI-specific
-            "ewa_summary_prompt.md",               # legacy path
-            "ewa_summary_prompt_openai_google.md", # Gemini-specific (as last resort)
-        ]
+    candidate_files = [
+        "ewa_summary_prompt_openai_gpt5.md",   # GPT-5 optimized (preferred)
+        "ewa_summary_prompt_openai.md",        # OpenAI-specific
+        "ewa_summary_prompt.md",               # legacy path
+    ]
 
     for filename in candidate_files:
         path = os.path.join(prompt_dir, filename)
@@ -132,17 +117,10 @@ class EWAWorkflowOrchestrator:
             raise
     
     def _create_agent(self, model: str, summary_prompt: str | None = None) -> EWAAgent:
-        """Create appropriate agent (OpenAI or Gemini) based on model name"""
+        """Create an agent configured for Azure OpenAI."""
         try:
-            if is_gemini_model(model):
-                # Create Gemini client
-                gemini_client = create_gemini_client(model)
-                print(f"Creating EWAAgent with Gemini model: {model}")
-                return EWAAgent(client=gemini_client, model=model, summary_prompt=summary_prompt)
-            else:
-                # Use Azure OpenAI client
-                print(f"Creating EWAAgent with Azure OpenAI model: {model}")
-                return EWAAgent(client=self.client, model=model, summary_prompt=summary_prompt)
+            print(f"Creating EWAAgent with Azure OpenAI model: {model}")
+            return EWAAgent(client=self.client, model=model, summary_prompt=summary_prompt)
                 
         except Exception as e:
             print(f"Error creating agent for model {model}: {str(e)}")
@@ -290,15 +268,8 @@ class EWAWorkflowOrchestrator:
 
             pdf_length = len(state.pdf_bytes) if state.pdf_bytes is not None else 0
 
-            # Determine input type based on model
-            if is_gemini_model(AZURE_OPENAI_SUMMARY_MODEL):
-                # For Gemini models, use original PDF. On failure, propagate error (no markdown fallback).
-                print(f"[Gemini Workflow] Using original PDF ({pdf_length} bytes) for analysis")
-                ai_result = await agent.run(state.markdown_content, pdf_data=state.pdf_bytes)
-            else:
-                # For OpenAI models, use original PDF via Responses API. On failure, propagate error (no markdown fallback).
-                print(f"[OpenAI Workflow] Using original PDF ({pdf_length} bytes) for analysis via Responses API")
-                ai_result = await agent.run(state.markdown_content, pdf_data=state.pdf_bytes)
+            print(f"[OpenAI Workflow] Using original PDF ({pdf_length} bytes) for analysis via Responses API")
+            ai_result = await agent.run(state.markdown_content, pdf_data=state.pdf_bytes)
 
             # Step 2: Extract KPIs via image-based agent (single high-res page to GPT-5)
             final_json = ai_result.copy() if ai_result else {}
