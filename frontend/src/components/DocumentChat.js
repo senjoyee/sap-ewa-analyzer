@@ -296,14 +296,15 @@ const DocumentChat = ({ fileName, documentContent }) => {
     setInputValue('');
     
     // Check document content status
-    if (!documentContent) {
+    if (!documentContent || documentContent.trim().length === 0) {
       setContentStatus('missing');
-    } else if (documentContent.length < 100) {
-      setContentStatus('minimal');
-      console.warn(`Very short document content (${documentContent.length} chars) for ${fileName}`); 
-    } else if (documentContent.includes('Could not load content')) {
+    } else if (documentContent.includes('Could not load content') || documentContent.includes('Error loading')) {
       setContentStatus('error');
       console.error(`Error loading content for ${fileName}`); 
+    } else if (documentContent.length < 50) {
+      // Only flag as minimal if truly tiny (< 50 chars)
+      setContentStatus('minimal');
+      console.warn(`Very short document content (${documentContent.length} chars) for ${fileName}`); 
     } else {
       setContentStatus('available');
       console.log(`Document content available for ${fileName}: ${documentContent.length} chars`);

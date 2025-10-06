@@ -882,10 +882,16 @@ const FilePreview = ({ selectedFile }) => {
 
   // ... (rest of the code remains the same)
   useEffect(() => {
-    // Minimal content wiring; backend fetch can be added later
-    if (selectedFile && typeof selectedFile.content === 'string') {
-      setOriginalContent(selectedFile.content);
-    } else if (!selectedFile) {
+    // For processed files, use analysisContent; otherwise use content field
+    if (selectedFile) {
+      if (typeof selectedFile.analysisContent === 'string' && selectedFile.analysisContent.length > 0) {
+        setOriginalContent(selectedFile.analysisContent);
+      } else if (typeof selectedFile.content === 'string') {
+        setOriginalContent(selectedFile.content);
+      } else {
+        setOriginalContent('');
+      }
+    } else {
       setOriginalContent('');
     }
   }, [selectedFile]);
