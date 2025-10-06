@@ -193,16 +193,6 @@ def json_to_markdown(data: Dict[str, Any]) -> str:
     md.append(f"**Overall Risk Assessment:** `{data.get('Overall Risk', data.get('overall_risk', 'N/A'))}`")
     md.append("\n---\n")
 
-    # ── Chapters Reviewed ──────────────────────────────────────────────────────
-    chapters = data.get("Chapters Reviewed", data.get("chapters_reviewed", []))
-    if chapters:
-        md.append("## Document Coverage")
-        md.append("The following chapters/sections were reviewed:")
-        md.append("")
-        for chapter in chapters:
-            md.append(f"- {chapter}")
-        md.append("\n---\n")
-
     # ── System Health Overview ────────────────────────────────────────────────
     md.append("## System Health Overview")
     health = data.get("System Health Overview", data.get("system_health_overview", {}))
