@@ -30,6 +30,14 @@
       }
     },
 
+    "Chapters Reviewed": {
+      "type": "array",
+      "description": "List of all chapters/sections found and reviewed in the EWA document.",
+      "items": {
+        "type": "string"
+      }
+    },
+
     "System Health Overview": {
       "type": "object",
       "properties": {
@@ -62,7 +70,7 @@
       "type": "array",
       "items": {
         "type": "object",
-        "required": ["Issue ID", "Area", "Finding", "Impact", "Business impact", "Severity"],
+        "required": ["Issue ID", "Area", "Finding", "Impact", "Business impact", "Severity", "Source"],
         "properties": {
           "Issue ID": {
             "type": "string",
@@ -88,7 +96,8 @@
           "Finding":         { "type": "string" },
           "Impact":          { "type": "string", "description": "Potential technical impact." },
           "Business impact": { "type": "string", "description": "Translated business risk." },
-          "Severity":        { "type": "string", "enum": ["medium", "high", "critical"] }
+          "Severity":        { "type": "string", "enum": ["medium", "high", "critical"] },
+          "Source":          { "type": "string", "description": "Report section or evidence supporting the finding." }
         }
       }
     },
@@ -169,6 +178,7 @@
   "required": [
     "Schema Version",
     "System Metadata",
+    "Chapters Reviewed",
     "Executive Summary",
     "System Health Overview",
     "Positive Findings",
