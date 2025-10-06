@@ -11,6 +11,7 @@ import { Image24Regular, Document24Regular, TextDescription24Regular } from '@fl
  
  
 import { useTypographyStyles } from '../styles/typography';
+import { apiUrl } from '../config';
 
 // Import our custom table components
 // import MetricsTable from './MetricsTable';
@@ -53,7 +54,6 @@ const getStatusStyle = (value, classes) => {
 };
 
 // Helper function to get appropriate file type label and icon
-const API_BASE = 'http://localhost:8001';
 const getFileTypeInfo = (fileName, classes) => {
   if (!fileName || typeof fileName !== 'string') {
     return { icon: <Document24Regular className={`${classes.icon20} ${classes.iconNeutral}`} />, label: 'UNKNOWN', color: 'default' };
@@ -914,7 +914,7 @@ const FilePreview = ({ selectedFile, isFullscreen, onToggleFullscreen }) => {
       mdName = file.name;
     }
     // Use the enhanced export endpoint under /api with the expected query param
-    const url = `${API_BASE}/api/export-pdf-enhanced?blob_name=${encodeURIComponent(mdName)}`;
+    const url = apiUrl(`/api/export-pdf-enhanced?blob_name=${encodeURIComponent(mdName)}`);
     window.open(url, '_blank', 'noopener,noreferrer');
   };
 
