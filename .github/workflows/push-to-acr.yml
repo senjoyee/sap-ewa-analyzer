@@ -4,7 +4,7 @@ on:
   push:
     branches:
       - main
-      - file-rename-upload
+      - chapters
   workflow_dispatch:
 
 jobs:
