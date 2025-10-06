@@ -340,6 +340,16 @@ const handleSendMessage = async () => {
         body: JSON.stringify(requestBody),
       });
       
+      // Check content type to detect proxy errors
+      const contentType = response.headers.get('content-type');
+      if (!contentType || !contentType.includes('application/json')) {
+        const text = await response.text();
+        if (text.includes('Proxy error') || text.includes('<html')) {
+          throw new Error('Backend server is not running. Please start the backend on port 8001.');
+        }
+        throw new Error(`Unexpected response type: ${contentType || 'unknown'}`);
+      }
+      
       if (!response.ok) {
         throw new Error(`Server error: ${response.status} ${response.statusText}`);
       }

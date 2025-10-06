@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
-import { Toolbar as FluentToolbar, ToolbarButton, Tooltip as FluentTooltip, Button as FluentButton, makeStyles, shorthands, tokens } from '@fluentui/react-components';
-import { Document24Regular, Settings24Regular, QuestionCircle24Regular, ChevronLeft24Regular, ChevronRight24Regular } from '@fluentui/react-icons';
+import { Toolbar as FluentToolbar, ToolbarButton, Tooltip as FluentTooltip, makeStyles, shorthands, tokens, Menu, MenuTrigger, MenuPopover, MenuList, MenuItem, Button } from '@fluentui/react-components';
+import { Document24Regular, Settings24Regular, QuestionCircle24Regular, TextFont24Regular, Checkmark24Regular } from '@fluentui/react-icons';
 
 import FileUpload from './components/FileUpload';
 import FileList from './components/FileList';
@@ -8,7 +8,6 @@ import FilePreview from './components/FilePreview';
 // Theme is managed by FluentProvider in src/index.js
 
 const drawerWidth = 480; // Increased width to accommodate analyze buttons and status and show more file details
-const collapsedDrawerWidth = 0; // Width when drawer is collapsed
 const topBarHeight = 0;
 
 const useStyles = makeStyles({
@@ -48,12 +47,22 @@ const useStyles = makeStyles({
     color: tokens.colorNeutralForeground1,
     display: 'flex',
     flexDirection: 'column',
-    minHeight: 0, // allow inner content to shrink and scroll
-    // no scrollbar here; inner content owns scrolling
+    minHeight: 0,
     position: 'fixed',
     top: `${topBarHeight}px`,
     bottom: 0,
     left: 0,
+  },
+  fullscreenOverlay: {
+    position: 'fixed',
+    top: 0,
+    left: 0,
+    right: 0,
+    bottom: 0,
+    zIndex: 9999,
+    backgroundColor: tokens.colorNeutralBackground2,
+    display: 'flex',
+    flexDirection: 'column',
   },
   toolbarSpacer: {
     height: `${topBarHeight}px`,
@@ -92,17 +101,6 @@ const useStyles = makeStyles({
       '&::-webkit-scrollbar-thumb:hover': { background: tokens.colorNeutralForeground3 },
     },
   },
-  collapseEdge: {
-    position: 'fixed',
-    top: '50%',
-    left: 0,
-    zIndex: 1200,
-    transform: 'translateY(-50%)',
-    backgroundColor: tokens.colorBrandBackground,
-    borderRadius: '0 4px 4px 0',
-    boxShadow: '2px 0 8px rgba(0,0,0,0.5)',
-    transition: 'left 225ms cubic-bezier(0.4, 0, 0.6, 1) 0ms',
-  },
   main: {
     flexGrow: 1,
     padding: '24px',
@@ -123,11 +121,38 @@ const useStyles = makeStyles({
 const AppContent = () => {
   const [selectedFileForPreview, setSelectedFileForPreview] = useState(null);
   const [fileListRefreshTrigger, setFileListRefreshTrigger] = useState(0);
-  const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
+  const [isFullscreen, setIsFullscreen] = useState(false);
+  const [currentFont, setCurrentFont] = useState('inter');
+  const [fontOptions, setFontOptions] = useState({});
   const classes = useStyles();
+
+  // Load font options and current font
+  React.useEffect(() => {
+    if (window.__getFontOptions) {
+      setFontOptions(window.__getFontOptions());
+    }
+    if (window.__getCurrentFont) {
+      setCurrentFont(window.__getCurrentFont());
+    }
+  }, []);
+
+  const handleFontChange = (fontKey) => {
+    if (window.__setAppFont) {
+      window.__setAppFont(fontKey);
+      setCurrentFont(fontKey);
+    }
+  };
 
   const handleUploadSuccess = () => {
     setFileListRefreshTrigger(prev => prev + 1);
+  };
+
+  const handleFileSelect = (file) => {
+    setSelectedFileForPreview(file);
+    // Exit fullscreen when file selection is cleared
+    if (!file && isFullscreen) {
+      setIsFullscreen(false);
+    }
   };
 
   return (
@@ -150,54 +175,75 @@ const AppContent = () => {
         </div>
       </div>
 
-      <aside className={classes.sidebar} style={{ width: sidebarCollapsed ? collapsedDrawerWidth : drawerWidth }}>
-        <div className={classes.sidebarHeaderRow}>
-          <span className={classes.sidebarTitle}>File Management</span>
-          <FluentButton
-            appearance="subtle"
-            size="small"
-            shape="circular"
-            aria-label="Collapse sidebar"
-            onClick={() => setSidebarCollapsed(true)}
-            icon={<ChevronLeft24Regular />}
-          />
-        </div>
-        <div className={classes.sidebarContent}>
-          <FileUpload onUploadSuccess={handleUploadSuccess} />
-          <FileList 
-            onFileSelect={setSelectedFileForPreview} 
-            refreshTrigger={fileListRefreshTrigger}
-            selectedFile={selectedFileForPreview}
-          />
-        </div>
-      </aside>
+      {!isFullscreen && (
+        <aside className={classes.sidebar} style={{ width: drawerWidth }}>
+          <div className={classes.sidebarHeaderRow}>
+            <span className={classes.sidebarTitle}>File Management</span>
+            <Menu>
+              <MenuTrigger disableButtonEnhancement>
+                <FluentTooltip content="Font settings" relationship="label">
+                  <Button
+                    appearance="subtle"
+                    size="small"
+                    icon={<TextFont24Regular />}
+                    aria-label="Font settings"
+                  />
+                </FluentTooltip>
+              </MenuTrigger>
+              <MenuPopover>
+                <MenuList>
+                  {Object.entries(fontOptions).map(([key, font]) => (
+                    <MenuItem
+                      key={key}
+                      onClick={() => handleFontChange(key)}
+                      icon={currentFont === key ? <Checkmark24Regular /> : null}
+                    >
+                      {font.name}
+                    </MenuItem>
+                  ))}
+                </MenuList>
+              </MenuPopover>
+            </Menu>
+          </div>
+          <div className={classes.sidebarContent}>
+            <FileUpload onUploadSuccess={handleUploadSuccess} />
+            <FileList 
+              onFileSelect={handleFileSelect} 
+              refreshTrigger={fileListRefreshTrigger}
+              selectedFile={selectedFileForPreview}
+            />
+          </div>
+        </aside>
+      )}
 
-      {sidebarCollapsed && (
-        <div className={classes.collapseEdge}>
-          <FluentButton
-            onClick={() => setSidebarCollapsed(false)}
-            size="small"
-            shape="circular"
-            appearance="transparent"
-            aria-label="Expand sidebar"
-            icon={<ChevronRight24Regular />}
-            style={{ color: tokens.colorNeutralForegroundOnBrand, padding: '12px 4px', borderRadius: '0 4px 4px 0' }}
+      {!isFullscreen && (
+        <main
+          className={classes.main}
+          style={{
+            width: `calc(100% - ${drawerWidth}px)`,
+            marginLeft: `${drawerWidth}px`,
+          }}
+        >
+          <div className={classes.toolbarSpacer} />
+          <div className={classes.mainInner}>
+            <FilePreview 
+              selectedFile={selectedFileForPreview} 
+              isFullscreen={isFullscreen}
+              onToggleFullscreen={() => setIsFullscreen(!isFullscreen)}
+            />
+          </div>
+        </main>
+      )}
+
+      {isFullscreen && (
+        <div className={classes.fullscreenOverlay}>
+          <FilePreview 
+            selectedFile={selectedFileForPreview} 
+            isFullscreen={isFullscreen}
+            onToggleFullscreen={() => setIsFullscreen(!isFullscreen)}
           />
         </div>
       )}
-
-      <main
-        className={classes.main}
-        style={{
-          width: `calc(100% - ${sidebarCollapsed ? collapsedDrawerWidth : drawerWidth}px)`,
-          marginLeft: `${sidebarCollapsed ? collapsedDrawerWidth : drawerWidth}px`,
-        }}
-      >
-        <div className={classes.toolbarSpacer} />
-        <div className={classes.mainInner}>
-          <FilePreview selectedFile={selectedFileForPreview} />
-        </div>
-      </main>
     </div>
   );
 };

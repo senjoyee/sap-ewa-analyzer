@@ -775,6 +775,15 @@ const FileList = ({ onFileSelect, refreshTrigger, selectedFile }) => {
           })
         });
         
+        // Check content type to detect proxy errors
+        const contentType = response.headers.get('content-type');
+        if (!contentType || !contentType.includes('application/json')) {
+          const text = await response.text();
+          if (text.includes('Proxy error') || text.includes('<html')) {
+            throw new Error('Backend server is not running. Please start the backend on port 8001.');
+          }
+        }
+        
         if (!response.ok) {
           throw new Error(`Server responded with ${response.status}`);
         }
@@ -878,6 +887,14 @@ const FileList = ({ onFileSelect, refreshTrigger, selectedFile }) => {
       const response = await fetch(apiUrl(`/api/download/${aiFileName}`));
       
       if (!response.ok) {
+        // Check if it's a proxy error
+        const contentType = response.headers.get('content-type');
+        if (contentType && contentType.includes('text/html')) {
+          const text = await response.text();
+          if (text.includes('Proxy error')) {
+            throw new Error('Backend server is not running. Please start the backend on port 8001.');
+          }
+        }
         throw new Error(`Failed to fetch AI analysis: ${response.status}`);
       }
       
@@ -920,8 +937,23 @@ const FileList = ({ onFileSelect, refreshTrigger, selectedFile }) => {
         body: JSON.stringify({ blob_name: file.name }),
       });
 
+      // Check content type to detect proxy errors
+      const contentType = response.headers.get('content-type');
+      if (!contentType || !contentType.includes('application/json')) {
+        const text = await response.text();
+        if (text.includes('Proxy error') || text.includes('<html')) {
+          throw new Error('Backend server is not running. Please start the backend on port 8001.');
+        }
+        throw new Error(`Unexpected response type: ${contentType || 'unknown'}`);
+      }
+
       if (!response.ok) {
-        const errorData = await response.json();
+        let errorData;
+        try {
+          errorData = await response.json();
+        } catch (parseErr) {
+          throw new Error(`Combined processing and analysis failed: ${response.status}`);
+        }
         // Try to get a specific message from the backend, otherwise use a generic one
         const message = errorData.detail || (errorData.message || `Combined processing and analysis failed: ${response.status}`);
         throw new Error(message);
@@ -964,10 +996,28 @@ const FileList = ({ onFileSelect, refreshTrigger, selectedFile }) => {
     setError(null);
     try {
       const response = await fetch(apiUrl('/api/files'));
+      
+      // Check content type to detect proxy errors
+      const contentType = response.headers.get('content-type');
+      if (!contentType || !contentType.includes('application/json')) {
+        // Likely a proxy error or HTML error page
+        const text = await response.text();
+        if (text.includes('Proxy error') || text.includes('<html')) {
+          throw new Error('Backend server is not running. Please start the backend on port 8001.');
+        }
+        throw new Error(`Unexpected response type: ${contentType || 'unknown'}`);
+      }
+      
       if (!response.ok) {
-        const errData = await response.json();
+        let errData;
+        try {
+          errData = await response.json();
+        } catch (parseErr) {
+          throw new Error(`Failed to fetch files: ${response.status}`);
+        }
         throw new Error(errData.detail || `Failed to fetch files: ${response.status}`);
       }
+      
       const data = await response.json();
       
       // Log the raw data to check what the backend is sending

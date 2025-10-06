@@ -4,7 +4,7 @@ import rehypeRaw from 'rehype-raw';
 import remarkGfm from 'remark-gfm';
 import { makeStyles } from '@griffel/react';
 import { tokens, Button, Tooltip, Accordion as FluentAccordion, AccordionItem, AccordionHeader, AccordionPanel, ProgressBar } from '@fluentui/react-components';
-import { DocumentPdf24Regular, ChevronDown24Regular, DataBarVertical24Regular, Settings24Regular } from '@fluentui/react-icons';
+import { DocumentPdf24Regular, ChevronDown24Regular, DataBarVertical24Regular, Settings24Regular, ArrowMaximize24Regular, ArrowMinimize24Regular } from '@fluentui/react-icons';
  
  
 import { Image24Regular, Document24Regular, TextDescription24Regular } from '@fluentui/react-icons';
@@ -533,7 +533,7 @@ const useStyles = makeStyles({
   },
   // High-quality text rendering to match PDF appearance
   previewTextRoot: {
-    fontFamily: '"Inter", system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif',
+    // Font family inherited from FluentProvider theme
     fontKerning: 'normal',
     fontVariantLigatures: 'common-ligatures contextual',
     fontFeatureSettings: '"liga" 1, "calt" 1, "kern" 1',
@@ -546,7 +546,7 @@ const useStyles = makeStyles({
     color: tokens.colorNeutralForeground1,
     selectors: {
       '& code, & pre': {
-        fontFamily: '"JetBrains Mono", Consolas, "Courier New", monospace',
+        // Monospace font inherited from theme
       },
       '& h1, & h2': {
         letterSpacing: '-0.01em',
@@ -874,7 +874,7 @@ const JsonCodeBlockRenderer = ({ node, inline, className, children, ...props }) 
   }
 };
 
-const FilePreview = ({ selectedFile }) => {
+const FilePreview = ({ selectedFile, isFullscreen, onToggleFullscreen }) => {
   const classes = useStyles();
   const typography = useTypographyStyles();
   const fileTypeInfo = selectedFile ? getFileTypeInfo(selectedFile.name, classes) : null;
@@ -922,9 +922,18 @@ const FilePreview = ({ selectedFile }) => {
     <div className={classes.container}>
       <a href="#filepreview-content" className={classes.skipLink}>Skip to content</a>
       <div className={classes.headerBar}>
-        <div className={`${classes.title} ${typography.headingL}`}>
-          {isAnalysisView ? 'AI Analysis' : 'File Preview'}
-        </div>
+        {selectedFile && (
+          <Tooltip content={isFullscreen ? "Exit fullscreen" : "Enter fullscreen"} relationship="label">
+            <Button
+              appearance="subtle"
+              size="small"
+              icon={isFullscreen ? <ArrowMinimize24Regular /> : <ArrowMaximize24Regular />}
+              aria-label={isFullscreen ? "Exit fullscreen" : "Enter fullscreen"}
+              onClick={onToggleFullscreen}
+            />
+          </Tooltip>
+        )}
+        <div style={{ flex: 1 }} />
         {selectedFile && (
           <div className={classes.actionBar}>
             {selectedFile && selectedFile.name && (
