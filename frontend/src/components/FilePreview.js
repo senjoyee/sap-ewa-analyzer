@@ -698,6 +698,70 @@ const useStyles = makeStyles({
     '0%': { backgroundPosition: '200% 0' },
     '100%': { backgroundPosition: '-200% 0' },
   },
+  // Card layout styles
+  cardContainer: {
+    display: 'flex',
+    flexDirection: 'column',
+    gap: tokens.spacingVerticalL,
+    marginTop: tokens.spacingVerticalL,
+    marginBottom: tokens.spacingVerticalL,
+  },
+  cardItem: {
+    background: `linear-gradient(135deg, ${tokens.colorNeutralBackground1} 0%, ${tokens.colorSubtleBackground} 100%)`,
+    border: `1px solid ${tokens.colorNeutralStroke2}`,
+    borderRadius: tokens.borderRadiusLarge,
+    padding: tokens.spacingHorizontalXL,
+    boxShadow: `0 4px 16px rgba(0, 0, 0, 0.06), 0 1px 4px rgba(0, 0, 0, 0.04)`,
+    position: 'relative',
+    overflow: 'hidden',
+    transition: 'all 200ms cubic-bezier(0.4, 0, 0.2, 1)',
+    '::before': {
+      content: '""',
+      position: 'absolute',
+      top: 0,
+      left: 0,
+      right: 0,
+      height: '3px',
+      background: `linear-gradient(90deg, ${tokens.colorBrandForeground1}, ${tokens.colorCompoundBrandForeground1})`,
+      borderRadius: `${tokens.borderRadiusLarge} ${tokens.borderRadiusLarge} 0 0`,
+    },
+    ':hover': {
+      transform: 'translateY(-2px)',
+      boxShadow: `0 8px 24px rgba(0, 0, 0, 0.08), 0 2px 8px rgba(0, 0, 0, 0.06)`,
+    },
+  },
+  cardField: {
+    marginBottom: tokens.spacingVerticalM,
+    ':last-child': {
+      marginBottom: 0,
+    },
+  },
+  cardLabel: {
+    fontWeight: tokens.fontWeightSemibold,
+    fontSize: tokens.fontSizeBase300,
+    color: tokens.colorNeutralForeground2,
+    marginBottom: tokens.spacingVerticalXXS,
+    textTransform: 'uppercase',
+    letterSpacing: '0.02em',
+    fontSize: tokens.fontSizeBase200,
+  },
+  cardValue: {
+    fontSize: tokens.fontSizeBase300,
+    color: tokens.colorNeutralForeground1,
+    lineHeight: '1.6',
+    fontWeight: tokens.fontWeightRegular,
+  },
+  cardValueBullets: {
+    paddingLeft: tokens.spacingHorizontalL,
+    marginTop: tokens.spacingVerticalXXS,
+    '& li': {
+      marginBottom: tokens.spacingVerticalXS,
+      lineHeight: '1.6',
+      '::marker': {
+        color: tokens.colorBrandForeground1,
+      },
+    },
+  },
 });
 
 const JsonCodeBlockRenderer = ({ node, inline, className, children, ...props }) => {
@@ -710,6 +774,115 @@ const JsonCodeBlockRenderer = ({ node, inline, className, children, ...props }) 
     try {
       const jsonString = String(children).replace(/\n$/, ''); // Remove trailing newline
       const jsonData = JSON.parse(jsonString);
+
+      // Case 0: Check if it's a card layout
+      if (jsonData && jsonData.layout === 'cards' && Array.isArray(jsonData.items)) {
+        const { cardType, items } = jsonData;
+        
+        // Define field order and labels for each card type
+        const fieldConfig = {
+          key_findings: [
+            { key: 'Issue ID', label: 'Issue ID' },
+            { key: 'Area', label: 'Area' },
+            { key: 'Severity', label: 'Severity' },
+            { key: 'Source', label: 'Source' },
+            { key: 'Finding', label: 'Finding', isBulletField: true },
+            { key: 'Impact', label: 'Impact', isBulletField: true },
+            { key: 'Business impact', label: 'Business Impact', isBulletField: true },
+          ],
+          recommendations: [
+            { key: 'Recommendation ID', label: 'Recommendation ID' },
+            { key: 'Linked issue ID', label: 'Linked Issue ID' },
+            { key: 'Responsible Area', label: 'Responsible Area' },
+            { key: 'Estimated Effort', label: 'Estimated Effort' },
+            { key: 'Action', label: 'Action', isBulletField: true },
+            { key: 'Preventative Action', label: 'Preventative Action', isBulletField: true },
+          ],
+        };
+
+        const fields = fieldConfig[cardType] || [];
+
+        // Helper to render field value with appropriate formatting
+        const renderFieldValue = (value, field) => {
+          if (value === null || value === undefined) return 'N/A';
+          
+          // Check for status/severity styling
+          const statusStyle = getStatusStyle(value, classes);
+          if (statusStyle) {
+            return (
+              <span className={`${classes.statusChip} ${statusStyle.class}`}>
+                {statusStyle.icon}
+                {statusStyle.label}
+              </span>
+            );
+          }
+          
+          // Handle effort object
+          if (typeof value === 'object' && value.analysis && value.implementation) {
+            return `Analysis: ${value.analysis}, Implementation: ${value.implementation}`;
+          }
+          
+          // Handle bullet fields (Finding, Impact, etc.)
+          if (field.isBulletField && typeof value === 'string') {
+            // Check if value contains HTML list tags
+            if (value.includes('<ul>') && value.includes('<li>')) {
+              // Parse and render as React list
+              const listMatch = value.match(/<ul>(.*?)<\/ul>/s);
+              if (listMatch) {
+                const items = listMatch[1].match(/<li>(.*?)<\/li>/gs);
+                if (items) {
+                  return (
+                    <ul className={classes.cardValueBullets}>
+                      {items.map((item, idx) => {
+                        const content = item.replace(/<\/?li>/g, '');
+                        return <li key={idx}>{content}</li>;
+                      })}
+                    </ul>
+                  );
+                }
+              }
+            }
+            // Check if value has multiple lines (newline-separated)
+            if (value.includes('\n')) {
+              const lines = value.split('\n').filter(l => l.trim());
+              if (lines.length > 1) {
+                return (
+                  <ul className={classes.cardValueBullets}>
+                    {lines.map((line, idx) => (
+                      <li key={idx}>{line.trim()}</li>
+                    ))}
+                  </ul>
+                );
+              }
+            }
+          }
+          
+          return formatDisplay(value);
+        };
+
+        return (
+          <div className={classes.cardContainer} role="list" aria-label={`${jsonData.sectionTitle || 'Items'} cards`}>
+            {items.map((item, itemIndex) => (
+              <div key={itemIndex} className={classes.cardItem} role="listitem">
+                {fields.map((field, fieldIndex) => {
+                  const value = item[field.key];
+                  // Skip fields that don't exist in this item
+                  if (value === undefined) return null;
+                  
+                  return (
+                    <div key={fieldIndex} className={classes.cardField}>
+                      <div className={classes.cardLabel}>{field.label}:</div>
+                      <div className={classes.cardValue}>
+                        {renderFieldValue(value, field)}
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+            ))}
+          </div>
+        );
+      }
 
       // Case 1: Check if it's the Key System Information format with items (parameter/value pairs)
       if (jsonData && jsonData.tableTitle && Array.isArray(jsonData.items)) {

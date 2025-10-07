@@ -173,6 +173,48 @@ def _array_to_markdown_table(
     # (removed unreachable duplicate block)
 
 
+def _array_to_card_json(
+    array: List[Dict[str, Any]], section_name: str | None = None, card_type: str = "generic"
+) -> List[str]:
+    """
+    Convert an array of dicts into a JSON code block that signals card-based rendering.
+    
+    Args:
+        array: List of dictionaries to render as cards
+        section_name: Optional section title
+        card_type: Type of card ("key_findings" or "recommendations")
+    
+    Returns:
+        List of markdown lines including JSON code block
+    """
+    md: List[str] = []
+    if section_name:
+        md.append(f"## {section_name}")
+    
+    if not array:
+        md.append(f"No {section_name.lower() if section_name else 'data'} provided.")
+        return md
+    
+    # Create JSON structure for card rendering
+    card_data = {
+        "layout": "cards",
+        "cardType": card_type,
+        "sectionTitle": section_name or "Items",
+        "items": array
+    }
+    
+    import json
+    json_str = json.dumps(card_data, indent=2, ensure_ascii=False)
+    
+    md.append("")
+    md.append("```json")
+    md.append(json_str)
+    md.append("```")
+    md.append("")
+    
+    return md
+
+
 # ────────────────────────────────────────────────────────────────────────────────
 # Public API
 # ────────────────────────────────────────────────────────────────────────────────
@@ -222,14 +264,14 @@ def json_to_markdown(data: Dict[str, Any]) -> str:
     # ── Key Findings ──────────────────────────────────────────────────────────
     md.append("<div style='page-break-before: always;'></div>")
     md.append("")
-    md.extend(_array_to_markdown_table(data.get("Key Findings", data.get("key_findings", [])), "Key Findings"))
+    md.extend(_array_to_card_json(data.get("Key Findings", data.get("key_findings", [])), "Key Findings", "key_findings"))
     md.append("\n---\n")
 
 
     # ── Recommendations ───────────────────────────────────────────────────────
     md.append("<div style='page-break-before: always;'></div>")
     md.append("")
-    md.extend(_array_to_markdown_table(data.get("Recommendations", data.get("recommendations", [])), "Recommendations"))
+    md.extend(_array_to_card_json(data.get("Recommendations", data.get("recommendations", [])), "Recommendations", "recommendations"))
 
 
     # ── Key Performance Indicators ────────────────────────────────────────────
