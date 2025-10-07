@@ -798,6 +798,19 @@ const JsonCodeBlockRenderer = ({ node, inline, className, children, ...props }) 
             { key: 'Action', label: 'Action', isBulletField: true },
             { key: 'Preventative Action', label: 'Preventative Action', isBulletField: true },
           ],
+          merged_findings_recommendations: [
+            { key: 'Area', label: 'Area' },
+            { key: 'Severity', label: 'Severity' },
+            { key: 'Source', label: 'Source' },
+            { key: 'Finding', label: 'Finding', isBulletField: true },
+            { key: 'Impact', label: 'Impact', isBulletField: true },
+            { key: 'Business impact', label: 'Business Impact', isBulletField: true },
+            { key: 'Recommendation ID', label: 'Recommendation' },
+            { key: 'Estimated Effort', label: 'Estimated Effort' },
+            { key: 'Responsible Area', label: 'Responsible Area' },
+            { key: 'Action', label: 'Action', isBulletField: true },
+            { key: 'Preventative Action', label: 'Preventative Action', isBulletField: true },
+          ],
         };
 
         const fields = fieldConfig[cardType] || [];

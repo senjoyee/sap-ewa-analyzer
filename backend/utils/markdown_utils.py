@@ -215,6 +215,68 @@ def _array_to_card_json(
     return md
 
 
+def _merge_findings_and_recommendations(
+    findings: List[Dict[str, Any]], 
+    recommendations: List[Dict[str, Any]]
+) -> List[Dict[str, Any]]:
+    """
+    Merge Key Findings with their linked Recommendations into unified cards.
+    
+    Each finding is matched with its recommendations via "Linked issue ID".
+    Returns a list of merged dictionaries combining both data structures.
+    """
+    # Build a lookup map: Issue ID -> recommendation(s)
+    rec_map: Dict[str, List[Dict[str, Any]]] = {}
+    for rec in recommendations:
+        linked_id = rec.get("Linked issue ID") or rec.get("linked_issue_id")
+        if linked_id:
+            if linked_id not in rec_map:
+                rec_map[linked_id] = []
+            rec_map[linked_id].append(rec)
+    
+    merged = []
+    for finding in findings:
+        issue_id = finding.get("Issue ID") or finding.get("issue_id")
+        
+        # Get matching recommendations for this finding
+        linked_recs = rec_map.get(issue_id, [])
+        
+        if linked_recs:
+            # Create one card per recommendation linked to this finding
+            for rec in linked_recs:
+                merged_item = {
+                    # From Key Finding
+                    "Issue ID": finding.get("Issue ID") or finding.get("issue_id"),
+                    "Area": finding.get("Area") or finding.get("area"),
+                    "Severity": finding.get("Severity") or finding.get("severity"),
+                    "Source": finding.get("Source") or finding.get("source"),
+                    "Finding": finding.get("Finding") or finding.get("finding"),
+                    "Impact": finding.get("Impact") or finding.get("impact"),
+                    "Business impact": finding.get("Business impact") or finding.get("business_impact"),
+                    # From Recommendation
+                    "Recommendation ID": rec.get("Recommendation ID") or rec.get("recommendation_id"),
+                    "Responsible Area": rec.get("Responsible Area") or rec.get("responsible_area"),
+                    "Estimated Effort": rec.get("Estimated Effort") or rec.get("estimated_effort"),
+                    "Action": rec.get("Action") or rec.get("action"),
+                    "Preventative Action": rec.get("Preventative Action") or rec.get("preventative_action"),
+                }
+                merged.append(merged_item)
+        else:
+            # No linked recommendation - include finding only
+            merged_item = {
+                "Issue ID": finding.get("Issue ID") or finding.get("issue_id"),
+                "Area": finding.get("Area") or finding.get("area"),
+                "Severity": finding.get("Severity") or finding.get("severity"),
+                "Source": finding.get("Source") or finding.get("source"),
+                "Finding": finding.get("Finding") or finding.get("finding"),
+                "Impact": finding.get("Impact") or finding.get("impact"),
+                "Business impact": finding.get("Business impact") or finding.get("business_impact"),
+            }
+            merged.append(merged_item)
+    
+    return merged
+
+
 # ────────────────────────────────────────────────────────────────────────────────
 # Public API
 # ────────────────────────────────────────────────────────────────────────────────
@@ -261,17 +323,13 @@ def json_to_markdown(data: Dict[str, Any]) -> str:
     md.extend(_array_to_markdown_table(data.get("Positive Findings", data.get("positive_findings", [])), "Positive Findings"))
     md.append("\n---\n")
 
-    # ── Key Findings ──────────────────────────────────────────────────────────
+    # ── Key Findings & Recommendations (Merged) ──────────────────────────────
     md.append("<div style='page-break-before: always;'></div>")
     md.append("")
-    md.extend(_array_to_card_json(data.get("Key Findings", data.get("key_findings", [])), "Key Findings", "key_findings"))
-    md.append("\n---\n")
-
-
-    # ── Recommendations ───────────────────────────────────────────────────────
-    md.append("<div style='page-break-before: always;'></div>")
-    md.append("")
-    md.extend(_array_to_card_json(data.get("Recommendations", data.get("recommendations", [])), "Recommendations", "recommendations"))
+    findings = data.get("Key Findings", data.get("key_findings", []))
+    recommendations = data.get("Recommendations", data.get("recommendations", []))
+    merged_items = _merge_findings_and_recommendations(findings, recommendations)
+    md.extend(_array_to_card_json(merged_items, "Key Findings & Recommendations", "merged_findings_recommendations"))
 
 
     # ── Key Performance Indicators ────────────────────────────────────────────
