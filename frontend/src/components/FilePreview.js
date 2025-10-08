@@ -764,18 +764,13 @@ const useStyles = makeStyles({
     paddingLeft: tokens.spacingHorizontalL,
     marginTop: tokens.spacingVerticalXXS,
     fontFamily: tokens.fontFamilyBase,
-    listStyleType: 'none',
+    listStyleType: 'disc',
     '& li': {
       marginBottom: tokens.spacingVerticalXS,
       lineHeight: '1.6',
       fontFamily: tokens.fontFamilyBase,
-      position: 'relative',
-      paddingLeft: tokens.spacingHorizontalM,
-      '::before': {
-        content: '"–"',
-        position: 'absolute',
-        left: 0,
-        color: tokens.colorNeutralForeground2,
+      '::marker': {
+        color: tokens.colorBrandForeground1,
       },
     },
   },
