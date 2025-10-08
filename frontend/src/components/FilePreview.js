@@ -858,7 +858,7 @@ const JsonCodeBlockRenderer = ({ node, inline, className, children, ...props }) 
                   return (
                     <ul className={classes.cardValueBullets}>
                       {items.map((item, idx) => {
-                        const content = item.replace(/<\/?li>/g, '');
+                        const content = item.replace(/<\/?li>/g, '').replace(/^\s*[-–—•]\s*/, '');
                         return <li key={idx}>{content}</li>;
                       })}
                     </ul>
