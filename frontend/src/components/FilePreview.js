@@ -764,13 +764,22 @@ const useStyles = makeStyles({
     paddingLeft: tokens.spacingHorizontalL,
     marginTop: tokens.spacingVerticalXXS,
     fontFamily: tokens.fontFamilyBase,
-    listStyleType: 'disc',
+    listStyleType: 'none',
     '& li': {
+      listStyleType: 'none',
       marginBottom: tokens.spacingVerticalXS,
       lineHeight: '1.6',
       fontFamily: tokens.fontFamilyBase,
+      position: 'relative',
+      paddingLeft: tokens.spacingHorizontalM,
       '::marker': {
-        color: tokens.colorBrandForeground1,
+        content: 'none',
+      },
+      '::before': {
+        content: '"–"',
+        position: 'absolute',
+        left: 0,
+        color: tokens.colorNeutralForeground2,
       },
     },
   },
@@ -781,6 +790,21 @@ const JsonCodeBlockRenderer = ({ node, inline, className, children, ...props }) 
   const typography = useTypographyStyles();
   const match = /language-(\w+)/.exec(className || '');
   const lang = match && match[1];
+
+  // Helper: remove any leading bullet/dash markers (including HTML entities)
+  const stripLeadingMarkers = (s) => {
+    if (typeof s !== 'string') return s;
+    let out = s
+      .replace(/&ndash;/gi, '–')
+      .replace(/&mdash;/gi, '—')
+      .replace(/&minus;/gi, '−')
+      .replace(/&bull;/gi, '•')
+      .replace(/&middot;/gi, '·')
+      .replace(/&#x2022;|&#8226;/gi, '•');
+    // Strip any chain of acceptable markers at the start
+    out = out.replace(/^\s*(?:[•\-\u2010\u2011\u2012\u2013\u2014\u2212\u00B7\u2219]\s*)+/, '');
+    return out.trim();
+  };
 
   if (lang === 'json' && !inline) {
     try {
@@ -858,7 +882,11 @@ const JsonCodeBlockRenderer = ({ node, inline, className, children, ...props }) 
                   return (
                     <ul className={classes.cardValueBullets}>
                       {items.map((item, idx) => {
-                        const content = item.replace(/<\/?li>/g, '').replace(/^\s*[-–—•]\s*/, '');
+                        const content = item
+                          .replace(/<\/?li>/g, '')
+                          // Remove any chain of bullet/dash markers optionally separated by spaces
+                          .replace(/^\s*(?:[•\-–—]\s*)+/, '')
+                          .trim();
                         return <li key={idx}>{content}</li>;
                       })}
                     </ul>
@@ -872,9 +900,11 @@ const JsonCodeBlockRenderer = ({ node, inline, className, children, ...props }) 
               if (lines.length > 1) {
                 return (
                   <ul className={classes.cardValueBullets}>
-                    {lines.map((line, idx) => (
-                      <li key={idx}>{line.trim()}</li>
-                    ))}
+                    {lines.map((line, idx) => {
+                      // Remove any chain of bullet/dash markers optionally separated by spaces
+                      const cleaned = line.replace(/^\s*(?:[•\-–—]\s*)+/, '').trim();
+                      return <li key={idx}>{cleaned}</li>;
+                    })}
                   </ul>
                 );
               }
