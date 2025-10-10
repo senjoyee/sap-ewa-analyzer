@@ -28,6 +28,7 @@ from dotenv import load_dotenv
 from agent.ewa_agent import EWAAgent
 from agent.kpi_image_agent import KPIImageAgent
 from utils.markdown_utils import json_to_markdown
+from utils.chapter_merge import merge_chapter_analyses
 from models.gemini_client import GeminiClient, is_gemini_model, create_gemini_client
 
 # Load environment variables
@@ -258,6 +259,112 @@ class EWAWorkflowOrchestrator:
             return state
     
 
+    async def run_chapter_by_chapter_analysis_step(self, state: WorkflowState) -> WorkflowState:
+        """Step 2 (Alternative): Chapter-by-chapter analysis workflow.
+        
+        This workflow:
+        1. Enumerates all chapters in the document
+        2. Analyzes each chapter individually
+        3. Merges chapter analyses into final summary
+        4. Extracts KPIs via image agent
+        """
+        try:
+            print(f"[STEP 2 - CHAPTER MODE] Starting chapter-by-chapter analysis for {state.blob_name}")
+            
+            # Get metadata
+            original_metadata = await self.get_blob_metadata(state.blob_name)
+            customer_name = original_metadata.get('customer_name', '')
+            system_id = original_metadata.get('system_id', 'UNKNOWN')
+            report_date_str = original_metadata.get('report_date_str', '')
+            
+            print(f"Analysis - Customer: {customer_name}, System: {system_id}, Report Date: {report_date_str}")
+            
+            # Download PDF
+            pdf_data = await self.download_pdf_from_blob(state.blob_name)
+            print(f"[CHAPTER MODE] Downloaded PDF: {len(pdf_data)} bytes")
+            
+            # Create agent
+            agent = self._create_agent(AZURE_OPENAI_SUMMARY_MODEL, SUMMARY_PROMPT)
+            
+            # Step 1: Enumerate chapters
+            print("[CHAPTER MODE] Step 1: Enumerating chapters...")
+            chapter_enum_result = await agent.enumerate_chapters(pdf_data)
+            chapters = chapter_enum_result.get("chapters", [])
+            total_pages = chapter_enum_result.get("total_pages", 0)
+            
+            print(f"[CHAPTER MODE] Found {len(chapters)} chapters across {total_pages} pages")
+            for chapter in chapters:
+                print(f"  - {chapter.get('chapter_id')}: {chapter.get('title')} (page {chapter.get('start_page', '?')})")
+            
+            # Step 2: Analyze each chapter
+            print(f"[CHAPTER MODE] Step 2: Analyzing {len(chapters)} chapters individually...")
+            chapter_analyses = []
+            
+            for idx, chapter in enumerate(chapters, 1):
+                chapter_id = chapter.get('chapter_id', f'CH-{idx:02d}')
+                chapter_title = chapter.get('title', 'Unknown')
+                
+                print(f"[CHAPTER MODE] Analyzing {idx}/{len(chapters)}: {chapter_id} - {chapter_title}")
+                
+                try:
+                    chapter_analysis = await agent.analyze_chapter(chapter, pdf_data)
+                    chapter_analyses.append(chapter_analysis)
+                    
+                    finding_count = len(chapter_analysis.get('key_findings', []))
+                    rec_count = len(chapter_analysis.get('recommendations', []))
+                    print(f"[CHAPTER MODE] {chapter_id} complete: {finding_count} findings, {rec_count} recommendations")
+                    
+                except Exception as e:
+                    print(f"[CHAPTER MODE] Warning: Failed to analyze {chapter_id}: {str(e)}")
+                    # Continue with other chapters even if one fails
+                    continue
+            
+            print(f"[CHAPTER MODE] Completed analysis of {len(chapter_analyses)} chapters")
+            
+            # Step 3: Merge chapter analyses
+            print("[CHAPTER MODE] Step 3: Merging chapter analyses...")
+            
+            system_metadata = {
+                "System ID": system_id,
+                "Report Date": report_date_str,
+                "Analysis Period": "See report for details"
+            }
+            
+            chapters_reviewed = [ch.get('title', '') for ch in chapters]
+            
+            merged_summary = merge_chapter_analyses(
+                chapter_analyses=chapter_analyses,
+                system_metadata=system_metadata,
+                chapters_reviewed=chapters_reviewed
+            )
+            
+            print(f"[CHAPTER MODE] Merge complete: {len(merged_summary.get('Key Findings', []))} total findings")
+            
+            # Step 4: Extract KPIs via image agent
+            print("[CHAPTER MODE] Step 4: Extracting KPIs via image agent...")
+            try:
+                kpi_agent = KPIImageAgent(client=self.client)
+                kpi_result = await asyncio.to_thread(kpi_agent.extract_kpis_from_pdf_bytes, pdf_data)
+                merged_summary['kpis'] = kpi_result.get('kpis', [])
+                print(f"[CHAPTER MODE] Extracted {len(merged_summary['kpis'])} KPI rows")
+            except Exception as kpi_e:
+                print(f"[CHAPTER MODE] KPI extraction failed: {kpi_e}")
+                merged_summary['kpis'] = []
+            
+            # Store results
+            state.summary_json = merged_summary
+            state.summary_result = json_to_markdown(merged_summary)
+            
+            print(f"[CHAPTER MODE] Analysis complete. Generated {len(state.summary_result)} chars of markdown")
+            
+            return state
+            
+        except Exception as e:
+            state.error = str(e)
+            print(f"[CHAPTER MODE] Error in chapter-by-chapter analysis: {str(e)}")
+            traceback.print_exc()
+            return state
+
     async def run_analysis_step(self, state: WorkflowState) -> WorkflowState:
         """Step 2: Generate comprehensive EWA analysis; then extract KPIs via image agent"""
         try:
@@ -364,15 +471,22 @@ class EWAWorkflowOrchestrator:
             return state
     
 
-    async def execute_workflow(self, blob_name: str, skip_markdown: bool = False) -> Dict[str, Any]:
+    async def execute_workflow(
+        self, 
+        blob_name: str, 
+        skip_markdown: bool = False,
+        chapter_by_chapter: bool = True
+    ) -> Dict[str, Any]:
         """Execute the complete workflow.
 
         Args:
             blob_name: Name of the original PDF blob to analyze.
             skip_markdown: If True, do not download or rely on converted markdown; run analysis directly on the PDF.
+            chapter_by_chapter: If True, use the new chapter-by-chapter analysis workflow.
         """
         try:
             print(f"Starting workflow for {blob_name}")
+            print(f"[WORKFLOW] Mode: {'Chapter-by-Chapter' if chapter_by_chapter else 'Traditional'}")
             
             # Initialize state
             state = WorkflowState(blob_name=blob_name)
@@ -385,8 +499,13 @@ class EWAWorkflowOrchestrator:
                 if state.error:
                     raise Exception(state.error)
             
-            # Run the EWA analysis using single enhanced agent
-            summary_state = await self.run_analysis_step(state)
+            # Run the EWA analysis using selected workflow mode
+            if chapter_by_chapter:
+                print("[WORKFLOW] Using chapter-by-chapter analysis workflow")
+                summary_state = await self.run_chapter_by_chapter_analysis_step(state)
+            else:
+                print("[WORKFLOW] Using traditional single-pass analysis workflow")
+                summary_state = await self.run_analysis_step(state)
             
             # Check for errors
             if summary_state.error:
@@ -427,20 +546,38 @@ class EWAWorkflowOrchestrator:
 # Global orchestrator instance
 ewa_orchestrator = EWAWorkflowOrchestrator()
 
-async def execute_ewa_analysis(blob_name: str, pdf_first: bool = False) -> Dict[str, Any]:
+async def execute_ewa_analysis(
+    blob_name: str, 
+    pdf_first: bool = False,
+    chapter_by_chapter: bool = True
+) -> Dict[str, Any]:
     """
     Convenience function to execute EWA analysis workflow
     
     Args:
         blob_name: Name of the file to analyze
         pdf_first: If True, skip markdown and analyze directly from PDF
+        chapter_by_chapter: If True, use chapter-by-chapter analysis (default)
     
     Returns:
         dict: Analysis result
     """
-    return await ewa_orchestrator.execute_workflow(blob_name, skip_markdown=pdf_first)
+    return await ewa_orchestrator.execute_workflow(
+        blob_name, 
+        skip_markdown=pdf_first,
+        chapter_by_chapter=chapter_by_chapter
+    )
 
 
-async def execute_ewa_analysis_pdf_first(blob_name: str) -> Dict[str, Any]:
-    """Explicit helper to run PDF-first analysis (skips markdown parsing)."""
-    return await ewa_orchestrator.execute_workflow(blob_name, skip_markdown=True)
+async def execute_ewa_analysis_pdf_first(blob_name: str, chapter_by_chapter: bool = True) -> Dict[str, Any]:
+    """Explicit helper to run PDF-first analysis (skips markdown parsing).
+    
+    Args:
+        blob_name: Name of the file to analyze
+        chapter_by_chapter: If True, use chapter-by-chapter analysis (default)
+    """
+    return await ewa_orchestrator.execute_workflow(
+        blob_name, 
+        skip_markdown=True,
+        chapter_by_chapter=chapter_by_chapter
+    )

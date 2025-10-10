@@ -49,7 +49,12 @@ async def process_and_analyze_document_endpoint(request: ProcessAnalyzeRequest):
         raise HTTPException(status_code=500, detail="Azure Blob Service client not initialized.")
     try:
         # Always analyze directly from PDF (skip markdown conversion)
-        result = await ewa_orchestrator.execute_workflow(request.blob_name, skip_markdown=True)
+        # Use chapter-by-chapter mode by default (can be toggled via request)
+        result = await ewa_orchestrator.execute_workflow(
+            request.blob_name, 
+            skip_markdown=True,
+            chapter_by_chapter=request.chapter_by_chapter
+        )
         if not result.get("success", False):
             raise HTTPException(status_code=result.get("status_code", 500), detail=result.get("message", "Workflow failed"))
         return result

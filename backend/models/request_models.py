@@ -17,3 +17,4 @@ class ProcessAnalyzeRequest(BaseModel):
     """Request body for combined process+analyze."""
 
     blob_name: str
+    chapter_by_chapter: bool = True  # Default to True for new chapter-based workflow

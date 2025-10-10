@@ -1,0 +1,51 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://example.com/schemas/chapter_enumeration/v1.0.json",
+  "title": "ChapterEnumeration",
+  "description": "List of all chapters/sections found in an SAP EWA document.",
+  "type": "object",
+  "properties": {
+    "chapters": {
+      "type": "array",
+      "description": "Ordered list of all chapters/sections in the document with their titles and page ranges.",
+      "items": {
+        "type": "object",
+        "required": ["chapter_id", "title", "start_page"],
+        "properties": {
+          "chapter_id": {
+            "type": "string",
+            "description": "Unique identifier for the chapter (e.g., CH-01, CH-02)."
+          },
+          "title": {
+            "type": "string",
+            "description": "Full title of the chapter/section as it appears in the document."
+          },
+          "start_page": {
+            "type": "integer",
+            "description": "Page number where this chapter begins."
+          },
+          "end_page": {
+            "type": "integer",
+            "description": "Page number where this chapter ends (if determinable)."
+          },
+          "subsections": {
+            "type": "array",
+            "description": "List of subsections within this chapter.",
+            "items": {
+              "type": "string"
+            }
+          }
+        }
+      }
+    },
+    "total_pages": {
+      "type": "integer",
+      "description": "Total number of pages in the document."
+    },
+    "document_type": {
+      "type": "string",
+      "description": "Type of document (e.g., 'SAP EarlyWatch Alert', 'EWA Report')."
+    }
+  },
+  "required": ["chapters", "total_pages"]
+}

@@ -1,0 +1,188 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://example.com/schemas/chapter_analysis/v1.0.json",
+  "title": "ChapterAnalysis",
+  "description": "Analysis findings from a single chapter of an SAP EWA report.",
+  "type": "object",
+  "properties": {
+    "chapter_id": {
+      "type": "string",
+      "description": "ID of the chapter being analyzed (e.g., CH-01)."
+    },
+    "chapter_title": {
+      "type": "string",
+      "description": "Title of the chapter being analyzed."
+    },
+    "key_findings": {
+      "type": "array",
+      "description": "Key findings identified in this chapter.",
+      "items": {
+        "type": "object",
+        "required": ["finding_id", "area", "finding", "impact", "business_impact", "severity", "source"],
+        "properties": {
+          "finding_id": {
+            "type": "string",
+            "description": "Temporary chapter-scoped finding ID (will be renumbered in merge)."
+          },
+          "area": {
+            "type": "string",
+            "enum": [
+              "Hardware",
+              "Operating System",
+              "Database",
+              "SAP Kernel / Basis",
+              "ABAP Stack",
+              "Java Stack",
+              "SAP HANA",
+              "Performance & Workload",
+              "Security & Compliance",
+              "Configuration & House-keeping",
+              "Interfaces / Connectivity",
+              "Backup & Recovery",
+              "Upgrade / Patch Management",
+              "Capacity & Sizing"
+            ]
+          },
+          "finding": {
+            "type": "string",
+            "description": "Detailed description of the finding."
+          },
+          "impact": {
+            "type": "string",
+            "description": "Technical impact of the finding."
+          },
+          "business_impact": {
+            "type": "string",
+            "description": "Business impact of the finding."
+          },
+          "severity": {
+            "type": "string",
+            "enum": ["medium", "high", "critical"]
+          },
+          "source": {
+            "type": "string",
+            "description": "Specific section or evidence within the chapter."
+          }
+        }
+      }
+    },
+    "recommendations": {
+      "type": "array",
+      "description": "Recommendations for findings in this chapter.",
+      "items": {
+        "type": "object",
+        "required": ["recommendation_id", "linked_finding_id", "responsible_area", "action", "preventative_action", "estimated_effort"],
+        "properties": {
+          "recommendation_id": {
+            "type": "string",
+            "description": "Temporary chapter-scoped recommendation ID."
+          },
+          "linked_finding_id": {
+            "type": "string",
+            "description": "ID of the finding this recommendation addresses."
+          },
+          "responsible_area": {
+            "type": "string",
+            "enum": [
+              "SAP Basis Team",
+              "Database Administration",
+              "Operating System Administration",
+              "Network & Connectivity",
+              "Security / Compliance Team",
+              "Application Development",
+              "Functional / Business Process Owner",
+              "Infrastructure / Hardware Team",
+              "Third-Party Vendor",
+              "Project / Change Management"
+            ]
+          },
+          "action": {
+            "type": "string",
+            "description": "Specific action to take."
+          },
+          "preventative_action": {
+            "type": "string",
+            "description": "Preventative measure to avoid recurrence."
+          },
+          "estimated_effort": {
+            "type": "object",
+            "required": ["analysis", "implementation"],
+            "properties": {
+              "analysis": {
+                "type": "string",
+                "enum": ["low", "medium", "high"]
+              },
+              "implementation": {
+                "type": "string",
+                "enum": ["low", "medium", "high"]
+              }
+            }
+          }
+        }
+      }
+    },
+    "positive_findings": {
+      "type": "array",
+      "description": "Positive observations from this chapter.",
+      "items": {
+        "type": "object",
+        "required": ["area", "description"],
+        "properties": {
+          "area": {
+            "type": "string"
+          },
+          "description": {
+            "type": "string"
+          }
+        }
+      }
+    },
+    "metrics": {
+      "type": "array",
+      "description": "Key metrics or KPIs found in this chapter.",
+      "items": {
+        "type": "object",
+        "properties": {
+          "name": {
+            "type": "string"
+          },
+          "value": {
+            "type": "string"
+          },
+          "unit": {
+            "type": "string"
+          },
+          "context": {
+            "type": "string"
+          }
+        }
+      }
+    },
+    "profile_parameters": {
+      "type": "array",
+      "description": "Profile parameters mentioned in this chapter.",
+      "items": {
+        "type": "object",
+        "required": ["name", "area"],
+        "properties": {
+          "name": {
+            "type": "string"
+          },
+          "area": {
+            "type": "string"
+          },
+          "current_value": {
+            "type": "string"
+          },
+          "recommended_value": {
+            "type": "string"
+          },
+          "description": {
+            "type": "string"
+          }
+        }
+      }
+    }
+  },
+  "required": ["chapter_id", "chapter_title", "key_findings", "recommendations"]
+}

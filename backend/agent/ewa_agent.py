@@ -105,6 +105,45 @@ class EWAAgent:
         
         # Local JSON repair utility (non-LLM)
         self.json_repair = JSONRepair()
+        
+        # Load chapter-specific schemas and prompts
+        self._load_chapter_schemas()
+
+    def _load_chapter_schemas(self):
+        """Load schemas for chapter enumeration and chapter-level analysis"""
+        base_dir = os.path.dirname(os.path.abspath(__file__))
+        
+        # Load chapter enumeration schema
+        chapter_enum_schema_path = os.path.join(base_dir, "..", "schemas", "chapter_enumeration_schema.json")
+        if os.path.exists(chapter_enum_schema_path):
+            with open(chapter_enum_schema_path, "r", encoding="utf-8") as f:
+                self.chapter_enum_schema = json.load(f)
+        else:
+            self.chapter_enum_schema = None
+            
+        # Load chapter analysis schema
+        chapter_analysis_schema_path = os.path.join(base_dir, "..", "schemas", "chapter_analysis_schema.json")
+        if os.path.exists(chapter_analysis_schema_path):
+            with open(chapter_analysis_schema_path, "r", encoding="utf-8") as f:
+                self.chapter_analysis_schema = json.load(f)
+        else:
+            self.chapter_analysis_schema = None
+            
+        # Load chapter enumeration prompt
+        chapter_enum_prompt_path = os.path.join(base_dir, "..", "prompts", "chapter_enumeration_prompt.md")
+        if os.path.exists(chapter_enum_prompt_path):
+            with open(chapter_enum_prompt_path, "r", encoding="utf-8") as f:
+                self.chapter_enum_prompt = f.read()
+        else:
+            self.chapter_enum_prompt = "Enumerate all chapters in the document."
+            
+        # Load chapter analysis prompt template
+        chapter_analysis_prompt_path = os.path.join(base_dir, "..", "prompts", "chapter_analysis_prompt.md")
+        if os.path.exists(chapter_analysis_prompt_path):
+            with open(chapter_analysis_prompt_path, "r", encoding="utf-8") as f:
+                self.chapter_analysis_prompt_template = f.read()
+        else:
+            self.chapter_analysis_prompt_template = "Analyze this chapter."
 
     # ----------------------------- Public API ----------------------------- #
     async def run(self, markdown: str, pdf_data: bytes = None) -> Dict[str, Any]:
@@ -128,9 +167,107 @@ class EWAAgent:
             print("[EWAAgent.run] Repair completed; validity check raised an exception")
         return summary_json
     
+    async def enumerate_chapters(self, pdf_data: bytes) -> Dict[str, Any]:
+        """Step 1: Enumerate all chapters/sections in the document.
+        Returns a dictionary with chapter information.
+        """
+        if not self.chapter_enum_schema:
+            raise Exception("Chapter enumeration schema not loaded")
+            
+        print("[EWAAgent.enumerate_chapters] Starting chapter enumeration")
+        
+        # Call LLM with chapter enumeration prompt
+        result = await self._call_llm_with_custom_schema(
+            prompt=self.chapter_enum_prompt,
+            schema=self.chapter_enum_schema,
+            function_name="enumerate_chapters",
+            pdf_data=pdf_data
+        )
+        
+        print(f"[EWAAgent.enumerate_chapters] Found {len(result.get('chapters', []))} chapters")
+        return result
+    
+    async def analyze_chapter(self, chapter_info: Dict[str, Any], pdf_data: bytes) -> Dict[str, Any]:
+        """Step 2: Analyze a single chapter in detail.
+        
+        Args:
+            chapter_info: Dictionary with chapter_id, title, start_page, end_page
+            pdf_data: PDF bytes of the full document
+            
+        Returns:
+            Chapter analysis with findings and recommendations
+        """
+        if not self.chapter_analysis_schema:
+            raise Exception("Chapter analysis schema not loaded")
+            
+        chapter_id = chapter_info.get('chapter_id', 'UNKNOWN')
+        chapter_title = chapter_info.get('title', 'UNKNOWN')
+        
+        print(f"[EWAAgent.analyze_chapter] Analyzing {chapter_id}: {chapter_title}")
+        
+        # Format the chapter-specific prompt
+        chapter_prompt = self.chapter_analysis_prompt_template.format(
+            chapter_id=chapter_id,
+            chapter_title=chapter_title
+        )
+        
+        # Add page range context if available
+        if 'start_page' in chapter_info:
+            page_context = f"\n\nFocus on pages {chapter_info['start_page']}"
+            if 'end_page' in chapter_info:
+                page_context += f" to {chapter_info['end_page']}"
+            chapter_prompt += page_context
+        
+        # Call LLM with chapter analysis prompt
+        result = await self._call_llm_with_custom_schema(
+            prompt=chapter_prompt,
+            schema=self.chapter_analysis_schema,
+            function_name="analyze_chapter",
+            pdf_data=pdf_data,
+            page_range=(chapter_info.get('start_page'), chapter_info.get('end_page'))
+        )
+        
+        # Ensure chapter metadata is included
+        result['chapter_id'] = chapter_id
+        result['chapter_title'] = chapter_title
+        
+        finding_count = len(result.get('key_findings', []))
+        rec_count = len(result.get('recommendations', []))
+        print(f"[EWAAgent.analyze_chapter] {chapter_id}: {finding_count} findings, {rec_count} recommendations")
+        
+        return result
+    
 
     # ----------------------------- Internal helpers ----------------------------- #
 
+    async def _call_llm_with_custom_schema(
+        self, 
+        prompt: str, 
+        schema: Dict[str, Any], 
+        function_name: str,
+        pdf_data: bytes = None,
+        page_range: tuple = None
+    ) -> Dict[str, Any]:
+        """Call LLM with a custom schema (for chapter enumeration/analysis).
+        
+        Args:
+            prompt: The instruction prompt
+            schema: JSON schema for the expected output
+            function_name: Name of the function for structured outputs
+            pdf_data: PDF bytes
+            page_range: Optional tuple of (start_page, end_page) for context
+            
+        Returns:
+            Parsed JSON result
+        """
+        if self.is_gemini:
+            # Use Gemini path with custom schema
+            return await self._call_gemini_custom(prompt, schema, pdf_data)
+        else:
+            # Use OpenAI Responses API with custom schema
+            return await self._call_openai_responses_custom(
+                prompt, schema, function_name, pdf_data, page_range
+            )
 
     async def _call_llm(self, markdown: str, pdf_data: bytes = None) -> Dict[str, Any]:
         """Call either OpenAI or Gemini based on model type"""
@@ -339,6 +476,135 @@ class EWAAgent:
             
         except Exception as e:
             print(f"[EWAAgent._call_gemini] Exception occurred: {str(e)}")
+            raise
+
+    async def _call_openai_responses_custom(
+        self, 
+        prompt: str, 
+        schema: Dict[str, Any], 
+        function_name: str,
+        pdf_data: bytes = None,
+        page_range: tuple = None
+    ) -> Dict[str, Any]:
+        """Call Azure OpenAI Responses API with a custom schema.
+        Similar to _call_openai_responses but uses provided schema instead of self.schema.
+        """
+        user_content = []
+        file_id = None
+        temp_path = None
+        
+        try:
+            if pdf_data:
+                # Upload PDF bytes as a temp file to Files API
+                with tempfile.NamedTemporaryFile(delete=False, suffix=".pdf") as tmp:
+                    tmp.write(pdf_data)
+                    temp_path = tmp.name
+                file_obj = open(temp_path, "rb")
+                try:
+                    uploaded = await asyncio.to_thread(
+                        lambda: self.client.files.create(file=file_obj, purpose="assistants")
+                    )
+                    file_id = uploaded.id
+                finally:
+                    file_obj.close()
+
+            instruction_text = (
+                f"{prompt}\n\n"
+                "Return ONLY a valid JSON object that strictly conforms to the provided JSON schema. "
+                "Do not include any text outside of the JSON."
+            )
+
+            if file_id:
+                user_content.append({"type": "input_file", "file_id": file_id})
+                user_content.append({"type": "input_text", "text": instruction_text})
+            else:
+                user_content.append({"type": "input_text", "text": instruction_text})
+
+            # Prepare strict schema
+            strict_schema = self._make_strict_schema_for_structured_outputs(schema)
+
+            text_format = {
+                "format": {
+                    "type": "json_schema",
+                    "name": function_name,
+                    "schema": strict_schema,
+                    "strict": True,
+                },
+                "verbosity": "low",
+            }
+
+            # Call Responses API
+            response = await asyncio.to_thread(
+                lambda: self.client.responses.create(
+                    model=self.model,
+                    input=[{"role": "user", "content": user_content}],
+                    text=text_format,
+                    max_output_tokens=16384,
+                    reasoning={"effort": "medium"},
+                )
+            )
+
+            # Extract structured output
+            try:
+                parsed = getattr(response, "output_parsed", None)
+                if parsed is not None:
+                    if isinstance(parsed, dict):
+                        return parsed
+                    if isinstance(parsed, list) and len(parsed) == 1 and isinstance(parsed[0], dict):
+                        return parsed[0]
+            except Exception:
+                pass
+
+            # Fallback to output_text
+            text = getattr(response, "output_text", None)
+            if text:
+                try:
+                    return json.loads(text)
+                except Exception:
+                    try:
+                        rr = self.json_repair.repair(text)
+                        if rr.success and isinstance(rr.data, dict):
+                            return rr.data
+                    except Exception:
+                        pass
+                    return {"_parse_error": "Failed to parse", "raw_arguments": text[:5000]}
+
+            return {"_parse_error": "No output returned"}
+        finally:
+            if temp_path and os.path.exists(temp_path):
+                try:
+                    os.remove(temp_path)
+                except Exception:
+                    pass
+
+    async def _call_gemini_custom(
+        self, 
+        prompt: str, 
+        schema: Dict[str, Any],
+        pdf_data: bytes = None
+    ) -> Dict[str, Any]:
+        """Call Gemini API with a custom schema."""
+        try:
+            schema_instruction = f"\n\nIMPORTANT: Your response must conform to this exact JSON schema:\n{json.dumps(schema, indent=2)}"
+            enhanced_prompt = prompt + schema_instruction
+            
+            if pdf_data:
+                input_prompt = "Please analyze the attached PDF document."
+                print(f"[Gemini Custom] Using PDF input ({len(pdf_data)} bytes)")
+            else:
+                input_prompt = "Please analyze the provided content."
+                print(f"[Gemini Custom] Using text input")
+            
+            loop = asyncio.get_running_loop()
+            response = await loop.run_in_executor(
+                None, 
+                lambda: self.client.generate_json_content(input_prompt, enhanced_prompt, pdf_data)
+            )
+            
+            return response
+            
+        except Exception as e:
+            print(f"[EWAAgent._call_gemini_custom] Exception occurred: {str(e)}")
             raise
 
     def _repair_local(self, markdown: str, previous_json: Dict[str, Any]) -> Dict[str, Any]:
