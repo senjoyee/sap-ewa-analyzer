@@ -6,15 +6,24 @@ The EWA Analyzer now supports a **chapter-by-chapter analysis workflow** that en
 
 ## Workflow Steps
 
+### Step 0: PDF to Markdown Conversion
+**Critical for large documents**: To avoid Azure OpenAI's 50-image limit, the PDF is first converted to markdown:
+- Uses existing markdown conversion pipeline
+- Markdown is text-only, bypassing image quota
+- Preserves document structure (headings, paragraphs, tables)
+- Essential for EWA reports which typically exceed 50 pages
+
 ### Step 1: Chapter Enumeration
-The agent first examines the entire document and identifies all chapters/sections present:
+The agent examines the **markdown** document and identifies all chapters/sections present:
 - Extracts chapter titles
 - Records page ranges
 - Identifies subsections
 - Creates a complete table of contents
+- **Uses markdown input** to avoid 50-image limit
 
 **Schema**: `backend/schemas/chapter_enumeration_schema.json`  
-**Prompt**: `backend/prompts/chapter_enumeration_prompt.md`
+**Prompt**: `backend/prompts/chapter_enumeration_prompt.md`  
+**Input**: Markdown text (not PDF)
 
 ### Step 2: Chapter-by-Chapter Analysis
 For each identified chapter, the agent performs a detailed analysis:
@@ -46,16 +55,18 @@ After the chapter-based analysis is complete, KPIs are extracted via the image-b
 
 ```
 EWAAgent
-├── enumerate_chapters(pdf_data) → chapter_enumeration_result
+├── enumerate_chapters(markdown) → chapter_enumeration_result
+│   └── Uses markdown input to avoid 50-image limit
 ├── analyze_chapter(chapter_info, pdf_data) → chapter_analysis
 │   ├── Uses chapter-specific schema
-│   └── Scoped to chapter pages
+│   └── Scoped to chapter pages (PDF input OK for small chunks)
 └── run(markdown, pdf_data) → full_summary (legacy single-pass)
 
 EWAWorkflowOrchestrator
 ├── run_chapter_by_chapter_analysis_step(state)
-│   ├── Calls enumerate_chapters()
-│   ├── Loops through chapters calling analyze_chapter()
+│   ├── Downloads/converts PDF to markdown
+│   ├── Calls enumerate_chapters(markdown) ← avoids image limit
+│   ├── Loops through chapters calling analyze_chapter(pdf_data)
 │   ├── Calls merge_chapter_analyses()
 │   └── Extracts KPIs
 └── run_analysis_step(state) (legacy single-pass)
@@ -148,6 +159,7 @@ The `"Chapters Reviewed"` array provides an audit trail of all chapters that wer
 - **Token Usage**: Chapter-by-chapter mode makes multiple LLM calls (1 for enumeration + N for chapters)
 - **Time**: Total processing time is longer than single-pass mode
 - **Accuracy**: Improved coverage often justifies the additional cost
+- **Image Limit**: Markdown-based enumeration avoids Azure's 50-image limit for large PDFs
 - **Parallelization**: Future enhancement could analyze chapters in parallel
 
 ## Migration Notes
@@ -182,8 +194,14 @@ Example log output:
 
 ## Troubleshooting
 
+**Issue**: "Too many images in request. Max is 50."  
+**Solution**: ✅ Fixed! Chapter enumeration now uses markdown instead of PDF to bypass the image limit
+
 **Issue**: Chapter enumeration returns no chapters  
-**Solution**: Check if the PDF has a clear table of contents or section headers
+**Solution**: Check if the markdown conversion preserved section headers; verify markdown quality
+
+**Issue**: "Markdown conversion required but not available"  
+**Solution**: Ensure the PDF has been converted to markdown first, or check blob storage for the .md file
 
 **Issue**: Some chapters fail to analyze  
 **Solution**: The workflow continues even if individual chapters fail; check logs for specific errors

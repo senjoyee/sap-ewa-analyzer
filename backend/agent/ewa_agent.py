@@ -167,21 +167,28 @@ class EWAAgent:
             print("[EWAAgent.run] Repair completed; validity check raised an exception")
         return summary_json
     
-    async def enumerate_chapters(self, pdf_data: bytes) -> Dict[str, Any]:
+    async def enumerate_chapters(self, markdown: str) -> Dict[str, Any]:
         """Step 1: Enumerate all chapters/sections in the document.
-        Returns a dictionary with chapter information.
+        
+        Args:
+            markdown: Converted markdown text of the document (avoids 50-image limit)
+            
+        Returns:
+            Dictionary with chapter information
         """
         if not self.chapter_enum_schema:
             raise Exception("Chapter enumeration schema not loaded")
             
-        print("[EWAAgent.enumerate_chapters] Starting chapter enumeration")
+        print("[EWAAgent.enumerate_chapters] Starting chapter enumeration from markdown")
+        print(f"[EWAAgent.enumerate_chapters] Markdown length: {len(markdown)} characters")
         
-        # Call LLM with chapter enumeration prompt
+        # Call LLM with chapter enumeration prompt using markdown (not PDF)
+        # This avoids the 50-image limit for large PDFs
         result = await self._call_llm_with_custom_schema(
             prompt=self.chapter_enum_prompt,
             schema=self.chapter_enum_schema,
             function_name="enumerate_chapters",
-            pdf_data=pdf_data
+            markdown_text=markdown
         )
         
         print(f"[EWAAgent.enumerate_chapters] Found {len(result.get('chapters', []))} chapters")
@@ -246,6 +253,7 @@ class EWAAgent:
         schema: Dict[str, Any], 
         function_name: str,
         pdf_data: bytes = None,
+        markdown_text: str = None,
         page_range: tuple = None
     ) -> Dict[str, Any]:
         """Call LLM with a custom schema (for chapter enumeration/analysis).
@@ -254,7 +262,8 @@ class EWAAgent:
             prompt: The instruction prompt
             schema: JSON schema for the expected output
             function_name: Name of the function for structured outputs
-            pdf_data: PDF bytes
+            pdf_data: PDF bytes (optional)
+            markdown_text: Markdown text (optional, preferred for enumeration)
             page_range: Optional tuple of (start_page, end_page) for context
             
         Returns:
@@ -262,11 +271,11 @@ class EWAAgent:
         """
         if self.is_gemini:
             # Use Gemini path with custom schema
-            return await self._call_gemini_custom(prompt, schema, pdf_data)
+            return await self._call_gemini_custom(prompt, schema, pdf_data, markdown_text)
         else:
             # Use OpenAI Responses API with custom schema
             return await self._call_openai_responses_custom(
-                prompt, schema, function_name, pdf_data, page_range
+                prompt, schema, function_name, pdf_data, markdown_text, page_range
             )
 
     async def _call_llm(self, markdown: str, pdf_data: bytes = None) -> Dict[str, Any]:
@@ -484,18 +493,38 @@ class EWAAgent:
         schema: Dict[str, Any], 
         function_name: str,
         pdf_data: bytes = None,
+        markdown_text: str = None,
         page_range: tuple = None
     ) -> Dict[str, Any]:
         """Call Azure OpenAI Responses API with a custom schema.
         Similar to _call_openai_responses but uses provided schema instead of self.schema.
+        
+        Args:
+            prompt: Instruction prompt
+            schema: JSON schema for structured output
+            function_name: Function name for schema
+            pdf_data: PDF bytes (optional, for chapter analysis)
+            markdown_text: Markdown text (optional, preferred for enumeration to avoid 50-image limit)
+            page_range: Page range tuple (optional)
         """
         user_content = []
         file_id = None
         temp_path = None
         
         try:
-            if pdf_data:
-                # Upload PDF bytes as a temp file to Files API
+            # Prefer markdown_text over pdf_data to avoid 50-image limit
+            if markdown_text:
+                # Use markdown text directly (no image limit)
+                instruction_text = (
+                    f"{prompt}\n\n"
+                    f"Document content (markdown):\n\n{markdown_text}\n\n"
+                    "Return ONLY a valid JSON object that strictly conforms to the provided JSON schema. "
+                    "Do not include any text outside of the JSON."
+                )
+                user_content.append({"type": "input_text", "text": instruction_text})
+                
+            elif pdf_data:
+                # Upload PDF bytes as a temp file to Files API (for chapter analysis)
                 with tempfile.NamedTemporaryFile(delete=False, suffix=".pdf") as tmp:
                     tmp.write(pdf_data)
                     temp_path = tmp.name
@@ -508,16 +537,21 @@ class EWAAgent:
                 finally:
                     file_obj.close()
 
-            instruction_text = (
-                f"{prompt}\n\n"
-                "Return ONLY a valid JSON object that strictly conforms to the provided JSON schema. "
-                "Do not include any text outside of the JSON."
-            )
-
-            if file_id:
+                instruction_text = (
+                    f"{prompt}\n\n"
+                    "Return ONLY a valid JSON object that strictly conforms to the provided JSON schema. "
+                    "Do not include any text outside of the JSON."
+                )
                 user_content.append({"type": "input_file", "file_id": file_id})
                 user_content.append({"type": "input_text", "text": instruction_text})
+                
             else:
+                # Fallback: just the prompt
+                instruction_text = (
+                    f"{prompt}\n\n"
+                    "Return ONLY a valid JSON object that strictly conforms to the provided JSON schema. "
+                    "Do not include any text outside of the JSON."
+                )
                 user_content.append({"type": "input_text", "text": instruction_text})
 
             # Prepare strict schema
@@ -581,14 +615,20 @@ class EWAAgent:
         self, 
         prompt: str, 
         schema: Dict[str, Any],
-        pdf_data: bytes = None
+        pdf_data: bytes = None,
+        markdown_text: str = None
     ) -> Dict[str, Any]:
         """Call Gemini API with a custom schema."""
         try:
             schema_instruction = f"\n\nIMPORTANT: Your response must conform to this exact JSON schema:\n{json.dumps(schema, indent=2)}"
             enhanced_prompt = prompt + schema_instruction
             
-            if pdf_data:
+            # Prefer markdown over PDF to avoid image limits
+            if markdown_text:
+                input_prompt = f"Please analyze the following document content:\n\n{markdown_text}"
+                print(f"[Gemini Custom] Using markdown input ({len(markdown_text)} characters)")
+                pdf_data = None  # Don't send PDF if we have markdown
+            elif pdf_data:
                 input_prompt = "Please analyze the attached PDF document."
                 print(f"[Gemini Custom] Using PDF input ({len(pdf_data)} bytes)")
             else:

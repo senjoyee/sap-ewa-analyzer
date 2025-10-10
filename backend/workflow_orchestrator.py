@@ -263,8 +263,9 @@ class EWAWorkflowOrchestrator:
         """Step 2 (Alternative): Chapter-by-chapter analysis workflow.
         
         This workflow:
-        1. Enumerates all chapters in the document
-        2. Analyzes each chapter individually
+        0. Converts PDF to markdown (to avoid 50-image limit)
+        1. Enumerates all chapters from markdown
+        2. Analyzes each chapter individually using PDF
         3. Merges chapter analyses into final summary
         4. Extracts KPIs via image agent
         """
@@ -283,12 +284,29 @@ class EWAWorkflowOrchestrator:
             pdf_data = await self.download_pdf_from_blob(state.blob_name)
             print(f"[CHAPTER MODE] Downloaded PDF: {len(pdf_data)} bytes")
             
+            # Step 0: Convert PDF to markdown for chapter enumeration
+            # This avoids the 50-image limit when enumerating chapters
+            print("[CHAPTER MODE] Step 0: Converting PDF to markdown for chapter enumeration...")
+            markdown_content = state.markdown_content
+            
+            if not markdown_content:
+                # Need to convert PDF to markdown
+                print("[CHAPTER MODE] No existing markdown, converting PDF...")
+                markdown_content = await self.download_markdown_from_blob(state.blob_name)
+                
+                if not markdown_content:
+                    # Markdown doesn't exist, need to trigger conversion
+                    print("[CHAPTER MODE] Markdown not found, this should have been converted already")
+                    raise Exception("Markdown conversion required but not available. Please ensure PDF is converted to markdown first.")
+            
+            print(f"[CHAPTER MODE] Using markdown ({len(markdown_content)} chars) for chapter enumeration")
+            
             # Create agent
             agent = self._create_agent(AZURE_OPENAI_SUMMARY_MODEL, SUMMARY_PROMPT)
             
-            # Step 1: Enumerate chapters
-            print("[CHAPTER MODE] Step 1: Enumerating chapters...")
-            chapter_enum_result = await agent.enumerate_chapters(pdf_data)
+            # Step 1: Enumerate chapters from markdown (avoids 50-image limit)
+            print("[CHAPTER MODE] Step 1: Enumerating chapters from markdown...")
+            chapter_enum_result = await agent.enumerate_chapters(markdown_content)
             chapters = chapter_enum_result.get("chapters", [])
             total_pages = chapter_enum_result.get("total_pages", 0)
             
@@ -492,12 +510,21 @@ class EWAWorkflowOrchestrator:
             state = WorkflowState(blob_name=blob_name)
             
             # Execute workflow steps sequentially
-            if skip_markdown:
-                print("[WORKFLOW] skip_markdown=True: Skipping markdown download; proceeding with PDF-first analysis")
-            else:
+            # For chapter-by-chapter mode, we ALWAYS need markdown for enumeration
+            if chapter_by_chapter:
+                print("[WORKFLOW] Chapter-by-chapter mode: ensuring markdown is available")
+                state = await self.download_content_step(state)
+                if state.error:
+                    print(f"[WORKFLOW] Warning: Could not download markdown: {state.error}")
+                    print("[WORKFLOW] Will attempt to use existing markdown or fail gracefully")
+                    state.error = None  # Clear error, let chapter workflow handle it
+            elif not skip_markdown:
+                print("[WORKFLOW] Traditional mode: downloading markdown")
                 state = await self.download_content_step(state)
                 if state.error:
                     raise Exception(state.error)
+            else:
+                print("[WORKFLOW] skip_markdown=True: Skipping markdown download; proceeding with PDF-first analysis")
             
             # Run the EWA analysis using selected workflow mode
             if chapter_by_chapter:

@@ -35,9 +35,9 @@ async def test_chapter_enumeration(blob_name: str):
     print("="*80)
     
     try:
-        # Download PDF
-        pdf_data = await ewa_orchestrator.download_pdf_from_blob(blob_name)
-        print(f"✓ Downloaded PDF: {len(pdf_data)} bytes")
+        # Download markdown (required for enumeration to avoid 50-image limit)
+        markdown_content = await ewa_orchestrator.download_markdown_from_blob(blob_name)
+        print(f"✓ Downloaded markdown: {len(markdown_content)} characters")
         
         # Create agent
         from agent.ewa_agent import EWAAgent
@@ -46,9 +46,9 @@ async def test_chapter_enumeration(blob_name: str):
             None
         )
         
-        # Enumerate chapters
-        print("\nEnumerating chapters...")
-        result = await agent.enumerate_chapters(pdf_data)
+        # Enumerate chapters from markdown
+        print("\nEnumerating chapters from markdown...")
+        result = await agent.enumerate_chapters(markdown_content)
         
         chapters = result.get("chapters", [])
         total_pages = result.get("total_pages", 0)
