@@ -30,6 +30,7 @@ from agent.kpi_image_agent import KPIImageAgent
 from utils.markdown_utils import json_to_markdown
 from utils.chapter_merge import merge_chapter_analyses
 from models.gemini_client import GeminiClient, is_gemini_model, create_gemini_client
+from converters.pdf_markdown_converter import convert_pdf_to_markdown
 
 # Load environment variables
 load_dotenv()
@@ -148,8 +149,16 @@ class EWAWorkflowOrchestrator:
             print(f"Error creating agent for model {model}: {str(e)}")
             raise
     
-    async def download_markdown_from_blob(self, blob_name: str) -> str:
-        """Download markdown content from Azure Blob Storage"""
+    async def download_markdown_from_blob(self, blob_name: str, convert_if_missing: bool = False) -> str:
+        """Download markdown content from Azure Blob Storage.
+        
+        Args:
+            blob_name: Name of the original PDF blob
+            convert_if_missing: If True, trigger PDF conversion if markdown doesn't exist
+            
+        Returns:
+            Markdown content as string
+        """
         try:
             # Convert original filename to .md format
             base_name = os.path.splitext(blob_name)[0]
@@ -172,9 +181,34 @@ class EWAWorkflowOrchestrator:
             return content
             
         except Exception as e:
-            error_message = f"Error downloading markdown from blob storage: {str(e)}"
-            print(error_message)
-            raise Exception(error_message)
+            if convert_if_missing and "BlobNotFound" in str(e):
+                print(f"[Markdown] Blob not found, triggering conversion for {blob_name}")
+                # Trigger conversion and wait for it
+                await self._convert_pdf_to_markdown(blob_name)
+                # Retry download
+                return await self.download_markdown_from_blob(blob_name, convert_if_missing=False)
+            else:
+                error_message = f"Error downloading markdown from blob storage: {str(e)}"
+                print(error_message)
+                raise Exception(error_message)
+    
+    async def _convert_pdf_to_markdown(self, blob_name: str) -> None:
+        """Trigger PDF to markdown conversion and wait for completion.
+        
+        Args:
+            blob_name: Name of the PDF blob to convert
+        """
+        print(f"[Conversion] Starting PDF to markdown conversion for {blob_name}")
+        
+        # Run conversion in a thread to avoid blocking the event loop
+        def _run_conversion():
+            result = convert_pdf_to_markdown(blob_name)
+            if result.get("error"):
+                raise Exception(f"Conversion failed: {result.get('message', 'Unknown error')}")
+            return result
+        
+        result = await asyncio.to_thread(_run_conversion)
+        print(f"[Conversion] Completed: {result.get('message', 'Success')}")
     
     async def download_pdf_from_blob(self, blob_name: str) -> bytes:
         """Download original PDF content from Azure Blob Storage for multimodal analysis"""
@@ -284,20 +318,18 @@ class EWAWorkflowOrchestrator:
             pdf_data = await self.download_pdf_from_blob(state.blob_name)
             print(f"[CHAPTER MODE] Downloaded PDF: {len(pdf_data)} bytes")
             
-            # Step 0: Convert PDF to markdown for chapter enumeration
+            # Step 0: Ensure markdown is available for chapter enumeration
             # This avoids the 50-image limit when enumerating chapters
-            print("[CHAPTER MODE] Step 0: Converting PDF to markdown for chapter enumeration...")
+            print("[CHAPTER MODE] Step 0: Ensuring markdown is available for chapter enumeration...")
             markdown_content = state.markdown_content
             
             if not markdown_content:
-                # Need to convert PDF to markdown
-                print("[CHAPTER MODE] No existing markdown, converting PDF...")
-                markdown_content = await self.download_markdown_from_blob(state.blob_name)
-                
-                if not markdown_content:
-                    # Markdown doesn't exist, need to trigger conversion
-                    print("[CHAPTER MODE] Markdown not found, this should have been converted already")
-                    raise Exception("Markdown conversion required but not available. Please ensure PDF is converted to markdown first.")
+                # Download markdown, converting if necessary
+                print("[CHAPTER MODE] No existing markdown in state, downloading/converting...")
+                markdown_content = await self.download_markdown_from_blob(
+                    state.blob_name, 
+                    convert_if_missing=True  # Auto-convert if .md doesn't exist
+                )
             
             print(f"[CHAPTER MODE] Using markdown ({len(markdown_content)} chars) for chapter enumeration")
             

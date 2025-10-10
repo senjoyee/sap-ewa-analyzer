@@ -6,12 +6,14 @@ The EWA Analyzer now supports a **chapter-by-chapter analysis workflow** that en
 
 ## Workflow Steps
 
-### Step 0: PDF to Markdown Conversion
+### Step 0: PDF to Markdown Conversion (Automatic)
 **Critical for large documents**: To avoid Azure OpenAI's 50-image limit, the PDF is first converted to markdown:
-- Uses existing markdown conversion pipeline
+- **Automatic**: If markdown doesn't exist, conversion is triggered automatically
+- Uses existing markdown conversion pipeline (`pymupdf4llm`)
 - Markdown is text-only, bypassing image quota
 - Preserves document structure (headings, paragraphs, tables)
 - Essential for EWA reports which typically exceed 50 pages
+- Conversion happens once and is cached in blob storage
 
 ### Step 1: Chapter Enumeration
 The agent examines the **markdown** document and identifies all chapters/sections present:
@@ -201,7 +203,7 @@ Example log output:
 **Solution**: Check if the markdown conversion preserved section headers; verify markdown quality
 
 **Issue**: "Markdown conversion required but not available"  
-**Solution**: Ensure the PDF has been converted to markdown first, or check blob storage for the .md file
+**Solution**: ✅ Fixed! Conversion now happens automatically if the .md file doesn't exist
 
 **Issue**: Some chapters fail to analyze  
 **Solution**: The workflow continues even if individual chapters fail; check logs for specific errors
