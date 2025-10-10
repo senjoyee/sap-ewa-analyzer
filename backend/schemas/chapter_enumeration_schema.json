@@ -10,7 +10,7 @@
       "description": "Ordered list of all chapters/sections in the document with their titles and page ranges.",
       "items": {
         "type": "object",
-        "required": ["chapter_id", "title", "start_page"],
+        "required": ["chapter_id", "title", "start_page", "end_page", "subsections"],
         "properties": {
           "chapter_id": {
             "type": "string",
@@ -26,11 +26,11 @@
           },
           "end_page": {
             "type": "integer",
-            "description": "Page number where this chapter ends (if determinable)."
+            "description": "Page number where this chapter ends. Use start_page if end is unknown."
           },
           "subsections": {
             "type": "array",
-            "description": "List of subsections within this chapter.",
+            "description": "List of subsections within this chapter. Use empty array if none.",
             "items": {
               "type": "string"
             }
@@ -47,5 +47,5 @@
       "description": "Type of document (e.g., 'SAP EarlyWatch Alert', 'EWA Report')."
     }
   },
-  "required": ["chapters", "total_pages"]
+  "required": ["chapters", "total_pages", "document_type"]
 }

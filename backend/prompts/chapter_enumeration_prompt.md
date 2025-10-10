@@ -22,8 +22,8 @@ You are analyzing an SAP EarlyWatch Alert (EWA) report. Your task is to systemat
    - A unique chapter ID (CH-01, CH-02, etc.)
    - The exact title as it appears in the document
    - The starting page number
-   - The ending page number (if determinable)
-   - Key subsections within the chapter (if any)
+   - The ending page number (use start_page value if end is not determinable)
+   - Key subsections within the chapter (use empty array [] if none)
 
 4. **Be comprehensive** - do not skip any section, even if it appears minor
 5. **Maintain order** - list chapters in the order they appear in the document

@@ -40,8 +40,8 @@ For each finding with medium/high/critical severity:
 - Identify best practices being followed
 
 ### 5. Technical Details
-- Extract any metrics/KPIs with their values and units
-- List profile parameters with current and recommended values
+- Extract any metrics/KPIs with their values, units, and context (use "N/A" if not available)
+- List profile parameters with current and recommended values (use "Not specified" if values are missing)
 
 ## Important Guidelines:
 - **Be comprehensive** - don't skip findings because they seem minor

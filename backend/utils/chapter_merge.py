@@ -242,9 +242,13 @@ def _derive_capacity_outlook(chapter_analyses: List[Dict[str, Any]]) -> Dict[str
     
     for chapter in chapter_analyses:
         for metric in chapter.get("metrics", []):
+            # Handle both string values and N/A placeholders
             name = metric.get("name", "").lower()
             value = metric.get("value", "")
-            context = metric.get("context", "")
+            
+            # Skip N/A placeholders
+            if value.upper() == "N/A" or name.upper() == "N/A":
+                continue
             
             if "database" in name or "db" in name or "growth" in name:
                 db_growth_info.append(f"{metric.get('name', '')}: {value}")

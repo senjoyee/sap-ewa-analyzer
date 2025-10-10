@@ -142,6 +142,7 @@
       "description": "Key metrics or KPIs found in this chapter.",
       "items": {
         "type": "object",
+        "required": ["name", "value", "unit", "context"],
         "properties": {
           "name": {
             "type": "string"
@@ -163,7 +164,7 @@
       "description": "Profile parameters mentioned in this chapter.",
       "items": {
         "type": "object",
-        "required": ["name", "area"],
+        "required": ["name", "area", "current_value", "recommended_value", "description"],
         "properties": {
           "name": {
             "type": "string"
@@ -184,5 +185,5 @@
       }
     }
   },
-  "required": ["chapter_id", "chapter_title", "key_findings", "recommendations"]
+  "required": ["chapter_id", "chapter_title", "key_findings", "recommendations", "positive_findings", "metrics", "profile_parameters"]
 }
