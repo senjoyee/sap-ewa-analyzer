@@ -29,6 +29,10 @@ from agent.ewa_agent import EWAAgent
 from agent.kpi_image_agent import KPIImageAgent
 from utils.markdown_utils import json_to_markdown
 from models.gemini_client import GeminiClient, is_gemini_model, create_gemini_client
+try:
+    import fitz
+except Exception:
+    fitz = None
 
 # Load environment variables
 load_dotenv()
@@ -244,6 +248,24 @@ class EWAWorkflowOrchestrator:
         except Exception as e:
             print(f"Error retrieving metadata for {blob_name}: {str(e)}")
             return {}
+
+    def _extract_pdf_text(self, pdf_bytes: bytes) -> str:
+        if fitz is None:
+            raise RuntimeError(
+                "PyMuPDF (fitz) is not installed. Cannot extract text from PDF for text-only analysis."
+            )
+        doc = fitz.open(stream=pdf_bytes, filetype="pdf")
+        try:
+            chunks: list[str] = []
+            for page in doc:
+                try:
+                    txt = page.get_text("text") or ""
+                except Exception:
+                    txt = ""
+                chunks.append(txt)
+            return ("\n\n".join(chunks)).strip()
+        finally:
+            doc.close()
  
     
     # Workflow step functions
@@ -291,10 +313,15 @@ class EWAWorkflowOrchestrator:
                 print(f"[Gemini Workflow] Using original PDF ({len(pdf_data)} bytes) for analysis")
                 ai_result = await agent.run(state.markdown_content, pdf_data=pdf_data)
             else:
-                # For OpenAI models, use original PDF via Responses API. On failure, propagate error (no markdown fallback).
+                # For OpenAI models, extract text and avoid attaching the PDF to bypass image limits.
                 pdf_data = await self.download_pdf_from_blob(state.blob_name)
-                print(f"[OpenAI Workflow] Using original PDF ({len(pdf_data)} bytes) for analysis via Responses API")
-                ai_result = await agent.run(state.markdown_content, pdf_data=pdf_data)
+                text_input = (state.markdown_content or "").strip()
+                if not text_input:
+                    text_input = self._extract_pdf_text(pdf_data)
+                print(
+                    f"[OpenAI Workflow] Using text-only input ({len(text_input)} chars) for analysis; PDF not attached"
+                )
+                ai_result = await agent.run(text_input, pdf_data=None)
             
             # Step 2: Extract KPIs via image-based agent (single high-res page to GPT-5)
             final_json = ai_result.copy() if ai_result else {}
