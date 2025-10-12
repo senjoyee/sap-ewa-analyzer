@@ -118,28 +118,18 @@ const useStyles = makeStyles({
 });
 
 // Inner App component that uses the theme context
-const AppContent = () => {
+const AppContent = ({ fontOptions = {}, currentFont = '', onFontChange }) => {
   const [selectedFileForPreview, setSelectedFileForPreview] = useState(null);
   const [fileListRefreshTrigger, setFileListRefreshTrigger] = useState(0);
   const [isFullscreen, setIsFullscreen] = useState(false);
-  const [currentFont, setCurrentFont] = useState('inter');
-  const [fontOptions, setFontOptions] = useState({});
   const classes = useStyles();
 
-  // Load font options and current font
-  React.useEffect(() => {
-    if (window.__getFontOptions) {
-      setFontOptions(window.__getFontOptions());
-    }
-    if (window.__getCurrentFont) {
-      setCurrentFont(window.__getCurrentFont());
-    }
-  }, []);
+  const fonts = fontOptions;
+  const selectedFontKey = currentFont;
 
   const handleFontChange = (fontKey) => {
-    if (window.__setAppFont) {
-      window.__setAppFont(fontKey);
-      setCurrentFont(fontKey);
+    if (onFontChange && fonts[fontKey]) {
+      onFontChange(fontKey);
     }
   };
 
@@ -192,15 +182,19 @@ const AppContent = () => {
               </MenuTrigger>
               <MenuPopover>
                 <MenuList>
-                  {Object.entries(fontOptions).map(([key, font]) => (
-                    <MenuItem
-                      key={key}
-                      onClick={() => handleFontChange(key)}
-                      icon={currentFont === key ? <Checkmark24Regular /> : null}
-                    >
-                      {font.name}
-                    </MenuItem>
-                  ))}
+                  {Object.entries(fonts).length === 0 ? (
+                    <MenuItem disabled>No fonts available</MenuItem>
+                  ) : (
+                    Object.entries(fonts).map(([key, font]) => (
+                      <MenuItem
+                        key={key}
+                        onClick={() => handleFontChange(key)}
+                        icon={selectedFontKey === key ? <Checkmark24Regular /> : null}
+                      >
+                        {font.name}
+                      </MenuItem>
+                    ))
+                  )}
                 </MenuList>
               </MenuPopover>
             </Menu>
@@ -249,9 +243,9 @@ const AppContent = () => {
 };
 
 // Main App component that provides the theme context
-function App() {
+function App(props) {
   return (
-    <AppContent />
+    <AppContent {...props} />
   );
 }
 

@@ -6,49 +6,16 @@ import App from './App'; // And this one too
 import reportWebVitals from './reportWebVitals'; // And this
 import { FluentProvider, webLightTheme, teamsLightTheme, teamsDarkTheme, teamsHighContrastTheme } from '@fluentui/react-components';
 import * as microsoftTeams from '@microsoft/teams-js';
-
-// Font configurations
-const FONT_OPTIONS = {
-  inter: {
-    name: 'Inter',
-    base: '"Inter", system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif',
-    mono: '"JetBrains Mono", Consolas, "Courier New", monospace',
-  },
-  segoe: {
-    name: 'Segoe UI',
-    base: '"Segoe UI", system-ui, -apple-system, Roboto, "Helvetica Neue", Arial, sans-serif',
-    mono: 'Consolas, "Courier New", monospace',
-  },
-  roboto: {
-    name: 'Roboto',
-    base: '"Roboto", system-ui, -apple-system, "Segoe UI", "Helvetica Neue", Arial, sans-serif',
-    mono: '"Roboto Mono", Consolas, "Courier New", monospace',
-  },
-  opensans: {
-    name: 'Open Sans',
-    base: '"Open Sans", system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif',
-    mono: '"Source Code Pro", Consolas, "Courier New", monospace',
-  },
-  lato: {
-    name: 'Lato',
-    base: '"Lato", system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif',
-    mono: '"Fira Code", Consolas, "Courier New", monospace',
-  },
-  system: {
-    name: 'System Default',
-    base: 'system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif',
-    mono: 'ui-monospace, Consolas, "Courier New", monospace',
-  },
-};
+import { FONT_OPTIONS, DEFAULT_FONT_KEY } from './theme/fonts';
 
 function Root() {
   // Load saved font preference or default to 'inter'
   const [currentFont, setCurrentFont] = useState(() => {
-    return localStorage.getItem('ewa-font-preference') || 'inter';
+    return localStorage.getItem('ewa-font-preference') || DEFAULT_FONT_KEY;
   });
 
   const applyFont = (fontKey, baseTheme) => {
-    const font = FONT_OPTIONS[fontKey] || FONT_OPTIONS.inter;
+    const font = FONT_OPTIONS[fontKey] || FONT_OPTIONS[DEFAULT_FONT_KEY];
     return {
       ...baseTheme,
       fontFamilyBase: font.base,
@@ -56,18 +23,22 @@ function Root() {
     };
   };
 
-  const [fluentTheme, setFluentTheme] = useState(applyFont(currentFont, webLightTheme));
+  const [fluentTheme, setFluentTheme] = useState(() => applyFont(currentFont, webLightTheme));
+
+  const setFontPreference = (fontKey) => {
+    const nextKey = FONT_OPTIONS[fontKey] ? fontKey : DEFAULT_FONT_KEY;
+    setCurrentFont(nextKey);
+    localStorage.setItem('ewa-font-preference', nextKey);
+  };
 
   // Expose font setter globally so FilePreview can access it
   useEffect(() => {
     window.__setAppFont = (fontKey) => {
-      if (FONT_OPTIONS[fontKey]) {
-        setCurrentFont(fontKey);
-        localStorage.setItem('ewa-font-preference', fontKey);
-      }
+      setFontPreference(fontKey);
     };
     window.__getFontOptions = () => FONT_OPTIONS;
     window.__getCurrentFont = () => currentFont;
+    window.__resetAppFont = () => setFontPreference(DEFAULT_FONT_KEY);
   }, [currentFont]);
 
   useEffect(() => {
@@ -96,7 +67,11 @@ function Root() {
 
   return (
     <FluentProvider theme={fluentTheme}>
-      <App />
+      <App
+        fontOptions={FONT_OPTIONS}
+        currentFont={currentFont}
+        onFontChange={setFontPreference}
+      />
     </FluentProvider>
   );
 }
