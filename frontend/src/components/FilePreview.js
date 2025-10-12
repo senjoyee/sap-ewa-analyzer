@@ -698,6 +698,90 @@ const useStyles = makeStyles({
     '0%': { backgroundPosition: '200% 0' },
     '100%': { backgroundPosition: '-200% 0' },
   },
+  cardContainer: {
+    display: 'flex',
+    flexDirection: 'column',
+    gap: tokens.spacingVerticalL,
+    marginTop: tokens.spacingVerticalL,
+    marginBottom: tokens.spacingVerticalL,
+    fontFamily: tokens.fontFamilyBase,
+  },
+  cardItem: {
+    background: `linear-gradient(135deg, ${tokens.colorNeutralBackground1} 0%, ${tokens.colorSubtleBackground} 100%)`,
+    border: `1px solid ${tokens.colorNeutralStroke2}`,
+    borderRadius: tokens.borderRadiusLarge,
+    padding: tokens.spacingHorizontalXL,
+    boxShadow: `0 4px 16px rgba(0, 0, 0, 0.06), 0 1px 4px rgba(0, 0, 0, 0.04)` ,
+    position: 'relative',
+    overflow: 'hidden',
+    transition: 'all 200ms cubic-bezier(0.4, 0, 0.2, 1)',
+    fontFamily: tokens.fontFamilyBase,
+    fontKerning: 'normal',
+    fontVariantLigatures: 'common-ligatures contextual',
+    fontFeatureSettings: '"liga" 1, "calt" 1, "kern" 1',
+    textRendering: 'optimizeLegibility',
+    WebkitFontSmoothing: 'antialiased',
+    MozOsxFontSmoothing: 'grayscale',
+    '::before': {
+      content: '""',
+      position: 'absolute',
+      top: 0,
+      left: 0,
+      right: 0,
+      height: '3px',
+      background: `linear-gradient(90deg, ${tokens.colorBrandForeground1}, ${tokens.colorCompoundBrandForeground1})`,
+      borderRadius: `${tokens.borderRadiusLarge} ${tokens.borderRadiusLarge} 0 0`,
+    },
+    ':hover': {
+      transform: 'translateY(-2px)',
+      boxShadow: `0 8px 24px rgba(0, 0, 0, 0.08), 0 2px 8px rgba(0, 0, 0, 0.06)` ,
+    },
+  },
+  cardField: {
+    marginBottom: tokens.spacingVerticalM,
+    ':last-child': {
+      marginBottom: 0,
+    },
+  },
+  cardLabel: {
+    fontWeight: tokens.fontWeightSemibold,
+    fontSize: tokens.fontSizeBase200,
+    color: tokens.colorNeutralForeground2,
+    marginBottom: tokens.spacingVerticalXXS,
+    textTransform: 'uppercase',
+    letterSpacing: '0.02em',
+    fontFamily: tokens.fontFamilyBase,
+  },
+  cardValue: {
+    fontSize: tokens.fontSizeBase300,
+    color: tokens.colorNeutralForeground1,
+    lineHeight: '1.6',
+    fontWeight: tokens.fontWeightRegular,
+    fontFamily: tokens.fontFamilyBase,
+  },
+  cardValueBullets: {
+    paddingLeft: tokens.spacingHorizontalL,
+    marginTop: tokens.spacingVerticalXXS,
+    fontFamily: tokens.fontFamilyBase,
+    listStyleType: 'none',
+    '& li': {
+      listStyleType: 'none',
+      marginBottom: tokens.spacingVerticalXS,
+      lineHeight: '1.6',
+      fontFamily: tokens.fontFamilyBase,
+      position: 'relative',
+      paddingLeft: tokens.spacingHorizontalM,
+      '::marker': {
+        content: 'none',
+      },
+      '::before': {
+        content: '"–"',
+        position: 'absolute',
+        left: 0,
+        color: tokens.colorNeutralForeground2,
+      },
+    },
+  },
 });
 
 const JsonCodeBlockRenderer = ({ node, inline, className, children, ...props }) => {
@@ -706,10 +790,146 @@ const JsonCodeBlockRenderer = ({ node, inline, className, children, ...props }) 
   const match = /language-(\w+)/.exec(className || '');
   const lang = match && match[1];
 
+  const stripLeadingMarkers = (value) => {
+    if (typeof value !== 'string') return value;
+    let cleaned = value
+      .replace(/&ndash;/gi, '–')
+      .replace(/&mdash;/gi, '—')
+      .replace(/&minus;/gi, '−')
+      .replace(/&bull;/gi, '•')
+      .replace(/&middot;/gi, '·')
+      .replace(/&#x2022;|&#8226;/gi, '•')
+      .replace(/\u00a0/g, ' ');
+    cleaned = cleaned.replace(/^\s*(?:[•\u2022\-\u2010\u2011\u2012\u2013\u2014\u2212\u00B7\u2219]\s*)+/, '');
+    return cleaned.trim();
+  };
+
   if (lang === 'json' && !inline) {
     try {
       const jsonString = String(children).replace(/\n$/, ''); // Remove trailing newline
       const jsonData = JSON.parse(jsonString);
+
+      if (jsonData && jsonData.layout === 'cards' && Array.isArray(jsonData.items)) {
+        const { cardType, items } = jsonData;
+
+        const fieldConfig = {
+          key_findings: [
+            { key: 'Issue ID', label: 'Issue ID' },
+            { key: 'Area', label: 'Area' },
+            { key: 'Severity', label: 'Severity' },
+            { key: 'Source', label: 'Source' },
+            { key: 'Finding', label: 'Finding', isBulletField: true },
+            { key: 'Impact', label: 'Impact', isBulletField: true },
+            { key: 'Business impact', label: 'Business Impact', isBulletField: true },
+          ],
+          recommendations: [
+            { key: 'Responsible Area', label: 'Responsible Area' },
+            { key: 'Estimated Effort', label: 'Estimated Effort' },
+            { key: 'Action', label: 'Action', isBulletField: true },
+            { key: 'Preventative Action', label: 'Preventative Action', isBulletField: true },
+          ],
+          merged_findings_recommendations: [
+            { key: 'Area', label: 'Area' },
+            { key: 'Severity', label: 'Severity' },
+            { key: 'Source', label: 'Source' },
+            { key: 'Finding', label: 'Finding', isBulletField: true },
+            { key: 'Impact', label: 'Impact', isBulletField: true },
+            { key: 'Business impact', label: 'Business Impact', isBulletField: true },
+            { key: 'Estimated Effort', label: 'Estimated Effort' },
+            { key: 'Responsible Area', label: 'Responsible Area' },
+            { key: 'Action', label: 'Action', isBulletField: true },
+            { key: 'Preventative Action', label: 'Preventative Action', isBulletField: true },
+          ],
+        };
+
+        const fields = fieldConfig[cardType] || fieldConfig.merged_findings_recommendations;
+
+        const renderFieldValue = (value, field) => {
+          if (value === null || value === undefined) {
+            return 'N/A';
+          }
+
+          const statusStyle = getStatusStyle(value, classes);
+          if (statusStyle) {
+            return (
+              <span className={`${classes.statusChip} ${statusStyle.class}`}>
+                {statusStyle.icon}
+                {statusStyle.label}
+              </span>
+            );
+          }
+
+          if (typeof value === 'object' && value.analysis && value.implementation) {
+            return `Analysis: ${value.analysis}, Implementation: ${value.implementation}`;
+          }
+
+          if (field.isBulletField && typeof value === 'string') {
+            if (value.includes('<li')) {
+              const items = value.match(/<li[^>]*>(.*?)<\/li>/gs) || [];
+              if (items.length > 0) {
+                return (
+                  <ul className={classes.cardValueBullets}>
+                    {items.map((item, idx) => {
+                      const content = stripLeadingMarkers(item.replace(/<\/?.*?li[^>]*>/g, ''));
+                      return <li key={idx}>{content}</li>;
+                    })}
+                  </ul>
+                );
+              }
+            }
+
+            const lines = value.split('\n').map((line) => line.trim()).filter(Boolean);
+            if (lines.length > 1) {
+              return (
+                <ul className={classes.cardValueBullets}>
+                  {lines.map((line, idx) => (
+                    <li key={idx}>{stripLeadingMarkers(line)}</li>
+                  ))}
+                </ul>
+              );
+            }
+
+            return stripLeadingMarkers(value);
+          }
+
+          if (Array.isArray(value)) {
+            return value.map((item) => stripLeadingMarkers(String(item))).join(', ');
+          }
+
+          return typeof value === 'string' ? stripLeadingMarkers(value) : value;
+        };
+
+        return (
+          <div className={classes.cardContainer} role="list" aria-label={`${jsonData.sectionTitle || 'Items'} cards`}>
+            {items.map((item, itemIndex) => (
+              <div key={itemIndex} className={classes.cardItem} role="listitem">
+                {fields.map((field, fieldIndex) => {
+                  const value = item[field.key];
+                  if (value === undefined || value === null || value === '') {
+                    if (field.isBulletField) {
+                      return null;
+                    }
+                  }
+
+                  const rendered = renderFieldValue(value, field);
+                  if (rendered === null || rendered === undefined || rendered === '') {
+                    return null;
+                  }
+
+                  return (
+                    <div key={fieldIndex} className={classes.cardField}>
+                      <div className={classes.cardLabel}>{field.label}:</div>
+                      <div className={classes.cardValue}>
+                        {React.isValidElement(rendered) ? rendered : formatDisplay(rendered)}
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+            ))}
+          </div>
+        );
+      }
 
       // Case 1: Check if it's the Key System Information format with items (parameter/value pairs)
       if (jsonData && jsonData.tableTitle && Array.isArray(jsonData.items)) {
