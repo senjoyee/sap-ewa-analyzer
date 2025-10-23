@@ -1161,6 +1161,45 @@ const JsonCodeBlockRenderer = ({ node, inline, className, children, ...props }) 
           const firstItem = tableData[0] || {};
           const headers = Object.keys(firstItem);
           if (headers.length > 0) {
+            const headersLower = headers.map(h => String(h).toLowerCase());
+            const isKpi = ((headersLower.includes('indicator') && headersLower.includes('value')) && (headersLower.includes('area') || headersLower.includes('category'))) || /performance|indicator/i.test(String(tableTitle || ''));
+            if (isKpi) {
+              const idxIndicator = headersLower.indexOf('indicator');
+              const idxValue = headersLower.indexOf('value');
+              const idxArea = headersLower.indexOf('area') !== -1 ? headersLower.indexOf('area') : headersLower.indexOf('category');
+              const idxTrend = headersLower.indexOf('trend') !== -1 ? headersLower.indexOf('trend') : headersLower.indexOf('direction');
+              return (
+                <div className={classes.tableCard}>
+                  <div className={`${classes.tableTitle} ${typography.headingM}`}>{tableTitle}</div>
+                  <div className={classes.kpiGrid} role="list" aria-label={`${tableTitle} KPI tiles`}>
+                    {tableData.map((row, idx) => {
+                      const indicator = idxIndicator >= 0 ? row[headers[idxIndicator]] : '';
+                      const value = idxValue >= 0 ? row[headers[idxValue]] : '';
+                      const area = idxArea >= 0 ? row[headers[idxArea]] : '';
+                      const trendRaw = idxTrend >= 0 ? row[headers[idxTrend]] : '';
+                      const t = String(trendRaw || '').toLowerCase();
+                      let trend = 'flat';
+                      if (/[↑↗+]/.test(trendRaw) || t.includes('up') || t.includes('increase')) trend = 'up';
+                      else if (/[↓↘-]/.test(trendRaw) || t.includes('down') || t.includes('decrease')) trend = 'down';
+                      const trendClass = trend === 'up' ? classes.kpiTrendUp : trend === 'down' ? classes.kpiTrendDown : classes.kpiTrendFlat;
+                      const trendSymbol = trend === 'up' ? '↑' : trend === 'down' ? '↓' : '→';
+                      return (
+                        <div key={idx} className={classes.kpiTile} role="listitem">
+                          <div className={classes.kpiTileHeader}>
+                            <span className={classes.kpiTileLabel}>{formatDisplay(indicator)}</span>
+                            <span className={`${classes.kpiTrend} ${trendClass}`} aria-label={`Trend ${trend}`}>{trendSymbol}</span>
+                          </div>
+                          <div className={classes.kpiTileValue}>{formatDisplay(value)}</div>
+                          {area ? (
+                            <div className={classes.kpiTileArea}>{formatDisplay(area)}</div>
+                          ) : null}
+                        </div>
+                      );
+                    })}
+                  </div>
+                </div>
+              );
+            }
             const wrapStyle = { whiteSpace: 'normal', overflow: 'visible', textOverflow: 'clip', wordBreak: 'break-word', overflowWrap: 'anywhere' };
             return (
               <div className={classes.tableCard}>
@@ -1184,7 +1223,6 @@ const JsonCodeBlockRenderer = ({ node, inline, className, children, ...props }) 
                             const cellValue = String(rawCell);
                             const isLong = cellValue.length > 50;
                             const statusStyle = getStatusStyle(cellValue, classes);
-                            
                             return (
                               <td key={cellIndex} className={classes.mdTd} style={{ textAlign: 'left', ...(isLong ? wrapStyle : {}) }}>
                                 {statusStyle ? (
@@ -1248,7 +1286,43 @@ const FilePreview = ({ selectedFile, isFullscreen, onToggleFullscreen }) => {
   }, [selectedFile]);
 
   const isAnalysisView = !!selectedFile?.analysisContent;
-  const hasMetrics = Array.isArray(selectedFile?.metricsData) && selectedFile.metricsData.length > 0;
+  const parsedKpis = React.useMemo(() => {
+    const md = selectedFile?.analysisContent || '';
+    if (!md) return [];
+    const lines = md.split('\n');
+    let result = [];
+    for (let i = 0; i < lines.length - 2; i++) {
+      const headerLine = lines[i].trim();
+      if (!headerLine.includes('|')) continue;
+      const headerCells = headerLine.split('|').map(c => c.trim().toLowerCase()).filter(Boolean);
+      if (!(headerCells.includes('area') && headerCells.includes('indicator') && headerCells.includes('value') && headerCells.includes('trend'))) continue;
+      const alignLine = (lines[i + 1] || '').trim();
+      if (!(alignLine.includes('|') && /-/.test(alignLine))) continue;
+      const idxArea = headerCells.indexOf('area');
+      const idxIndicator = headerCells.indexOf('indicator');
+      const idxValue = headerCells.indexOf('value');
+      const idxTrend = headerCells.indexOf('trend');
+      let j = i + 2;
+      while (j < lines.length) {
+        const rowLine = lines[j];
+        if (!rowLine || !rowLine.includes('|')) break;
+        const raw = rowLine.split('|').map(c => c.trim());
+        const cells = raw.filter((c, k) => !(k === 0 && c === '')).filter((c, k, a) => !(k === a.length - 1 && c === ''));
+        if (cells.length < 4) break;
+        const row = {
+          Area: cells[idxArea] ?? '',
+          Indicator: cells[idxIndicator] ?? '',
+          Value: cells[idxValue] ?? '',
+          Trend: cells[idxTrend] ?? ''
+        };
+        if (row.Indicator || row.Value) result.push(row);
+        j++;
+      }
+      if (result.length) break;
+    }
+    return result;
+  }, [selectedFile?.analysisContent]);
+  const hasMetrics = (Array.isArray(selectedFile?.metricsData) && selectedFile.metricsData.length > 0) || (Array.isArray(parsedKpis) && parsedKpis.length > 0);
   const hasParameters = Array.isArray(selectedFile?.parametersData) && selectedFile.parametersData.length > 0;
 
   const handleExportPDF = (file) => {
@@ -1552,7 +1626,9 @@ const FilePreview = ({ selectedFile, isFullscreen, onToggleFullscreen }) => {
                           <AccordionPanel className={classes.accordionPanel}>
                             <div className={classes.panelInner}>
                               {(() => {
-                                const data = Array.isArray(selectedFile?.metricsData) ? selectedFile.metricsData : [];
+                                const primary = Array.isArray(selectedFile?.metricsData) ? selectedFile.metricsData : [];
+                                const fallback = Array.isArray(parsedKpis) ? parsedKpis : [];
+                                const data = primary.length ? primary : fallback;
                                 if (!data.length) {
                                   return (
                                     <div className={typography.bodyS} style={{ color: tokens.colorNeutralForeground3 }}>
