@@ -718,8 +718,9 @@ const useStyles = makeStyles({
   },
   kpiTileHeader: {
     display: 'flex',
-    alignItems: 'center',
+    alignItems: 'flex-start',
     justifyContent: 'space-between',
+    flexWrap: 'wrap',
     marginBottom: tokens.spacingVerticalS,
     minWidth: 0,
   },
@@ -727,9 +728,10 @@ const useStyles = makeStyles({
     fontSize: tokens.fontSizeBase200,
     fontWeight: tokens.fontWeightSemibold,
     color: tokens.colorNeutralForeground1,
-    overflow: 'hidden',
-    textOverflow: 'ellipsis',
-    whiteSpace: 'nowrap',
+    overflowWrap: 'anywhere',
+    wordBreak: 'break-word',
+    whiteSpace: 'normal',
+    flex: 1,
   },
   kpiTileValue: {
     fontSize: tokens.fontSizeBase500,
@@ -1322,6 +1324,37 @@ const FilePreview = ({ selectedFile, isFullscreen, onToggleFullscreen }) => {
     }
     return result;
   }, [selectedFile?.analysisContent]);
+  const cleanedAnalysis = React.useMemo(() => {
+    const md = selectedFile?.analysisContent || '';
+    if (!md) return md;
+    const lines = md.split('\n');
+    let start = -1;
+    let end = -1;
+    for (let i = 0; i < lines.length - 2; i++) {
+      const headerLine = lines[i].trim();
+      const isKpiHeading = /key\s*performance\s*indicators/i.test(headerLine.replace(/[#*`_]/g, ''));
+      const headerCells = headerLine.includes('|') ? headerLine.split('|').map(c => c.trim().toLowerCase()).filter(Boolean) : [];
+      const looksLikeKpiHeader = headerCells.includes('area') && headerCells.includes('indicator') && headerCells.includes('value') && headerCells.includes('trend');
+      if (isKpiHeading || looksLikeKpiHeader) {
+        start = isKpiHeading ? i : i;
+        let j = isKpiHeading ? i + 1 : i + 1;
+        if (j < lines.length && lines[j].includes('|') && /-/.test(lines[j])) j++;
+        while (j < lines.length) {
+          const line = lines[j];
+          if (!line.includes('|')) break;
+          j++;
+        }
+        end = j;
+        break;
+      }
+    }
+    if (start >= 0 && end > start) {
+      const before = lines.slice(0, start);
+      const after = lines.slice(end);
+      return [...before, ...after].join('\n');
+    }
+    return md;
+  }, [selectedFile?.analysisContent]);
   const hasMetrics = (Array.isArray(selectedFile?.metricsData) && selectedFile.metricsData.length > 0) || (Array.isArray(parsedKpis) && parsedKpis.length > 0);
   const hasParameters = Array.isArray(selectedFile?.parametersData) && selectedFile.parametersData.length > 0;
 
@@ -1610,69 +1643,57 @@ const FilePreview = ({ selectedFile, isFullscreen, onToggleFullscreen }) => {
                       ),
                     }}
                   >
-                    {selectedFile.analysisContent}
+                    {cleanedAnalysis}
                   </ReactMarkdown>
 
                   {hasMetrics && (
                     <div className={classes.accordionSection}>
-                      <FluentAccordion>
-                        <AccordionItem value="metrics">
-                          <AccordionHeader expandIcon={<ChevronDown24Regular />} className={classes.accordionHeader} aria-label="Key Metrics Summary">
-                            <div style={{ display: 'flex', alignItems: 'center' }}>
-                              <DataBarVertical24Regular style={{ marginRight: 12, color: '#1976d2' }} />
-                              <span style={{ fontWeight: 500, color: '#1976d2' }}>Key Metrics Summary</span>
-                            </div>
-                          </AccordionHeader>
-                          <AccordionPanel className={classes.accordionPanel}>
-                            <div className={classes.panelInner}>
-                              {(() => {
-                                const primary = Array.isArray(selectedFile?.metricsData) ? selectedFile.metricsData : [];
-                                const fallback = Array.isArray(parsedKpis) ? parsedKpis : [];
-                                const data = primary.length ? primary : fallback;
-                                if (!data.length) {
-                                  return (
-                                    <div className={typography.bodyS} style={{ color: tokens.colorNeutralForeground3 }}>
-                                      No KPIs available
-                                    </div>
-                                  );
-                                }
-                                return (
-                                  <div className={classes.kpiGrid} role="list" aria-label="KPI dashboard tiles">
-                                    {data.map((row, idx) => {
-                                      const lower = Object.fromEntries(
-                                        Object.entries(row || {}).map(([k, v]) => [String(k).toLowerCase().trim(), v])
-                                      );
-                                      const area = lower['area'] ?? '';
-                                      const indicator = lower['indicator'] ?? '';
-                                      const value = lower['value'] ?? '';
-                                      const trendRaw = lower['trend'] ?? '';
-                                      const t = String(trendRaw || '').toLowerCase();
-                                      let trend = 'flat';
-                                      if (/[↑↗+]/.test(trendRaw) || t.includes('up') || t.includes('increase')) trend = 'up';
-                                      else if (/[↓↘]/.test(trendRaw) || t.includes('down') || t.includes('decrease')) trend = 'down';
-                                      const trendClass = trend === 'up' ? classes.kpiTrendUp : trend === 'down' ? classes.kpiTrendDown : classes.kpiTrendFlat;
-                                      const trendSymbol = trend === 'up' ? '↑' : trend === 'down' ? '↓' : '→';
+                      <div className={classes.panelInner}>
+                        {(() => {
+                          const primary = Array.isArray(selectedFile?.metricsData) ? selectedFile.metricsData : [];
+                          const fallback = Array.isArray(parsedKpis) ? parsedKpis : [];
+                          const data = primary.length ? primary : fallback;
+                          if (!data.length) {
+                            return (
+                              <div className={typography.bodyS} style={{ color: tokens.colorNeutralForeground3 }}>
+                                No KPIs available
+                              </div>
+                            );
+                          }
+                          return (
+                            <div className={classes.kpiGrid} role="list" aria-label="KPI dashboard tiles">
+                              {data.map((row, idx) => {
+                                const lower = Object.fromEntries(
+                                  Object.entries(row || {}).map(([k, v]) => [String(k).toLowerCase().trim(), v])
+                                );
+                                const area = lower['area'] ?? '';
+                                const indicator = lower['indicator'] ?? '';
+                                const value = lower['value'] ?? '';
+                                const trendRaw = lower['trend'] ?? '';
+                                const t = String(trendRaw || '').toLowerCase();
+                                let trend = 'flat';
+                                if (/[↑↗+]/.test(trendRaw) || t.includes('up') || t.includes('increase')) trend = 'up';
+                                else if (/[↓↘]/.test(trendRaw) || t.includes('down') || t.includes('decrease')) trend = 'down';
+                                const trendClass = trend === 'up' ? classes.kpiTrendUp : trend === 'down' ? classes.kpiTrendDown : classes.kpiTrendFlat;
+                                const trendSymbol = trend === 'up' ? '↑' : trend === 'down' ? '↓' : '→';
 
-                                      return (
-                                        <div key={idx} className={classes.kpiTile} role="listitem">
-                                          <div className={classes.kpiTileHeader}>
-                                            <span className={classes.kpiTileLabel}>{formatDisplay(indicator)}</span>
-                                            <span className={`${classes.kpiTrend} ${trendClass}`} aria-label={`Trend ${trend}`}>{trendSymbol}</span>
-                                          </div>
-                                          <div className={classes.kpiTileValue}>{formatDisplay(value)}</div>
-                                          {area ? (
-                                            <div className={classes.kpiTileArea}>{formatDisplay(area)}</div>
-                                          ) : null}
-                                        </div>
-                                      );
-                                    })}
+                                return (
+                                  <div key={idx} className={classes.kpiTile} role="listitem">
+                                    <div className={classes.kpiTileHeader}>
+                                      <span className={classes.kpiTileLabel}>{formatDisplay(indicator)}</span>
+                                      <span className={`${classes.kpiTrend} ${trendClass}`} aria-label={`Trend ${trend}`}>{trendSymbol}</span>
+                                    </div>
+                                    <div className={classes.kpiTileValue}>{formatDisplay(value)}</div>
+                                    {area ? (
+                                      <div className={classes.kpiTileArea}>{formatDisplay(area)}</div>
+                                    ) : null}
                                   </div>
                                 );
-                              })()}
+                              })}
                             </div>
-                          </AccordionPanel>
-                        </AccordionItem>
-                      </FluentAccordion>
+                          );
+                        })()}
+                      </div>
                     </div>
                   )}
                   
