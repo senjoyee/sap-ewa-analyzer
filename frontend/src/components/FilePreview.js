@@ -4,7 +4,7 @@ import rehypeRaw from 'rehype-raw';
 import remarkGfm from 'remark-gfm';
 import { makeStyles } from '@griffel/react';
 import { tokens, Button, Tooltip, Accordion as FluentAccordion, AccordionItem, AccordionHeader, AccordionPanel, ProgressBar } from '@fluentui/react-components';
-import { DocumentPdf24Regular, ChevronDown24Regular, DataBarVertical24Regular, Settings24Regular, ArrowMaximize24Regular, ArrowMinimize24Regular } from '@fluentui/react-icons';
+import { DocumentPdf24Regular, ChevronDown24Regular, ChevronRight24Regular, DataBarVertical24Regular, Settings24Regular, ArrowMaximize24Regular, ArrowMinimize24Regular } from '@fluentui/react-icons';
  
  
 import { Image24Regular, Document24Regular, TextDescription24Regular } from '@fluentui/react-icons';
@@ -710,7 +710,6 @@ const useStyles = makeStyles({
     background: `linear-gradient(135deg, ${tokens.colorNeutralBackground1} 0%, ${tokens.colorSubtleBackground} 100%)`,
     border: `1px solid ${tokens.colorNeutralStroke2}`,
     borderRadius: tokens.borderRadiusLarge,
-    padding: tokens.spacingHorizontalXL,
     boxShadow: `0 4px 16px rgba(0, 0, 0, 0.06), 0 1px 4px rgba(0, 0, 0, 0.04)` ,
     position: 'relative',
     overflow: 'hidden',
@@ -736,6 +735,44 @@ const useStyles = makeStyles({
       transform: 'translateY(-2px)',
       boxShadow: `0 8px 24px rgba(0, 0, 0, 0.08), 0 2px 8px rgba(0, 0, 0, 0.06)` ,
     },
+  },
+  cardHeader: {
+    display: 'flex',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    padding: tokens.spacingHorizontalXL,
+    cursor: 'pointer',
+    userSelect: 'none',
+    transition: 'background-color 150ms ease',
+    ':hover': {
+      backgroundColor: tokens.colorSubtleBackgroundHover,
+    },
+    ':focus-visible': {
+      outline: `${tokens.strokeWidthThick} solid ${tokens.colorBrandStroke1}`,
+      outlineOffset: '-2px',
+    },
+  },
+  cardHeaderContent: {
+    display: 'flex',
+    alignItems: 'center',
+    gap: tokens.spacingHorizontalS,
+    flex: 1,
+    minWidth: 0,
+  },
+  cardHeaderTitle: {
+    fontWeight: tokens.fontWeightSemibold,
+    fontSize: tokens.fontSizeBase300,
+    color: tokens.colorNeutralForeground1,
+  },
+  cardChevron: {
+    transition: 'transform 200ms ease',
+    color: tokens.colorNeutralForeground3,
+  },
+  cardChevronExpanded: {
+    transform: 'rotate(90deg)',
+  },
+  cardContent: {
+    padding: `0 ${tokens.spacingHorizontalXL} ${tokens.spacingHorizontalXL}`,
   },
   cardField: {
     marginBottom: tokens.spacingVerticalM,
@@ -779,8 +816,16 @@ const useStyles = makeStyles({
 const JsonCodeBlockRenderer = ({ node, inline, className, children, ...props }) => {
   const classes = useStyles();
   const typography = useTypographyStyles();
+  const [expandedCards, setExpandedCards] = React.useState({});
   const match = /language-(\w+)/.exec(className || '');
   const lang = match && match[1];
+
+  const toggleCard = (index) => {
+    setExpandedCards(prev => ({
+      ...prev,
+      [index]: !prev[index]
+    }));
+  };
 
   const stripLeadingMarkers = (value) => {
     if (typeof value !== 'string') return value;
@@ -893,32 +938,68 @@ const JsonCodeBlockRenderer = ({ node, inline, className, children, ...props }) 
 
         return (
           <div className={classes.cardContainer} role="list" aria-label={`${jsonData.sectionTitle || 'Items'} cards`}>
-            {items.map((item, itemIndex) => (
-              <div key={itemIndex} className={classes.cardItem} role="listitem">
-                {fields.map((field, fieldIndex) => {
-                  const value = item[field.key];
-                  if (value === undefined || value === null || value === '') {
-                    if (field.isBulletField) {
-                      return null;
-                    }
-                  }
-
-                  const rendered = renderFieldValue(value, field);
-                  if (rendered === null || rendered === undefined || rendered === '') {
-                    return null;
-                  }
-
-                  return (
-                    <div key={fieldIndex} className={classes.cardField}>
-                      <div className={classes.cardLabel}>{field.label}:</div>
-                      <div className={classes.cardValue}>
-                        {React.isValidElement(rendered) ? rendered : formatDisplay(rendered)}
-                      </div>
+            {items.map((item, itemIndex) => {
+              const isExpanded = expandedCards[itemIndex] || false;
+              
+              // Get the first field value for the header (typically Issue ID or Recommendation ID)
+              const headerField = fields[0];
+              const headerValue = item[headerField.key];
+              
+              return (
+                <div key={itemIndex} className={classes.cardItem} role="listitem">
+                  <div 
+                    className={classes.cardHeader}
+                    onClick={() => toggleCard(itemIndex)}
+                    onKeyDown={(e) => {
+                      if (e.key === 'Enter' || e.key === ' ') {
+                        e.preventDefault();
+                        toggleCard(itemIndex);
+                      }
+                    }}
+                    role="button"
+                    tabIndex={0}
+                    aria-expanded={isExpanded}
+                    aria-label={`${isExpanded ? 'Collapse' : 'Expand'} ${headerField.label} ${headerValue}`}
+                  >
+                    <div className={classes.cardHeaderContent}>
+                      <span className={classes.cardHeaderTitle}>
+                        {headerField.label}: {formatDisplay(headerValue)}
+                      </span>
                     </div>
-                  );
-                })}
-              </div>
-            ))}
+                    <ChevronRight24Regular 
+                      className={`${classes.cardChevron} ${isExpanded ? classes.cardChevronExpanded : ''}`}
+                    />
+                  </div>
+                  
+                  {isExpanded && (
+                    <div className={classes.cardContent}>
+                      {fields.slice(1).map((field, fieldIndex) => {
+                        const value = item[field.key];
+                        if (value === undefined || value === null || value === '') {
+                          if (field.isBulletField) {
+                            return null;
+                          }
+                        }
+
+                        const rendered = renderFieldValue(value, field);
+                        if (rendered === null || rendered === undefined || rendered === '') {
+                          return null;
+                        }
+
+                        return (
+                          <div key={fieldIndex} className={classes.cardField}>
+                            <div className={classes.cardLabel}>{field.label}:</div>
+                            <div className={classes.cardValue}>
+                              {React.isValidElement(rendered) ? rendered : formatDisplay(rendered)}
+                            </div>
+                          </div>
+                        );
+                      })}
+                    </div>
+                  )}
+                </div>
+              );
+            })}
           </div>
         );
       }
