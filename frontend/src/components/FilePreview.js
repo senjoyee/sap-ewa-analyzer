@@ -698,6 +698,64 @@ const useStyles = makeStyles({
     '0%': { backgroundPosition: '200% 0' },
     '100%': { backgroundPosition: '-200% 0' },
   },
+  kpiGrid: {
+    display: 'grid',
+    gridTemplateColumns: 'repeat(auto-fit, minmax(180px, 1fr))',
+    gap: tokens.spacingHorizontalM,
+  },
+  kpiTile: {
+    position: 'relative',
+    background: tokens.colorNeutralBackground1,
+    border: `1px solid ${tokens.colorNeutralStroke2}`,
+    borderRadius: tokens.borderRadiusMedium,
+    padding: tokens.spacingHorizontalM,
+    boxShadow: `0 2px 8px rgba(0,0,0,0.04)`,
+    transition: 'transform 150ms ease, box-shadow 150ms ease',
+    ':hover': {
+      transform: 'translateY(-1px)',
+      boxShadow: `0 4px 12px rgba(0,0,0,0.08)`,
+    },
+  },
+  kpiTileHeader: {
+    display: 'flex',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    marginBottom: tokens.spacingVerticalS,
+    minWidth: 0,
+  },
+  kpiTileLabel: {
+    fontSize: tokens.fontSizeBase200,
+    fontWeight: tokens.fontWeightSemibold,
+    color: tokens.colorNeutralForeground1,
+    overflow: 'hidden',
+    textOverflow: 'ellipsis',
+    whiteSpace: 'nowrap',
+  },
+  kpiTileValue: {
+    fontSize: tokens.fontSizeBase500,
+    fontWeight: tokens.fontWeightBold,
+    lineHeight: '1.2',
+    color: tokens.colorNeutralForeground1,
+    marginBottom: tokens.spacingVerticalXS,
+  },
+  kpiTileArea: {
+    fontSize: tokens.fontSizeBase200,
+    color: tokens.colorNeutralForeground3,
+    overflowWrap: 'anywhere',
+  },
+  kpiTrend: {
+    fontSize: tokens.fontSizeBase200,
+    fontWeight: tokens.fontWeightSemibold,
+  },
+  kpiTrendUp: {
+    color: tokens.colorPaletteGreenForeground1,
+  },
+  kpiTrendDown: {
+    color: tokens.colorPaletteRedForeground1,
+  },
+  kpiTrendFlat: {
+    color: tokens.colorNeutralForeground3,
+  },
   cardContainer: {
     display: 'flex',
     flexDirection: 'column',
@@ -1493,7 +1551,48 @@ const FilePreview = ({ selectedFile, isFullscreen, onToggleFullscreen }) => {
                           </AccordionHeader>
                           <AccordionPanel className={classes.accordionPanel}>
                             <div className={classes.panelInner}>
-                              {/* <MetricsTable metricsData={metricsData} /> */}
+                              {(() => {
+                                const data = Array.isArray(selectedFile?.metricsData) ? selectedFile.metricsData : [];
+                                if (!data.length) {
+                                  return (
+                                    <div className={typography.bodyS} style={{ color: tokens.colorNeutralForeground3 }}>
+                                      No KPIs available
+                                    </div>
+                                  );
+                                }
+                                return (
+                                  <div className={classes.kpiGrid} role="list" aria-label="KPI dashboard tiles">
+                                    {data.map((row, idx) => {
+                                      const lower = Object.fromEntries(
+                                        Object.entries(row || {}).map(([k, v]) => [String(k).toLowerCase().trim(), v])
+                                      );
+                                      const area = lower['area'] ?? '';
+                                      const indicator = lower['indicator'] ?? '';
+                                      const value = lower['value'] ?? '';
+                                      const trendRaw = lower['trend'] ?? '';
+                                      const t = String(trendRaw || '').toLowerCase();
+                                      let trend = 'flat';
+                                      if (/[↑↗+]/.test(trendRaw) || t.includes('up') || t.includes('increase')) trend = 'up';
+                                      else if (/[↓↘]/.test(trendRaw) || t.includes('down') || t.includes('decrease')) trend = 'down';
+                                      const trendClass = trend === 'up' ? classes.kpiTrendUp : trend === 'down' ? classes.kpiTrendDown : classes.kpiTrendFlat;
+                                      const trendSymbol = trend === 'up' ? '↑' : trend === 'down' ? '↓' : '→';
+
+                                      return (
+                                        <div key={idx} className={classes.kpiTile} role="listitem">
+                                          <div className={classes.kpiTileHeader}>
+                                            <span className={classes.kpiTileLabel}>{formatDisplay(indicator)}</span>
+                                            <span className={`${classes.kpiTrend} ${trendClass}`} aria-label={`Trend ${trend}`}>{trendSymbol}</span>
+                                          </div>
+                                          <div className={classes.kpiTileValue}>{formatDisplay(value)}</div>
+                                          {area ? (
+                                            <div className={classes.kpiTileArea}>{formatDisplay(area)}</div>
+                                          ) : null}
+                                        </div>
+                                      );
+                                    })}
+                                  </div>
+                                );
+                              })()}
                             </div>
                           </AccordionPanel>
                         </AccordionItem>
