@@ -959,11 +959,11 @@ const JsonCodeBlockRenderer = ({ node, inline, className, children, ...props }) 
                     role="button"
                     tabIndex={0}
                     aria-expanded={isExpanded}
-                    aria-label={`${isExpanded ? 'Collapse' : 'Expand'} ${headerField.label} ${headerValue}`}
+                    aria-label={`${isExpanded ? 'Collapse' : 'Expand'} ${formatDisplay(headerValue)}`}
                   >
                     <div className={classes.cardHeaderContent}>
                       <span className={classes.cardHeaderTitle}>
-                        {headerField.label}: {formatDisplay(headerValue)}
+                        {formatDisplay(headerValue)}
                       </span>
                     </div>
                     <ChevronRight24Regular 
