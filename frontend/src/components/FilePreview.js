@@ -4,7 +4,7 @@ import rehypeRaw from 'rehype-raw';
 import remarkGfm from 'remark-gfm';
 import { makeStyles } from '@griffel/react';
 import { tokens, Button, Tooltip, Accordion as FluentAccordion, AccordionItem, AccordionHeader, AccordionPanel, ProgressBar } from '@fluentui/react-components';
-import { DocumentPdf24Regular, ChevronDown24Regular, ChevronRight24Regular, DataBarVertical24Regular, Settings24Regular, ArrowMaximize24Regular, ArrowMinimize24Regular } from '@fluentui/react-icons';
+import { DocumentPdf24Regular, ChevronDown24Regular, ChevronRight24Regular, Settings24Regular, ArrowMaximize24Regular, ArrowMinimize24Regular } from '@fluentui/react-icons';
  
  
 import { Image24Regular, Document24Regular, TextDescription24Regular } from '@fluentui/react-icons';
@@ -705,15 +705,31 @@ const useStyles = makeStyles({
   },
   kpiTile: {
     position: 'relative',
-    background: tokens.colorNeutralBackground1,
+    background: `linear-gradient(135deg, ${tokens.colorNeutralBackground1} 0%, ${tokens.colorSubtleBackground} 100%)`,
     border: `1px solid ${tokens.colorNeutralStroke2}`,
-    borderRadius: tokens.borderRadiusMedium,
-    padding: tokens.spacingHorizontalM,
-    boxShadow: `0 2px 8px rgba(0,0,0,0.04)`,
-    transition: 'transform 150ms ease, box-shadow 150ms ease',
+    borderRadius: tokens.borderRadiusLarge,
+    padding: tokens.spacingHorizontalL,
+    boxShadow: `0 4px 12px rgba(0,0,0,0.06), 0 1px 3px rgba(0,0,0,0.04)`,
+    transition: 'all 200ms cubic-bezier(0.4, 0, 0.2, 1)',
+    overflow: 'hidden',
+    '::before': {
+      content: '""',
+      position: 'absolute',
+      top: 0,
+      left: 0,
+      width: '4px',
+      height: '100%',
+      background: `linear-gradient(180deg, ${tokens.colorBrandForeground1}, ${tokens.colorBrandForeground2})`,
+      opacity: 0,
+      transition: 'opacity 200ms ease',
+    },
     ':hover': {
-      transform: 'translateY(-1px)',
-      boxShadow: `0 4px 12px rgba(0,0,0,0.08)`,
+      transform: 'translateY(-2px)',
+      boxShadow: `0 8px 24px rgba(0,0,0,0.1), 0 2px 6px rgba(0,0,0,0.06)`,
+      borderColor: tokens.colorBrandStroke1,
+    },
+    ':hover::before': {
+      opacity: 1,
     },
   },
   kpiTileHeader: {
@@ -734,11 +750,15 @@ const useStyles = makeStyles({
     flex: 1,
   },
   kpiTileValue: {
-    fontSize: tokens.fontSizeBase500,
+    fontSize: tokens.fontSizeBase600,
     fontWeight: tokens.fontWeightBold,
     lineHeight: '1.2',
-    color: tokens.colorNeutralForeground1,
+    background: `linear-gradient(135deg, ${tokens.colorBrandForeground1} 0%, ${tokens.colorCompoundBrandForeground1} 100%)`,
+    backgroundClip: 'text',
+    WebkitBackgroundClip: 'text',
+    WebkitTextFillColor: 'transparent',
     marginBottom: tokens.spacingVerticalXS,
+    letterSpacing: '-0.01em',
   },
   kpiTileArea: {
     fontSize: tokens.fontSizeBase200,
@@ -767,13 +787,13 @@ const useStyles = makeStyles({
     fontFamily: tokens.fontFamilyBase,
   },
   cardItem: {
-    background: `linear-gradient(135deg, ${tokens.colorNeutralBackground1} 0%, ${tokens.colorSubtleBackground} 100%)`,
+    background: tokens.colorNeutralBackground1,
     border: `1px solid ${tokens.colorNeutralStroke2}`,
-    borderRadius: tokens.borderRadiusLarge,
-    boxShadow: `0 4px 16px rgba(0, 0, 0, 0.06), 0 1px 4px rgba(0, 0, 0, 0.04)` ,
+    borderRadius: tokens.borderRadiusMedium,
+    boxShadow: `0 1px 2px rgba(0, 0, 0, 0.04)`,
     position: 'relative',
     overflow: 'hidden',
-    transition: 'all 200ms cubic-bezier(0.4, 0, 0.2, 1)',
+    transition: 'all 150ms ease',
     fontFamily: tokens.fontFamilyBase,
     fontKerning: 'normal',
     fontVariantLigatures: 'common-ligatures contextual',
@@ -787,20 +807,19 @@ const useStyles = makeStyles({
       top: 0,
       left: 0,
       right: 0,
-      height: '3px',
-      background: `linear-gradient(90deg, ${tokens.colorBrandForeground1}, ${tokens.colorCompoundBrandForeground1})`,
-      borderRadius: `${tokens.borderRadiusLarge} ${tokens.borderRadiusLarge} 0 0`,
+      height: '2px',
+      background: tokens.colorBrandStroke1,
+      borderRadius: `${tokens.borderRadiusMedium} ${tokens.borderRadiusMedium} 0 0`,
     },
     ':hover': {
-      transform: 'translateY(-2px)',
-      boxShadow: `0 8px 24px rgba(0, 0, 0, 0.08), 0 2px 8px rgba(0, 0, 0, 0.06)` ,
+      boxShadow: `0 2px 4px rgba(0, 0, 0, 0.08)`,
     },
   },
   cardHeader: {
     display: 'flex',
     alignItems: 'center',
     justifyContent: 'space-between',
-    padding: tokens.spacingHorizontalXL,
+    padding: `${tokens.spacingVerticalS} ${tokens.spacingHorizontalM}`,
     cursor: 'pointer',
     userSelect: 'none',
     transition: 'background-color 150ms ease',
@@ -832,7 +851,7 @@ const useStyles = makeStyles({
     transform: 'rotate(90deg)',
   },
   cardContent: {
-    padding: `0 ${tokens.spacingHorizontalXL} ${tokens.spacingHorizontalXL}`,
+    padding: `0 ${tokens.spacingHorizontalM} ${tokens.spacingVerticalM}`,
   },
   cardField: {
     marginBottom: tokens.spacingVerticalM,
@@ -1324,19 +1343,21 @@ const FilePreview = ({ selectedFile, isFullscreen, onToggleFullscreen }) => {
     }
     return result;
   }, [selectedFile?.analysisContent]);
-  const cleanedAnalysis = React.useMemo(() => {
+  const { contentWithoutKpiAndCapacity, capacityOutlook } = React.useMemo(() => {
     const md = selectedFile?.analysisContent || '';
-    if (!md) return md;
+    if (!md) return { contentWithoutKpiAndCapacity: md, capacityOutlook: '' };
     const lines = md.split('\n');
-    let start = -1;
-    let end = -1;
+    
+    // Find and extract KPI section
+    let kpiStart = -1;
+    let kpiEnd = -1;
     for (let i = 0; i < lines.length - 2; i++) {
       const headerLine = lines[i].trim();
       const isKpiHeading = /key\s*performance\s*indicators/i.test(headerLine.replace(/[#*`_]/g, ''));
       const headerCells = headerLine.includes('|') ? headerLine.split('|').map(c => c.trim().toLowerCase()).filter(Boolean) : [];
       const looksLikeKpiHeader = headerCells.includes('area') && headerCells.includes('indicator') && headerCells.includes('value') && headerCells.includes('trend');
       if (isKpiHeading || looksLikeKpiHeader) {
-        start = isKpiHeading ? i : i;
+        kpiStart = isKpiHeading ? i : i;
         let j = isKpiHeading ? i + 1 : i + 1;
         if (j < lines.length && lines[j].includes('|') && /-/.test(lines[j])) j++;
         while (j < lines.length) {
@@ -1344,16 +1365,59 @@ const FilePreview = ({ selectedFile, isFullscreen, onToggleFullscreen }) => {
           if (!line.includes('|')) break;
           j++;
         }
-        end = j;
+        kpiEnd = j;
         break;
       }
     }
-    if (start >= 0 && end > start) {
-      const before = lines.slice(0, start);
-      const after = lines.slice(end);
-      return [...before, ...after].join('\n');
+    
+    // Find and extract Capacity Outlook section
+    let capacityStart = -1;
+    for (let i = 0; i < lines.length; i++) {
+      const line = lines[i].trim();
+      if (/^#+\s*capacity\s+outlook/i.test(line) || /^\*\*capacity\s+outlook\*\*/i.test(line)) {
+        capacityStart = i;
+        break;
+      }
     }
-    return md;
+    
+    let capacityOutlookContent = '';
+    let finalLines = lines;
+    
+    // Extract capacity outlook if found
+    if (capacityStart >= 0) {
+      // Find the end of capacity section (next heading or end of document)
+      let capacityEnd = lines.length;
+      for (let i = capacityStart + 1; i < lines.length; i++) {
+        const line = lines[i].trim();
+        // Check for next major heading (##) but not subheadings within capacity
+        if (/^##\s+(?!\d)/.test(line) && !/capacity/i.test(line)) {
+          capacityEnd = i;
+          break;
+        }
+      }
+      capacityOutlookContent = lines.slice(capacityStart, capacityEnd).join('\n');
+      
+      // Remove capacity section from main content
+      const beforeCapacity = lines.slice(0, capacityStart);
+      const afterCapacity = lines.slice(capacityEnd);
+      finalLines = [...beforeCapacity, ...afterCapacity];
+    }
+    
+    // Remove KPI section from main content
+    if (kpiStart >= 0 && kpiEnd > kpiStart) {
+      // Adjust indices if capacity was before KPI
+      const adjustedKpiStart = capacityStart >= 0 && capacityStart < kpiStart ? kpiStart - (lines.length - finalLines.length) : kpiStart;
+      const adjustedKpiEnd = capacityStart >= 0 && capacityStart < kpiEnd ? kpiEnd - (lines.length - finalLines.length) : kpiEnd;
+      
+      const beforeKpi = finalLines.slice(0, adjustedKpiStart);
+      const afterKpi = finalLines.slice(adjustedKpiEnd);
+      finalLines = [...beforeKpi, ...afterKpi];
+    }
+    
+    return { 
+      contentWithoutKpiAndCapacity: finalLines.join('\n'), 
+      capacityOutlook: capacityOutlookContent 
+    };
   }, [selectedFile?.analysisContent]);
   const hasMetrics = (Array.isArray(selectedFile?.metricsData) && selectedFile.metricsData.length > 0) || (Array.isArray(parsedKpis) && parsedKpis.length > 0);
   const hasParameters = Array.isArray(selectedFile?.parametersData) && selectedFile.parametersData.length > 0;
@@ -1643,7 +1707,7 @@ const FilePreview = ({ selectedFile, isFullscreen, onToggleFullscreen }) => {
                       ),
                     }}
                   >
-                    {cleanedAnalysis}
+                    {contentWithoutKpiAndCapacity}
                   </ReactMarkdown>
 
                   {hasMetrics && (
@@ -1695,6 +1759,101 @@ const FilePreview = ({ selectedFile, isFullscreen, onToggleFullscreen }) => {
                         })()}
                       </div>
                     </div>
+                  )}
+                  
+                  {/* Capacity Outlook Section */}
+                  {capacityOutlook && capacityOutlook.trim() && (
+                    <ReactMarkdown
+                      remarkPlugins={[remarkGfm]}
+                      rehypePlugins={[rehypeRaw]}
+                      components={{
+                        ...(function () {
+                          let currentHeaders = [];
+                          let currentColIndex = 0;
+                          const middleHeaders = new Set([
+                            'issue id',
+                            'area',
+                            'severity',
+                            'recommendation id',
+                            'estimated effort',
+                            'responsible area',
+                            'linked issue id',
+                          ]);
+                          return {
+                            table: ({ children }) => (
+                              <div className={classes.tableScroll} tabIndex={0} role="group" aria-label="Markdown table">
+                                <table className={classes.mdTable} aria-label="Markdown data table">{children}</table>
+                              </div>
+                            ),
+                            thead: ({ children }) => {
+                              currentHeaders = [];
+                              return <thead>{children}</thead>;
+                            },
+                            th: ({ children }) => {
+                              const text = String(children).replace(/\s+/g, ' ').trim();
+                              currentHeaders.push(text);
+                              return <th className={classes.mdTh} scope="col">{children}</th>;
+                            },
+                            tr: ({ children }) => {
+                              currentColIndex = 0;
+                              return <tr>{children}</tr>;
+                            },
+                            td: ({ children, ...props }) => {
+                              const plain = String(children).replace(/\s+/g, ' ').trim();
+                              const isLong = plain.length > 50;
+                              const wrapStyle = isLong ? { whiteSpace: 'normal', overflow: 'visible', textOverflow: 'clip', wordBreak: 'break-word', overflowWrap: 'anywhere' } : {};
+                              const statusStyle = getStatusStyle(plain, classes);
+                              const headerName = (currentHeaders[currentColIndex] || '').toLowerCase().trim();
+                              const shouldMiddle = middleHeaders.has(headerName);
+                              const cell = (
+                                <td
+                                  className={classes.mdTd}
+                                  title={plain}
+                                  style={{ ...(shouldMiddle ? { verticalAlign: 'middle' } : {}), ...wrapStyle }}
+                                  {...props}
+                                >
+                                  {statusStyle ? (
+                                    <span className={`${classes.statusChip} ${statusStyle.class}`}>
+                                      {statusStyle.icon}
+                                      {statusStyle.label}
+                                    </span>
+                                  ) : (
+                                    children
+                                  )}
+                                </td>
+                              );
+                              currentColIndex += 1;
+                              return cell;
+                            },
+                            tbody: ({ children }) => <tbody>{children}</tbody>,
+                          };
+                        })(),
+                        code: JsonCodeBlockRenderer,
+                        h2: ({ children }) => (
+                          <h2 className={classes.mdH2}>{children}</h2>
+                        ),
+                        h3: ({ children }) => (
+                          <h3 className={classes.mdH3}>{children}</h3>
+                        ),
+                        p: ({ children }) => (
+                          <p className={classes.mdP}>{children}</p>
+                        ),
+                        ul: ({ children }) => (
+                          <ul className={classes.mdUl}>{children}</ul>
+                        ),
+                        ol: ({ children }) => (
+                          <ol className={classes.mdOl}>{children}</ol>
+                        ),
+                        li: ({ children }) => (
+                          <li className={classes.mdLi}>{children}</li>
+                        ),
+                        strong: ({ children }) => (
+                          <strong className={classes.mdStrong}>{children}</strong>
+                        ),
+                      }}
+                    >
+                      {capacityOutlook}
+                    </ReactMarkdown>
                   )}
                   
                   {/* Collapsible Parameters Section after metrics */}
