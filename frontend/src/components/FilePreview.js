@@ -1712,6 +1712,7 @@ const FilePreview = ({ selectedFile, isFullscreen, onToggleFullscreen }) => {
 
                   {hasMetrics && (
                     <div className={classes.accordionSection}>
+                      <h2 className={classes.mdH2}>Key Performance Indicators</h2>
                       <div className={classes.panelInner}>
                         {(() => {
                           const primary = Array.isArray(selectedFile?.metricsData) ? selectedFile.metricsData : [];
