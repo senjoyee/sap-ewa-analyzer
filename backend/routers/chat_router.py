@@ -10,12 +10,10 @@ import os
 import traceback
 from typing import List, Dict, Any
 import asyncio
-import tempfile
 
 from fastapi import APIRouter, HTTPException
 from pydantic import BaseModel
 from dotenv import load_dotenv
-from azure.storage.blob import BlobServiceClient
 
 # Lazy import AzureOpenAI only when needed to avoid cost at module load
 
@@ -69,52 +67,14 @@ async def chat_with_document(request: ChatRequest):
             azure_endpoint=azure_endpoint,
         )
 
-        # Always use original PDF from Azure Blob Storage
-        storage_conn = os.getenv("AZURE_STORAGE_CONNECTION_STRING")
-        storage_container = os.getenv("AZURE_STORAGE_CONTAINER_NAME")
-        if not storage_conn or not storage_container:
-            raise HTTPException(status_code=500, detail="Azure Storage configuration missing.")
+        # Use markdown content from request (no PDF upload to avoid "Too many images" error)
+        if not request.documentContent or request.documentContent.strip() == "":
+            raise HTTPException(status_code=400, detail="Document content is missing. Please process the document first.")
 
-        # Initialize Blob client
-        blob_service_client = BlobServiceClient.from_connection_string(storage_conn)
-        blob_client = blob_service_client.get_blob_client(container=storage_container, blob=request.fileName)
+        # Build system instruction with inline markdown content
+        system_instruction = _build_system_prompt(request.fileName, request.documentContent)
 
-        # Download PDF bytes off the event loop
-        def _read_pdf() -> bytes:
-            downloader = blob_client.download_blob()
-            return downloader.readall()
-
-        pdf_bytes = await asyncio.to_thread(_read_pdf)
-        if not pdf_bytes:
-            raise HTTPException(status_code=404, detail="Original PDF not found or empty in blob storage.")
-
-        # Upload PDF to Azure OpenAI Files API to obtain a file_id
-        temp_path = None
-        file_id = None
-        try:
-            with tempfile.NamedTemporaryFile(delete=False, suffix=".pdf") as tmp:
-                tmp.write(pdf_bytes)
-                temp_path = tmp.name
-            with open(temp_path, "rb") as fobj:
-                uploaded = await asyncio.to_thread(lambda: client.files.create(file=fobj, purpose="assistants"))
-                file_id = uploaded.id
-        finally:
-            if temp_path and os.path.exists(temp_path):
-                try:
-                    os.remove(temp_path)
-                except Exception:
-                    pass
-
-        # Build system instruction (no inline doc content; rely on attached PDF)
-        system_instruction = (
-            "You are an expert SAP Basis Architect specialized in analyzing SAP Early Watch Alert (EWA) reports.\n\n"
-            f"DOCUMENT: {request.fileName}\n"
-            "The original PDF is attached. Use ONLY the attached PDF as the source of truth when answering.\n"
-            "Quote and reference specific sections and values from the report where possible.\n"
-            "If a topic is not present in the document, state that it cannot be found. Provide technically precise answers in Markdown."
-        )
-
-        # Build Responses API input messages with file attachment and chat history
+        # Build Responses API input messages with markdown content and chat history
         responses_messages = []
         responses_messages.append({
             "role": "system",
@@ -132,11 +92,10 @@ async def chat_with_document(request: ChatRequest):
                 "content": [{"type": content_type, "text": text}],
             })
 
-        # Current user turn: attach input_file then the user's question
+        # Current user turn: just the user's question (no file attachment)
         responses_messages.append({
             "role": "user",
             "content": [
-                {"type": "input_file", "file_id": file_id},
                 {"type": "input_text", "text": request.message},
             ],
         })
