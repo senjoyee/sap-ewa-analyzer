@@ -7,12 +7,14 @@ from __future__ import annotations
 
 import os
 import re
+import json
 from typing import Dict, Any, List
 from fastapi import APIRouter, HTTPException, Response, Query
 from azure.storage.blob import BlobServiceClient
 from dotenv import load_dotenv
 from weasyprint import HTML
 from markdown2 import markdown
+from utils.markdown_utils import json_to_markdown
 
 load_dotenv()
 AZURE_STORAGE_CONNECTION_STRING = os.getenv("AZURE_STORAGE_CONNECTION_STRING")
@@ -28,6 +30,44 @@ except Exception as e:
     blob_service_client = None
 
 router = APIRouter(prefix="/api", tags=["export"])
+
+
+def _get_pdf_optimized_markdown(blob_name: str, markdown_text: str) -> str:
+    """
+    Attempt to regenerate markdown from JSON with pdf_export=True.
+    If JSON is not found, return the original markdown.
+    
+    This ensures that JSON card sections are rendered as tables in PDF exports
+    and KPI sections are excluded.
+    """
+    if not blob_service_client:
+        return markdown_text
+    
+    try:
+        # Derive the JSON blob name from the markdown blob name
+        # Pattern: filename_AI.md -> filename_AI.json
+        base_name = os.path.splitext(blob_name)[0]
+        json_blob_name = f"{base_name}.json"
+        
+        # Try to download the JSON file
+        json_blob_client = blob_service_client.get_blob_client(
+            container=AZURE_STORAGE_CONTAINER_NAME, blob=json_blob_name
+        )
+        
+        if json_blob_client.exists():
+            json_bytes = json_blob_client.download_blob().readall()
+            json_data = json.loads(json_bytes.decode("utf-8", errors="replace"))
+            
+            # Regenerate markdown with pdf_export=True
+            print(f"[PDF Export] Regenerating markdown from JSON: {json_blob_name}")
+            return json_to_markdown(json_data, pdf_export=True)
+        else:
+            print(f"[PDF Export] JSON not found ({json_blob_name}), using original markdown")
+            return markdown_text
+            
+    except Exception as e:
+        print(f"[PDF Export] Error loading JSON for PDF optimization: {e}")
+        return markdown_text
 
 
 def _enhanced_markdown_to_html(markdown_text: str) -> str:
@@ -397,6 +437,9 @@ async def export_markdown_to_pdf_enhanced(
 
         markdown_bytes = blob_client.download_blob().readall()
         markdown_text = markdown_bytes.decode("utf-8", errors="replace")
+        
+        # Regenerate markdown from JSON for PDF export (converts JSON cards to tables, removes KPIs)
+        markdown_text = _get_pdf_optimized_markdown(blob_name, markdown_text)
 
         # Get enhanced CSS and HTML
         enhanced_css, body_html = _enhanced_markdown_to_html(markdown_text)
@@ -511,6 +554,9 @@ async def export_markdown_to_pdf(
 
         markdown_bytes = blob_client.download_blob().readall()
         markdown_text = markdown_bytes.decode("utf-8", errors="replace")
+        
+        # Regenerate markdown from JSON for PDF export (converts JSON cards to tables, removes KPIs)
+        markdown_text = _get_pdf_optimized_markdown(blob_name, markdown_text)
 
         body_html = markdown(markdown_text, extras=["tables", "fenced-code-blocks"])
 

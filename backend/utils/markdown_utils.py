@@ -252,10 +252,15 @@ def _merge_findings_and_recommendations(
 # ────────────────────────────────────────────────────────────────────────────────
 # Public API
 # ────────────────────────────────────────────────────────────────────────────────
-def json_to_markdown(data: Dict[str, Any]) -> str:
+def json_to_markdown(data: Dict[str, Any], pdf_export: bool = False) -> str:
     """
     Convert an EWA JSON document (validated against schema v1.1)
     into a Markdown report suitable for rendering in the UI.
+    
+    Args:
+        data: The EWA JSON data to convert
+        pdf_export: If True, renders findings/recommendations as tables instead of JSON cards
+                   and excludes KPI section for cleaner PDF output
     """
     md: List[str] = []
 
@@ -301,77 +306,89 @@ def json_to_markdown(data: Dict[str, Any]) -> str:
     findings = data.get("Key Findings", data.get("key_findings", []))
     recommendations = data.get("Recommendations", data.get("recommendations", []))
     merged_items = _merge_findings_and_recommendations(findings, recommendations)
-    md.extend(
-        _array_to_card_json(
-            merged_items,
-            "Key Findings & Recommendations",
-            "merged_findings_recommendations",
+    
+    # For PDF export, use table format; for UI, use JSON cards
+    if pdf_export:
+        md.extend(
+            _array_to_markdown_table(
+                merged_items,
+                "Key Findings & Recommendations"
+            )
         )
-    )
+    else:
+        md.extend(
+            _array_to_card_json(
+                merged_items,
+                "Key Findings & Recommendations",
+                "merged_findings_recommendations",
+            )
+        )
     md.append("\n---\n")
 
 
     # ── Key Performance Indicators ────────────────────────────────────────────
-    md.append("<div style='page-break-before: always;'></div>")
-    md.append("")
-    md.append("## Key Performance Indicators")
-    # Look for KPIs under new image agent schema first, then legacy keys
-    kpis = (
-        data.get("kpis")
-        or data.get("key_performance_indicators")
-        or data.get("KPIs")
-        or []
-    )
-    if kpis and isinstance(kpis, list):
-        if isinstance(kpis[0], dict):
-            sample = kpis[0]
-            # New schema (image agent): {area, indicator, value, trend:{symbol,name}}
-            is_new_schema = (
-                ("indicator" in sample) or ("value" in sample) or (
-                    isinstance(sample.get("trend"), dict) and "symbol" in sample.get("trend", {})
+    # Skip KPI section entirely for PDF export (as requested)
+    if not pdf_export:
+        md.append("<div style='page-break-before: always;'></div>")
+        md.append("")
+        md.append("## Key Performance Indicators")
+        # Look for KPIs under new image agent schema first, then legacy keys
+        kpis = (
+            data.get("kpis")
+            or data.get("key_performance_indicators")
+            or data.get("KPIs")
+            or []
+        )
+        if kpis and isinstance(kpis, list):
+            if isinstance(kpis[0], dict):
+                sample = kpis[0]
+                # New schema (image agent): {area, indicator, value, trend:{symbol,name}}
+                is_new_schema = (
+                    ("indicator" in sample) or ("value" in sample) or (
+                        isinstance(sample.get("trend"), dict) and "symbol" in sample.get("trend", {})
+                    )
                 )
-            )
-            if is_new_schema:
-                headers = ["Area", "Indicator", "Value", "Trend"]
-                rows: List[List[str]] = []
-                for kpi in kpis:
-                    area = kpi.get("area", "N/A")
-                    indicator = kpi.get("indicator", kpi.get("name", "N/A"))
-                    value = kpi.get("value", kpi.get("current_value", "N/A"))
-                    t = kpi.get("trend") or {}
-                    symbol = t.get("symbol") or ""
-                    # Show only the arrow symbol, no text
-                    trend_display = symbol if symbol else "N/A"
-                    rows.append([area, indicator, value, trend_display])
-                md.extend(_format_table(headers, rows))
+                if is_new_schema:
+                    headers = ["Area", "Indicator", "Value", "Trend"]
+                    rows: List[List[str]] = []
+                    for kpi in kpis:
+                        area = kpi.get("area", "N/A")
+                        indicator = kpi.get("indicator", kpi.get("name", "N/A"))
+                        value = kpi.get("value", kpi.get("current_value", "N/A"))
+                        t = kpi.get("trend") or {}
+                        symbol = t.get("symbol") or ""
+                        # Show only the arrow symbol, no text
+                        trend_display = symbol if symbol else "N/A"
+                        rows.append([area, indicator, value, trend_display])
+                    md.extend(_format_table(headers, rows))
+                else:
+                    # Legacy deterministic schema
+                    headers = ["Area", "KPI", "Current Value", "Trend"]
+                    rows: List[List[str]] = []
+                    for kpi in kpis:
+                        area = kpi.get('area', 'N/A')
+                        name = kpi.get('name', 'N/A')
+                        current_value = kpi.get('current_value', 'N/A')
+                        trend_info = kpi.get('trend', {})
+                        trend_direction = trend_info.get('direction', 'N/A')
+                        if trend_direction == 'none':
+                            trend_display = 'N/A'
+                        else:
+                            # Arrow-only mapping
+                            trend_display = {
+                                'up': '↗️',
+                                'down': '↘️', 
+                                'flat': '➡️'
+                            }.get(trend_direction, trend_direction)
+                        rows.append([area, name, current_value, trend_display])
+                    md.extend(_format_table(headers, rows))
             else:
-                # Legacy deterministic schema
-                headers = ["Area", "KPI", "Current Value", "Trend"]
-                rows: List[List[str]] = []
+                # Fallback for simple string KPIs
                 for kpi in kpis:
-                    area = kpi.get('area', 'N/A')
-                    name = kpi.get('name', 'N/A')
-                    current_value = kpi.get('current_value', 'N/A')
-                    trend_info = kpi.get('trend', {})
-                    trend_direction = trend_info.get('direction', 'N/A')
-                    if trend_direction == 'none':
-                        trend_display = 'N/A'
-                    else:
-                        # Arrow-only mapping
-                        trend_display = {
-                            'up': '↗️',
-                            'down': '↘️', 
-                            'flat': '➡️'
-                        }.get(trend_direction, trend_direction)
-                    rows.append([area, name, current_value, trend_display])
-                md.extend(_format_table(headers, rows))
+                    md.append(f"- {kpi}")
         else:
-            # Fallback for simple string KPIs
-            for kpi in kpis:
-                md.append(f"- {kpi}")
-    else:
-        md.append("No KPIs provided.")
-    md.append("\n---\n")
+            md.append("No KPIs provided.")
+        md.append("\n---\n")
 
     # ── Capacity Outlook ──────────────────────────────────────────────────────
     md.append("<div style='page-break-before: always;'></div>")
