@@ -70,6 +70,100 @@ def _get_pdf_optimized_markdown(blob_name: str, markdown_text: str) -> str:
         return markdown_text
 
 
+def _convert_findings_table_to_cards(html_content: str) -> str:
+    """Convert the Key Findings & Recommendations table to card layout for better PDF readability."""
+    import re
+    
+    # Find the Key Findings & Recommendations section
+    # Look for the h2 header followed by a table
+    pattern = r'(<h2[^>]*>Key Findings &amp; Recommendations</h2>)(.*?)(?=<h2|<hr|$)'
+    match = re.search(pattern, html_content, re.DOTALL | re.IGNORECASE)
+    
+    if not match:
+        return html_content
+    
+    section_start = match.start()
+    section_end = match.end()
+    header_html = match.group(1)
+    section_content = match.group(2)
+    
+    # Extract table data
+    table_match = re.search(r'<table>(.*?)</table>', section_content, re.DOTALL)
+    if not table_match:
+        return html_content
+    
+    table_html = table_match.group(0)
+    
+    # Parse table headers
+    headers_match = re.search(r'<thead>.*?<tr>(.*?)</tr>.*?</thead>', table_html, re.DOTALL)
+    if not headers_match:
+        return html_content
+    
+    headers = re.findall(r'<th[^>]*>(.*?)</th>', headers_match.group(1))
+    headers = [re.sub(r'<[^>]+>', '', h).strip() for h in headers]  # Strip HTML tags
+    
+    # Parse table rows
+    tbody_match = re.search(r'<tbody>(.*?)</tbody>', table_html, re.DOTALL)
+    if not tbody_match:
+        return html_content
+    
+    rows_html = re.findall(r'<tr>(.*?)</tr>', tbody_match.group(1), re.DOTALL)
+    
+    # Build card HTML
+    cards_html = '<div class="findings-cards-container">'
+    
+    for row_html in rows_html:
+        cells = re.findall(r'<td[^>]*>(.*?)</td>', row_html, re.DOTALL)
+        if len(cells) != len(headers):
+            continue
+        
+        # Extract key fields for card header
+        issue_id = cells[0] if len(cells) > 0 else 'N/A'
+        area = cells[1] if len(cells) > 1 else 'N/A'
+        severity = cells[2] if len(cells) > 2 else 'N/A'
+        
+        # Clean severity for CSS class
+        severity_text = re.sub(r'<[^>]+>', '', severity).strip().lower()
+        severity_class = f'severity-{severity_text}' if severity_text in ['critical', 'high', 'medium', 'low'] else 'severity-medium'
+        
+        cards_html += f'''
+        <div class="finding-card">
+            <div class="card-header">
+                <div class="card-header-left">
+                    <span class="issue-id">{issue_id}</span>
+                    <span class="area-badge">{area}</span>
+                </div>
+                <span class="severity-badge {severity_class}">{severity}</span>
+            </div>
+            <div class="card-body">
+        '''
+        
+        # Add all fields as rows
+        for i, (header, cell) in enumerate(zip(headers, cells)):
+            if i < 3:  # Skip Issue ID, Area, Severity (already in header)
+                continue
+            
+            cards_html += f'''
+                <div class="card-field">
+                    <div class="field-label">{header}</div>
+                    <div class="field-value">{cell}</div>
+                </div>
+            '''
+        
+        cards_html += '''
+            </div>
+        </div>
+        '''
+    
+    cards_html += '</div>'
+    
+    # Replace the table with cards
+    new_section = header_html + cards_html + section_content[table_match.end():]
+    new_html = html_content[:section_start] + new_section + html_content[section_end:]
+    
+    return new_html
+
+
 def _enhanced_markdown_to_html(markdown_text: str) -> str:
     """Convert markdown to HTML with enhanced styling and structure."""
     
@@ -81,6 +175,9 @@ def _enhanced_markdown_to_html(markdown_text: str) -> str:
             "strike", "task_list", "break-on-newline"
         ]
     )
+    
+    # Convert findings table to cards for better PDF layout
+    html_body = _convert_findings_table_to_cards(html_body)
     
     # Enhanced CSS styling for professional appearance
     enhanced_css = """
@@ -345,6 +442,122 @@ def _enhanced_markdown_to_html(markdown_text: str) -> str:
             padding: 15px;
             margin: 20px 0;
         }
+        
+        /* Card-based layout for findings */
+        .findings-cards-container {
+            display: block;
+            margin: 20px 0;
+        }
+        
+        .finding-card {
+            background: #ffffff;
+            border: 1px solid #e2e8f0;
+            border-radius: 8px;
+            margin-bottom: 20px;
+            page-break-inside: avoid;
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+            overflow: hidden;
+        }
+        
+        .card-header {
+            background: linear-gradient(135deg, #f7fafc, #edf2f7);
+            padding: 12px 15px;
+            border-bottom: 2px solid #e2e8f0;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        
+        .card-header-left {
+            display: flex;
+            gap: 10px;
+            align-items: center;
+        }
+        
+        .issue-id {
+            font-weight: 700;
+            color: #2d3748;
+            font-size: 11pt;
+            font-family: 'JetBrains Mono', monospace;
+        }
+        
+        .area-badge {
+            background: #4299e1;
+            color: white;
+            padding: 3px 10px;
+            border-radius: 4px;
+            font-size: 9pt;
+            font-weight: 600;
+        }
+        
+        .severity-badge {
+            padding: 4px 12px;
+            border-radius: 4px;
+            font-weight: 700;
+            font-size: 9pt;
+            text-transform: uppercase;
+        }
+        
+        .severity-critical {
+            background: linear-gradient(135deg, #fed7d7, #feb2b2);
+            color: #742a2a;
+            border: 1px solid #fc8181;
+        }
+        
+        .severity-high {
+            background: linear-gradient(135deg, #feebc8, #fbd38d);
+            color: #7b341e;
+            border: 1px solid #f6ad55;
+        }
+        
+        .severity-medium {
+            background: linear-gradient(135deg, #fefcbf, #faf089);
+            color: #744210;
+            border: 1px solid #ecc94b;
+        }
+        
+        .severity-low {
+            background: linear-gradient(135deg, #c6f6d5, #9ae6b4);
+            color: #22543d;
+            border: 1px solid #68d391;
+        }
+        
+        .card-body {
+            padding: 15px;
+        }
+        
+        .card-field {
+            margin-bottom: 15px;
+            page-break-inside: avoid;
+        }
+        
+        .card-field:last-child {
+            margin-bottom: 0;
+        }
+        
+        .field-label {
+            font-weight: 600;
+            color: #4a5568;
+            font-size: 9pt;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            margin-bottom: 5px;
+        }
+        
+        .field-value {
+            color: #2d3748;
+            font-size: 10pt;
+            line-height: 1.6;
+        }
+        
+        .field-value ul {
+            margin: 5px 0 0 0;
+            padding-left: 20px;
+        }
+        
+        .field-value li {
+            margin-bottom: 4px;
+        }
     """
     
     return enhanced_css, html_body
@@ -559,6 +772,9 @@ async def export_markdown_to_pdf(
         markdown_text = _get_pdf_optimized_markdown(blob_name, markdown_text)
 
         body_html = markdown(markdown_text, extras=["tables", "fenced-code-blocks"])
+        
+        # Convert findings table to cards for better PDF layout
+        body_html = _convert_findings_table_to_cards(body_html)
 
         # Enhanced CSS styling
         styles = """
@@ -622,6 +838,122 @@ async def export_markdown_to_pdf(
             
             tr:nth-child(even) {
                 background-color: #f8fafc;
+            }
+            
+            /* Card-based layout for findings */
+            .findings-cards-container {
+                display: block;
+                margin: 20px 0;
+            }
+            
+            .finding-card {
+                background: #ffffff;
+                border: 1px solid #e2e8f0;
+                border-radius: 8px;
+                margin-bottom: 20px;
+                page-break-inside: avoid;
+                box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+                overflow: hidden;
+            }
+            
+            .card-header {
+                background: linear-gradient(135deg, #f7fafc, #edf2f7);
+                padding: 12px 15px;
+                border-bottom: 2px solid #e2e8f0;
+                display: flex;
+                justify-content: space-between;
+                align-items: center;
+            }
+            
+            .card-header-left {
+                display: flex;
+                gap: 10px;
+                align-items: center;
+            }
+            
+            .issue-id {
+                font-weight: 700;
+                color: #2d3748;
+                font-size: 11pt;
+                font-family: 'JetBrains Mono', monospace;
+            }
+            
+            .area-badge {
+                background: #4299e1;
+                color: white;
+                padding: 3px 10px;
+                border-radius: 4px;
+                font-size: 9pt;
+                font-weight: 600;
+            }
+            
+            .severity-badge {
+                padding: 4px 12px;
+                border-radius: 4px;
+                font-weight: 700;
+                font-size: 9pt;
+                text-transform: uppercase;
+            }
+            
+            .severity-critical {
+                background: linear-gradient(135deg, #fed7d7, #feb2b2);
+                color: #742a2a;
+                border: 1px solid #fc8181;
+            }
+            
+            .severity-high {
+                background: linear-gradient(135deg, #feebc8, #fbd38d);
+                color: #7b341e;
+                border: 1px solid #f6ad55;
+            }
+            
+            .severity-medium {
+                background: linear-gradient(135deg, #fefcbf, #faf089);
+                color: #744210;
+                border: 1px solid #ecc94b;
+            }
+            
+            .severity-low {
+                background: linear-gradient(135deg, #c6f6d5, #9ae6b4);
+                color: #22543d;
+                border: 1px solid #68d391;
+            }
+            
+            .card-body {
+                padding: 15px;
+            }
+            
+            .card-field {
+                margin-bottom: 15px;
+                page-break-inside: avoid;
+            }
+            
+            .card-field:last-child {
+                margin-bottom: 0;
+            }
+            
+            .field-label {
+                font-weight: 600;
+                color: #4a5568;
+                font-size: 9pt;
+                text-transform: uppercase;
+                letter-spacing: 0.5px;
+                margin-bottom: 5px;
+            }
+            
+            .field-value {
+                color: #2d3748;
+                font-size: 10pt;
+                line-height: 1.6;
+            }
+            
+            .field-value ul {
+                margin: 5px 0 0 0;
+                padding-left: 20px;
+            }
+            
+            .field-value li {
+                margin-bottom: 4px;
             }
         """
         
