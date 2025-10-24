@@ -301,8 +301,10 @@ def json_to_markdown(data: Dict[str, Any], pdf_export: bool = False) -> str:
     md.append("\n---\n")
 
     # ── Key Findings & Recommendations ───────────────────────────────────────
-    md.append("<div style='page-break-before: always;'></div>")
-    md.append("")
+    # Don't add page break for PDF export (cards flow naturally)
+    if not pdf_export:
+        md.append("<div style='page-break-before: always;'></div>")
+        md.append("")
     findings = data.get("Key Findings", data.get("key_findings", []))
     recommendations = data.get("Recommendations", data.get("recommendations", []))
     merged_items = _merge_findings_and_recommendations(findings, recommendations)

@@ -122,18 +122,19 @@ def _convert_findings_table_to_cards(html_content: str) -> str:
         area = cells[1] if len(cells) > 1 else 'N/A'
         severity = cells[2] if len(cells) > 2 else 'N/A'
         
-        # Clean severity for CSS class
-        severity_text = re.sub(r'<[^>]+>', '', severity).strip().lower()
-        severity_class = f'severity-{severity_text}' if severity_text in ['critical', 'high', 'medium', 'low'] else 'severity-medium'
+        # Clean area and severity text (strip HTML tags)
+        area_text = re.sub(r'<[^>]+>', '', area).strip()
+        severity_text = re.sub(r'<[^>]+>', '', severity).strip()
+        severity_lower = severity_text.lower()
+        severity_class = f'severity-{severity_lower}' if severity_lower in ['critical', 'high', 'medium', 'low'] else 'severity-medium'
         
         cards_html += f'''
         <div class="finding-card">
             <div class="card-header">
                 <div class="card-header-left">
-                    <span class="issue-id">{issue_id}</span>
-                    <span class="area-badge">{area}</span>
+                    <span class="area-badge">{area_text}</span>
                 </div>
-                <span class="severity-badge {severity_class}">{severity}</span>
+                <span class="severity-badge {severity_class}">{severity_text}</span>
             </div>
             <div class="card-body">
         '''
@@ -472,13 +473,6 @@ def _enhanced_markdown_to_html(markdown_text: str) -> str:
             display: flex;
             gap: 10px;
             align-items: center;
-        }
-        
-        .issue-id {
-            font-weight: 700;
-            color: #2d3748;
-            font-size: 11pt;
-            font-family: 'JetBrains Mono', monospace;
         }
         
         .area-badge {
@@ -869,13 +863,6 @@ async def export_markdown_to_pdf(
                 display: flex;
                 gap: 10px;
                 align-items: center;
-            }
-            
-            .issue-id {
-                font-weight: 700;
-                color: #2d3748;
-                font-size: 11pt;
-                font-family: 'JetBrains Mono', monospace;
             }
             
             .area-badge {
