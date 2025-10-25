@@ -127,10 +127,12 @@ def _convert_findings_table_to_cards(html_content: str) -> str:
         area_text_raw = re.sub(r'<[^>]+>', '', area)
         severity_text_raw = re.sub(r'<[^>]+>', '', severity)
 
-        area_text = html.escape(area_text_raw.strip()) if area_text_raw else 'General'
-        severity_lower = severity_text_raw.lower().strip().strip('"\' >') if severity_text_raw else ''
-        if severity_lower not in {'critical', 'high', 'medium', 'low'}:
-            severity_lower = 'medium'
+        area_clean = html.unescape(area_text_raw.strip()) if area_text_raw else ''
+        area_text = html.escape(area_clean) if area_clean else 'General'
+
+        severity_clean = html.unescape(severity_text_raw.strip()) if severity_text_raw else ''
+        severity_match = re.search(r'(critical|high|medium|low)', severity_clean, re.IGNORECASE)
+        severity_lower = severity_match.group(1).lower() if severity_match else 'medium'
         severity_display = severity_lower.upper()
         severity_class = f'severity-{severity_lower}'
         
@@ -482,44 +484,43 @@ def _enhanced_markdown_to_html(markdown_text: str) -> str:
         }
         
         .area-badge {
-            background: #4299e1;
+            background: #3182ce;
             color: white;
-            padding: 3px 10px;
-            border-radius: 4px;
+            padding: 4px 12px;
+            border-radius: 999px;
             font-size: 9pt;
             font-weight: 600;
+            letter-spacing: 0.3px;
         }
         
         .severity-badge {
-            padding: 4px 12px;
-            border-radius: 4px;
+            padding: 4px 14px;
+            border-radius: 999px;
             font-weight: 700;
             font-size: 9pt;
             text-transform: uppercase;
+            letter-spacing: 0.5px;
+            display: inline-block;
         }
         
         .severity-critical {
-            background: linear-gradient(135deg, #fed7d7, #feb2b2);
-            color: #742a2a;
-            border: 1px solid #fc8181;
+            background: #fee2e2;
+            color: #7f1d1d;
         }
         
         .severity-high {
-            background: linear-gradient(135deg, #feebc8, #fbd38d);
-            color: #7b341e;
-            border: 1px solid #f6ad55;
+            background: #fef3c7;
+            color: #78350f;
         }
         
         .severity-medium {
-            background: linear-gradient(135deg, #fefcbf, #faf089);
-            color: #744210;
-            border: 1px solid #ecc94b;
+            background: #fef9c3;
+            color: #854d0e;
         }
         
         .severity-low {
-            background: linear-gradient(135deg, #c6f6d5, #9ae6b4);
-            color: #22543d;
-            border: 1px solid #68d391;
+            background: #dcfce7;
+            color: #14532d;
         }
         
         .card-body {
