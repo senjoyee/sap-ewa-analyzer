@@ -575,7 +575,7 @@ def _post_process_html(
     skip_page_break_sections = skip_page_break_sections or set()
 
     # Add page breaks before major table sections (unless skipped)
-    for section_name in ['Positive Findings', 'Key Findings', 'Recommendations', 'Parameters']:
+    for section_name in ['Positive Findings', 'Key Findings & Recommendations', 'Recommendations', 'Parameters']:
         if section_name in skip_page_break_sections:
             continue
         pattern = fr'(<h\d[^>]*>)({section_name})(</h\d>)'
@@ -671,7 +671,10 @@ async def export_markdown_to_pdf_enhanced(
         # Post-process HTML for additional styling (skip extra page break and risk replacements for cards)
         body_html = _post_process_html(
             body_html,
-            skip_page_break_sections={"Key Findings & Recommendations"},
+            skip_page_break_sections={
+                "Key Findings & Recommendations",
+                "Key Findings &amp; Recommendations",
+            },
             apply_risk_highlights=False,
         )
 
