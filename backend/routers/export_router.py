@@ -8,6 +8,7 @@ from __future__ import annotations
 import os
 import re
 import json
+import html
 from typing import Dict, Any, List
 from fastapi import APIRouter, HTTPException, Response, Query
 from azure.storage.blob import BlobServiceClient
@@ -123,10 +124,15 @@ def _convert_findings_table_to_cards(html_content: str) -> str:
         severity = cells[2] if len(cells) > 2 else 'N/A'
         
         # Clean area and severity text (strip HTML tags)
-        area_text = re.sub(r'<[^>]+>', '', area).strip()
-        severity_text = re.sub(r'<[^>]+>', '', severity).strip()
-        severity_lower = severity_text.lower()
-        severity_class = f'severity-{severity_lower}' if severity_lower in ['critical', 'high', 'medium', 'low'] else 'severity-medium'
+        area_text_raw = re.sub(r'<[^>]+>', '', area)
+        severity_text_raw = re.sub(r'<[^>]+>', '', severity)
+
+        area_text = html.escape(area_text_raw.strip()) if area_text_raw else 'General'
+        severity_lower = severity_text_raw.lower().strip().strip('"\' >') if severity_text_raw else ''
+        if severity_lower not in {'critical', 'high', 'medium', 'low'}:
+            severity_lower = 'medium'
+        severity_display = severity_lower.upper()
+        severity_class = f'severity-{severity_lower}'
         
         cards_html += f'''
         <div class="finding-card">
@@ -134,7 +140,7 @@ def _convert_findings_table_to_cards(html_content: str) -> str:
                 <div class="card-header-left">
                     <span class="area-badge">{area_text}</span>
                 </div>
-                <span class="severity-badge {severity_class}">{severity_text}</span>
+                <span class="severity-badge {severity_class}">{severity_display}</span>
             </div>
             <div class="card-body">
         '''
@@ -557,43 +563,53 @@ def _enhanced_markdown_to_html(markdown_text: str) -> str:
     return enhanced_css, html_body
 
 
-def _post_process_html(html_content: str) -> str:
-    """Apply additional HTML enhancements and risk level styling."""
+def _post_process_html(
+    html_content: str,
+    *,
+    skip_page_break_sections: set[str] | None = None,
+    apply_risk_highlights: bool = True,
+) -> str:
+    """Apply additional HTML enhancements and optional risk level styling."""
     
-    # Add page breaks before major table sections
+    skip_page_break_sections = skip_page_break_sections or set()
+
+    # Add page breaks before major table sections (unless skipped)
     for section_name in ['Positive Findings', 'Key Findings', 'Recommendations', 'Parameters']:
+        if section_name in skip_page_break_sections:
+            continue
         pattern = fr'(<h\d[^>]*>)({section_name})(</h\d>)'
         replacement = fr'\1<span class="page-break-before">\2</span>\3'
         html_content = re.sub(pattern, replacement, html_content, flags=re.IGNORECASE)
     
-    # Add risk level classes to severity indicators
-    html_content = re.sub(
-        r'\b(critical)\b', 
-        '<span class="risk-critical">CRITICAL</span>', 
-        html_content, 
-        flags=re.IGNORECASE
-    )
-    
-    html_content = re.sub(
-        r'\b(high)\b', 
-        '<span class="risk-high">HIGH</span>', 
-        html_content, 
-        flags=re.IGNORECASE
-    )
-    
-    html_content = re.sub(
-        r'\b(medium)\b', 
-        '<span class="risk-medium">MEDIUM</span>', 
-        html_content, 
-        flags=re.IGNORECASE
-    )
-    
-    html_content = re.sub(
-        r'\b(low)\b', 
-        '<span class="risk-low">LOW</span>', 
-        html_content, 
-        flags=re.IGNORECASE
-    )
+    if apply_risk_highlights:
+        # Add risk level classes to severity indicators
+        html_content = re.sub(
+            r'\b(critical)\b', 
+            '<span class="risk-critical">CRITICAL</span>', 
+            html_content, 
+            flags=re.IGNORECASE
+        )
+        
+        html_content = re.sub(
+            r'\b(high)\b', 
+            '<span class="risk-high">HIGH</span>', 
+            html_content, 
+            flags=re.IGNORECASE
+        )
+        
+        html_content = re.sub(
+            r'\b(medium)\b', 
+            '<span class="risk-medium">MEDIUM</span>', 
+            html_content, 
+            flags=re.IGNORECASE
+        )
+        
+        html_content = re.sub(
+            r'\b(low)\b', 
+            '<span class="risk-low">LOW</span>', 
+            html_content, 
+            flags=re.IGNORECASE
+        )
     
     # Add status styling
     html_content = re.sub(
@@ -651,8 +667,12 @@ async def export_markdown_to_pdf_enhanced(
         # Get enhanced CSS and HTML
         enhanced_css, body_html = _enhanced_markdown_to_html(markdown_text)
         
-        # Post-process HTML for additional styling
-        body_html = _post_process_html(body_html)
+        # Post-process HTML for additional styling (skip extra page break and risk replacements for cards)
+        body_html = _post_process_html(
+            body_html,
+            skip_page_break_sections={"Key Findings & Recommendations"},
+            apply_risk_highlights=False,
+        )
 
         # Build complete HTML document with professional structure
         orientation = " landscape" if landscape else ""
@@ -769,6 +789,13 @@ async def export_markdown_to_pdf(
         
         # Convert findings table to cards for better PDF layout
         body_html = _convert_findings_table_to_cards(body_html)
+
+        # Post-process HTML for additional styling (skip extra page break and risk replacements for cards)
+        body_html = _post_process_html(
+            body_html,
+            skip_page_break_sections={"Key Findings & Recommendations"},
+            apply_risk_highlights=False,
+        )
 
         # Enhanced CSS styling
         styles = """
