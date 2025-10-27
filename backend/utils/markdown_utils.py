@@ -302,7 +302,7 @@ def json_to_markdown(data: Dict[str, Any], pdf_export: bool = False) -> str:
 
     # ── Key Findings & Recommendations ───────────────────────────────────────
     # Don't add page break for PDF export (cards flow naturally)
-    if not pdf_export:
+    if pdf_export:
         md.append("<div style='page-break-before: always;'></div>")
         md.append("")
     findings = data.get("Key Findings", data.get("key_findings", []))
