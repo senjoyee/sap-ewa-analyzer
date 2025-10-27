@@ -87,7 +87,26 @@ def _convert_findings_table_to_cards(html_content: str) -> str:
     section_end = match.end()
     header_html = match.group(1)
     section_content = match.group(2)
+
+    # Remove any page-break span injected inside the H2 itself
+    header_html = re.sub(
+        r'(<h2[^>]*>)(?:\s*<span[^>]*class=["\']page-break-before["\'][^>]*>\s*)?(.*?)(?:\s*</span>\s*)?(</h2>)',
+        r'\1\2\3',
+        header_html,
+        flags=re.DOTALL | re.IGNORECASE,
+    )
     
+    # Remove any leading explicit page-break elements that might have slipped in
+    section_content = re.sub(
+        r'^(\s*(?:<div[^>]*page-break-before[^>]*></div>|<span[^>]*class=["\']page-break-before["\'][^>]*>.*?</span>))*',
+        '',
+        section_content,
+        flags=re.DOTALL | re.IGNORECASE,
+    )
+    
+    # Also strip any immediate <hr> separators that might push content
+    section_content = re.sub(r'^\s*<hr\s*/?>', '', section_content, flags=re.IGNORECASE)
+
     # Extract table data
     table_match = re.search(r'<table>(.*?)</table>', section_content, re.DOTALL)
     if not table_match:
@@ -228,6 +247,7 @@ def _enhanced_markdown_to_html(markdown_text: str) -> str:
             border-left: 4px solid #4299e1;
             padding-left: 15px;
             page-break-after: avoid;
+            break-after: avoid-page;
             background: #f7fafc;
         }
         
@@ -455,17 +475,29 @@ def _enhanced_markdown_to_html(markdown_text: str) -> str:
         /* Card-based layout for findings */
         .findings-cards-container {
             display: block;
-            margin: 20px 0;
+            margin: 8px 0 20px 0;
+            break-before: avoid-page !important;
+            page-break-before: avoid !important;
+        }
+
+        /* Ensure first card follows the heading without page break */
+        h2 + .findings-cards-container {
+            break-before: auto !important;
+            page-break-before: auto !important;
+            margin-top: 6px;
         }
         
         .finding-card {
             background: #ffffff;
             border: 1px solid #e2e8f0;
-            border-radius: 8px;
+            border-radius: 0;
             margin-bottom: 20px;
-            page-break-inside: avoid;
-            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
-            overflow: hidden;
+            page-break-inside: auto;
+            break-inside: auto;
+            break-before: auto !important;
+            page-break-before: auto !important;
+            box-shadow: none;
+            overflow: visible;
         }
         
         .card-header {
@@ -529,7 +561,8 @@ def _enhanced_markdown_to_html(markdown_text: str) -> str:
         
         .card-field {
             margin-bottom: 15px;
-            page-break-inside: avoid;
+            page-break-inside: auto;
+            break-inside: auto;
         }
         
         .card-field:last-child {
@@ -569,18 +602,29 @@ def _post_process_html(
     *,
     skip_page_break_sections: set[str] | None = None,
     apply_risk_highlights: bool = True,
+    enable_section_page_breaks: bool = True,
 ) -> str:
-    """Apply additional HTML enhancements and optional risk level styling."""
+    """Apply additional HTML enhancements and optional risk level styling.
+
+    Args:
+        html_content: The HTML to post-process
+        skip_page_break_sections: Section titles to NOT inject page breaks for
+        apply_risk_highlights: Whether to replace bare risk words with styled spans
+        enable_section_page_breaks: If False, do not inject any section page breaks
+    """
     
     skip_page_break_sections = skip_page_break_sections or set()
 
-    # Add page breaks before major table sections (unless skipped)
-    for section_name in ['Positive Findings', 'Key Findings & Recommendations', 'Recommendations', 'Parameters']:
-        if section_name in skip_page_break_sections:
-            continue
-        pattern = fr'(<h\d[^>]*>)({section_name})(</h\d>)'
-        replacement = fr'\1<span class="page-break-before">\2</span>\3'
-        html_content = re.sub(pattern, replacement, html_content, flags=re.IGNORECASE)
+    # Add page breaks before major table sections (unless disabled or skipped)
+    if enable_section_page_breaks:
+        for section_name in ['Positive Findings', 'Key Findings & Recommendations', 'Recommendations', 'Parameters']:
+            if section_name in skip_page_break_sections:
+                continue
+            # Create pattern that handles HTML encoding of ampersands
+            encoded_section = section_name.replace('&', '(?:&|&amp;|&amp;amp;)')
+            pattern = fr'(<h\d[^>]*>)({encoded_section})(</h\d>)'
+            replacement = fr'\1<span class="page-break-before">\2</span>\3'
+            html_content = re.sub(pattern, replacement, html_content, flags=re.IGNORECASE)
     
     if apply_risk_highlights:
         # Add risk level classes to severity indicators
@@ -674,8 +718,10 @@ async def export_markdown_to_pdf_enhanced(
             skip_page_break_sections={
                 "Key Findings & Recommendations",
                 "Key Findings &amp; Recommendations",
+                "Key Findings &amp;amp; Recommendations",
             },
             apply_risk_highlights=False,
+            enable_section_page_breaks=False,
         )
 
         # Build complete HTML document with professional structure
@@ -797,8 +843,13 @@ async def export_markdown_to_pdf(
         # Post-process HTML for additional styling (skip extra page break and risk replacements for cards)
         body_html = _post_process_html(
             body_html,
-            skip_page_break_sections={"Key Findings & Recommendations"},
+            skip_page_break_sections={
+                "Key Findings & Recommendations",
+                "Key Findings &amp; Recommendations",
+                "Key Findings &amp;amp; Recommendations",
+            },
             apply_risk_highlights=False,
+            enable_section_page_breaks=False,
         )
 
         # Enhanced CSS styling
@@ -868,17 +919,29 @@ async def export_markdown_to_pdf(
             /* Card-based layout for findings */
             .findings-cards-container {
                 display: block;
-                margin: 20px 0;
+                margin: 8px 0 20px 0;
+                break-before: avoid-page !important;
+                page-break-before: avoid !important;
+            }
+
+            /* Ensure first card follows the heading without page break */
+            h2 + .findings-cards-container {
+                break-before: auto !important;
+                page-break-before: auto !important;
+                margin-top: 6px;
             }
             
             .finding-card {
                 background: #ffffff;
                 border: 1px solid #e2e8f0;
-                border-radius: 8px;
+                border-radius: 0;
                 margin-bottom: 20px;
-                page-break-inside: avoid;
-                box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
-                overflow: hidden;
+                page-break-inside: auto;
+                break-inside: auto;
+                break-before: auto !important;
+                page-break-before: auto !important;
+                box-shadow: none;
+                overflow: visible;
             }
             
             .card-header {
@@ -943,7 +1006,8 @@ async def export_markdown_to_pdf(
             
             .card-field {
                 margin-bottom: 15px;
-                page-break-inside: avoid;
+                page-break-inside: auto;
+                break-inside: auto;
             }
             
             .card-field:last-child {
