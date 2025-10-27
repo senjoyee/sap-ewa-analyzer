@@ -1,10 +1,11 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Toolbar as FluentToolbar, ToolbarButton, Tooltip as FluentTooltip, makeStyles, shorthands, tokens, Menu, MenuTrigger, MenuPopover, MenuList, MenuItem, Button } from '@fluentui/react-components';
 import { Document24Regular, Settings24Regular, QuestionCircle24Regular, TextFont24Regular, Checkmark24Regular } from '@fluentui/react-icons';
 
 import FileUpload from './components/FileUpload';
 import FileList from './components/FileList';
 import FilePreview from './components/FilePreview';
+import { apiUrl } from './config';
 // Theme is managed by FluentProvider in src/index.js
 
 const drawerWidth = 480; // Increased width to accommodate analyze buttons and status and show more file details
@@ -122,6 +123,7 @@ const AppContent = ({ fontOptions = {}, currentFont = '', onFontChange }) => {
   const [selectedFileForPreview, setSelectedFileForPreview] = useState(null);
   const [fileListRefreshTrigger, setFileListRefreshTrigger] = useState(0);
   const [isFullscreen, setIsFullscreen] = useState(false);
+  const [standalonePreview, setStandalonePreview] = useState(false);
   const classes = useStyles();
 
   const fonts = fontOptions;
@@ -145,8 +147,44 @@ const AppContent = ({ fontOptions = {}, currentFont = '', onFontChange }) => {
     }
   };
 
+  useEffect(() => {
+    const params = new URLSearchParams(window.location.search);
+    const preview = params.get('preview');
+    if (preview) {
+      setStandalonePreview(true);
+      const aiFileName = `${preview}_AI.md`;
+      fetch(apiUrl(`/api/download/${aiFileName}`))
+        .then(async (res) => {
+          if (!res.ok) throw new Error(`Failed to fetch analysis: ${res.status}`);
+          return res.text();
+        })
+        .then((analysisContent) => {
+          setSelectedFileForPreview({
+            name: `${preview}.pdf`,
+            analysisContent,
+            displayType: 'analysis',
+          });
+          setIsFullscreen(true);
+        })
+        .catch(() => {
+          setIsFullscreen(true);
+        });
+    }
+  }, []);
+
   return (
     <div className={classes.root}>
+      {standalonePreview && (
+        <div className={classes.fullscreenOverlay}>
+          <FilePreview 
+            selectedFile={selectedFileForPreview} 
+            isFullscreen={true}
+            onToggleFullscreen={() => {}}
+          />
+        </div>
+      )}
+
+      {!standalonePreview && (
       <div className={classes.topBar}>
         <div className={classes.topBarInner}>
           <FluentToolbar>
@@ -237,6 +275,7 @@ const AppContent = ({ fontOptions = {}, currentFont = '', onFontChange }) => {
             onToggleFullscreen={() => setIsFullscreen(!isFullscreen)}
           />
         </div>
+      )}
       )}
     </div>
   );
