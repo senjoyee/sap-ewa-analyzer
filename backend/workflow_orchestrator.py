@@ -29,6 +29,7 @@ from agent.ewa_agent import EWAAgent
 from agent.kpi_image_agent import KPIImageAgent
 from utils.markdown_utils import json_to_markdown
 from models.gemini_client import GeminiClient, is_gemini_model, create_gemini_client
+from converters.document_converter import convert_document_to_markdown
 try:
     import fitz
 except Exception:
@@ -276,8 +277,21 @@ class EWAWorkflowOrchestrator:
             state.markdown_content = await self.download_markdown_from_blob(state.blob_name)
             return state
         except Exception as e:
-            state.error = str(e)
-            return state
+            # Attempt to generate markdown via converter when missing
+            try:
+                print(f"[STEP 1] Markdown not found for {state.blob_name}; attempting conversion to markdown")
+                result = await asyncio.to_thread(convert_document_to_markdown, state.blob_name)
+                if isinstance(result, dict) and not result.get("error") and result.get("status") == "completed":
+                    # Re-download newly created markdown
+                    state.markdown_content = await self.download_markdown_from_blob(state.blob_name)
+                    return state
+                else:
+                    msg = result.get("message") if isinstance(result, dict) else None
+                    state.error = msg or str(e)
+                    return state
+            except Exception as conv_e:
+                state.error = str(conv_e)
+                return state
     
 
     async def run_analysis_step(self, state: WorkflowState) -> WorkflowState:
