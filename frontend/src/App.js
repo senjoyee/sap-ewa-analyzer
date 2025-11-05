@@ -185,6 +185,7 @@ const AppContent = ({ fontOptions = {}, currentFont = '', onFontChange }) => {
       )}
 
       {!standalonePreview && (
+      <>
       <div className={classes.topBar}>
         <div className={classes.topBarInner}>
           <FluentToolbar>
@@ -276,6 +277,7 @@ const AppContent = ({ fontOptions = {}, currentFont = '', onFontChange }) => {
           />
         </div>
       )}
+      </>
       )}
     </div>
   );
