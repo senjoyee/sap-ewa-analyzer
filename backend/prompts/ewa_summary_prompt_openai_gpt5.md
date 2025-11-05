@@ -78,3 +78,4 @@ Validation & Output Format:
 - Before the final output, perform one last validation to confirm JSON schema alignment. Only output the schema-approved `create_ewa_summary` function call, with all required fields present, using "Unknown" or empty values as needed.
 - Do not include narrative, explanations, or markdown text outside the required structure.
 - Keep all structure, field names, and enumeration/categorical values exactly as specified in the schema.
+- Perform the Chain-of-Verification above; on any mismatch, correct and re-validate before emitting the final function call.
