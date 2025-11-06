@@ -430,18 +430,10 @@ const handleSendMessage = async () => {
       </div>
 
       <div className={classes.messages} role="region" aria-label="Chat messages" tabIndex={-1}>
-        {messages.length === 0 && (
+        {messages.length === 0 && contentStatus !== 'available' && (
           <div className={classes.emptyState} role="status" aria-live="polite">
             <Bot24Regular className={classes.emptyIcon} />
-            {contentStatus === 'available' ? (
-              <>
-                <div className={`${classes.placeholderTitle} ${typography.headingL}`}>Ask about this report</div>
-                <div className={`${classes.placeholderSubtext} ${typography.bodyM}`}>Ask me anything about this SAP EWA report.</div>
-                <div className={classes.placeholderFrame}>
-                  <div className={`${classes.placeholderMuted} ${typography.bodyS}`}>Your conversation will appear here.</div>
-                </div>
-              </>
-            ) : contentStatus === 'missing' || contentStatus === 'minimal' ? (
+            {contentStatus === 'missing' || contentStatus === 'minimal' ? (
               <>
                 <div className={`${classes.placeholderTitle} ${typography.headingL}`} style={{ color: tokens.colorPaletteRedForeground1 }}>Document content is limited or missing</div>
                 <div className={`${classes.placeholderSubtext} ${typography.bodyM}`}>Please process the document first by clicking “Process file”.</div>
@@ -457,15 +449,7 @@ const handleSendMessage = async () => {
                   <div className={`${classes.placeholderMuted} ${typography.bodyS}`}>If the problem persists, contact an administrator.</div>
                 </div>
               </>
-            ) : (
-              <>
-                <div className={`${classes.placeholderTitle} ${typography.headingL}`}>Ask about this document</div>
-                <div className={`${classes.placeholderSubtext} ${typography.bodyM}`}>Start the conversation using the input below.</div>
-                <div className={classes.placeholderFrame}>
-                  <div className={`${classes.placeholderMuted} ${typography.bodyS}`}>Tips: be specific to get better answers.</div>
-                </div>
-              </>
-            )}
+            ) : null}
           </div>
         )}
         
