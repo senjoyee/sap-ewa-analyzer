@@ -487,6 +487,15 @@ def _enhanced_markdown_to_html(markdown_text: str) -> str:
             margin-top: 6px;
         }
         
+        /* Logical divider between finding cards */
+        .findings-cards-container .finding-card + .finding-card::before {
+            content: "";
+            display: block;
+            height: 2px;
+            background: linear-gradient(90deg, #e2e8f0, #cbd5e1, #e2e8f0);
+            margin: 8px 0 16px 0;
+        }
+        
         .finding-card {
             background: #ffffff;
             border: 1px solid #e2e8f0;
@@ -929,6 +938,15 @@ async def export_markdown_to_pdf(
                 break-before: auto !important;
                 page-break-before: auto !important;
                 margin-top: 6px;
+            }
+            
+            /* Logical divider between finding cards */
+            .findings-cards-container .finding-card + .finding-card::before {
+                content: "";
+                display: block;
+                height: 2px;
+                background: linear-gradient(90deg, #e2e8f0, #cbd5e1, #e2e8f0);
+                margin: 8px 0 16px 0;
             }
             
             .finding-card {
