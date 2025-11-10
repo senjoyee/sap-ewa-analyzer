@@ -9,7 +9,6 @@ from __future__ import annotations
 import os
 import json
 import asyncio
-import tempfile
 from typing import Dict, Any, Optional
 
 from utils.validation import (
@@ -59,12 +58,12 @@ class AnalysisAgent:
         # JSON repair utility
         self.json_repair = JSONRepair()
 
-    async def run(self, pdf_data: bytes, extraction_result: Dict[str, Any]) -> Dict[str, Any]:
+    async def run(self, markdown_content: str, extraction_result: Dict[str, Any]) -> Dict[str, Any]:
         """
         Analyze system health and findings.
         
         Args:
-            pdf_data: Original EWA PDF bytes
+            markdown_content: EWA report markdown content
             extraction_result: Phase 1 extraction output (metadata, chapters)
         
         Returns:
@@ -73,7 +72,7 @@ class AnalysisAgent:
         print("[AnalysisAgent] Starting deep analysis phase")
         
         # Call LLM with context from Phase 1
-        analysis_result = await self._call_llm(pdf_data, extraction_result)
+        analysis_result = await self._call_llm(markdown_content, extraction_result)
         
         # Validate
         self._validate_output(analysis_result, extraction_result)
@@ -84,27 +83,10 @@ class AnalysisAgent:
         
         return analysis_result
 
-    async def _call_llm(self, pdf_data: bytes, extraction_result: Dict[str, Any]) -> Dict[str, Any]:
-        """Call Azure OpenAI Responses API with PDF and Phase 1 context"""
-        
-        file_id = None
-        temp_path = None
+    async def _call_llm(self, markdown_content: str, extraction_result: Dict[str, Any]) -> Dict[str, Any]:
+        """Call Azure OpenAI Responses API with markdown text and Phase 1 context"""
         
         try:
-            # Upload PDF to Files API
-            with tempfile.NamedTemporaryFile(delete=False, suffix=".pdf") as tmp:
-                tmp.write(pdf_data)
-                temp_path = tmp.name
-            
-            file_obj = open(temp_path, "rb")
-            try:
-                uploaded = await asyncio.to_thread(
-                    lambda: self.client.files.create(file=file_obj, purpose="assistants")
-                )
-                file_id = uploaded.id
-            finally:
-                file_obj.close()
-            
             # Build context from Phase 1
             context_summary = {
                 "System ID": extraction_result.get("System Metadata", {}).get("System ID", "Unknown"),
@@ -120,9 +102,9 @@ Phase 1 Extraction Context:
 Important: All "Source" fields in your findings must reference chapters from the "Chapters Reviewed" list above.
 """
             
-            # Build input content
+            # Build input content with markdown text
             user_content = [
-                {"type": "input_file", "file_id": file_id},
+                {"type": "input_text", "text": f"EWA Report Content (Markdown):\n\n{markdown_content}"},
                 {"type": "input_text", "text": context_text},
                 {"type": "input_text", "text": "Please perform deep technical analysis of this EWA report according to the instructions."},
                 {"type": "input_text", "text": self.prompt}
@@ -195,13 +177,9 @@ Important: All "Source" fields in your findings must reference chapters from the
                 
                 raise RuntimeError(f"Failed to parse analysis result: {args_str[:200]}")
         
-        finally:
-            # Cleanup temp file
-            if temp_path and os.path.exists(temp_path):
-                try:
-                    os.remove(temp_path)
-                except Exception:
-                    pass
+        except Exception as e:
+            print(f"[AnalysisAgent] Error: {e}")
+            raise
 
     def _validate_output(self, data: Dict[str, Any], extraction_result: Dict[str, Any]) -> None:
         """

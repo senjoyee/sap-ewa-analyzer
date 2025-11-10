@@ -306,15 +306,21 @@ class EWAWorkflowOrchestrator:
         Phase 1: Extraction (gpt-4o-mini) - metadata, chapters, parameters
         Phase 2: Analysis (gpt-5) - findings, health, capacity
         Phase 3: Strategy (gpt-4o/gpt-5) - recommendations, executive summary
-        Plus: KPI extraction via images
+        Plus: KPI extraction via images (uses PDF)
         """
         try:
             print(f"[STEP 2 - MULTI-PHASE] Starting 3-phase analysis for {state.blob_name}")
             
-            # Download PDF
-            pdf_data = await self.download_pdf_from_blob(state.blob_name)
+            # Get markdown content (already downloaded in state or download now)
+            markdown_content = state.markdown_content
+            if not markdown_content:
+                print("[MULTI-PHASE] Markdown not in state, downloading...")
+                state = await self.download_content_step(state)
+                if state.error:
+                    raise Exception(f"Failed to download markdown: {state.error}")
+                markdown_content = state.markdown_content
             
-            # Get metadata for KPI management
+            # Get metadata for logging
             original_metadata = await self.get_blob_metadata(state.blob_name)
             customer_name = original_metadata.get('customer_name', '')
             system_id = original_metadata.get('system_id', '')
@@ -322,17 +328,17 @@ class EWAWorkflowOrchestrator:
             
             print(f"Multi-Phase Analysis - Customer: {customer_name}, System: {system_id}, Report Date: {report_date_str}")
             
-            # Phase 1: Extraction (gpt-4o-mini, low effort)
+            # Phase 1: Extraction (gpt-4o-mini, low effort) - uses markdown
             print("[PHASE 1/3] Running Extraction Agent...")
             extraction_agent = ExtractionAgent(client=self.client, model=AZURE_OPENAI_FAST_MODEL)
-            extraction_result = await extraction_agent.run(pdf_data)
+            extraction_result = await extraction_agent.run(markdown_content)
             print(f"[PHASE 1/3] Complete: {len(extraction_result.get('Chapters Reviewed', []))} chapters, "
                   f"{len(extraction_result.get('Profile Parameters', []))} parameters")
             
-            # Phase 2: Analysis (gpt-5, high effort)
+            # Phase 2: Analysis (gpt-5, high effort) - uses markdown
             print("[PHASE 2/3] Running Analysis Agent...")
             analysis_agent = AnalysisAgent(client=self.client, model=AZURE_OPENAI_SUMMARY_MODEL)
-            analysis_result = await analysis_agent.run(pdf_data, extraction_result)
+            analysis_result = await analysis_agent.run(markdown_content, extraction_result)
             print(f"[PHASE 2/3] Complete: {len(analysis_result.get('Key Findings', []))} findings, "
                   f"risk={analysis_result.get('Overall Risk', 'unknown')}")
             
@@ -343,10 +349,12 @@ class EWAWorkflowOrchestrator:
             strategy_result = await strategy_agent.run(extraction_result, analysis_result)
             print(f"[PHASE 3/3] Complete: {len(strategy_result.get('Recommendations', []))} recommendations")
             
-            # KPI Extraction (parallel to main flow, image-based)
+            # KPI Extraction (parallel to main flow, image-based - needs PDF)
             print("[KPI EXTRACTION] Extracting KPIs via image agent...")
             kpi_result = {"kpis": []}
             try:
+                # Download PDF for KPI image extraction only
+                pdf_data = await self.download_pdf_from_blob(state.blob_name)
                 kpi_agent = KPIImageAgent(client=self.client)
                 kpi_result = await asyncio.to_thread(kpi_agent.extract_kpis_from_pdf_bytes, pdf_data)
                 print(f"[KPI EXTRACTION] Extracted {len(kpi_result.get('kpis', []))} KPI rows")

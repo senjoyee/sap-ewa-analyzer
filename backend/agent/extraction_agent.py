@@ -9,7 +9,6 @@ from __future__ import annotations
 import os
 import json
 import asyncio
-import tempfile
 from typing import Dict, Any, Optional
 
 from utils.validation import (
@@ -57,15 +56,15 @@ class ExtractionAgent:
         # JSON repair utility
         self.json_repair = JSONRepair()
 
-    async def run(self, pdf_data: bytes) -> Dict[str, Any]:
+    async def run(self, markdown_content: str) -> Dict[str, Any]:
         """
-        Extract metadata from PDF.
+        Extract metadata from EWA markdown content.
         Returns validated extraction result.
         """
         print("[ExtractionAgent] Starting extraction phase")
         
         # Call LLM
-        extraction_result = await self._call_llm(pdf_data)
+        extraction_result = await self._call_llm(markdown_content)
         
         # Validate
         self._validate_output(extraction_result)
@@ -75,31 +74,14 @@ class ExtractionAgent:
         
         return extraction_result
 
-    async def _call_llm(self, pdf_data: bytes) -> Dict[str, Any]:
-        """Call Azure OpenAI Responses API with PDF input"""
-        
-        file_id = None
-        temp_path = None
+    async def _call_llm(self, markdown_content: str) -> Dict[str, Any]:
+        """Call Azure OpenAI Responses API with markdown text input"""
         
         try:
-            # Upload PDF to Files API
-            with tempfile.NamedTemporaryFile(delete=False, suffix=".pdf") as tmp:
-                tmp.write(pdf_data)
-                temp_path = tmp.name
-            
-            file_obj = open(temp_path, "rb")
-            try:
-                uploaded = await asyncio.to_thread(
-                    lambda: self.client.files.create(file=file_obj, purpose="assistants")
-                )
-                file_id = uploaded.id
-            finally:
-                file_obj.close()
-            
-            # Build input content
+            # Build input content with markdown text
             user_content = [
-                {"type": "input_file", "file_id": file_id},
-                {"type": "input_text", "text": "Please extract the metadata from this EWA PDF according to the instructions."},
+                {"type": "input_text", "text": f"EWA Report Content (Markdown):\n\n{markdown_content}"},
+                {"type": "input_text", "text": "Please extract the metadata from this EWA report according to the instructions."},
                 {"type": "input_text", "text": self.prompt}
             ]
             
@@ -169,13 +151,9 @@ class ExtractionAgent:
                 
                 raise RuntimeError(f"Failed to parse extraction result: {args_str[:200]}")
         
-        finally:
-            # Cleanup temp file
-            if temp_path and os.path.exists(temp_path):
-                try:
-                    os.remove(temp_path)
-                except Exception:
-                    pass
+        except Exception as e:
+            print(f"[ExtractionAgent] Error: {e}")
+            raise
 
     def _validate_output(self, data: Dict[str, Any]) -> None:
         """
