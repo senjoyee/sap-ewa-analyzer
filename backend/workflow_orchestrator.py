@@ -325,14 +325,14 @@ class EWAWorkflowOrchestrator:
             # Phase 1: Extraction (gpt-4o-mini, low effort)
             print("[PHASE 1/3] Running Extraction Agent...")
             extraction_agent = ExtractionAgent(client=self.client, model=AZURE_OPENAI_FAST_MODEL)
-            extraction_result = await asyncio.to_thread(extraction_agent.run, pdf_data)
+            extraction_result = await extraction_agent.run(pdf_data)
             print(f"[PHASE 1/3] Complete: {len(extraction_result.get('Chapters Reviewed', []))} chapters, "
                   f"{len(extraction_result.get('Profile Parameters', []))} parameters")
             
             # Phase 2: Analysis (gpt-5, high effort)
             print("[PHASE 2/3] Running Analysis Agent...")
             analysis_agent = AnalysisAgent(client=self.client, model=AZURE_OPENAI_SUMMARY_MODEL)
-            analysis_result = await asyncio.to_thread(analysis_agent.run, pdf_data, extraction_result)
+            analysis_result = await analysis_agent.run(pdf_data, extraction_result)
             print(f"[PHASE 2/3] Complete: {len(analysis_result.get('Key Findings', []))} findings, "
                   f"risk={analysis_result.get('Overall Risk', 'unknown')}")
             
@@ -340,7 +340,7 @@ class EWAWorkflowOrchestrator:
             print("[PHASE 3/3] Running Strategy Agent...")
             strategy_model = AZURE_OPENAI_SUMMARY_MODEL  # Can use gpt-4o for cost savings if desired
             strategy_agent = StrategyAgent(client=self.client, model=strategy_model)
-            strategy_result = await asyncio.to_thread(strategy_agent.run, extraction_result, analysis_result)
+            strategy_result = await strategy_agent.run(extraction_result, analysis_result)
             print(f"[PHASE 3/3] Complete: {len(strategy_result.get('Recommendations', []))} recommendations")
             
             # KPI Extraction (parallel to main flow, image-based)
