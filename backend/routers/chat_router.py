@@ -49,9 +49,10 @@ async def chat_with_document(request: ChatRequest):
         api_key = os.getenv("AZURE_OPENAI_API_KEY")
         api_version = os.getenv("AZURE_OPENAI_API_VERSION", "2024-12-01-preview")
         azure_endpoint = os.getenv("AZURE_OPENAI_ENDPOINT")
-        # Prefer summary/fast model names used elsewhere in the backend; fall back to legacy var
+        # Prefer dedicated chat model if provided; then summary/fast; then legacy fallback
         model_name = (
-            os.getenv("AZURE_OPENAI_SUMMARY_MODEL")
+            os.getenv("AZURE_OPENAI_CHAT_MODEL")
+            or os.getenv("AZURE_OPENAI_SUMMARY_MODEL")
             or os.getenv("AZURE_OPENAI_FAST_MODEL")
             or os.getenv("AZURE_OPENAI_DEPLOYMENT_NAME", "gpt-4.1")
         )

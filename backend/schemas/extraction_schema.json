@@ -1,0 +1,75 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://example.com/schemas/ewa_extraction/v1.0.json",
+  "title": "EWAExtractionPhase",
+  "description": "Phase 1: Extract structured metadata and raw data from EWA report",
+  "type": "object",
+  "properties": {
+    "System Metadata": {
+      "type": "object",
+      "required": ["System ID", "Report Date", "Analysis Period"],
+      "properties": {
+        "System ID": {
+          "type": "string",
+          "description": "The SAP System ID (SID) - 3 uppercase letters"
+        },
+        "Report Date": {
+          "type": "string",
+          "format": "date",
+          "description": "Date the EWA report was generated in dd.mm.yyyy format"
+        },
+        "Analysis Period": {
+          "type": "string",
+          "description": "Date range the report covers (e.g. 2024-05-01 / 2024-05-31)"
+        }
+      },
+      "additionalProperties": false
+    },
+
+    "Chapters Reviewed": {
+      "type": "array",
+      "description": "Complete list of all chapters/sections enumerated in the EWA document",
+      "items": {
+        "type": "string"
+      }
+    },
+
+    "Profile Parameters": {
+      "type": "array",
+      "description": "Extracted profile parameter recommendations",
+      "items": {
+        "type": "object",
+        "required": ["Parameter Name", "Area", "Current Value", "Recommended Value", "Description"],
+        "properties": {
+          "Parameter Name": { "type": "string" },
+          "Area": { "type": "string", "description": "e.g., ABAP, JAVA, HANA, ORACLE" },
+          "Current Value": { "type": "string" },
+          "Recommended Value": { "type": "string" },
+          "Description": { "type": "string" }
+        },
+        "additionalProperties": false
+      }
+    },
+
+    "Raw Capacity Data": {
+      "type": "object",
+      "description": "Raw metrics for capacity analysis",
+      "properties": {
+        "Database Size": { "type": "string", "description": "Current DB size with units" },
+        "Database Growth Rate": { "type": "string", "description": "Growth rate or trend" },
+        "CPU Utilization Current": { "type": "string", "description": "Current CPU % or metrics" },
+        "Memory Utilization Current": { "type": "string", "description": "Current memory % or metrics" },
+        "Historical Trends": { "type": "string", "description": "Any historical trend data found" }
+      },
+      "additionalProperties": false
+    }
+  },
+
+  "required": [
+    "System Metadata",
+    "Chapters Reviewed",
+    "Profile Parameters",
+    "Raw Capacity Data"
+  ],
+  "additionalProperties": false
+}

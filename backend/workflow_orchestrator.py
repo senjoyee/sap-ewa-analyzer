@@ -27,6 +27,9 @@ from openai import AzureOpenAI
 from dotenv import load_dotenv
 from agent.ewa_agent import EWAAgent
 from agent.kpi_image_agent import KPIImageAgent
+from agent.extraction_agent import ExtractionAgent
+from agent.analysis_agent import AnalysisAgent
+from agent.strategy_agent import StrategyAgent
 from utils.markdown_utils import json_to_markdown
 from models.gemini_client import GeminiClient, is_gemini_model, create_gemini_client
 from converters.document_converter import convert_document_to_markdown
@@ -46,6 +49,9 @@ AZURE_OPENAI_API_VERSION = os.getenv("AZURE_OPENAI_API_VERSION")
 # Model deployment name
 AZURE_OPENAI_SUMMARY_MODEL = os.getenv("AZURE_OPENAI_SUMMARY_MODEL", "gpt-4.1")
 AZURE_OPENAI_FAST_MODEL = os.getenv("AZURE_OPENAI_FAST_MODEL", "gpt-4.1-mini")
+
+# Workflow toggle: use multi-phase agentic workflow
+USE_MULTI_PHASE_WORKFLOW = os.getenv("USE_MULTI_PHASE_WORKFLOW", "false").lower() in ("true", "1", "yes")
 
 # Azure Storage configuration
 AZURE_STORAGE_CONNECTION_STRING = os.getenv("AZURE_STORAGE_CONNECTION_STRING")
@@ -294,6 +300,109 @@ class EWAWorkflowOrchestrator:
                 return state
     
 
+    async def run_analysis_step_multi_phase(self, state: WorkflowState) -> WorkflowState:
+        """
+        Step 2 (Multi-Phase): Run 3-phase agentic analysis workflow.
+        Phase 1: Extraction (gpt-4o-mini) - metadata, chapters, parameters
+        Phase 2: Analysis (gpt-5) - findings, health, capacity
+        Phase 3: Strategy (gpt-4o/gpt-5) - recommendations, executive summary
+        Plus: KPI extraction via images
+        """
+        try:
+            print(f"[STEP 2 - MULTI-PHASE] Starting 3-phase analysis for {state.blob_name}")
+            
+            # Download PDF
+            pdf_data = await self.download_pdf_from_blob(state.blob_name)
+            
+            # Get metadata for KPI management
+            original_metadata = await self.get_blob_metadata(state.blob_name)
+            customer_name = original_metadata.get('customer_name', '')
+            system_id = original_metadata.get('system_id', '')
+            report_date_str = original_metadata.get('report_date_str', '')
+            
+            print(f"Multi-Phase Analysis - Customer: {customer_name}, System: {system_id}, Report Date: {report_date_str}")
+            
+            # Phase 1: Extraction (gpt-4o-mini, low effort)
+            print("[PHASE 1/3] Running Extraction Agent...")
+            extraction_agent = ExtractionAgent(client=self.client, model=AZURE_OPENAI_FAST_MODEL)
+            extraction_result = await asyncio.to_thread(extraction_agent.run, pdf_data)
+            print(f"[PHASE 1/3] Complete: {len(extraction_result.get('Chapters Reviewed', []))} chapters, "
+                  f"{len(extraction_result.get('Profile Parameters', []))} parameters")
+            
+            # Phase 2: Analysis (gpt-5, high effort)
+            print("[PHASE 2/3] Running Analysis Agent...")
+            analysis_agent = AnalysisAgent(client=self.client, model=AZURE_OPENAI_SUMMARY_MODEL)
+            analysis_result = await asyncio.to_thread(analysis_agent.run, pdf_data, extraction_result)
+            print(f"[PHASE 2/3] Complete: {len(analysis_result.get('Key Findings', []))} findings, "
+                  f"risk={analysis_result.get('Overall Risk', 'unknown')}")
+            
+            # Phase 3: Strategy (gpt-4o or gpt-5, medium effort)
+            print("[PHASE 3/3] Running Strategy Agent...")
+            strategy_model = AZURE_OPENAI_SUMMARY_MODEL  # Can use gpt-4o for cost savings if desired
+            strategy_agent = StrategyAgent(client=self.client, model=strategy_model)
+            strategy_result = await asyncio.to_thread(strategy_agent.run, extraction_result, analysis_result)
+            print(f"[PHASE 3/3] Complete: {len(strategy_result.get('Recommendations', []))} recommendations")
+            
+            # KPI Extraction (parallel to main flow, image-based)
+            print("[KPI EXTRACTION] Extracting KPIs via image agent...")
+            kpi_result = {"kpis": []}
+            try:
+                kpi_agent = KPIImageAgent(client=self.client)
+                kpi_result = await asyncio.to_thread(kpi_agent.extract_kpis_from_pdf_bytes, pdf_data)
+                print(f"[KPI EXTRACTION] Extracted {len(kpi_result.get('kpis', []))} KPI rows")
+            except Exception as kpi_e:
+                print(f"[KPI EXTRACTION] Failed: {kpi_e}")
+            
+            # Merge all phases into final JSON
+            final_json = self._merge_phase_results(extraction_result, analysis_result, strategy_result, kpi_result)
+            
+            # Add schema version
+            final_json["Schema Version"] = "1.1"
+            
+            # Convert to markdown
+            state.summary_json = final_json
+            state.summary_result = json_to_markdown(final_json)
+            
+            print("[STEP 2 - MULTI-PHASE] All phases complete, results merged")
+            return state
+            
+        except Exception as e:
+            state.error = str(e)
+            print(f"Error in run_analysis_step_multi_phase: {str(e)}")
+            traceback.print_exc()
+            return state
+
+    def _merge_phase_results(
+        self,
+        extraction: Dict[str, Any],
+        analysis: Dict[str, Any],
+        strategy: Dict[str, Any],
+        kpi_result: Dict[str, Any]
+    ) -> Dict[str, Any]:
+        """Merge results from all 3 phases plus KPIs into final schema-compliant JSON"""
+        return {
+            # From Phase 1 (Extraction)
+            "System Metadata": extraction.get("System Metadata", {}),
+            "Chapters Reviewed": extraction.get("Chapters Reviewed", []),
+            
+            # From Phase 2 (Analysis)
+            "System Health Overview": analysis.get("System Health Overview", {}),
+            "Positive Findings": analysis.get("Positive Findings", []),
+            "Key Findings": analysis.get("Key Findings", []),
+            "Capacity Outlook": analysis.get("Capacity Outlook", {}),
+            "Overall Risk": analysis.get("Overall Risk", "unknown"),
+            
+            # From Phase 3 (Strategy)
+            "Executive Summary": strategy.get("Executive Summary", ""),
+            "Recommendations": strategy.get("Recommendations", []),
+            
+            # From KPI Image Agent
+            "kpis": kpi_result.get("kpis", []),
+            
+            # Note: Profile Parameters from Phase 1 are not in the main schema
+            # but could be added to a separate output or included in metadata
+        }
+
     async def run_analysis_step(self, state: WorkflowState) -> WorkflowState:
         """Step 2: Generate comprehensive EWA analysis; then extract KPIs via image agent"""
         try:
@@ -426,8 +535,13 @@ class EWAWorkflowOrchestrator:
                 if state.error:
                     raise Exception(state.error)
             
-            # Run the EWA analysis using single enhanced agent
-            summary_state = await self.run_analysis_step(state)
+            # Run the EWA analysis: choose workflow based on environment toggle
+            if USE_MULTI_PHASE_WORKFLOW:
+                print("[WORKFLOW] Using multi-phase agentic workflow (3 agents)")
+                summary_state = await self.run_analysis_step_multi_phase(state)
+            else:
+                print("[WORKFLOW] Using legacy single-agent workflow")
+                summary_state = await self.run_analysis_step(state)
             
             # Check for errors
             if summary_state.error:
