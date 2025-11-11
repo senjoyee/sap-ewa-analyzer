@@ -17,10 +17,10 @@ class ValidationError(Exception):
 
 
 def validate_sid(sid: str) -> bool:
-    """Validate 3-letter uppercase SID format"""
+    """Validate 3-character uppercase SID format (letters and digits allowed)"""
     if not isinstance(sid, str):
         return False
-    return bool(re.match(r'^[A-Z]{3}$', sid))
+    return bool(re.match(r'^[A-Z0-9]{3}$', sid))
 
 
 def validate_date_format(date: str) -> bool:
