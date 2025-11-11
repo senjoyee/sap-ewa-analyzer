@@ -125,7 +125,8 @@ def validate_health_ratings(health_overview: Dict[str, Any]) -> List[str]:
     Returns list of validation errors.
     """
     allowed_ratings = ["good", "fair", "poor"]
-    required_areas = ["performance", "security", "stability", "configuration"]
+    # Match schema capitalization: Performance, Security, Stability, configuration
+    required_areas = ["Performance", "Security", "Stability", "configuration"]
     errors = []
     
     for area in required_areas:
