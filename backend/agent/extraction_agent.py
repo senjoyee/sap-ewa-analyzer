@@ -20,6 +20,8 @@ from utils.validation import (
     ValidationError,
 )
 from utils.json_repair import JSONRepair
+import re
+from datetime import datetime
 
 
 class ExtractionAgent:
@@ -66,7 +68,12 @@ class ExtractionAgent:
         # Call LLM
         extraction_result = await self._call_llm(markdown_content)
         
-        # Validate
+        # Log raw extraction for debugging
+        if "System Metadata" in extraction_result:
+            raw_date = extraction_result["System Metadata"].get("Report Date", "")
+            print(f"[ExtractionAgent] Raw extracted date: '{raw_date}'")
+        
+        # Validate (includes auto-correction)
         self._validate_output(extraction_result)
         
         print(f"[ExtractionAgent] Extraction complete: {len(extraction_result.get('Chapters Reviewed', []))} chapters, "
@@ -155,6 +162,80 @@ class ExtractionAgent:
             print(f"[ExtractionAgent] Error: {e}")
             raise
 
+    def _guess_malformed_date(self, p1: str, p2: str, p3: str, p4: str) -> str:
+        """
+        Try to guess the correct date from malformed patterns like "0301-11-20".
+        Args: p1, p2, p3, p4 are the 4 captured groups from the regex
+        """
+        # Try to interpret as: p3 (month) and p4 (day in YY format) → assume 20YY
+        # Example: "0301-11-20" → month=11, day=20, year=2003 or 2020?
+        # Better guess: use p3 as month, p4 as day, construct year from p1+p2
+        try:
+            # Attempt 1: p1p2 as year (03 01 → 2003 or 2301?), p3 as month, p4 as day
+            year_candidate = int(p1 + p2)
+            if year_candidate < 100:
+                year_candidate += 2000  # 03 → 2003, 25 → 2025
+            month = int(p3)
+            day = int(p4)
+            
+            # Validate ranges
+            if 1 <= month <= 12 and 1 <= day <= 31 and 2000 <= year_candidate <= 2100:
+                return f"{str(day).zfill(2)}.{str(month).zfill(2)}.{year_candidate}"
+        except Exception:
+            pass
+        
+        # Attempt 2: p3 as month, p4 as day, assume current year 2025
+        try:
+            month = int(p3)
+            day = int(p4)
+            if 1 <= month <= 12 and 1 <= day <= 31:
+                return f"{str(day).zfill(2)}.{str(month).zfill(2)}.2025"
+        except Exception:
+            pass
+        
+        return f"{p1}{p2}-{p3}-{p4}"  # Return original if can't parse
+
+    def _fix_date_format(self, date_str: str) -> str:
+        """
+        Attempt to auto-correct common date format errors.
+        Returns corrected date in dd.mm.yyyy format or original if unable to parse.
+        """
+        if not date_str or not isinstance(date_str, str):
+            return date_str
+        
+        # Already correct format
+        if re.match(r'^\d{2}\.\d{2}\.\d{4}$', date_str):
+            return date_str
+        
+        # Try common patterns
+        patterns = [
+            (r'^(\d{4})-(\d{2})-(\d{2})$', lambda m: f"{m.group(3)}.{m.group(2)}.{m.group(1)}"),  # 2025-11-02
+            (r'^(\d{2})/(\d{2})/(\d{4})$', lambda m: f"{m.group(1)}.{m.group(2)}.{m.group(3)}"),  # 02/11/2025
+            (r'^(\d{4})(\d{2})(\d{2})$', lambda m: f"{m.group(3)}.{m.group(2)}.{m.group(1)}"),    # 20251102
+            (r'^(\d{1,2})\.(\d{1,2})\.(\d{4})$', lambda m: f"{m.group(1).zfill(2)}.{m.group(2).zfill(2)}.{m.group(3)}"),  # 2.11.2025
+            # Handle malformed dates like "0301-11-20" or "0311-11-03"
+            # Pattern: DDMM-MM-YY or MMDD-MM-YY → try to extract reasonable date
+            (r'^(\d{2})(\d{2})-(\d{2})-(\d{2})$', lambda m: self._guess_malformed_date(m.group(1), m.group(2), m.group(3), m.group(4))),
+        ]
+        
+        for pattern, formatter in patterns:
+            match = re.match(pattern, date_str)
+            if match:
+                try:
+                    return formatter(match)
+                except Exception:
+                    continue
+        
+        # Try parsing with datetime as last resort
+        for fmt in ['%Y-%m-%d', '%d/%m/%Y', '%m/%d/%Y', '%d.%m.%Y', '%Y%m%d']:
+            try:
+                dt = datetime.strptime(date_str, fmt)
+                return dt.strftime('%d.%m.%Y')
+            except Exception:
+                continue
+        
+        return date_str
+
     def _validate_output(self, data: Dict[str, Any]) -> None:
         """
         Validate extraction output.
@@ -179,11 +260,18 @@ class ExtractionAgent:
             
             sid = metadata.get("System ID", "")
             if not validate_sid(sid):
-                errors.append(f"Invalid System ID format: {sid} (must be 3 uppercase letters)")
+                errors.append(f"Invalid System ID format: {sid} (must be 3 uppercase characters)")
             
             report_date = metadata.get("Report Date", "")
-            if not validate_date_format(report_date):
-                errors.append(f"Invalid Report Date format: {report_date} (must be dd.mm.yyyy)")
+            # Try to auto-fix date format
+            if report_date and not validate_date_format(report_date):
+                fixed_date = self._fix_date_format(report_date)
+                if validate_date_format(fixed_date):
+                    print(f"[ExtractionAgent] Auto-corrected date: {report_date} → {fixed_date}")
+                    metadata["Report Date"] = fixed_date
+                    report_date = fixed_date
+                else:
+                    errors.append(f"Invalid Report Date format: {report_date} (must be dd.mm.yyyy)")
         
         # Validate Chapters Reviewed not empty
         chapters = data.get("Chapters Reviewed", [])
