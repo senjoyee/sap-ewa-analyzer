@@ -57,6 +57,9 @@ USE_MULTI_PHASE_WORKFLOW = os.getenv("USE_MULTI_PHASE_WORKFLOW", "false").lower(
 AZURE_STORAGE_CONNECTION_STRING = os.getenv("AZURE_STORAGE_CONNECTION_STRING")
 AZURE_STORAGE_CONTAINER_NAME = os.getenv("AZURE_STORAGE_CONTAINER_NAME")
 
+# Debug/observability: save intermediate phase outputs to blob
+SAVE_PHASE_OUTPUTS = os.getenv("SAVE_PHASE_OUTPUTS", "false").lower() in ("true", "1", "yes")
+
 # System prompts for each workflow
 # System prompts for each workflow
 def load_summary_prompt() -> str | None:
@@ -334,6 +337,20 @@ class EWAWorkflowOrchestrator:
             extraction_result = await extraction_agent.run(markdown_content)
             print(f"[PHASE 1/3] Complete: {len(extraction_result.get('Chapters Reviewed', []))} chapters, "
                   f"{len(extraction_result.get('Profile Parameters', []))} parameters")
+
+            # Persist Phase 1 output if enabled
+            if SAVE_PHASE_OUTPUTS:
+                try:
+                    base_name = os.path.splitext(state.blob_name)[0]
+                    phase_blob = f"{base_name}_phase1_extraction.json"
+                    await self.upload_to_blob(
+                        phase_blob,
+                        json.dumps(extraction_result, indent=2),
+                        content_type="application/json",
+                        metadata=original_metadata,
+                    )
+                except Exception as up_e:
+                    print(f"[PHASE 1/3] Warning: could not persist extraction output: {up_e}")
             
             # Phase 2: Analysis (gpt-5, high effort) - uses markdown
             print("[PHASE 2/3] Running Analysis Agent...")
@@ -341,6 +358,20 @@ class EWAWorkflowOrchestrator:
             analysis_result = await analysis_agent.run(markdown_content, extraction_result)
             print(f"[PHASE 2/3] Complete: {len(analysis_result.get('Key Findings', []))} findings, "
                   f"risk={analysis_result.get('Overall Risk', 'unknown')}")
+
+            # Persist Phase 2 output if enabled
+            if SAVE_PHASE_OUTPUTS:
+                try:
+                    base_name = os.path.splitext(state.blob_name)[0]
+                    phase_blob = f"{base_name}_phase2_analysis.json"
+                    await self.upload_to_blob(
+                        phase_blob,
+                        json.dumps(analysis_result, indent=2),
+                        content_type="application/json",
+                        metadata=original_metadata,
+                    )
+                except Exception as up_e:
+                    print(f"[PHASE 2/3] Warning: could not persist analysis output: {up_e}")
             
             # Phase 3: Strategy (gpt-4o or gpt-5, medium effort)
             print("[PHASE 3/3] Running Strategy Agent...")
@@ -348,6 +379,20 @@ class EWAWorkflowOrchestrator:
             strategy_agent = StrategyAgent(client=self.client, model=strategy_model)
             strategy_result = await strategy_agent.run(extraction_result, analysis_result)
             print(f"[PHASE 3/3] Complete: {len(strategy_result.get('Recommendations', []))} recommendations")
+
+            # Persist Phase 3 output if enabled
+            if SAVE_PHASE_OUTPUTS:
+                try:
+                    base_name = os.path.splitext(state.blob_name)[0]
+                    phase_blob = f"{base_name}_phase3_strategy.json"
+                    await self.upload_to_blob(
+                        phase_blob,
+                        json.dumps(strategy_result, indent=2),
+                        content_type="application/json",
+                        metadata=original_metadata,
+                    )
+                except Exception as up_e:
+                    print(f"[PHASE 3/3] Warning: could not persist strategy output: {up_e}")
             
             # KPI Extraction (parallel to main flow, image-based - needs PDF)
             print("[KPI EXTRACTION] Extracting KPIs via image agent...")
