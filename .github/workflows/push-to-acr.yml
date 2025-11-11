@@ -4,7 +4,7 @@ on:
   push:
     branches:
       - main
-      - file-rename-upload
+      - heidegger
   workflow_dispatch:
 
 jobs:
