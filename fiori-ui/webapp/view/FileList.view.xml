@@ -1,0 +1,53 @@
+<mvc:View
+  controllerName="ewa.analyzer.controller.FileList"
+  xmlns:mvc="sap.ui.core.mvc"
+  xmlns="sap.m">
+  <Page id="fileListPage" title="Files">
+    <subHeader>
+      <Toolbar>
+        <Title text="Files" level="H3" />
+        <ToolbarSpacer />
+        <Button text="Upload" type="Emphasized" enabled="false" />
+        <Button text="Process" enabled="false" />
+        <Button text="Delete" enabled="false" />
+      </Toolbar>
+    </subHeader>
+    <content>
+      <VBox class="sapUiSmallMargin">
+        <Text text="Phase 1 skeleton: file list view placeholder" />
+        <HBox class="sapUiSmallMarginTop" fitContainer="true" renderType="Bare">
+          <VBox width="50%" class="sapUiSmallMarginEnd">
+            <Title text="File list (placeholder)" level="H4" />
+            <Text text="This area will show the customer-grouped file list and batch operations." />
+          </VBox>
+          <VBox width="50%" class="sapUiSmallMarginBegin">
+            <Title text="Analysis preview (placeholder)" level="H4" />
+            <Text text="This area will show the selected report preview and KPIs." />
+          </VBox>
+        </HBox>
+
+        <!-- Phase 2: basic data binding to backend /api/files -->
+        <BusyIndicator
+          class="sapUiSmallMarginTop"
+          visible="{files>/loading}" />
+
+        <MessageStrip
+          class="sapUiSmallMarginTop"
+          text="{files>/error}"
+          type="Error"
+          showIcon="true"
+          visible="{files>/hasError}" />
+
+        <List
+          id="fileList"
+          class="sapUiSmallMarginTop"
+          items="{files>/files}">
+          <StandardListItem
+            title="{files>name}"
+            description="{files>customer_name}"
+            icon="sap-icon://document-text" />
+        </List>
+      </VBox>
+    </content>
+  </Page>
+</mvc:View>

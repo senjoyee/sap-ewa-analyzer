@@ -1,0 +1,12 @@
+<mvc:View
+  controllerName="ewa.analyzer.controller.Analysis"
+  xmlns:mvc="sap.ui.core.mvc"
+  xmlns="sap.m">
+  <Page id="analysisPage" title="{i18n>analysisTitle}">
+    <content>
+      <VBox class="sapUiSmallMargin">
+        <Text text="{i18n>analysisPlaceholder}" />
+      </VBox>
+    </content>
+  </Page>
+</mvc:View>
