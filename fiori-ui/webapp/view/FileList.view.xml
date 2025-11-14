@@ -16,37 +16,40 @@
       <VBox class="sapUiSmallMargin">
         <Text text="Phase 1 skeleton: file list view placeholder" />
         <HBox class="sapUiSmallMarginTop" fitContainer="true" renderType="Bare">
+          <!-- Left: uploaded & processed files area -->
           <VBox width="50%" class="sapUiSmallMarginEnd">
-            <Title text="File list (placeholder)" level="H4" />
-            <Text text="This area will show the customer-grouped file list and batch operations." />
+            <Title text="Uploaded &amp; processed files (placeholder)" level="H4" />
+            <Text text="This area will show uploaded files, processing state, and which ones have AI analysis available." />
+
+            <!-- Phase 2: basic data binding to backend /api/files -->
+            <BusyIndicator
+              class="sapUiSmallMarginTop"
+              visible="{files>/loading}" />
+
+            <MessageStrip
+              class="sapUiSmallMarginTop"
+              text="{files>/error}"
+              type="Error"
+              showIcon="true"
+              visible="{files>/hasError}" />
+
+            <List
+              id="fileList"
+              class="sapUiSmallMarginTop"
+              items="{files>/files}">
+              <StandardListItem
+                title="{files>name}"
+                description="{files>customer_name}"
+                icon="sap-icon://document-text" />
+            </List>
           </VBox>
+
+          <!-- Right: analysis, KPIs and future chat area -->
           <VBox width="50%" class="sapUiSmallMarginBegin">
-            <Title text="Analysis preview (placeholder)" level="H4" />
-            <Text text="This area will show the selected report preview and KPIs." />
+            <Title text="Analysis, KPIs &amp; chat (placeholder)" level="H4" />
+            <Text text="This area will show the selected report preview, KPIs (including capacity outlook), and a chat panel to be added later." />
           </VBox>
         </HBox>
-
-        <!-- Phase 2: basic data binding to backend /api/files -->
-        <BusyIndicator
-          class="sapUiSmallMarginTop"
-          visible="{files>/loading}" />
-
-        <MessageStrip
-          class="sapUiSmallMarginTop"
-          text="{files>/error}"
-          type="Error"
-          showIcon="true"
-          visible="{files>/hasError}" />
-
-        <List
-          id="fileList"
-          class="sapUiSmallMarginTop"
-          items="{files>/files}">
-          <StandardListItem
-            title="{files>name}"
-            description="{files>customer_name}"
-            icon="sap-icon://document-text" />
-        </List>
       </VBox>
     </content>
   </Page>

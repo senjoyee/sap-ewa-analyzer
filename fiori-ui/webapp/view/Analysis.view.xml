@@ -5,7 +5,31 @@
   <Page id="analysisPage" title="{i18n>analysisTitle}">
     <content>
       <VBox class="sapUiSmallMargin">
-        <Text text="{i18n>analysisPlaceholder}" />
+        <Text text="Analysis view skeleton: placeholder" />
+
+        <!-- Selected file summary area -->
+        <VBox class="sapUiSmallMarginTop">
+          <Title text="Selected file summary (placeholder)" level="H4" />
+          <Text text="This area will show basic information about the selected processed file (customer, period, status)." />
+        </VBox>
+
+        <!-- Main analysis layout: preview + KPIs -->
+        <HBox class="sapUiSmallMarginTop" fitContainer="true" renderType="Bare">
+          <VBox width="60%" class="sapUiSmallMarginEnd">
+            <Title text="Report preview (placeholder)" level="H4" />
+            <Text text="This area will show the detailed analysis report or preview of the selected file." />
+          </VBox>
+          <VBox width="40%" class="sapUiSmallMarginBegin">
+            <Title text="KPIs (placeholder)" level="H4" />
+            <Text text="This area will show key metrics, including capacity outlook and related KPIs." />
+          </VBox>
+        </HBox>
+
+        <!-- Future chat area -->
+        <VBox class="sapUiSmallMarginTop">
+          <Title text="Chat (to be added later)" level="H4" />
+          <Text text="This area will host the conversational assistant related to the selected analysis." />
+        </VBox>
       </VBox>
     </content>
   </Page>
