@@ -224,9 +224,18 @@ sap.ui.define([
         if (oSection.title === "Key Findings & Recommendations") {
           var oCardData = that._parseKeyFindingsJson(oSection.markdown);
           if (oCardData) {
+            oContainer.addItem(new FormattedText({
+              htmlText: "<h2>" + that._escapeHtml(oSection.title) + "</h2>"
+            }));
             oContainer.addItem(that._createKeyFindingsCards(oCardData));
             return;
           }
+        }
+
+        if (oSection.title && oSection.title !== "Overview") {
+          oContainer.addItem(new FormattedText({
+            htmlText: "<h2>" + that._escapeHtml(oSection.title) + "</h2>"
+          }));
         }
 
         var aBlocks = that._splitMarkdownIntoBlocks(oSection.markdown);

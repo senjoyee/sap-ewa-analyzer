@@ -1,0 +1,40 @@
+.ewaAnalysisContent {
+  max-width: 1200px;
+  margin: 0 auto 2rem auto;
+}
+
+.ewaAnalysisContent h1 {
+  font-size: 1.5rem;
+  margin: 0 0 1rem 0;
+  font-weight: 600;
+}
+
+.ewaAnalysisContent h2 {
+  font-size: 1.1rem;
+  margin-top: 1.75rem;
+  margin-bottom: 0.5rem;
+  font-weight: 600;
+}
+
+.ewaAnalysisContent p {
+  margin: 0.25rem 0;
+  line-height: 1.4;
+}
+
+.ewaAnalysisContent ul {
+  margin: 0.25rem 0 0.75rem 1.5rem;
+}
+
+.ewaAnalysisContent .sapMTable {
+  margin-top: 0.5rem;
+  margin-bottom: 1.5rem;
+}
+
+.ewaAnalysisContent .sapMListTblCell {
+  padding-top: 0.5rem;
+  padding-bottom: 0.5rem;
+}
+
+.ewaAnalysisContent .sapMPanel {
+  margin-bottom: 0.5rem;
+}

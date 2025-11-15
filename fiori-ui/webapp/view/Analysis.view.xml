@@ -26,7 +26,7 @@
             visible="{= !!${analysis>/error}}" />
           <VBox
             id="analysisContent"
-            class="sapUiSmallMarginTop" />
+            class="sapUiSmallMarginTop ewaAnalysisContent" />
         </VBox>
       </VBox>
     </content>
