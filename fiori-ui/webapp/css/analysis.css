@@ -38,3 +38,11 @@
 .ewaAnalysisContent .sapMPanel {
   margin-bottom: 0.5rem;
 }
+
+/* Make Key Findings panel headers visually lighter and more compact */
+.ewaAnalysisContent .sapMPanel .sapMPanelHdr {
+  font-size: 0.875rem;
+  font-weight: 400;
+  padding-top: 0.25rem;
+  padding-bottom: 0.25rem;
+}
