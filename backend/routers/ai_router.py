@@ -12,12 +12,14 @@ from __future__ import annotations
 
 import os
 from typing import Dict, Any
+import asyncio
 
 from fastapi import APIRouter, HTTPException
 from models import BlobNameRequest
 from models.request_models import ProcessAnalyzeRequest
 from azure.storage.blob import BlobServiceClient
 from dotenv import load_dotenv
+from converters.document_converter import convert_document_to_markdown
 
 from workflow_orchestrator import ewa_orchestrator
 
@@ -48,7 +50,11 @@ async def process_and_analyze_document_endpoint(request: ProcessAnalyzeRequest):
     if not blob_service_client:
         raise HTTPException(status_code=500, detail="Azure Blob Service client not initialized.")
     try:
-        # Always analyze directly from PDF (skip markdown conversion)
+        try:
+            await asyncio.to_thread(convert_document_to_markdown, request.blob_name)
+        except Exception as conv_err:
+            print(f"Markdown conversion failed for {request.blob_name}: {conv_err}")
+
         result = await ewa_orchestrator.execute_workflow(request.blob_name, skip_markdown=True)
         if not result.get("success", False):
             raise HTTPException(status_code=result.get("status_code", 500), detail=result.get("message", "Workflow failed"))

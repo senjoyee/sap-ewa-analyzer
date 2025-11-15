@@ -85,6 +85,7 @@
                         text="View Analysis"
                         icon="sap-icon://inspect"
                         type="Transparent"
+                        visible="{files>ai_analyzed}"
                         press="onViewAnalysisPress" />
                     </cells>
                   </ColumnListItem>
