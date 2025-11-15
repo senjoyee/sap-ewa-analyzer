@@ -28,7 +28,20 @@ sap.ui.define([
       console.log("FileList onViewAnalysisPress", oFile);
       var oApp = this.getView().getParent();
       if (oApp && oApp.to) {
-        oApp.to("analysisPageView");
+        var oAppView = oApp.getParent && oApp.getParent();
+        var sAnalysisPageId = oAppView && oAppView.createId && oAppView.createId("analysisPageView");
+
+        if (sAnalysisPageId) {
+          oApp.to(sAnalysisPageId);
+
+          var oAnalysisView = sap.ui.getCore().byId(sAnalysisPageId);
+          if (oAnalysisView && oAnalysisView.getController) {
+            var oAnalysisController = oAnalysisView.getController();
+            if (oAnalysisController && oAnalysisController.loadAnalysisForFile) {
+              oAnalysisController.loadAnalysisForFile(oFile);
+            }
+          }
+        }
       }
     },
 

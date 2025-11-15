@@ -258,6 +258,25 @@ For the initial migration plan, assume **Option A** (CDN) to keep complexity low
 
 **Impact:** Medium.
 
+### Current implementation status (UI5 app)
+
+- **Phase 1 – Foundation**
+  - Basic UI5 app skeleton is in place (`index.html`, `Component.js`, `manifest.json`).
+  - `App.view.xml` currently hosts a simple `sap.m.App` with two pages: `FileList` (start) and `Analysis`. The `sap.f.FlexibleColumnLayout` shell remains a **target pattern** for later refinement, not yet implemented.
+  - `Analysis.view.xml` and `Analysis.controller.js` provide a placeholder analysis page layout (selected file summary, preview area, KPIs area, future chat area), with no backend logic yet.
+
+- **Phase 2 – Backend integration and Files UX**
+  - **Step 5.1 (API base URL):** Implemented via `webapp/model/config.js`, which reads `window.__ENV__.REACT_APP_API_BASE` when present and otherwise defaults to the Azure backend URL `https://sap-ewa-analyzer-backend.azurewebsites.net`.
+  - **Step 5.2 (file list wiring):** Implemented in `FileList.controller.js` + `FileList.view.xml`:
+    - `FileList.controller.js` calls `/api/files`, handles error cases, and populates a `JSONModel` with both raw files and derived display fields for dates.
+    - `FileList.view.xml` shows a table with columns *File Name*, *Customer*, *Status*, *Uploaded On*, *Report Date*, and *Actions*, with a `View Analysis` action that navigates to the Analysis page.
+    - The Files page toolbar already includes a search field, a (placeholder) filter button, and selection-aware Process/Delete buttons (UI-only; endpoints not yet wired).
+  - **Step 5.3–5.6 (upload, process/delete, analysis download, chat):** Not yet implemented in UI5; all Upload/Process/Delete/Chat behaviour is still provided by the existing React app.
+
+- **UX alignment with `Fiori_design.png`**
+  - Files page now approximates the "Your Files" card: panel-framed table, status chips, search, and a dedicated *View Analysis* action that opens a separate Analysis page.
+  - The analysis page layout follows the right-hand mock only at a placeholder level (sections but no real data binding yet).
+
 ---
 
 ## 6. Phase 3 – Analysis Rendering & KPIs in UI5
