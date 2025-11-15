@@ -3,6 +3,9 @@
   xmlns:mvc="sap.ui.core.mvc"
   xmlns="sap.m">
   <App id="app">
-    <mvc:XMLView viewName="ewa.analyzer.view.FileList" />
+    <pages>
+      <mvc:XMLView id="fileListPageView" viewName="ewa.analyzer.view.FileList" />
+      <mvc:XMLView id="analysisPageView" viewName="ewa.analyzer.view.Analysis" />
+    </pages>
   </App>
 </mvc:View>

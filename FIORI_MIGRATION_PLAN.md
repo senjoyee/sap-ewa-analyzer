@@ -132,6 +132,13 @@ For the initial migration plan, assume **Option A** (CDN) to keep complexity low
   - `sap.m.Page` + `sap.m.Table` or `sap.m.List` with grouping by customer.
   - Toolbar with buttons: Process, Delete, etc.
   - Target UX follows the left pane of `Fiori_design.png`: upload area at the top, a "Your Files" style table with status pills and search in the middle, and optional error/warning details below.
+  - **Future UX refinements (not required for initial rollout, but recommended):**
+    - Use `sap.m.Panel`/`Card` around the table to frame the "Your Files" section.
+    - Replace raw timestamps with formatted dates/times for Uploaded/Processed columns.
+    - Represent status using `sap.m.ObjectStatus` with semantic colors (Processing, Processed, Failed, Analyzed).
+    - Add a simple filter strip (All/Processing/Processed/Failed) above the table.
+    - Add a search field in the header toolbar for quick file filtering.
+    - Add a secondary table/card below for "Error & Warning Details" per analysis, similar to the mock.
 
 - **File upload & customer assignment:**
   - `sap.m.UploadCollection` or simple `sap.m.FileUploader` + `sap.m.Dialog` with `sap.m.ComboBox` for customer.

@@ -11,6 +11,7 @@ sap.ui.define([
 
       var oModel = new JSONModel({
         files: [],
+        allFiles: [],
         loading: true,
         error: "",
         hasError: false
@@ -18,6 +19,66 @@ sap.ui.define([
       this.getView().setModel(oModel, "files");
 
       this._loadFiles();
+    },
+
+    onViewAnalysisPress: function (oEvent) {
+      var oButton = oEvent.getSource();
+      var oContext = oButton && oButton.getBindingContext("files");
+      var oFile = oContext && oContext.getObject();
+      console.log("FileList onViewAnalysisPress", oFile);
+      var oApp = this.getView().getParent();
+      if (oApp && oApp.to) {
+        oApp.to("analysisPageView");
+      }
+    },
+
+    onSelectionChange: function (oEvent) {
+      var oTable = oEvent.getSource();
+      var iSelected = oTable.getSelectedItems().length;
+      var bHasSelection = iSelected > 0;
+
+      var oView = this.getView();
+      var oProcessButton = oView.byId("processButton");
+      var oDeleteButton = oView.byId("deleteButton");
+
+      if (oProcessButton) {
+        oProcessButton.setEnabled(bHasSelection);
+      }
+      if (oDeleteButton) {
+        oDeleteButton.setEnabled(bHasSelection);
+      }
+    },
+
+    onSearch: function (oEvent) {
+      var oModel = this.getView().getModel("files");
+      if (!oModel) {
+        return;
+      }
+
+      var sQuery = oEvent.getParameter("query");
+      if (sQuery === undefined) {
+        sQuery = oEvent.getParameter("newValue");
+      }
+      sQuery = (sQuery || "").toLowerCase();
+
+      var aAllFiles = oModel.getProperty("/allFiles") || [];
+      if (!sQuery) {
+        oModel.setProperty("/files", aAllFiles);
+        return;
+      }
+
+      var aFiltered = aAllFiles.filter(function (file) {
+        var sName = (file.name || "").toLowerCase();
+        var sCustomer = (file.customer_name || "").toLowerCase();
+        return sName.indexOf(sQuery) !== -1 || sCustomer.indexOf(sQuery) !== -1;
+      });
+
+      oModel.setProperty("/files", aFiltered);
+    },
+
+    onFilterPress: function () {
+      // Placeholder for future filter dialog; no backend logic yet
+      console.log("FileList onFilterPress - filters not implemented yet");
     },
 
     _loadFiles: function () {
@@ -60,6 +121,40 @@ sap.ui.define([
             aFiles = data.files;
           }
 
+          // Add display-friendly date fields without altering backend data
+          aFiles = aFiles.map(function (file) {
+            var sUploadedDisplay = "";
+            try {
+              if (file.last_modified) {
+                var oUploadedDate = new Date(file.last_modified);
+                if (!isNaN(oUploadedDate.getTime())) {
+                  sUploadedDisplay = oUploadedDate.toLocaleString();
+                } else {
+                  sUploadedDisplay = String(file.last_modified);
+                }
+              }
+            } catch (e) {
+              sUploadedDisplay = String(file.last_modified || "");
+            }
+
+            var sAnalysisDisplay = file.report_date_str || "";
+            if (!sAnalysisDisplay && file.report_date) {
+              try {
+                var oAnalysisDate = new Date(file.report_date);
+                if (!isNaN(oAnalysisDate.getTime())) {
+                  sAnalysisDisplay = oAnalysisDate.toLocaleDateString();
+                }
+              } catch (e2) {
+                // ignore and keep empty
+              }
+            }
+
+            file.uploaded_on_display = sUploadedDisplay;
+            file.analysis_date_display = sAnalysisDisplay || "";
+            return file;
+          });
+
+          oModel.setProperty("/allFiles", aFiles);
           oModel.setProperty("/files", aFiles);
           oModel.setProperty("/hasError", false);
         })

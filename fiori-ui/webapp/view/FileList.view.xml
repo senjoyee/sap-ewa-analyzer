@@ -5,51 +5,81 @@
   <Page id="fileListPage" title="Files">
     <subHeader>
       <Toolbar>
-        <Title text="Files" level="H3" />
         <ToolbarSpacer />
-        <Button text="Upload" type="Emphasized" enabled="false" />
-        <Button text="Process" enabled="false" />
-        <Button text="Delete" enabled="false" />
+        <SearchField
+          id="fileSearch"
+          width="16rem"
+          placeholder="Search files"
+          liveChange="onSearch"
+          search="onSearch" />
+        <Button
+          id="filterButton"
+          icon="sap-icon://filter"
+          type="Transparent"
+          tooltip="Filter"
+          press="onFilterPress" />
+        <Button id="uploadButton" text="Upload" type="Emphasized" />
+        <Button id="processButton" text="Process" enabled="false" />
+        <Button id="deleteButton" text="Delete" enabled="false" />
       </Toolbar>
     </subHeader>
     <content>
       <VBox class="sapUiSmallMargin">
-        <Text text="Phase 1 skeleton: file list view placeholder" />
-        <HBox class="sapUiSmallMarginTop" fitContainer="true" renderType="Bare">
-          <!-- Left: uploaded & processed files area -->
-          <VBox width="50%" class="sapUiSmallMarginEnd">
-            <Title text="Uploaded &amp; processed files (placeholder)" level="H4" />
-            <Text text="This area will show uploaded files, processing state, and which ones have AI analysis available." />
+        <Text text="Upload and manage EWA reports, then open their insights and analysis." />
 
-            <!-- Phase 2: basic data binding to backend /api/files -->
-            <BusyIndicator
-              class="sapUiSmallMarginTop"
-              visible="{files>/loading}" />
+        <Panel class="sapUiSmallMarginTop" headerText="Uploaded &amp; processed files (placeholder)">
+          <content>
+            <VBox>
+              <Text text="This area will show uploaded files, processing state, and which ones have AI analysis available." />
 
-            <MessageStrip
-              class="sapUiSmallMarginTop"
-              text="{files>/error}"
-              type="Error"
-              showIcon="true"
-              visible="{files>/hasError}" />
+              <!-- Phase 2: basic data binding to backend /api/files -->
+              <BusyIndicator
+                class="sapUiSmallMarginTop"
+                visible="{files>/loading}" />
 
-            <List
-              id="fileList"
-              class="sapUiSmallMarginTop"
-              items="{files>/files}">
-              <StandardListItem
-                title="{files>name}"
-                description="{files>customer_name}"
-                icon="sap-icon://document-text" />
-            </List>
-          </VBox>
+              <MessageStrip
+                class="sapUiSmallMarginTop"
+                text="{files>/error}"
+                type="Error"
+                showIcon="true"
+                visible="{files>/hasError}" />
 
-          <!-- Right: analysis, KPIs and future chat area -->
-          <VBox width="50%" class="sapUiSmallMarginBegin">
-            <Title text="Analysis, KPIs &amp; chat (placeholder)" level="H4" />
-            <Text text="This area will show the selected report preview, KPIs (including capacity outlook), and a chat panel to be added later." />
-          </VBox>
-        </HBox>
+              <Table
+                id="fileTable"
+                class="sapUiSmallMarginTop"
+                items="{files>/files}"
+                mode="MultiSelect"
+                selectionChange="onSelectionChange">
+                <columns>
+                  <Column><Text text="File Name" /></Column>
+                  <Column><Text text="Customer" /></Column>
+                  <Column hAlign="Center"><Text text="Status" /></Column>
+                  <Column demandPopin="true" minScreenWidth="Tablet"><Text text="Uploaded On" /></Column>
+                  <Column demandPopin="true" minScreenWidth="Tablet"><Text text="Report Date" /></Column>
+                  <Column hAlign="End"><Text text="Actions" /></Column>
+                </columns>
+                <items>
+                  <ColumnListItem>
+                    <cells>
+                      <ObjectIdentifier title="{files>name}" />
+                      <Text text="{files>customer_name}" />
+                      <ObjectStatus
+                        text="{= ${files>ai_analyzed} ? 'Analyzed' : (${files>processed} ? 'Processed' : 'Not processed')}"
+                        state="{= ${files>ai_analyzed} ? 'Success' : (${files>processed} ? 'Information' : 'None')}" />
+                      <Text text="{files>uploaded_on_display}" />
+                      <Text text="{files>analysis_date_display}" />
+                      <Button
+                        text="View Analysis"
+                        icon="sap-icon://inspect"
+                        type="Transparent"
+                        press="onViewAnalysisPress" />
+                    </cells>
+                  </ColumnListItem>
+                </items>
+              </Table>
+            </VBox>
+          </content>
+        </Panel>
       </VBox>
     </content>
   </Page>

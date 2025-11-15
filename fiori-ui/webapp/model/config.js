@@ -9,8 +9,12 @@ sap.ui.define([], function () {
       API_BASE = baseRaw.replace(/\/$/, "");
     }
   } catch (e) {
-    // Fallback to empty string (same-origin) when no runtime config is provided
-    API_BASE = "";
+    // Ignore and fall through to default handling below
+  }
+
+  // If no explicit runtime base URL is provided, use the fixed HTTPS backend URL
+  if (!API_BASE) {
+    API_BASE = "https://sap-ewa-analyzer-backend.azurewebsites.net";
   }
 
   function apiUrl(path) {
