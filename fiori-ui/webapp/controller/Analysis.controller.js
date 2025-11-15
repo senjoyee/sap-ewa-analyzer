@@ -201,6 +201,176 @@ sap.ui.define([
       }
     },
 
+    _renderAnalysisContent: function (aSections) {
+      var oContainer = this.byId("analysisContent");
+      if (!oContainer) {
+        return;
+      }
+
+      oContainer.removeAllItems();
+
+      if (!Array.isArray(aSections) || !aSections.length) {
+        return;
+      }
+
+      var that = this;
+      aSections.forEach(function (oSection) {
+        if (!oSection || !oSection.markdown) {
+          return;
+        }
+
+        var aBlocks = that._splitMarkdownIntoBlocks(oSection.markdown);
+        aBlocks.forEach(function (oBlock) {
+          if (!oBlock || !oBlock.lines || !oBlock.lines.length) {
+            return;
+          }
+
+          if (oBlock.type === "table") {
+            var oTableData = that._parseMarkdownTableLines(oBlock.lines);
+            if (oTableData && oTableData.headers && oTableData.headers.length) {
+              oContainer.addItem(that._createTableFromData(oTableData));
+            }
+          } else {
+            var sHtml = that._markdownToHtml(oBlock.lines.join("\n"));
+            if (sHtml) {
+              oContainer.addItem(new FormattedText({ htmlText: sHtml }));
+            }
+          }
+        });
+      });
+    },
+
+    _splitMarkdownIntoBlocks: function (sMarkdown) {
+      var aLines = (sMarkdown || "").split(/\r?\n/);
+      var aBlocks = [];
+      var aCurrentText = [];
+      var aCurrentTable = null;
+      var bInTable = false;
+
+      var pushText = function () {
+        if (aCurrentText.length) {
+          aBlocks.push({ type: "text", lines: aCurrentText.slice(0) });
+          aCurrentText = [];
+        }
+      };
+
+      var pushTable = function () {
+        if (aCurrentTable && aCurrentTable.length) {
+          aBlocks.push({ type: "table", lines: aCurrentTable.slice(0) });
+        }
+        aCurrentTable = null;
+        bInTable = false;
+      };
+
+      for (var i = 0; i < aLines.length; i++) {
+        var sLine = aLines[i] || "";
+        var sTrim = sLine.trim();
+
+        if (!bInTable) {
+          var sNext = i + 1 < aLines.length ? (aLines[i + 1] || "").trim() : "";
+          var bHeader = sTrim.indexOf("|") !== -1;
+          var bSep = sNext.indexOf("|") !== -1 && sNext.indexOf("---") !== -1;
+
+          if (bHeader && bSep) {
+            pushText();
+            bInTable = true;
+            aCurrentTable = [];
+            aCurrentTable.push(sTrim);
+            aCurrentTable.push(sNext);
+            i++;
+            continue;
+          }
+
+          aCurrentText.push(sLine);
+        } else {
+          if (sTrim && sTrim.indexOf("|") !== -1) {
+            aCurrentTable.push(sTrim);
+          } else {
+            pushTable();
+            if (sTrim) {
+              aCurrentText.push(sLine);
+            }
+          }
+        }
+      }
+
+      if (bInTable) {
+        pushTable();
+      }
+      if (aCurrentText.length) {
+        aBlocks.push({ type: "text", lines: aCurrentText });
+      }
+
+      return aBlocks.filter(function (oBlock) {
+        return oBlock.lines.some(function (ln) {
+          return (ln || "").trim().length > 0;
+        });
+      });
+    },
+
+    _parseMarkdownTableLines: function (aTableLines) {
+      if (!Array.isArray(aTableLines) || aTableLines.length < 2) {
+        return null;
+      }
+
+      var fnSplitRow = function (sRow) {
+        var aParts = (sRow || "").split("|");
+        if (aParts.length && !aParts[0].trim()) {
+          aParts.shift();
+        }
+        if (aParts.length && !aParts[aParts.length - 1].trim()) {
+          aParts.pop();
+        }
+        return aParts.map(function (s) {
+          return s.trim();
+        });
+      };
+
+      var aHeaders = fnSplitRow(aTableLines[0]);
+      var sSep = (aTableLines[1] || "").trim();
+      if (sSep.indexOf("---") === -1) {
+        return null;
+      }
+
+      var aRows = [];
+      for (var i = 2; i < aTableLines.length; i++) {
+        var sLine = (aTableLines[i] || "").trim();
+        if (!sLine) {
+          continue;
+        }
+        var aCells = fnSplitRow(sLine);
+        if (aCells.length) {
+          aRows.push(aCells);
+        }
+      }
+
+      return {
+        headers: aHeaders,
+        rows: aRows
+      };
+    },
+
+    _createTableFromData: function (oData) {
+      var oTable = new Table({ width: "100%" });
+
+      (oData.headers || []).forEach(function (sHeader) {
+        oTable.addColumn(new Column({
+          header: new Text({ text: sHeader })
+        }));
+      });
+
+      (oData.rows || []).forEach(function (aRow) {
+        var aCells = [];
+        for (var i = 0; i < oData.headers.length; i++) {
+          var sCell = aRow[i] !== undefined ? aRow[i] : "";
+          aCells.push(new Text({ text: sCell }));
+        }
+        oTable.addItem(new ColumnListItem({ cells: aCells }));
+      });
+
+      return oTable;
+    },
+
     _buildSectionsFromMarkdown: function (sMarkdown) {
       if (!sMarkdown) {
         return [];

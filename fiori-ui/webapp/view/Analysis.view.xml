@@ -50,11 +50,10 @@
           id="chatMessages"
           items="{chat>/messages}">
           <CustomListItem>
-            <HBox justifyContent="Begin" width="100%">
+            <HBox justifyContent="Start" width="100%">
               <VBox
                 width="100%"
                 class="sapUiSmallMarginBottom"
-                justifyContent="Begin"
                 alignItems="Stretch">
                 <Text
                   text="{chat>text}"
