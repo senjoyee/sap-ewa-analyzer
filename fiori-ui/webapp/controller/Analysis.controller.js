@@ -82,6 +82,18 @@ sap.ui.define([
       }
     },
 
+    onNavBack: function () {
+      var oView = this.getView();
+      var oApp = oView.getParent();
+      if (oApp && oApp.to) {
+        var oAppView = oApp.getParent && oApp.getParent();
+        var sFileListPageId = oAppView && oAppView.createId && oAppView.createId("fileListPageView");
+        if (sFileListPageId) {
+          oApp.to(sFileListPageId);
+        }
+      }
+    },
+
     _markdownToHtml: function (sMarkdown) {
       if (!sMarkdown) {
         return "";

@@ -2,7 +2,7 @@
   controllerName="ewa.analyzer.controller.Analysis"
   xmlns:mvc="sap.ui.core.mvc"
   xmlns="sap.m">
-  <Page id="analysisPage" title="{i18n>analysisTitle}">
+  <Page id="analysisPage" title="{i18n>analysisTitle}" showNavButton="true" navButtonPress="onNavBack">
     <headerContent>
       <Button
         id="chatButton"
