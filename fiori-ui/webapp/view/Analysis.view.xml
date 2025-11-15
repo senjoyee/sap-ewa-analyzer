@@ -48,7 +48,7 @@
           <ScrollContainer
             class="sapUiSmallMarginTop"
             width="100%"
-            height="25rem"
+            height="35rem"
             vertical="true"
             horizontal="false">
             <content>
