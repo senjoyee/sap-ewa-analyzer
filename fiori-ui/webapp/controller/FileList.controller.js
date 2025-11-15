@@ -100,6 +100,135 @@ sap.ui.define([
       console.log("FileList onFilterPress - filters not implemented yet");
     },
 
+    onProcessPress: function () {
+      var oTable = this.byId("fileTable");
+      var oFilesModel = this.getView().getModel("files");
+      if (!oTable || !oFilesModel) {
+        return;
+      }
+
+      var aSelectedItems = oTable.getSelectedItems();
+      if (!aSelectedItems || !aSelectedItems.length) {
+        return;
+      }
+
+      var aFiles = aSelectedItems.map(function (oItem) {
+        var oCtx = oItem.getBindingContext("files");
+        return oCtx && oCtx.getObject();
+      }).filter(function (oFile) {
+        return !!oFile && !!oFile.name;
+      });
+
+      if (!aFiles.length) {
+        return;
+      }
+
+      oFilesModel.setProperty("/error", "");
+      oFilesModel.setProperty("/hasError", false);
+      oFilesModel.setProperty("/loading", true);
+
+      var sUrl = config.apiUrl("/api/process-and-analyze");
+
+      var aPromises = aFiles.map(function (oFile) {
+        return fetch(sUrl, {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json"
+          },
+          body: JSON.stringify({ blob_name: oFile.name })
+        }).then(function (response) {
+          if (!response.ok) {
+            return response.json().catch(function () { return {}; }).then(function (errData) {
+              var msg = errData && (errData.detail || errData.message);
+              throw new Error(msg || ("Processing failed for " + oFile.name + ": " + response.status));
+            });
+          }
+          return response.json().catch(function () { return {}; });
+        });
+      });
+
+      Promise.all(aPromises)
+        .then(function () {
+          this._loadFiles();
+        }.bind(this))
+        .catch(function (err) {
+          console.error("Error processing files:", err);
+          oFilesModel.setProperty("/error", err.message || "Processing failed.");
+          oFilesModel.setProperty("/hasError", true);
+        })
+        .finally(function () {
+          oFilesModel.setProperty("/loading", false);
+        });
+    },
+
+    onDeletePress: function () {
+      var oTable = this.byId("fileTable");
+      var oFilesModel = this.getView().getModel("files");
+      if (!oTable || !oFilesModel) {
+        return;
+      }
+
+      var aSelectedItems = oTable.getSelectedItems();
+      if (!aSelectedItems || !aSelectedItems.length) {
+        return;
+      }
+
+      var aFiles = aSelectedItems.map(function (oItem) {
+        var oCtx = oItem.getBindingContext("files");
+        return oCtx && oCtx.getObject();
+      }).filter(function (oFile) {
+        return !!oFile && !!oFile.name;
+      });
+
+      if (!aFiles.length) {
+        return;
+      }
+
+      oFilesModel.setProperty("/error", "");
+      oFilesModel.setProperty("/hasError", false);
+      oFilesModel.setProperty("/loading", true);
+
+      var sUrl = config.apiUrl("/api/delete-analysis");
+
+      var aPromises = aFiles.map(function (oFile) {
+        var sName = oFile.name;
+        var iDot = sName.lastIndexOf(".");
+        var sBase = iDot >= 0 ? sName.substring(0, iDot) : sName;
+
+        return fetch(sUrl, {
+          method: "DELETE",
+          headers: {
+            "Content-Type": "application/json"
+          },
+          body: JSON.stringify({
+            fileName: sName,
+            baseName: sBase
+          })
+        }).then(function (response) {
+          if (!response.ok) {
+            return response.json().catch(function () { return {}; }).then(function (errData) {
+              var msg = errData && (errData.detail || errData.message);
+              throw new Error(msg || ("Delete failed for " + sName + ": " + response.status));
+            });
+          }
+          return response.json().catch(function () { return {}; });
+        });
+      });
+
+      Promise.all(aPromises)
+        .then(function () {
+          this._loadFiles();
+        }.bind(this))
+        .catch(function (err) {
+          console.error("Error deleting analysis:", err);
+          oFilesModel.setProperty("/error", err.message || "Delete failed.");
+          oFilesModel.setProperty("/hasError", true);
+        })
+        .finally(function () {
+          oFilesModel.setProperty("/loading", false);
+        });
+    },
+
     onUploadPress: function () {
       var oDialog = this.byId("uploadDialog");
       var oUploadModel = this.getView().getModel("upload");
@@ -129,7 +258,8 @@ sap.ui.define([
         return;
       }
 
-      var aFiles = oFileUploader.getFocusDomRef && oFileUploader.getFocusDomRef().files;
+      var oFileInput = document.getElementById(oFileUploader.getId() + "-fu");
+      var aFiles = oFileInput && oFileInput.files;
       if (!aFiles || !aFiles.length) {
         oUploadModel.setProperty("/error", "Please choose a file to upload.");
         return;

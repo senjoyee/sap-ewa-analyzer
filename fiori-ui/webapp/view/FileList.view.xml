@@ -24,8 +24,16 @@
           text="Upload"
           type="Emphasized"
           press="onUploadPress" />
-        <Button id="processButton" text="Process" enabled="false" />
-        <Button id="deleteButton" text="Delete" enabled="false" />
+        <Button
+          id="processButton"
+          text="Process"
+          enabled="false"
+          press="onProcessPress" />
+        <Button
+          id="deleteButton"
+          text="Delete"
+          enabled="false"
+          press="onDeletePress" />
       </Toolbar>
     </subHeader>
     <content>
