@@ -13,29 +13,8 @@
     </headerContent>
     <content>
       <VBox class="sapUiSmallMargin">
-        <!-- Selected file summary area -->
-        <VBox>
-          <Title text="Selected file" level="H4" />
-          <ObjectHeader
-            title="{analysis>/file/name}"
-            number="{analysis>/file/customer_name}"
-            numberUnit="{analysis>/file/system_id}">
-            <attributes>
-              <ObjectAttribute
-                title="Report Date"
-                text="{analysis>/file/analysis_date_display}" />
-            </attributes>
-            <statuses>
-              <ObjectStatus
-                text="{= ${analysis>/file/ai_analyzed} ? 'Analyzed' : (${analysis>/file/processed} ? 'Processed' : 'Not processed')}"
-                state="{= ${analysis>/file/ai_analyzed} ? 'Success' : (${analysis>/file/processed} ? 'Information' : 'None')}" />
-            </statuses>
-          </ObjectHeader>
-        </VBox>
-
-        <!-- Main analysis layout: single report preview section -->
+        <!-- Main analysis layout: report preview only -->
         <VBox class="sapUiSmallMarginTop">
-          <Title text="Report preview" level="H4" />
           <BusyIndicator
             class="sapUiSmallMarginTop"
             visible="{analysis>/loading}" />
@@ -45,18 +24,10 @@
             type="Error"
             showIcon="true"
             visible="{= !!${analysis>/error}}" />
-          <ScrollContainer
-            class="sapUiSmallMarginTop"
-            width="100%"
-            height="35rem"
-            vertical="true"
-            horizontal="false">
-            <content>
-              <FormattedText htmlText="{analysis>/html}" />
-            </content>
-          </ScrollContainer>
+          <VBox
+            id="analysisContent"
+            class="sapUiSmallMarginTop" />
         </VBox>
-
       </VBox>
     </content>
   </Page>

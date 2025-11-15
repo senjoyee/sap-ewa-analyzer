@@ -1,8 +1,13 @@
 sap.ui.define([
   "sap/ui/core/mvc/Controller",
   "sap/ui/model/json/JSONModel",
-  "ewa/analyzer/model/config"
-], function (Controller, JSONModel, config) {
+  "ewa/analyzer/model/config",
+  "sap/m/FormattedText",
+  "sap/m/Table",
+  "sap/m/Column",
+  "sap/m/ColumnListItem",
+  "sap/m/Text"
+], function (Controller, JSONModel, config, FormattedText, Table, Column, ColumnListItem, Text) {
   "use strict";
 
   return Controller.extend("ewa.analyzer.controller.Analysis", {
@@ -12,6 +17,7 @@ sap.ui.define([
         file: null,
         content: "",
         html: "",
+        sections: [],
         loading: false,
         error: ""
       });
@@ -45,6 +51,7 @@ sap.ui.define([
       oModel.setProperty("/file", oFile || null);
       oModel.setProperty("/content", "");
       oModel.setProperty("/html", "");
+      oModel.setProperty("/sections", []);
       oModel.setProperty("/error", "");
       oModel.setProperty("/loading", true);
 
@@ -73,14 +80,19 @@ sap.ui.define([
         .then(function (text) {
           var sText = text || "";
           oModel.setProperty("/content", sText);
+          var aSections = this._buildSectionsFromMarkdown(sText);
+          oModel.setProperty("/sections", aSections);
           oModel.setProperty("/html", this._markdownToHtml(sText));
+          this._renderAnalysisContent(aSections);
           oModel.setProperty("/error", "");
         }.bind(this))
         .catch(function (err) {
           oModel.setProperty("/content", "");
           oModel.setProperty("/html", "");
+          oModel.setProperty("/sections", []);
           oModel.setProperty("/error", err.message || "Failed to load analysis.");
-        })
+          this._renderAnalysisContent([]);
+        }.bind(this))
         .finally(function () {
           oModel.setProperty("/loading", false);
         });
@@ -187,6 +199,51 @@ sap.ui.define([
           oApp.to(sFileListPageId);
         }
       }
+    },
+
+    _buildSectionsFromMarkdown: function (sMarkdown) {
+      if (!sMarkdown) {
+        return [];
+      }
+
+      var aLines = sMarkdown.split(/\r?\n/);
+      var aSections = [];
+      var sCurrentTitle = "Overview";
+      var aCurrentLines = [];
+
+      aLines.forEach(function (line) {
+        var sTrim = (line || "").trim();
+
+        // Skip explicit separators and page-break markers from backend markdown
+        if (sTrim === "---" || sTrim.indexOf("<div style='page-break-before: always;'>") === 0) {
+          return;
+        }
+
+        var mHeading = sTrim.match(/^##\s+(.*)$/);
+        if (mHeading) {
+          if (aCurrentLines.length) {
+            aSections.push({
+              title: sCurrentTitle,
+              markdown: aCurrentLines.join("\n")
+            });
+          }
+          sCurrentTitle = mHeading[1].trim() || sCurrentTitle;
+          aCurrentLines = [];
+        } else {
+          aCurrentLines.push(line);
+        }
+      });
+
+      if (aCurrentLines.length) {
+        aSections.push({
+          title: sCurrentTitle,
+          markdown: aCurrentLines.join("\n")
+        });
+      }
+
+      return aSections.filter(function (oSection) {
+        return (oSection.markdown || "").trim().length > 0;
+      });
     },
 
     _markdownToHtml: function (sMarkdown) {
