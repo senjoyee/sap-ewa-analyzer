@@ -121,24 +121,26 @@ For the initial migration plan, assume **Option A** (CDN) to keep complexity low
 
 ### 3.2 Proposed Fiori mapping
 
-- **Overall shell:**
-  - Use `sap.f.FlexibleColumnLayout` or `sap.m.SplitApp`:
-    - Column 1: List of files (per customer)
-    - Column 2: Analysis detail (preview)
-    - Chat as overlay (`sap.m.Dialog`) or side panel.
+- **Overall shell (target pattern):**
+  - Use `sap.f.FlexibleColumnLayout` as the primary shell (Files + Analysis master–detail); `sap.m.SplitApp` is not planned for this app:
+    - Column 1: Files list (uploaded/processed files, grouped by customer).
+    - Column 2: Analysis detail for the selected file (preview, KPIs, future chat).
+    - Chat as overlay (`sap.m.Dialog`) or side panel anchored to the analysis column.
+  - The exact Fiori layout inside the Analysis column (for example, whether to use an Object Page-style layout or a simpler Page) is intentionally left open and will be decided later.
 
 - **File list & batch actions:**
   - `sap.m.Page` + `sap.m.Table` or `sap.m.List` with grouping by customer.
   - Toolbar with buttons: Process, Delete, etc.
+  - Target UX follows the left pane of `Fiori_design.png`: upload area at the top, a "Your Files" style table with status pills and search in the middle, and optional error/warning details below.
 
 - **File upload & customer assignment:**
   - `sap.m.UploadCollection` or simple `sap.m.FileUploader` + `sap.m.Dialog` with `sap.m.ComboBox` for customer.
 
 - **Analysis preview:**
-  - `sap.f.DynamicPage` / `sap.m.Page` with sections:
-    - Header: file name, basic metadata
-    - Content: HTML or markdown-rendered analysis (see Section 6)
-    - KPIs: mimic your KPI tiles with `sap.m.GenericTile` or custom layout
+  - `sap.f.DynamicPage` / `sap.m.Page` with sections, following the right pane of `Fiori_design.png` as the visual reference:
+    - Header: file name, status pill, and main actions (for example, download/refresh analysis).
+    - KPI strip: key metrics for the selected file (records, issues, warnings, quality score, etc.).
+    - Content sections: executive summary text, data quality overview (charts), capacity outlook, and recommendations.
 
 - **Document chat:**
   - `sap.m.Dialog` with list of messages (`sap.m.List` or `sap.m.FeedListItem`).
@@ -177,7 +179,7 @@ For the initial migration plan, assume **Option A** (CDN) to keep complexity low
 ### Step 4.2 – Create shell views and controllers
 
 - `view/App.view.xml`
-  - Contains `sap.f.FlexibleColumnLayout` or equivalent.
+  - Hosts a `sap.f.FlexibleColumnLayout` shell for Files (master) and Analysis (detail). The concrete layout of the Analysis content area will be refined in a later design step.
 
 - `controller/App.controller.js`
   - Handles routing events.
