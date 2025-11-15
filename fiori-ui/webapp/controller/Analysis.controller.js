@@ -6,8 +6,10 @@ sap.ui.define([
   "sap/m/Table",
   "sap/m/Column",
   "sap/m/ColumnListItem",
-  "sap/m/Text"
-], function (Controller, JSONModel, config, FormattedText, Table, Column, ColumnListItem, Text) {
+  "sap/m/Text",
+  "sap/m/Panel",
+  "sap/m/VBox"
+], function (Controller, JSONModel, config, FormattedText, Table, Column, ColumnListItem, Text, Panel, VBox) {
   "use strict";
 
   return Controller.extend("ewa.analyzer.controller.Analysis", {
@@ -219,6 +221,14 @@ sap.ui.define([
           return;
         }
 
+        if (oSection.title === "Key Findings & Recommendations") {
+          var oCardData = that._parseKeyFindingsJson(oSection.markdown);
+          if (oCardData) {
+            oContainer.addItem(that._createKeyFindingsCards(oCardData));
+            return;
+          }
+        }
+
         var aBlocks = that._splitMarkdownIntoBlocks(oSection.markdown);
         aBlocks.forEach(function (oBlock) {
           if (!oBlock || !oBlock.lines || !oBlock.lines.length) {
@@ -306,6 +316,117 @@ sap.ui.define([
           return (ln || "").trim().length > 0;
         });
       });
+    },
+
+    _parseKeyFindingsJson: function (sMarkdown) {
+      if (!sMarkdown) {
+        return null;
+      }
+
+      var s = sMarkdown;
+      var iStart = s.indexOf("```json");
+      if (iStart === -1) {
+        return null;
+      }
+      iStart += "```json".length;
+      var iEnd = s.indexOf("```", iStart);
+      if (iEnd === -1) {
+        return null;
+      }
+
+      var sJson = s.substring(iStart, iEnd);
+      try {
+        var oData = JSON.parse(sJson);
+        if (oData && oData.layout === "cards" && Array.isArray(oData.items)) {
+          return oData;
+        }
+      } catch (e) {
+        window.console && console.warn && console.warn("Failed to parse key findings JSON", e);
+      }
+      return null;
+    },
+
+    _createKeyFindingsCards: function (oCardData) {
+      var aItems = oCardData.items || [];
+      var oWrapper = new VBox({
+        width: "100%",
+        renderType: "Div",
+        items: []
+      });
+
+      aItems.forEach(function (oItem) {
+        var aInner = [];
+        var sHeader = "";
+
+        if (oItem["Issue ID"] || oItem.Area || oItem.Severity) {
+          var sTitle = (oItem["Issue ID"] || "") + " - " + (oItem.Area || "");
+          var sSeverity = oItem.Severity ? ("Severity: " + oItem.Severity) : "";
+          sHeader = sTitle;
+          if (sSeverity) {
+            sHeader += " (" + sSeverity + ")";
+          }
+        }
+
+        if (oItem.Source) {
+          aInner.push(new FormattedText({
+            htmlText: "<p><strong>Source:</strong> " + this._escapeHtml(String(oItem.Source)) + "</p>"
+          }));
+        }
+
+        if (oItem.Finding) {
+          aInner.push(new FormattedText({ htmlText: this._markdownToHtml(String(oItem.Finding)) }));
+        }
+
+        if (oItem.Impact) {
+          aInner.push(new FormattedText({
+            htmlText: "<p><strong>Impact:</strong> " + this._escapeHtml(String(oItem.Impact)) + "</p>"
+          }));
+        }
+
+        if (oItem["Business impact"]) {
+          aInner.push(new FormattedText({
+            htmlText: "<p><strong>Business impact:</strong> " + this._escapeHtml(String(oItem["Business impact"])) + "</p>"
+          }));
+        }
+
+        if (oItem["Estimated Effort"] && (oItem["Estimated Effort"].analysis || oItem["Estimated Effort"].implementation)) {
+          var oEff = oItem["Estimated Effort"];
+          var sEff = "Analysis: " + (oEff.analysis || "n/a") + ", Implementation: " + (oEff.implementation || "n/a");
+          aInner.push(new FormattedText({
+            htmlText: "<p><strong>Estimated Effort:</strong> " + this._escapeHtml(sEff) + "</p>"
+          }));
+        }
+
+        if (oItem["Responsible Area"]) {
+          aInner.push(new FormattedText({
+            htmlText: "<p><strong>Responsible Area:</strong> " + this._escapeHtml(String(oItem["Responsible Area"])) + "</p>"
+          }));
+        }
+
+        if (oItem.Action) {
+          aInner.push(new FormattedText({ htmlText: "<p><strong>Action:</strong></p>" + this._markdownToHtml(String(oItem.Action)) }));
+        }
+
+        if (oItem["Preventative Action"]) {
+          aInner.push(new FormattedText({ htmlText: "<p><strong>Preventative Action:</strong></p>" + this._markdownToHtml(String(oItem["Preventative Action"])) }));
+        }
+
+        var oCardVBox = new VBox({
+          width: "100%",
+          class: "sapUiSmallMarginBottom",
+          items: aInner
+        });
+
+        oWrapper.addItem(new Panel({
+          expandable: true,
+          expanded: false,
+          headerText: sHeader || "Key Finding",
+          width: "100%",
+          content: [oCardVBox]
+        }));
+      }.bind(this));
+
+      return oWrapper;
     },
 
     _parseMarkdownTableLines: function (aTableLines) {
