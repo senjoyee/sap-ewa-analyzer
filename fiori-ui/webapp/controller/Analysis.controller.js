@@ -68,6 +68,20 @@ sap.ui.define([
         });
     },
 
+    onOpenChat: function () {
+      var oDialog = this.byId("chatDialog");
+      if (oDialog) {
+        oDialog.open();
+      }
+    },
+
+    onCloseChat: function () {
+      var oDialog = this.byId("chatDialog");
+      if (oDialog) {
+        oDialog.close();
+      }
+    },
+
     _markdownToHtml: function (sMarkdown) {
       if (!sMarkdown) {
         return "";

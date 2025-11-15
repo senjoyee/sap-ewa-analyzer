@@ -3,6 +3,14 @@
   xmlns:mvc="sap.ui.core.mvc"
   xmlns="sap.m">
   <Page id="analysisPage" title="{i18n>analysisTitle}">
+    <headerContent>
+      <Button
+        id="chatButton"
+        text="Chat"
+        icon="sap-icon://discussion-2"
+        type="Transparent"
+        press="onOpenChat" />
+    </headerContent>
     <content>
       <VBox class="sapUiSmallMargin">
         <!-- Selected file summary area -->
@@ -25,42 +33,44 @@
           </ObjectHeader>
         </VBox>
 
-        <!-- Main analysis layout: preview + KPIs -->
-        <HBox class="sapUiSmallMarginTop" fitContainer="true" renderType="Bare">
-          <VBox width="60%" class="sapUiSmallMarginEnd">
-            <Title text="Report preview" level="H4" />
-            <BusyIndicator
-              class="sapUiSmallMarginTop"
-              visible="{analysis>/loading}" />
-            <MessageStrip
-              class="sapUiSmallMarginTop"
-              text="{analysis>/error}"
-              type="Error"
-              showIcon="true"
-              visible="{= !!${analysis>/error}}" />
-            <ScrollContainer
-              class="sapUiSmallMarginTop"
-              width="100%"
-              height="25rem"
-              vertical="true"
-              horizontal="false">
-              <content>
-                <FormattedText htmlText="{analysis>/html}" />
-              </content>
-            </ScrollContainer>
-          </VBox>
-          <VBox width="40%" class="sapUiSmallMarginBegin">
-            <Title text="KPIs (placeholder)" level="H4" />
-            <Text text="This area will show key metrics, including capacity outlook and related KPIs." />
-          </VBox>
-        </HBox>
-
-        <!-- Future chat area -->
+        <!-- Main analysis layout: single report preview section -->
         <VBox class="sapUiSmallMarginTop">
-          <Title text="Chat (to be added later)" level="H4" />
-          <Text text="This area will host the conversational assistant related to the selected analysis." />
+          <Title text="Report preview" level="H4" />
+          <BusyIndicator
+            class="sapUiSmallMarginTop"
+            visible="{analysis>/loading}" />
+          <MessageStrip
+            class="sapUiSmallMarginTop"
+            text="{analysis>/error}"
+            type="Error"
+            showIcon="true"
+            visible="{= !!${analysis>/error}}" />
+          <ScrollContainer
+            class="sapUiSmallMarginTop"
+            width="100%"
+            height="25rem"
+            vertical="true"
+            horizontal="false">
+            <content>
+              <FormattedText htmlText="{analysis>/html}" />
+            </content>
+          </ScrollContainer>
         </VBox>
+
       </VBox>
     </content>
   </Page>
+  <Dialog
+    id="chatDialog"
+    title="Chat (placeholder)"
+    stretchOnPhone="true">
+    <content>
+      <VBox class="sapUiSmallMargin">
+        <Text text="This pop-out window will host the conversational assistant related to the selected analysis in a future step." />
+      </VBox>
+    </content>
+    <endButton>
+      <Button text="Close" press="onCloseChat" />
+    </endButton>
+  </Dialog>
 </mvc:View>
