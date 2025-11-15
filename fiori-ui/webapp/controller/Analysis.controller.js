@@ -16,12 +16,30 @@ sap.ui.define([
         error: ""
       });
       this.getView().setModel(oModel, "analysis");
+
+      var oChatModel = new JSONModel({
+        messages: [],
+        input: "",
+        loading: false,
+        error: ""
+      });
+      this.getView().setModel(oChatModel, "chat");
     },
 
     loadAnalysisForFile: function (oFile) {
       var oModel = this.getView().getModel("analysis");
       if (!oModel) {
         return;
+      }
+
+      var oChatModel = this.getView().getModel("chat");
+      if (oChatModel) {
+        oChatModel.setData({
+          messages: [],
+          input: "",
+          loading: false,
+          error: ""
+        });
       }
 
       oModel.setProperty("/file", oFile || null);
@@ -80,6 +98,83 @@ sap.ui.define([
       if (oDialog) {
         oDialog.close();
       }
+    },
+
+    onChatSend: function () {
+      var oView = this.getView();
+      var oChatModel = oView.getModel("chat");
+      var oAnalysisModel = oView.getModel("analysis");
+      if (!oChatModel || !oAnalysisModel) {
+        return;
+      }
+
+      var sMessage = (oChatModel.getProperty("/input") || "").trim();
+      if (!sMessage) {
+        return;
+      }
+
+      var oFile = oAnalysisModel.getProperty("/file");
+      if (!oFile || !oFile.name) {
+        oChatModel.setProperty("/error", "No file selected for chat.");
+        return;
+      }
+
+      var aMessages = oChatModel.getProperty("/messages") || [];
+      aMessages.push({ text: sMessage, isUser: true });
+      oChatModel.setProperty("/messages", aMessages);
+      oChatModel.setProperty("/input", "");
+      oChatModel.setProperty("/error", "");
+      oChatModel.setProperty("/loading", true);
+
+      var sFileName = oFile.name;
+      var sDocContent = oAnalysisModel.getProperty("/content") || "";
+      var oBody = {
+        message: sMessage,
+        fileName: sFileName,
+        documentContent: sDocContent,
+        fileOrigin: "ui5-fiori",
+        contentLength: sDocContent.length,
+        chatHistory: aMessages.map(function (m) {
+          return { text: m.text, isUser: !!m.isUser };
+        })
+      };
+
+      var sUrl = config.apiUrl("/api/chat");
+
+      fetch(sUrl, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json"
+        },
+        body: JSON.stringify(oBody)
+      })
+        .then(function (response) {
+          if (!response.ok) {
+            return response.json().catch(function () { return {}; }).then(function (errData) {
+              var msg = errData && (errData.detail || errData.message);
+              throw new Error(msg || ("Chat request failed: " + response.status));
+            });
+          }
+          return response.json();
+        })
+        .then(function (data) {
+          var sResponseText = data && data.response ? String(data.response) : "";
+          var aMsgs = oChatModel.getProperty("/messages") || [];
+          if (sResponseText) {
+            aMsgs.push({ text: sResponseText, isUser: false });
+            oChatModel.setProperty("/messages", aMsgs);
+          }
+          if (data && data.error) {
+            oChatModel.setProperty("/error", "The assistant reported an error in the response.");
+          }
+        })
+        .catch(function (err) {
+          console.error("Error in chat:", err);
+          oChatModel.setProperty("/error", err.message || "Chat request failed.");
+        })
+        .finally(function () {
+          oChatModel.setProperty("/loading", false);
+        });
     },
 
     onNavBack: function () {

@@ -62,13 +62,46 @@
   </Page>
   <Dialog
     id="chatDialog"
-    title="Chat (placeholder)"
+    title="Chat"
     stretchOnPhone="true">
     <content>
       <VBox class="sapUiSmallMargin">
-        <Text text="This pop-out window will host the conversational assistant related to the selected analysis in a future step." />
+        <BusyIndicator
+          class="sapUiSmallMarginBottom"
+          visible="{chat>/loading}" />
+        <MessageStrip
+          class="sapUiSmallMarginBottom"
+          text="{chat>/error}"
+          type="Error"
+          showIcon="true"
+          visible="{= !!${chat>/error}}" />
+        <List
+          id="chatMessages"
+          items="{chat>/messages}">
+          <CustomListItem>
+            <HBox justifyContent="Begin" width="100%">
+              <VBox
+                width="100%"
+                class="sapUiSmallMarginBottom"
+                justifyContent="Begin"
+                alignItems="Stretch">
+                <Text
+                  text="{chat>text}"
+                  wrapping="true" />
+              </VBox>
+            </HBox>
+          </CustomListItem>
+        </List>
+        <TextArea
+          class="sapUiSmallMarginTop"
+          value="{chat>/input}"
+          rows="3"
+          width="100%" />
       </VBox>
     </content>
+    <beginButton>
+      <Button text="Send" press="onChatSend" enabled="{= !${chat>/loading}}" />
+    </beginButton>
     <endButton>
       <Button text="Close" press="onCloseChat" />
     </endButton>
