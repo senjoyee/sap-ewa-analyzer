@@ -1,7 +1,8 @@
 <mvc:View
   controllerName="ewa.analyzer.controller.FileList"
   xmlns:mvc="sap.ui.core.mvc"
-  xmlns="sap.m">
+  xmlns="sap.m"
+  xmlns:unified="sap.ui.unified">
   <Page id="fileListPage" title="Files">
     <subHeader>
       <Toolbar>
@@ -18,7 +19,11 @@
           type="Transparent"
           tooltip="Filter"
           press="onFilterPress" />
-        <Button id="uploadButton" text="Upload" type="Emphasized" />
+        <Button
+          id="uploadButton"
+          text="Upload"
+          type="Emphasized"
+          press="onUploadPress" />
         <Button id="processButton" text="Process" enabled="false" />
         <Button id="deleteButton" text="Delete" enabled="false" />
       </Toolbar>
@@ -83,4 +88,49 @@
       </VBox>
     </content>
   </Page>
+
+  <Dialog
+    id="uploadDialog"
+    title="Upload file"
+    stretchOnPhone="true">
+    <content>
+      <VBox class="sapUiSmallMargin">
+        <Text text="Select a PDF file and enter the customer name." />
+
+        <Label
+          class="sapUiSmallMarginTop"
+          text="File" />
+        <unified:FileUploader
+          id="uploadFile"
+          width="100%" />
+
+        <Label
+          class="sapUiSmallMarginTop"
+          text="Customer" />
+        <Input
+          id="uploadCustomer"
+          width="100%"
+          value="{upload>/customer}" />
+
+        <MessageStrip
+          class="sapUiSmallMarginTop"
+          text="{upload>/error}"
+          type="Error"
+          showIcon="true"
+          visible="{= !!${upload>/error}}" />
+      </VBox>
+    </content>
+    <beginButton>
+      <Button
+        text="Upload"
+        type="Emphasized"
+        press="onUploadDialogUpload" />
+    </beginButton>
+    <endButton>
+      <Button
+        text="Cancel"
+        press="onUploadDialogCancel" />
+    </endButton>
+  </Dialog>
+
 </mvc:View>

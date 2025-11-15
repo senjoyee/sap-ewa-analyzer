@@ -18,6 +18,12 @@ sap.ui.define([
       });
       this.getView().setModel(oModel, "files");
 
+      var oUploadModel = new JSONModel({
+        customer: "",
+        error: ""
+      });
+      this.getView().setModel(oUploadModel, "upload");
+
       this._loadFiles();
     },
 
@@ -92,6 +98,93 @@ sap.ui.define([
     onFilterPress: function () {
       // Placeholder for future filter dialog; no backend logic yet
       console.log("FileList onFilterPress - filters not implemented yet");
+    },
+
+    onUploadPress: function () {
+      var oDialog = this.byId("uploadDialog");
+      var oUploadModel = this.getView().getModel("upload");
+      if (oUploadModel) {
+        oUploadModel.setProperty("/customer", "");
+        oUploadModel.setProperty("/error", "");
+      }
+      if (oDialog) {
+        oDialog.open();
+      }
+    },
+
+    onUploadDialogCancel: function () {
+      var oDialog = this.byId("uploadDialog");
+      if (oDialog) {
+        oDialog.close();
+      }
+    },
+
+    onUploadDialogUpload: function () {
+      var oView = this.getView();
+      var oFileUploader = this.byId("uploadFile");
+      var oUploadModel = oView.getModel("upload");
+      var oFilesModel = oView.getModel("files");
+
+      if (!oFileUploader || !oUploadModel || !oFilesModel) {
+        return;
+      }
+
+      var aFiles = oFileUploader.getFocusDomRef && oFileUploader.getFocusDomRef().files;
+      if (!aFiles || !aFiles.length) {
+        oUploadModel.setProperty("/error", "Please choose a file to upload.");
+        return;
+      }
+
+      var sCustomer = (oUploadModel.getProperty("/customer") || "").trim();
+      if (!sCustomer) {
+        oUploadModel.setProperty("/error", "Please enter a customer name.");
+        return;
+      }
+
+      oUploadModel.setProperty("/error", "");
+
+      var oFile = aFiles[0];
+      var oFormData = new FormData();
+      oFormData.append("file", oFile);
+      oFormData.append("customer_name", sCustomer);
+
+      var sUrl = config.apiUrl("/api/upload");
+      oFilesModel.setProperty("/loading", true);
+
+      fetch(sUrl, {
+        method: "POST",
+        body: oFormData
+      })
+        .then(function (response) {
+          if (!response.ok) {
+            return response.json().catch(function () {
+              return {};
+            }).then(function (errData) {
+              var msg = errData && (errData.detail || errData.message);
+              throw new Error(msg || ("Upload failed: " + response.status));
+            });
+          }
+          return response.json();
+        })
+        .then(function () {
+          var oDialog = this.byId("uploadDialog");
+          if (oDialog) {
+            oDialog.close();
+          }
+          // Clear chosen file
+          if (oFileUploader.clear) {
+            oFileUploader.clear();
+          }
+          // Refresh file list
+          this._loadFiles();
+        }.bind(this))
+        .catch(function (err) {
+          console.error("Error uploading file:", err);
+          oUploadModel.setProperty("/error", err.message || "Upload failed.");
+        })
+        .finally(function () {
+          oFilesModel.setProperty("/loading", false);
+        });
     },
 
     _loadFiles: function () {
