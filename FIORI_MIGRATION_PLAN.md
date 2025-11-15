@@ -273,9 +273,9 @@ For the initial migration plan, assume **Option A** (CDN) to keep complexity low
     - The Files page toolbar already includes a search field, a (placeholder) filter button, and selection-aware Process/Delete buttons (UI-only; endpoints not yet wired).
   - **Step 5.3–5.6 (upload, process/delete, analysis download, chat):** Not yet implemented in UI5; all Upload/Process/Delete/Chat behaviour is still provided by the existing React app.
 
-- **UX alignment with `Fiori_design.png`**
-  - Files page now approximates the "Your Files" card: panel-framed table, status chips, search, and a dedicated *View Analysis* action that opens a separate Analysis page.
-  - The analysis page layout follows the right-hand mock only at a placeholder level (sections but no real data binding yet).
+  - **UX alignment with `Fiori_design.png`**
+    - Files page now approximates the "Your Files" card: panel-framed table, status chips, search, and a dedicated *View Analysis* action that opens a separate Analysis page.
+    - The analysis page layout now shows real markdown content for analyzed files using a basic markdown-to-HTML conversion and `sap.m.FormattedText`. The overall layout (KPI tiles, charts, etc.) still follows the right-hand mock only at a placeholder level.
 
 ---
 

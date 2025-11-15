@@ -38,11 +38,16 @@
               type="Error"
               showIcon="true"
               visible="{= !!${analysis>/error}}" />
-            <TextArea
-              value="{analysis>/content}"
-              editable="false"
-              rows="20"
-              width="100%" />
+            <ScrollContainer
+              class="sapUiSmallMarginTop"
+              width="100%"
+              height="25rem"
+              vertical="true"
+              horizontal="false">
+              <content>
+                <FormattedText htmlText="{analysis>/html}" />
+              </content>
+            </ScrollContainer>
           </VBox>
           <VBox width="40%" class="sapUiSmallMarginBegin">
             <Title text="KPIs (placeholder)" level="H4" />
