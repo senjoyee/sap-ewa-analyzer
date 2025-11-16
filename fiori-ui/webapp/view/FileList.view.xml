@@ -37,13 +37,12 @@
       </Toolbar>
     </subHeader>
     <content>
-      <VBox class="sapUiSmallMargin">
-        <Text text="Upload and manage EWA reports, then open their insights and analysis." />
+      <VBox class="sapUiSmallMargin ewaFileListContent">
+        <Text class="sapUiSmallMarginBottom" text="Upload and manage EWA reports, then open their insights and analysis." />
 
-        <Panel class="sapUiSmallMarginTop" headerText="Uploaded &amp; processed files (placeholder)">
+        <Panel class="sapUiSmallMarginTop" headerText="Your Files">
           <content>
             <VBox>
-              <Text text="This area will show uploaded files, processing state, and which ones have AI analysis available." />
 
               <!-- Phase 2: basic data binding to backend /api/files -->
               <BusyIndicator
@@ -57,10 +56,21 @@
                 showIcon="true"
                 visible="{files>/hasError}" />
 
+              <!-- Empty state -->
+              <VBox
+                class="ewaEmptyState"
+                visible="{= !${files>/loading} &amp;&amp; ${files>/files}.length === 0 &amp;&amp; !${files>/hasError}}">
+                <IllustratedMessage
+                  illustrationType="sapIllus-EmptyList"
+                  title="No files uploaded yet"
+                  description="Upload your first EWA report to get started with AI-powered analysis." />
+              </VBox>
+
               <Table
                 id="fileTable"
                 class="sapUiSmallMarginTop"
                 items="{files>/files}"
+                visible="{= ${files>/files}.length > 0}"
                 mode="MultiSelect"
                 selectionChange="onSelectionChange">
                 <columns>
