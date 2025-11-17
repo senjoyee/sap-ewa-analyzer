@@ -37,6 +37,19 @@
   border: none;
 }
 
+/* Table header & row styling */
+.ewaFileListContent .sapMListTblHeader {
+  border-bottom: 1px solid #e5e7eb;
+}
+
+.ewaFileListContent .sapMListTblRow {
+  border-bottom: 1px solid #f1f3f6;
+}
+
+.ewaFileListContent .sapMListTblRow:hover {
+  background-color: #f9fafb;
+}
+
 .ewaFileListContent .sapMListTblHeaderCell {
   font-weight: 600;
   font-size: 0.875rem;
