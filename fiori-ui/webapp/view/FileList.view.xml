@@ -3,46 +3,41 @@
   xmlns:mvc="sap.ui.core.mvc"
   xmlns="sap.m"
   xmlns:unified="sap.ui.unified">
-  <Page id="fileListPage" title="Files">
-    <subHeader>
-      <Toolbar>
-        <ToolbarSpacer />
-        <SearchField
-          id="fileSearch"
-          width="16rem"
-          placeholder="Search files"
-          liveChange="onSearch"
-          search="onSearch" />
-        <Button
-          id="filterButton"
-          icon="sap-icon://filter"
-          type="Transparent"
-          tooltip="Filter"
-          press="onFilterPress" />
-        <Button
-          id="uploadButton"
-          text="Upload"
-          type="Emphasized"
-          press="onUploadPress" />
-        <Button
-          id="processButton"
-          text="Process"
-          enabled="false"
-          press="onProcessPress" />
-        <Button
-          id="deleteButton"
-          text="Delete"
-          enabled="false"
-          press="onDeletePress" />
-      </Toolbar>
-    </subHeader>
+  <Page id="fileListPage" showHeader="false">
     <content>
-      <VBox class="sapUiSmallMargin ewaFileListContent">
+      <VBox class="ewaFileListFrame ewaFileListContent">
         <Text class="sapUiSmallMarginBottom" text="Upload and manage EWA reports, then open their insights and analysis." />
 
-        <Panel class="sapUiSmallMarginTop" headerText="Your Files">
+        <Panel class="sapUiSmallMarginTop">
           <content>
             <VBox>
+              <VBox class="ewaUploadArea">
+                <Text class="ewaUploadTitle" text="Drag or drop a file" />
+                <Text text="or use the button below to select from your computer." />
+                <Button
+                  id="uploadButton"
+                  text="Upload"
+                  type="Emphasized"
+                  press="onUploadPress" />
+              </VBox>
+
+              <HBox
+                class="ewaPillBar"
+                alignItems="Center"
+                justifyContent="SpaceBetween">
+                <Button
+                  id="processButton"
+                  text="Process"
+                  enabled="false"
+                  press="onProcessPress"
+                  class="ewaPillButton" />
+                <Button
+                  id="deleteButton"
+                  text="Delete"
+                  enabled="false"
+                  press="onDeletePress"
+                  class="ewaPillButton" />
+              </HBox>
 
               <!-- Phase 2: basic data binding to backend /api/files -->
               <BusyIndicator

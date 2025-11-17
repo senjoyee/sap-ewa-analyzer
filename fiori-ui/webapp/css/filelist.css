@@ -1,7 +1,15 @@
 /* File List Page Styling */
-.ewaFileListContent {
+.ewaFileListFrame {
   max-width: 1200px;
   margin: 1rem auto 2rem auto;
+}
+
+.ewaFileListContent {
+}
+
+/* Inner card layout */
+.ewaFileListContent .sapMPanelContent > .sapMVBox {
+  padding: 1.5rem 2rem 2rem 2rem;
 }
 
 .ewaFileListContent .sapMText {
@@ -44,6 +52,36 @@
 
 .ewaFileListContent .sapMObjIdentifier {
   font-weight: 500;
+}
+
+/* Upload area at top of card */
+.ewaUploadArea {
+  border-radius: 0.75rem;
+  border: 1px dashed #c2c2c2;
+  background-color: #f5f6f7;
+  padding: 1.25rem 1.5rem;
+  text-align: center;
+  margin-bottom: 1.5rem;
+}
+
+.ewaUploadTitle {
+  font-weight: 600;
+  margin-bottom: 0.5rem;
+}
+
+.ewaUploadArea .sapMBtn {
+  margin-top: 0.75rem;
+}
+
+/* Pill-style action buttons above the table */
+.ewaPillBar {
+  margin-bottom: 1rem;
+}
+
+.ewaPillButton .sapMBtnInner {
+  border-radius: 999px;
+  padding-left: 1.5rem;
+  padding-right: 1.5rem;
 }
 
 /* Empty state styling */
