@@ -317,6 +317,23 @@ sap.ui.define([
         });
     },
 
+    _formatDateTime: function (vDate) {
+      try {
+        var oDate = vDate instanceof Date ? vDate : new Date(vDate);
+        if (isNaN(oDate.getTime())) {
+          return "";
+        }
+        var dd = String(oDate.getDate()).padStart(2, "0");
+        var mm = String(oDate.getMonth() + 1).padStart(2, "0");
+        var yyyy = oDate.getFullYear();
+        var hh = String(oDate.getHours()).padStart(2, "0");
+        var min = String(oDate.getMinutes()).padStart(2, "0");
+        return dd + "." + mm + "." + yyyy + " " + hh + ":" + min;
+      } catch (e) {
+        return "";
+      }
+    },
+
     _loadFiles: function () {
       var oModel = this.getView().getModel("files");
       if (!oModel) {
@@ -358,14 +375,13 @@ sap.ui.define([
           }
 
           // Add display-friendly date fields without altering backend data
+          var that = this;
           aFiles = aFiles.map(function (file) {
             var sUploadedDisplay = "";
             try {
               if (file.last_modified) {
-                var oUploadedDate = new Date(file.last_modified);
-                if (!isNaN(oUploadedDate.getTime())) {
-                  sUploadedDisplay = oUploadedDate.toLocaleString();
-                } else {
+                sUploadedDisplay = that._formatDateTime(file.last_modified);
+                if (!sUploadedDisplay) {
                   sUploadedDisplay = String(file.last_modified);
                 }
               }
@@ -378,7 +394,10 @@ sap.ui.define([
               try {
                 var oAnalysisDate = new Date(file.report_date);
                 if (!isNaN(oAnalysisDate.getTime())) {
-                  sAnalysisDisplay = oAnalysisDate.toLocaleDateString();
+                  var dd = String(oAnalysisDate.getDate()).padStart(2, "0");
+                  var mm = String(oAnalysisDate.getMonth() + 1).padStart(2, "0");
+                  var yyyy = oAnalysisDate.getFullYear();
+                  sAnalysisDisplay = dd + "." + mm + "." + yyyy;
                 }
               } catch (e2) {
                 // ignore and keep empty
@@ -388,7 +407,7 @@ sap.ui.define([
             file.uploaded_on_display = sUploadedDisplay;
             file.analysis_date_display = sAnalysisDisplay || "";
             return file;
-          });
+          }.bind(this));
 
           oModel.setProperty("/allFiles", aFiles);
           oModel.setProperty("/files", aFiles);
