@@ -2,16 +2,21 @@
   controllerName="ewa.analyzer.controller.FileList"
   xmlns:mvc="sap.ui.core.mvc"
   xmlns="sap.m"
-  xmlns:unified="sap.ui.unified">
+  xmlns:unified="sap.ui.unified"
+  xmlns:core="sap.ui.core">
   <Page id="fileListPage" showHeader="false">
     <content>
       <VBox class="ewaFileListFrame ewaFileListContent">
-        <Text class="sapUiSmallMarginBottom" text="Upload and manage EWA reports, then open their insights and analysis." />
+        <Title
+          level="H2"
+          class="sapUiSmallMarginBottom"
+          text="Upload and manage EWA reports, then open their insights and analysis." />
 
         <Panel class="sapUiSmallMarginTop">
           <content>
             <VBox>
               <VBox class="ewaUploadArea">
+                <core:Icon src="sap-icon://upload" class="ewaUploadIcon" />
                 <Text class="ewaUploadTitle" text="Drag or drop a file" />
                 <Text text="or use the button below to select from your computer." />
                 <Button
@@ -79,14 +84,18 @@
                 <items>
                   <ColumnListItem>
                     <cells>
-                      <ObjectIdentifier title="{files>name}" />
+                      <ObjectIdentifier title="{files>name}" textDirection="Inherit" />
                       <Text text="{files>customer_name}" />
-                      <ObjectStatus
-                        text="{= ${files>ai_analyzed} ? 'Analyzed' : (${files>processed} ? 'Processed' : 'Not processed')}"
-                        state="{= ${files>ai_analyzed} ? 'Success' : (${files>processed} ? 'Information' : 'None')}" />
-                      <Text text="{files>uploaded_on_display}" />
-                      <Text text="{files>analysis_date_display}" />
+                      <HBox justifyContent="Center" width="100%">
+                        <ObjectStatus
+                          class="ewaStatus"
+                          text="{= ${files>ai_analyzed} ? 'Analyzed' : (${files>processed} ? 'Processed' : 'Not processed')}"
+                          state="{= ${files>ai_analyzed} ? 'Success' : (${files>processed} ? 'Information' : 'None')}" />
+                      </HBox>
+                      <Text text="{files>uploaded_on_display}" textAlign="End" />
+                      <Text text="{files>analysis_date_display}" textAlign="End" />
                       <Button
+                        class="ewaViewAnalysis"
                         text="View Analysis"
                         icon="sap-icon://inspect"
                         type="Transparent"

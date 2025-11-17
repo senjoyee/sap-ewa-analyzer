@@ -21,6 +21,12 @@
   background-color: #ffffff;
   border-radius: 0.5rem;
   box-shadow: 0 2px 8px rgba(0,0,0,0.08);
+  transition: box-shadow 0.18s ease-out, transform 0.18s ease-out;
+}
+
+.ewaFileListContent .sapMPanel:hover {
+  box-shadow: 0 4px 16px rgba(15,23,42,0.12);
+  transform: translateY(-1px);
 }
 
 .ewaFileListContent .sapMPanelHdr {
@@ -42,8 +48,18 @@
   border-bottom: 1px solid #e5e7eb;
 }
 
+.ewaFileListContent .sapMListTblSelCol,
+.ewaFileListContent .sapMListTblSelColSpan {
+  width: 2.75rem;
+}
+
 .ewaFileListContent .sapMListTblRow {
   border-bottom: 1px solid #f1f3f6;
+  transition: background-color 0.15s ease-out;
+}
+
+.ewaFileListContent .sapMListTblRow:nth-child(even) {
+  background-color: #fbfcff;
 }
 
 .ewaFileListContent .sapMListTblRow:hover {
@@ -58,22 +74,87 @@
   background: #fafafa;
 }
 
+.ewaFileListContent .sapMListTblHeaderCell .sapMText {
+  letter-spacing: 0.01em;
+}
+
+/* Vertical column separators */
+.ewaFileListContent .sapMListTblHeaderCell:not(.sapMListTblSelCol):not(:last-child) {
+  border-right: 1px solid #edf1f5;
+}
+
+.ewaFileListContent .sapMListTblCell:not(.sapMListTblSelCol):not(:last-child) {
+  border-right: 1px solid #f3f4f6;
+}
+
 .ewaFileListContent .sapMListTblCell {
-  padding-top: 0.625rem;
-  padding-bottom: 0.625rem;
+  padding-top: 0.5rem;
+  padding-bottom: 0.5rem;
+}
+
+.ewaFileListContent .sapMListTblCell .sapMText,
+.ewaFileListContent .sapMListTblCell .sapMObjIdentifierTitle {
+  font-size: 0.9rem;
 }
 
 .ewaFileListContent .sapMObjIdentifier {
   font-weight: 500;
 }
 
+/* Emphasize first column file name */
+.ewaFileListContent .sapMListTblCell:first-child .sapMObjIdentifierTitle {
+  font-weight: 600;
+}
+
+/* Status dot badge */
+.ewaFileListContent .ewaStatus .sapMObjStatusText {
+  position: relative;
+  padding-left: 0.75rem;
+}
+
+.ewaFileListContent .ewaStatus .sapMObjStatusText::before {
+  content: "";
+  position: absolute;
+  left: 0;
+  top: 50%;
+  width: 0.375rem;
+  height: 0.375rem;
+  border-radius: 999px;
+  transform: translateY(-50%);
+  background-color: #9ca3af;
+}
+
+.ewaFileListContent .ewaStatus.sapMObjStatusSuccess .sapMObjStatusText::before {
+  background-color: #2b7d2b;
+}
+
+.ewaFileListContent .ewaStatus.sapMObjStatusInformation .sapMObjStatusText::before {
+  background-color: #0a6ed1;
+}
+
+/* View Analysis action as compact button */
+.ewaFileListContent .ewaViewAnalysis .sapMBtnInner {
+  padding: 0.25rem 0.75rem;
+  border-radius: 999px;
+  border: 1px solid #d0e2ff;
+  background-color: #f4f8ff;
+  color: #0a6ed1;
+  font-weight: 500;
+}
+
+.ewaFileListContent .ewaViewAnalysis .sapMBtnInner:hover {
+  background-color: #e6f0ff;
+  border-color: #bfd3ff;
+  text-decoration: none;
+}
+
 /* Upload area at top of card */
 .ewaUploadArea {
   border-radius: 0.75rem;
   border: 1px dashed #d0d5dd;
-  background-color: #f9fafb;
-  padding: 1.75rem 2rem;
-  text-align: center;
+  background-color: #f5f7fb;
+  padding: 2.25rem 2.25rem;
+  text-align: left;
   margin-bottom: 1.75rem;
 }
 
@@ -84,17 +165,34 @@
 }
 
 .ewaUploadArea .sapMText {
-  color: #7a7f86;
+  color: #5f6368;
+}
+
+.ewaUploadIcon {
+  font-size: 2rem;
+  color: #0a6ed1;
+  margin-bottom: 0.75rem;
 }
 
 .ewaUploadArea .sapMBtn {
   margin-top: 1rem;
 }
 
+.ewaUploadArea .sapMBtn .sapMBtnInner {
+  padding-left: 1.75rem;
+  padding-right: 1.75rem;
+  transition: background-color 0.15s ease-out, box-shadow 0.15s ease-out, transform 0.15s ease-out;
+}
+
+.ewaUploadArea .sapMBtn:hover .sapMBtnInner {
+  box-shadow: 0 2px 6px rgba(15,23,42,0.18);
+  transform: translateY(-1px);
+}
+
 /* Pill-style action buttons above the table */
 .ewaPillBar {
   margin-top: 0.5rem;
-  margin-bottom: 1rem;
+  margin-bottom: 0.75rem;
 }
 
 .ewaPillBar .sapMBtn + .sapMBtn {
@@ -105,6 +203,11 @@
   border-radius: 999px;
   padding-left: 1.25rem;
   padding-right: 1.25rem;
+  transition: background-color 0.12s ease-out, border-color 0.12s ease-out;
+}
+
+.ewaPillButton .sapMBtnInner:hover {
+  background-color: #f5f6f8;
 }
 
 /* Empty state styling */
