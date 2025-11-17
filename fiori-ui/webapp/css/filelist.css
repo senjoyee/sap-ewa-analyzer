@@ -25,8 +25,8 @@
 }
 
 .ewaFileListContent .sapMPanel:hover {
-  box-shadow: 0 4px 16px rgba(15,23,42,0.12);
-  transform: translateY(-1px);
+  box-shadow: 0 4px 14px rgba(15,23,42,0.1);
+  transform: translateY(-0.5px);
 }
 
 .ewaFileListContent .sapMPanelHdr {
@@ -50,7 +50,7 @@
 
 .ewaFileListContent .sapMListTblSelCol,
 .ewaFileListContent .sapMListTblSelColSpan {
-  width: 2.75rem;
+  width: 3.25rem;
 }
 
 .ewaFileListContent .sapMListTblRow {
@@ -59,7 +59,7 @@
 }
 
 .ewaFileListContent .sapMListTblRow:nth-child(even) {
-  background-color: #fbfcff;
+  background-color: #fcfdff;
 }
 
 .ewaFileListContent .sapMListTblRow:hover {
@@ -80,11 +80,11 @@
 
 /* Vertical column separators */
 .ewaFileListContent .sapMListTblHeaderCell:not(.sapMListTblSelCol):not(:last-child) {
-  border-right: 1px solid #edf1f5;
+  border-right: 1px solid #f0f2f7;
 }
 
 .ewaFileListContent .sapMListTblCell:not(.sapMListTblSelCol):not(:last-child) {
-  border-right: 1px solid #f3f4f6;
+  border-right: 1px solid #f5f6fb;
 }
 
 .ewaFileListContent .sapMListTblCell {
@@ -106,7 +106,15 @@
   font-weight: 600;
 }
 
-/* Status dot badge */
+/* Status pill + dot badge */
+.ewaFileListContent .ewaStatus {
+  display: inline-flex;
+  align-items: center;
+  border-radius: 999px;
+  padding: 0.1rem 0.65rem;
+  background-color: #f3f4f6;
+}
+
 .ewaFileListContent .ewaStatus .sapMObjStatusText {
   position: relative;
   padding-left: 0.75rem;
@@ -124,8 +132,18 @@
   background-color: #9ca3af;
 }
 
+.ewaFileListContent .ewaStatus.sapMObjStatusSuccess {
+  background-color: #ecfdf3;
+  color: #1e5f2b;
+}
+
 .ewaFileListContent .ewaStatus.sapMObjStatusSuccess .sapMObjStatusText::before {
   background-color: #2b7d2b;
+}
+
+.ewaFileListContent .ewaStatus.sapMObjStatusInformation {
+  background-color: #e8f3ff;
+  color: #0a6ed1;
 }
 
 .ewaFileListContent .ewaStatus.sapMObjStatusInformation .sapMObjStatusText::before {
@@ -134,12 +152,19 @@
 
 /* View Analysis action as compact button */
 .ewaFileListContent .ewaViewAnalysis .sapMBtnInner {
-  padding: 0.25rem 0.75rem;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0.25rem 0.9rem;
   border-radius: 999px;
   border: 1px solid #d0e2ff;
   background-color: #f4f8ff;
   color: #0a6ed1;
   font-weight: 500;
+}
+
+.ewaFileListContent .ewaViewAnalysis .sapMBtnIcon {
+  margin-right: 0.25rem;
 }
 
 .ewaFileListContent .ewaViewAnalysis .sapMBtnInner:hover {
@@ -152,10 +177,11 @@
 .ewaUploadArea {
   border-radius: 0.75rem;
   border: 1px dashed #d0d5dd;
-  background-color: #f5f7fb;
+  background-color: #f8f9fa;
   padding: 2.25rem 2.25rem;
   text-align: left;
   margin-bottom: 1.75rem;
+  min-height: 12.5rem;
 }
 
 .ewaUploadTitle {
@@ -169,13 +195,17 @@
 }
 
 .ewaUploadIcon {
-  font-size: 2rem;
+  font-size: 2.25rem;
   color: #0a6ed1;
   margin-bottom: 0.75rem;
 }
 
 .ewaUploadArea .sapMBtn {
   margin-top: 1rem;
+}
+
+.ewaUploadSubtitle {
+  color: #4a4f55;
 }
 
 .ewaUploadArea .sapMBtn .sapMBtnInner {
@@ -191,7 +221,7 @@
 
 /* Pill-style action buttons above the table */
 .ewaPillBar {
-  margin-top: 0.5rem;
+  margin-top: 1rem;
   margin-bottom: 0.75rem;
 }
 
@@ -207,6 +237,16 @@
 }
 
 .ewaPillButton .sapMBtnInner:hover {
+  background-color: #f5f6f8;
+}
+
+.ewaPillButtonSecondary .sapMBtnInner {
+  border: 1px solid #d0d5dd;
+  background-color: #ffffff;
+  color: #0b1f33;
+}
+
+.ewaPillButtonSecondary .sapMBtnInner:hover {
   background-color: #f5f6f8;
 }
 

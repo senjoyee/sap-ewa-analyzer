@@ -18,7 +18,7 @@
               <VBox class="ewaUploadArea">
                 <core:Icon src="sap-icon://upload" class="ewaUploadIcon" />
                 <Text class="ewaUploadTitle" text="Drag or drop a file" />
-                <Text text="or use the button below to select from your computer." />
+                <Text class="ewaUploadSubtitle" text="or use the button below to select from your computer." />
                 <Button
                   id="uploadButton"
                   text="Upload"
@@ -41,7 +41,7 @@
                   text="Delete"
                   enabled="false"
                   press="onDeletePress"
-                  class="ewaPillButton" />
+                  class="ewaPillButton ewaPillButtonSecondary" />
               </HBox>
 
               <!-- Phase 2: basic data binding to backend /api/files -->
@@ -79,7 +79,7 @@
                   <Column hAlign="Center"><Text text="Status" /></Column>
                   <Column demandPopin="true" minScreenWidth="Tablet"><Text text="Uploaded On" /></Column>
                   <Column demandPopin="true" minScreenWidth="Tablet"><Text text="Report Date" /></Column>
-                  <Column hAlign="End"><Text text="Actions" /></Column>
+                  <Column hAlign="Center"><Text text="Actions" /></Column>
                 </columns>
                 <items>
                   <ColumnListItem>
@@ -94,13 +94,15 @@
                       </HBox>
                       <Text text="{files>uploaded_on_display}" textAlign="End" />
                       <Text text="{files>analysis_date_display}" textAlign="End" />
-                      <Button
-                        class="ewaViewAnalysis"
-                        text="View Analysis"
-                        icon="sap-icon://inspect"
-                        type="Transparent"
-                        visible="{files>ai_analyzed}"
-                        press="onViewAnalysisPress" />
+                      <HBox justifyContent="Center" width="100%">
+                        <Button
+                          class="ewaViewAnalysis"
+                          text="View Analysis"
+                          icon="sap-icon://inspect"
+                          type="Transparent"
+                          visible="{files>ai_analyzed}"
+                          press="onViewAnalysisPress" />
+                      </HBox>
                     </cells>
                   </ColumnListItem>
                 </items>
