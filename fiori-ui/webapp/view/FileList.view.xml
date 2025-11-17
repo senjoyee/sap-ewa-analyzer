@@ -24,7 +24,7 @@
               <HBox
                 class="ewaPillBar"
                 alignItems="Center"
-                justifyContent="SpaceBetween">
+                justifyContent="End">
                 <Button
                   id="processButton"
                   text="Process"
