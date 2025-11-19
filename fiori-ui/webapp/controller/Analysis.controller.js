@@ -8,8 +8,12 @@ sap.ui.define([
   "sap/m/ColumnListItem",
   "sap/m/Text",
   "sap/m/Panel",
-  "sap/m/VBox"
-], function (Controller, JSONModel, config, FormattedText, Table, Column, ColumnListItem, Text, Panel, VBox) {
+  "sap/m/VBox",
+  "sap/m/ObjectStatus",
+  "sap/uxap/ObjectPageSection",
+  "sap/uxap/ObjectPageSubSection",
+  "sap/ui/core/Icon"
+], function (Controller, JSONModel, config, FormattedText, Table, Column, ColumnListItem, Text, Panel, VBox, ObjectStatus, ObjectPageSection, ObjectPageSubSection, Icon) {
   "use strict";
 
   return Controller.extend("ewa.analyzer.controller.Analysis", {
@@ -20,6 +24,12 @@ sap.ui.define([
         content: "",
         html: "",
         sections: [],
+        headerInfo: {
+          title: "EWA Analysis",
+          period: "",
+          risk: "None",
+          riskState: "None"
+        },
         loading: false,
         error: ""
       });
@@ -54,6 +64,7 @@ sap.ui.define([
       oModel.setProperty("/content", "");
       oModel.setProperty("/html", "");
       oModel.setProperty("/sections", []);
+      oModel.setProperty("/headerInfo", { title: "EWA Analysis", period: "", risk: "None", riskState: "None" });
       oModel.setProperty("/error", "");
       oModel.setProperty("/loading", true);
 
@@ -82,10 +93,15 @@ sap.ui.define([
         .then(function (text) {
           var sText = text || "";
           oModel.setProperty("/content", sText);
+          
+          // Extract header info first
+          var oHeaderInfo = this._extractHeaderInfo(sText);
+          oModel.setProperty("/headerInfo", oHeaderInfo);
+
           var aSections = this._buildSectionsFromMarkdown(sText);
           oModel.setProperty("/sections", aSections);
           oModel.setProperty("/html", this._markdownToHtml(sText));
-          this._renderAnalysisContent(aSections);
+          this._renderObjectPageSections(aSections);
           oModel.setProperty("/error", "");
         }.bind(this))
         .catch(function (err) {
@@ -93,7 +109,7 @@ sap.ui.define([
           oModel.setProperty("/html", "");
           oModel.setProperty("/sections", []);
           oModel.setProperty("/error", err.message || "Failed to load analysis.");
-          this._renderAnalysisContent([]);
+          this._renderObjectPageSections([]);
         }.bind(this))
         .finally(function () {
           oModel.setProperty("/loading", false);
@@ -203,13 +219,52 @@ sap.ui.define([
       }
     },
 
-    _renderAnalysisContent: function (aSections) {
-      var oContainer = this.byId("analysisContent");
-      if (!oContainer) {
+    _extractHeaderInfo: function (sMarkdown) {
+      var info = {
+        title: "EWA Analysis",
+        period: "",
+        risk: "None",
+        riskState: "None"
+      };
+
+      if (!sMarkdown) return info;
+
+      var lines = sMarkdown.split("\n");
+      // Look for title line
+      var titleLine = lines.find(function(l) { return l.trim().indexOf("# EWA Analysis") === 0; });
+      if (titleLine) {
+        info.title = titleLine.replace("#", "").trim();
+      }
+
+      // Look for Period
+      var periodLine = lines.find(function(l) { return l.indexOf("Analysis Period:") !== -1; });
+      if (periodLine) {
+        info.period = periodLine.split("Analysis Period:")[1].trim();
+      }
+
+      // Look for Risk
+      var riskLine = lines.find(function(l) { return l.indexOf("Overall Risk Assessment:") !== -1; });
+      if (riskLine) {
+        var risk = riskLine.split("Overall Risk Assessment:")[1].trim().replace(/['"`]/g, "");
+        info.risk = risk;
+        // Map risk to state
+        var r = risk.toLowerCase();
+        if (r === "high" || r === "critical") info.riskState = "Error";
+        else if (r === "medium" || r === "fair") info.riskState = "Warning";
+        else if (r === "low" || r === "good") info.riskState = "Success";
+        else info.riskState = "None";
+      }
+
+      return info;
+    },
+
+    _renderObjectPageSections: function (aSections) {
+      var oPage = this.byId("analysisObjectPage");
+      if (!oPage) {
         return;
       }
 
-      oContainer.removeAllItems();
+      oPage.destroySections();
 
       if (!Array.isArray(aSections) || !aSections.length) {
         return;
@@ -221,41 +276,71 @@ sap.ui.define([
           return;
         }
 
-        if (oSection.title === "Key Findings & Recommendations") {
+        var sTitle = oSection.title || "Section";
+        // Skip the main title if it's just the document title repetition
+        if (sTitle.indexOf("EWA Analysis for") !== -1) {
+            // But we still want the content if it has subsections like Executive Summary
+            sTitle = "Overview";
+        }
+
+        var oSubSection = new ObjectPageSubSection({
+          title: sTitle,
+          blocks: []
+        });
+
+        // Specialized Rendering based on Section Title
+        if (sTitle === "Key Findings & Recommendations") {
           var oCardData = that._parseKeyFindingsJson(oSection.markdown);
           if (oCardData) {
-            oContainer.addItem(new FormattedText({
-              htmlText: "<h2>" + that._escapeHtml(oSection.title) + "</h2>"
-            }));
-            oContainer.addItem(that._createKeyFindingsCards(oCardData));
-            return;
-          }
-        }
-
-        if (oSection.title && oSection.title !== "Overview") {
-          oContainer.addItem(new FormattedText({
-            htmlText: "<h2>" + that._escapeHtml(oSection.title) + "</h2>"
-          }));
-        }
-
-        var aBlocks = that._splitMarkdownIntoBlocks(oSection.markdown);
-        aBlocks.forEach(function (oBlock) {
-          if (!oBlock || !oBlock.lines || !oBlock.lines.length) {
-            return;
-          }
-
-          if (oBlock.type === "table") {
-            var oTableData = that._parseMarkdownTableLines(oBlock.lines);
-            if (oTableData && oTableData.headers && oTableData.headers.length) {
-              oContainer.addItem(that._createTableFromData(oTableData));
-            }
+            oSubSection.addBlock(that._createKeyFindingsCards(oCardData));
           } else {
-            var sHtml = that._markdownToHtml(oBlock.lines.join("\n"));
-            if (sHtml) {
-              oContainer.addItem(new FormattedText({ htmlText: sHtml }));
-            }
+            // Fallback if JSON parsing fails
+            that._addMarkdownBlocksToContainer(oSubSection, oSection.markdown, sTitle);
           }
+        } else {
+           that._addMarkdownBlocksToContainer(oSubSection, oSection.markdown, sTitle);
+        }
+
+        var oSectionControl = new ObjectPageSection({
+          title: sTitle,
+          subSections: [oSubSection]
         });
+
+        oPage.addSection(oSectionControl);
+      });
+    },
+
+    _addMarkdownBlocksToContainer: function(oContainer, sMarkdown, sSectionTitle) {
+      var that = this;
+      var aBlocks = that._splitMarkdownIntoBlocks(sMarkdown);
+      
+      aBlocks.forEach(function (oBlock) {
+        if (!oBlock || !oBlock.lines || !oBlock.lines.length) {
+          return;
+        }
+
+        if (oBlock.type === "table") {
+          var oTableData = that._parseMarkdownTableLines(oBlock.lines);
+          if (oTableData && oTableData.headers && oTableData.headers.length) {
+             // Check if this looks like "System Health Overview"
+             var bIsHealth = oTableData.headers[0] === "Area" && oTableData.headers[1] === "Status";
+             // Check if this looks like KPI
+             var bIsKPI = oTableData.headers.indexOf("Trend") !== -1;
+             // Check if this is Positive Findings
+             var bIsPositive = (sSectionTitle === "Positive Findings");
+
+             oContainer.addBlock(that._createTableFromData(oTableData, bIsHealth, bIsKPI, bIsPositive));
+          }
+        } else {
+           // Clean up header repetition in content
+           var sText = oBlock.lines.join("\n");
+           // If the block is just the title and header info we already extracted, we might want to skip or clean it?
+           // For now, let's just render.
+           var sHtml = that._markdownToHtml(sText);
+           if (sHtml) {
+             oContainer.addBlock(new FormattedText({ htmlText: sHtml }));
+           }
+        }
       });
     },
 
@@ -366,13 +451,29 @@ sap.ui.define([
       aItems.forEach(function (oItem) {
         var aInner = [];
         var sHeader = "";
+        var sState = "None";
+        var sIcon = "sap-icon://information";
 
         if (oItem["Issue ID"] || oItem.Area || oItem.Severity) {
           var sTitle = (oItem["Issue ID"] || "") + " - " + (oItem.Area || "");
-          var sSeverity = oItem.Severity ? ("Severity: " + oItem.Severity) : "";
           sHeader = sTitle;
-          if (sSeverity) {
-            sHeader += " (" + sSeverity + ")";
+
+          // Semantic coloring for header
+          if (oItem.Severity) {
+              var sSev = oItem.Severity.toLowerCase();
+              if (sSev === "critical") {
+                  sState = "Error";
+                  sIcon = "sap-icon://error";
+              } else if (sSev === "high") {
+                  sState = "Error";
+                  sIcon = "sap-icon://error";
+              } else if (sSev === "medium") {
+                  sState = "Warning";
+                  sIcon = "sap-icon://alert";
+              } else {
+                  sState = "Success";
+                  sIcon = "sap-icon://sys-enter";
+              }
           }
         }
 
@@ -422,14 +523,32 @@ sap.ui.define([
 
         var oCardVBox = new VBox({
           width: "100%",
-          class: "sapUiSmallMarginBottom",
+          class: "sapUiSmallMargin",
           items: aInner
+        });
+        
+        // Create a Status for the Panel Header
+        var oStatus = new ObjectStatus({
+            text: oItem.Severity ? oItem.Severity.toUpperCase() : "INFO",
+            state: sState,
+            icon: sIcon,
+            inverted: true
+        });
+
+        // Using a Toolbar for custom header content
+        var oHeaderToolbar = new sap.m.Toolbar({
+            design: "Transparent",
+            content: [
+                new sap.m.Title({ text: sHeader, titleStyle: "H5" }),
+                new sap.m.ToolbarSpacer(),
+                oStatus
+            ]
         });
 
         oWrapper.addItem(new Panel({
           expandable: true,
           expanded: false,
-          headerText: sHeader || "Key Finding",
+          headerToolbar: oHeaderToolbar,
           width: "100%",
           content: [oCardVBox]
         }));
@@ -480,20 +599,66 @@ sap.ui.define([
       };
     },
 
-    _createTableFromData: function (oData) {
-      var oTable = new Table({ width: "100%" });
+    _createTableFromData: function (oData, bIsHealth, bIsKPI, bIsPositive) {
+      var oTable = new Table({ width: "100%", backgroundDesign: "Transparent" });
 
+      // Columns
       (oData.headers || []).forEach(function (sHeader) {
         oTable.addColumn(new Column({
           header: new Text({ text: sHeader })
         }));
       });
 
+      // Rows
       (oData.rows || []).forEach(function (aRow) {
         var aCells = [];
         for (var i = 0; i < oData.headers.length; i++) {
-          var sCell = aRow[i] !== undefined ? aRow[i] : "";
-          aCells.push(new Text({ text: sCell }));
+          var sHeader = oData.headers[i];
+          var sVal = aRow[i] !== undefined ? aRow[i] : "";
+          var oControl = new Text({ text: sVal });
+
+          if (bIsHealth && sHeader === "Status") {
+             var sState = "None";
+             var sLow = sVal.toLowerCase();
+             if (sLow.indexOf("good") !== -1) sState = "Success";
+             else if (sLow.indexOf("fair") !== -1) sState = "Warning";
+             else if (sLow.indexOf("poor") !== -1) sState = "Error";
+             else if (sLow.indexOf("critical") !== -1) sState = "Error";
+             
+             oControl = new ObjectStatus({
+                 text: sVal,
+                 state: sState,
+                 inverted: true // Make it a badge
+             });
+          }
+          else if (bIsKPI && sHeader === "Trend") {
+              // Parse arrow
+              var sIcon = "sap-icon://trend-up"; // default
+              var sState = "None";
+              
+              // You might want to map arrow symbols to icons
+              if (sVal.indexOf("→") !== -1) { sIcon = "sap-icon://measure"; sState = "None"; }
+              else if (sVal.indexOf("↗") !== -1) { sIcon = "sap-icon://trend-up"; sState = "Success"; } // Assuming up is good? Context dependent.
+              else if (sVal.indexOf("↘") !== -1) { sIcon = "sap-icon://trend-down"; sState = "Warning"; } 
+              else if (sVal.indexOf("↓") !== -1) { sIcon = "sap-icon://trend-down"; sState = "Success"; } 
+              
+              // Since trend goodness is context dependent (response time down is good, users up is good), 
+              // we'll just stick to neutral icons unless we parse the Area too.
+              // Simple mapping for now:
+              oControl = new ObjectStatus({
+                  icon: sIcon
+              });
+          }
+          else if (bIsPositive && i === 0) {
+              // First column of Positive Findings: Area
+              oControl = new ObjectStatus({
+                  text: sVal,
+                  state: "Success",
+                  icon: "sap-icon://accept"
+              });
+          }
+
+          aCells.push(oControl);
         }
         oTable.addItem(new ColumnListItem({ cells: aCells }));
       });
@@ -517,6 +682,17 @@ sap.ui.define([
         // Skip explicit separators and page-break markers from backend markdown
         if (sTrim === "---" || sTrim.indexOf("<div style='page-break-before: always;'>") === 0) {
           return;
+        }
+        
+        // Also skip the main title if we handle it in header
+        if (sTrim.indexOf("# EWA Analysis") === 0) {
+            return;
+        }
+        if (sTrim.indexOf("Analysis Period:") === 0) {
+            return;
+        }
+        if (sTrim.indexOf("Overall Risk Assessment:") === 0) {
+            return;
         }
 
         var mHeading = sTrim.match(/^##\s+(.*)$/);

@@ -1,77 +1,126 @@
 <mvc:View
   controllerName="ewa.analyzer.controller.Analysis"
   xmlns:mvc="sap.ui.core.mvc"
-  xmlns="sap.m">
-  <Page id="analysisPage" title="{i18n>analysisTitle}" showNavButton="true" navButtonPress="onNavBack">
-    <headerContent>
-      <Button
-        id="chatButton"
-        text="Chat"
-        icon="sap-icon://discussion-2"
-        type="Transparent"
-        press="onOpenChat" />
-    </headerContent>
-    <content>
-      <VBox class="sapUiSmallMargin">
-        <!-- Main analysis layout: report preview only -->
-        <VBox class="sapUiSmallMarginTop">
+  xmlns="sap.m"
+  xmlns:uxap="sap.uxap"
+  xmlns:core="sap.ui.core">
+  
+  <uxap:ObjectPageLayout id="analysisObjectPage" showTitleInHeaderContent="true" showFooter="false">
+    <uxap:headerTitle>
+      <uxap:ObjectPageDynamicHeaderTitle>
+        <uxap:expandedHeading>
+          <Title text="{analysis>/headerInfo/title}" wrapping="true"/>
+        </uxap:expandedHeading>
+        <uxap:snappedHeading>
+          <Title text="{analysis>/headerInfo/title}" wrapping="true"/>
+        </uxap:snappedHeading>
+        <uxap:content>
+            <ObjectAttribute title="Analysis Period" text="{analysis>/headerInfo/period}"/>
+            <ObjectStatus title="Overall Risk" text="{analysis>/headerInfo/risk}" state="{analysis>/headerInfo/riskState}" inverted="true"/>
+        </uxap:content>
+        <uxap:navigationActions>
+           <Button icon="sap-icon://nav-back" type="Transparent" press="onNavBack" tooltip="Back" />
+        </uxap:navigationActions>
+        <uxap:actions>
+          <Button
+            id="chatButton"
+            text="Chat"
+            icon="sap-icon://discussion-2"
+            type="Transparent"
+            press="onOpenChat" />
+        </uxap:actions>
+      </uxap:ObjectPageDynamicHeaderTitle>
+    </uxap:headerTitle>
+
+    <uxap:headerContent>
+       <VBox>
           <BusyIndicator
-            class="sapUiSmallMarginTop"
+            class="sapUiSmallMarginBottom"
             visible="{analysis>/loading}" />
           <MessageStrip
-            class="sapUiSmallMarginTop"
+            class="sapUiSmallMarginBottom"
             text="{analysis>/error}"
             type="Error"
             showIcon="true"
             visible="{= !!${analysis>/error}}" />
-          <VBox
-            id="analysisContent"
-            class="sapUiSmallMarginTop ewaAnalysisContent" />
-        </VBox>
-      </VBox>
-    </content>
-  </Page>
+       </VBox>
+    </uxap:headerContent>
+
+    <uxap:sections>
+      <!-- Sections will be added dynamically by Controller -->
+    </uxap:sections>
+  </uxap:ObjectPageLayout>
+
   <Dialog
     id="chatDialog"
     title="Chat"
+    contentHeight="500px"
+    contentWidth="400px"
+    verticalScrolling="false"
     stretchOnPhone="true">
     <content>
-      <VBox class="sapUiSmallMargin">
-        <BusyIndicator
-          class="sapUiSmallMarginBottom"
-          visible="{chat>/loading}" />
-        <MessageStrip
-          class="sapUiSmallMarginBottom"
-          text="{chat>/error}"
-          type="Error"
-          showIcon="true"
-          visible="{= !!${chat>/error}}" />
-        <List
-          id="chatMessages"
-          items="{chat>/messages}">
-          <CustomListItem>
-            <HBox justifyContent="Start" width="100%">
-              <VBox
-                width="100%"
-                class="sapUiSmallMarginBottom"
-                alignItems="Stretch">
-                <Text
-                  text="{chat>text}"
-                  wrapping="true" />
-              </VBox>
+      <VBox height="100%" renderType="Div" justifyContent="SpaceBetween">
+        <!-- Chat Area -->
+        <ScrollContainer
+          height="100%"
+          vertical="true"
+          horizontal="false"
+          focusable="true"
+          class="sapUiSmallMargin">
+            <BusyIndicator
+              class="sapUiSmallMarginBottom"
+              visible="{chat>/loading}" />
+            <MessageStrip
+              class="sapUiSmallMarginBottom"
+              text="{chat>/error}"
+              type="Error"
+              showIcon="true"
+              visible="{= !!${chat>/error}}" />
+            <List
+              id="chatMessages"
+              items="{chat>/messages}"
+              showNoData="false"
+              separators="None"
+              class="chatList">
+              <CustomListItem class="chatListItem">
+                <HBox justifyContent="{= ${chat>isUser} ? 'End' : 'Start' }" width="100%" class="sapUiTinyMarginBottom">
+                  <VBox
+                    class="chatBubble"
+                    width="auto">
+                    <customData>
+                        <core:CustomData key="user" value="{chat>isUser}" writeToDom="true" />
+                    </customData>
+                    <Text
+                      text="{chat>text}"
+                      wrapping="true" />
+                  </VBox>
+                </HBox>
+              </CustomListItem>
+            </List>
+        </ScrollContainer>
+
+        <!-- Input Area -->
+        <VBox class="sapUiSmallMargin">
+            <HBox alignItems="End" width="100%">
+                <TextArea
+                  value="{chat>/input}"
+                  rows="1"
+                  growing="true"
+                  growingMaxLines="4"
+                  width="100%"
+                  placeholder="Type a message..."
+                  liveChange="onChatInputLive" />
+                <Button
+                  icon="sap-icon://paper-plane"
+                  type="Emphasized"
+                  class="sapUiTinyMarginBegin"
+                  press="onChatSend"
+                  enabled="{= !${chat>/loading}}"
+                  tooltip="Send" />
             </HBox>
-          </CustomListItem>
-        </List>
-        <TextArea
-          class="sapUiSmallMarginTop"
-          value="{chat>/input}"
-          rows="3"
-          width="100%" />
+        </VBox>
       </VBox>
     </content>
-    <beginButton>
-      <Button text="Send" press="onChatSend" enabled="{= !${chat>/loading}}" />
-    </beginButton>
     <endButton>
       <Button text="Close" press="onCloseChat" />
     </endButton>

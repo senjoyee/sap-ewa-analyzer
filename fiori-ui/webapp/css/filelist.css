@@ -95,6 +95,7 @@
 .ewaFileListContent .sapMListTblCell .sapMText,
 .ewaFileListContent .sapMListTblCell .sapMObjIdentifierTitle {
   font-size: 0.9rem;
+  color: #32363a;
 }
 
 .ewaFileListContent .sapMObjIdentifier {
