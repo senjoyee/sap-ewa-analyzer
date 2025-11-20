@@ -1,8 +1,0 @@
-specVersion: "2.2"
-metadata:
-  name: ewa-analyzer-fiori
-type: application
-resources:
-  configuration:
-    paths:
-      webapp: webapp
