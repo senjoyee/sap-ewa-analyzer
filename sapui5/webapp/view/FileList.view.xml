@@ -1,0 +1,109 @@
+<mvc:View
+    controllerName="ewa.analyzer.controller.FileList"
+    xmlns:mvc="sap.ui.core.mvc"
+    xmlns="sap.m"
+    xmlns:u="sap.ui.unified"
+    xmlns:l="sap.ui.layout"
+    xmlns:f="sap.f"
+    xmlns:core="sap.ui.core">
+    <Page title="{i18n>fileListTitle}">
+        <content>
+            <VBox class="sapUiSmallMargin">
+                <!-- Upload Area -->
+                <Panel headerText="{i18n>uploadTitle}" expandable="true" expanded="true" width="auto" class="sapUiResponsiveMargin">
+                    <content>
+                        <VBox class="uploadArea">
+                            <HBox justifyContent="Center" alignItems="Center" wrap="Wrap">
+                                <Input id="customerInput" placeholder="{i18n>customerLabel}" width="300px" class="sapUiSmallMarginEnd"/>
+                                <u:FileUploader
+                                    id="fileUploader"
+                                    name="file"
+                                    tooltip="Upload your file to the local server"
+                                    uploadComplete="onUploadComplete"
+                                    change="onFileChange"
+                                    typeMissmatch="handleTypeMissmatch"
+                                    style="Emphasized"
+                                    fileType="pdf"
+                                    placeholder="Choose PDF file..."
+                                    class="sapUiSmallMarginEnd"/>
+                                <Button text="{i18n>uploadButton}" type="Emphasized" press="onUploadPress" icon="sap-icon://upload"/>
+                            </HBox>
+                        </VBox>
+                    </content>
+                </Panel>
+
+                <!-- File List Table -->
+                <Table
+                    id="filesTable"
+                    items="{files>/}"
+                    mode="MultiSelect"
+                    growing="true"
+                    growingThreshold="20"
+                    class="sapUiResponsiveMargin"
+                    width="auto">
+                    <headerToolbar>
+                        <OverflowToolbar>
+                            <Title text="Files ({= ${files>/}.length })" level="H2"/>
+                            <ToolbarSpacer/>
+                            <Button text="{i18n>process}" press="onBatchProcessPress" type="Accept" enabled="{= ${selectedFiles>/count} > 0 }"/>
+                            <Button text="{i18n>delete}" press="onBatchDeletePress" type="Reject" icon="sap-icon://delete" enabled="{= ${selectedFiles>/count} > 0 }"/>
+                            <Button icon="sap-icon://refresh" press="onRefreshFiles"/>
+                        </OverflowToolbar>
+                    </headerToolbar>
+                    <columns>
+                        <Column>
+                            <Text text="{i18n>fileName}"/>
+                        </Column>
+                        <Column minScreenWidth="Tablet" demandPopin="true">
+                            <Text text="{i18n>customer}"/>
+                        </Column>
+                        <Column minScreenWidth="Tablet" demandPopin="true">
+                            <Text text="{i18n>status}"/>
+                        </Column>
+                        <Column minScreenWidth="Desktop" demandPopin="true" hAlign="End">
+                            <Text text="{i18n>uploadDate}"/>
+                        </Column>
+                        <Column minScreenWidth="Desktop" demandPopin="true" hAlign="End">
+                            <Text text="{i18n>reportDate}"/>
+                        </Column>
+                        <Column hAlign="End">
+                            <Text text="{i18n>actions}"/>
+                        </Column>
+                    </columns>
+                    <items>
+                        <ColumnListItem>
+                            <cells>
+                                <ObjectIdentifier title="{files>name}"/>
+                                <Text text="{files>customer}"/>
+                                <ObjectStatus
+                                    text="{files>status}"
+                                    state="{path: 'files>status', formatter: '.formatter.statusState'}"
+                                    icon="{path: 'files>status', formatter: '.formatter.statusIcon'}"/>
+                                <Text text="{path: 'files>uploadDate', type: 'sap.ui.model.type.Date', formatOptions: { style: 'medium' }}"/>
+                                <Text text="{path: 'files>reportDate', type: 'sap.ui.model.type.Date', formatOptions: { style: 'medium' }}"/>
+                                <HBox justifyContent="End">
+                                    <Button
+                                        text="{i18n>viewAnalysis}"
+                                        icon="sap-icon://show"
+                                        type="Transparent"
+                                        press=".onViewAnalysisPress"
+                                        visible="{= ${files>status} === 'Analyzed' || ${files>status} === 'completed' }"/>
+                                    <Button
+                                        text="{i18n>process}"
+                                        icon="sap-icon://activate"
+                                        type="Ghost"
+                                        press=".onProcessPress"
+                                        visible="{= ${files>status} !== 'Analyzed' &amp;&amp; ${files>status} !== 'completed' &amp;&amp; ${files>status} !== 'processing' }"/>
+                                    <Button
+                                        icon="sap-icon://delete"
+                                        type="Transparent"
+                                        press=".onDeletePress"/>
+                                </HBox>
+                            </cells>
+                        </ColumnListItem>
+                    </items>
+                </Table>
+            </VBox>
+        </content>
+    </Page>
+</mvc:View>
