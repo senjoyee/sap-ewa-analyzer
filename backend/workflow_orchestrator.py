@@ -20,7 +20,7 @@ import json
 import asyncio
 import traceback # Added for exception logging
 from datetime import datetime
-from typing import Dict, Any, List
+from typing import Dict, Any
 from dataclasses import dataclass
 from azure.storage.blob import BlobServiceClient
 from openai import AzureOpenAI
@@ -28,12 +28,7 @@ from dotenv import load_dotenv
 from agent.ewa_agent import EWAAgent
 from agent.kpi_image_agent import KPIImageAgent
 from utils.markdown_utils import json_to_markdown
-from models.gemini_client import GeminiClient, is_gemini_model, create_gemini_client
 from converters.document_converter import convert_document_to_markdown
-try:
-    import fitz
-except Exception:
-    fitz = None
 
 # Load environment variables
 load_dotenv()
@@ -54,30 +49,15 @@ AZURE_STORAGE_CONTAINER_NAME = os.getenv("AZURE_STORAGE_CONTAINER_NAME")
 # System prompts for each workflow
 # System prompts for each workflow
 def load_summary_prompt() -> str | None:
-    """Return the first available summary prompt content, or None if none found.
-    Preference order:
-    - If Gemini model is configured, prefer the Gemini-specific prompt.
-    - Otherwise, prefer the GPT-5 optimized OpenAI prompt when present.
-    - Fallback to OpenAI or legacy prompts.
-    """
+    """Return the first available summary prompt content, or None if none found."""
     current_dir = os.path.dirname(os.path.abspath(__file__))
     prompt_dir = os.path.join(current_dir, "prompts")
 
-    # Prefer model-appropriate prompt
-    if is_gemini_model(AZURE_OPENAI_SUMMARY_MODEL):
-        candidate_files = [
-            "ewa_summary_prompt_openai_google.md", # Gemini-specific
-            "ewa_summary_prompt_openai_gpt5.md",   # Fallback to GPT-5 optimized
-            "ewa_summary_prompt_openai.md",        # OpenAI-specific
-            "ewa_summary_prompt.md",               # legacy path
-        ]
-    else:
-        candidate_files = [
-            "ewa_summary_prompt_openai_gpt5.md",   # GPT-5 optimized (preferred for OpenAI models)
-            "ewa_summary_prompt_openai.md",        # OpenAI-specific
-            "ewa_summary_prompt.md",               # legacy path
-            "ewa_summary_prompt_openai_google.md", # Gemini-specific (as last resort)
-        ]
+    candidate_files = [
+        "ewa_summary_prompt_openai_gpt5.md",
+        "ewa_summary_prompt_openai.md",
+        "ewa_summary_prompt.md",
+    ]
 
     for filename in candidate_files:
         path = os.path.join(prompt_dir, filename)
@@ -136,18 +116,10 @@ class EWAWorkflowOrchestrator:
             raise
     
     def _create_agent(self, model: str, summary_prompt: str | None = None) -> EWAAgent:
-        """Create appropriate agent (OpenAI or Gemini) based on model name"""
+        """Create the Azure OpenAI agent for the configured model"""
         try:
-            if is_gemini_model(model):
-                # Create Gemini client
-                gemini_client = create_gemini_client(model)
-                print(f"Creating EWAAgent with Gemini model: {model}")
-                return EWAAgent(client=gemini_client, model=model, summary_prompt=summary_prompt)
-            else:
-                # Use Azure OpenAI client
-                print(f"Creating EWAAgent with Azure OpenAI model: {model}")
-                return EWAAgent(client=self.client, model=model, summary_prompt=summary_prompt)
-                
+            print(f"Creating EWAAgent with Azure OpenAI model: {model}")
+            return EWAAgent(client=self.client, model=model, summary_prompt=summary_prompt)
         except Exception as e:
             print(f"Error creating agent for model {model}: {str(e)}")
             raise
@@ -277,25 +249,6 @@ class EWAWorkflowOrchestrator:
             print(f"Warning: could not {state} processing metadata for {blob_name}: {e}")
             return False
 
-    def _extract_pdf_text(self, pdf_bytes: bytes) -> str:
-        if fitz is None:
-            raise RuntimeError(
-                "PyMuPDF (fitz) is not installed. Cannot extract text from PDF for text-only analysis."
-            )
-        doc = fitz.open(stream=pdf_bytes, filetype="pdf")
-        try:
-            chunks: list[str] = []
-            for page in doc:
-                try:
-                    txt = page.get_text("text") or ""
-                except Exception:
-                    txt = ""
-                chunks.append(txt)
-            return ("\n\n".join(chunks)).strip()
-        finally:
-            doc.close()
- 
-    
     # Workflow step functions
     async def download_content_step(self, state: WorkflowState) -> WorkflowState:
         """Step 1: Download markdown content from blob storage"""
@@ -347,22 +300,12 @@ class EWAWorkflowOrchestrator:
             # Run AI analysis for all sections except KPIs
             agent = self._create_agent(AZURE_OPENAI_SUMMARY_MODEL, ai_prompt)
             
-            # Determine input type based on model
-            if is_gemini_model(AZURE_OPENAI_SUMMARY_MODEL):
-                # For Gemini models, use original PDF. On failure, propagate error (no markdown fallback).
-                pdf_data = await self.download_pdf_from_blob(state.blob_name)
-                print(f"[Gemini Workflow] Using original PDF ({len(pdf_data)} bytes) for analysis")
-                ai_result = await agent.run(state.markdown_content, pdf_data=pdf_data)
-            else:
-                # For OpenAI models, extract text and avoid attaching the PDF to bypass image limits.
-                pdf_data = await self.download_pdf_from_blob(state.blob_name)
-                text_input = (state.markdown_content or "").strip()
-                if not text_input:
-                    text_input = self._extract_pdf_text(pdf_data)
-                print(
-                    f"[OpenAI Workflow] Using text-only input ({len(text_input)} chars) for analysis; PDF not attached"
-                )
-                ai_result = await agent.run(text_input, pdf_data=None)
+            text_input = (state.markdown_content or "").strip()
+            if not text_input:
+                raise ValueError("Markdown content is empty; conversion must succeed before analysis.")
+
+            print(f"[ANALYSIS] Using markdown-only input ({len(text_input)} chars) for analysis")
+            ai_result = await agent.run(text_input, pdf_data=None)
             
             # Step 2: Extract KPIs via image-based agent (single high-res page to GPT-5)
             final_json = ai_result.copy() if ai_result else {}
@@ -432,12 +375,11 @@ class EWAWorkflowOrchestrator:
             return state
     
 
-    async def execute_workflow(self, blob_name: str, skip_markdown: bool = False) -> Dict[str, Any]:
+    async def execute_workflow(self, blob_name: str) -> Dict[str, Any]:
         """Execute the complete workflow.
 
         Args:
             blob_name: Name of the original PDF blob to analyze.
-            skip_markdown: If True, do not download or rely on converted markdown; run analysis directly on the PDF.
         """
         processing_flag_set = False
         try:
@@ -451,13 +393,10 @@ class EWAWorkflowOrchestrator:
             # Initialize state
             state = WorkflowState(blob_name=blob_name)
             
-            # Execute workflow steps sequentially
-            if skip_markdown:
-                print("[WORKFLOW] skip_markdown=True: Skipping markdown download; proceeding with PDF-first analysis")
-            else:
-                state = await self.download_content_step(state)
-                if state.error:
-                    raise Exception(state.error)
+            # Execute workflow steps sequentially (markdown required)
+            state = await self.download_content_step(state)
+            if state.error:
+                raise Exception(state.error)
             
             # Run the EWA analysis using single enhanced agent
             summary_state = await self.run_analysis_step(state)
@@ -504,20 +443,14 @@ class EWAWorkflowOrchestrator:
 # Global orchestrator instance
 ewa_orchestrator = EWAWorkflowOrchestrator()
 
-async def execute_ewa_analysis(blob_name: str, pdf_first: bool = False) -> Dict[str, Any]:
+async def execute_ewa_analysis(blob_name: str) -> Dict[str, Any]:
     """
     Convenience function to execute EWA analysis workflow
     
     Args:
         blob_name: Name of the file to analyze
-        pdf_first: If True, skip markdown and analyze directly from PDF
     
     Returns:
         dict: Analysis result
     """
-    return await ewa_orchestrator.execute_workflow(blob_name, skip_markdown=pdf_first)
-
-
-async def execute_ewa_analysis_pdf_first(blob_name: str) -> Dict[str, Any]:
-    """Explicit helper to run PDF-first analysis (skips markdown parsing)."""
-    return await ewa_orchestrator.execute_workflow(blob_name, skip_markdown=True)
+    return await ewa_orchestrator.execute_workflow(blob_name)
