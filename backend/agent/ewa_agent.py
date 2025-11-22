@@ -1,4 +1,4 @@
-"""Agent responsible for producing a structured JSON summary for an SAP EWA report using Azure OpenAI or Google Gemini."""
+"""Agent responsible for producing a structured JSON summary for an SAP EWA report using Azure OpenAI."""
 from __future__ import annotations
 
 import os
@@ -8,7 +8,6 @@ import tempfile
 import copy
 from typing import Dict, Any, Union
 from jsonschema import validate, ValidationError
-from models.gemini_client import GeminiClient, is_gemini_model
 from utils.json_repair import JSONRepair
 
 # Note: LLM-based JSON repair has been removed.
@@ -34,7 +33,6 @@ Ensure your entire output strictly adheres to the provided JSON schema. Do not a
 # Directory containing prompt templates
 _PROMPT_DIR = os.path.join(os.path.dirname(os.path.abspath(__file__)), "..", "prompts")
 _OPENAI_PROMPT_PATH = os.path.join(_PROMPT_DIR, "ewa_summary_prompt_openai.md")
-_GEMINI_PROMPT_PATH = os.path.join(_PROMPT_DIR, "ewa_summary_prompt_openai_google.md")
 _OPENAI_GPT5_PROMPT_PATH = os.path.join(_PROMPT_DIR, "ewa_summary_prompt_openai_gpt5.md")
 
 # Fallback: if specific prompt files are unavailable, use inline DEFAULT_PROMPT above
@@ -46,36 +44,24 @@ if os.path.exists(_DEFAULT_FALLBACK_PROMPT_PATH):
 class EWAAgent:
     """Small agent that plans (single step) and returns a validated JSON summary."""
 
-    def __init__(self, client: Union[object, GeminiClient, None], model: str, summary_prompt: str | None = None, schema_path: str | None = None):
+    def __init__(self, client: Union[object, None], model: str, summary_prompt: str | None = None, schema_path: str | None = None):
         self.client = client
         self.model = model
-        # Determine model type and load appropriate prompt
-        self.is_gemini = is_gemini_model(model)
 
         if summary_prompt is not None:
             self.summary_prompt = summary_prompt
         else:
-            # Select prompt file based on model
-            if self.is_gemini:
+            model_lc = (self.model or "").lower()
+            if "gpt-5" in model_lc:
                 candidate_paths = [
-                    _GEMINI_PROMPT_PATH,
-                    _OPENAI_GPT5_PROMPT_PATH,  # fallback to GPT-5 optimized if present
+                    _OPENAI_GPT5_PROMPT_PATH,  # preferred for GPT-5 family
                     _OPENAI_PROMPT_PATH,
                 ]
             else:
-                model_lc = (self.model or "").lower()
-                if "gpt-5" in model_lc:
-                    candidate_paths = [
-                        _OPENAI_GPT5_PROMPT_PATH,  # preferred for GPT-5 family
-                        _OPENAI_PROMPT_PATH,
-                        _GEMINI_PROMPT_PATH,
-                    ]
-                else:
-                    candidate_paths = [
-                        _OPENAI_PROMPT_PATH,
-                        _OPENAI_GPT5_PROMPT_PATH,
-                        _GEMINI_PROMPT_PATH,
-                    ]
+                candidate_paths = [
+                    _OPENAI_PROMPT_PATH,
+                    _OPENAI_GPT5_PROMPT_PATH,
+                ]
 
             loaded = None
             for p in candidate_paths:
@@ -111,7 +97,7 @@ class EWAAgent:
         """Return a validated summary JSON object.
         Attempts a single local (non-LLM) repair if initial output is invalid.
         """
-        summary_json = await self._call_llm(markdown, pdf_data)
+        summary_json = await self._call_openai_responses(markdown, pdf_data)
         if self._is_valid(summary_json):
             print("[EWAAgent.run] Initial JSON valid; skipping repair")
             return summary_json
@@ -131,15 +117,6 @@ class EWAAgent:
 
     # ----------------------------- Internal helpers ----------------------------- #
 
-
-    async def _call_llm(self, markdown: str, pdf_data: bytes = None) -> Dict[str, Any]:
-        """Call either OpenAI or Gemini based on model type"""
-        if self.is_gemini:
-            return await self._call_gemini(markdown, pdf_data)
-        else:
-            # Use Responses API with optional PDF input for OpenAI path
-            return await self._call_openai_responses(markdown, pdf_data)
-    
 
     async def _call_openai_responses(self, markdown: str, pdf_data: bytes | None) -> Dict[str, Any]:
         """Use Azure OpenAI Responses API with Structured Outputs via text.format and optional PDF input.
@@ -311,35 +288,6 @@ class EWAAgent:
 
         copy_schema = copy.deepcopy(schema)
         return visit(copy_schema)
-
-    
-    
-    async def _call_gemini(self, markdown: str, pdf_data: bytes = None) -> Dict[str, Any]:
-        """Call Gemini API for JSON generation with optional PDF input"""
-        try:
-            # Add JSON schema to the prompt for Gemini
-            schema_instruction = f"\n\nIMPORTANT: Your response must conform to this exact JSON schema:\n{json.dumps(self.schema, indent=2)}"
-            enhanced_prompt = self.summary_prompt + schema_instruction
-            
-            # Modify prompt based on input type
-            if pdf_data:
-                input_prompt = "Please analyze the attached PDF document and provide a comprehensive EWA analysis."
-                print(f"[Gemini] Using PDF input ({len(pdf_data)} bytes) instead of markdown")
-            else:
-                input_prompt = markdown
-                print(f"[Gemini] Using markdown input ({len(markdown)} characters)")
-            
-            loop = asyncio.get_running_loop()
-            response = await loop.run_in_executor(
-                None, 
-                lambda: self.client.generate_json_content(input_prompt, enhanced_prompt, pdf_data)
-            )
-            
-            return response
-            
-        except Exception as e:
-            print(f"[EWAAgent._call_gemini] Exception occurred: {str(e)}")
-            raise
 
     def _repair_local(self, markdown: str, previous_json: Dict[str, Any]) -> Dict[str, Any]:
         """Repair JSON locally without LLM calls. This is the only repair path.

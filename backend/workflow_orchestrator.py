@@ -40,7 +40,6 @@ AZURE_OPENAI_API_VERSION = os.getenv("AZURE_OPENAI_API_VERSION")
 
 # Model deployment name
 AZURE_OPENAI_SUMMARY_MODEL = os.getenv("AZURE_OPENAI_SUMMARY_MODEL", "gpt-4.1")
-AZURE_OPENAI_FAST_MODEL = os.getenv("AZURE_OPENAI_FAST_MODEL", "gpt-4.1-mini")
 
 # Azure Storage configuration
 AZURE_STORAGE_CONNECTION_STRING = os.getenv("AZURE_STORAGE_CONNECTION_STRING")
@@ -92,37 +91,40 @@ class EWAWorkflowOrchestrator:
     def __init__(self):
         self.client = None
         self.blob_service_client = None
+        self.summary_model = AZURE_OPENAI_SUMMARY_MODEL
+        self.azure_openai_endpoint = AZURE_OPENAI_ENDPOINT
+        self.azure_openai_api_key = AZURE_OPENAI_API_KEY
+        self.azure_openai_api_version = AZURE_OPENAI_API_VERSION
         self._initialize_clients()
     
     def _initialize_clients(self):
         """Initialize Azure OpenAI and Blob Storage clients"""
         try:
-            # Initialize Azure OpenAI client
-            self.client = AzureOpenAI(
-                azure_endpoint=AZURE_OPENAI_ENDPOINT,
-                api_key=AZURE_OPENAI_API_KEY,
-                api_version=AZURE_OPENAI_API_VERSION
-            )
-            
             # Initialize Blob Storage client
             self.blob_service_client = BlobServiceClient.from_connection_string(
                 AZURE_STORAGE_CONNECTION_STRING
             )
             
-            print("Successfully initialized Azure OpenAI and Blob Storage clients")
+            print("Successfully initialized Blob Storage client")
             
         except Exception as e:
             print(f"Error initializing clients: {str(e)}")
             raise
     
-    def _create_agent(self, model: str, summary_prompt: str | None = None) -> EWAAgent:
-        """Create the Azure OpenAI agent for the configured model"""
-        try:
-            print(f"Creating EWAAgent with Azure OpenAI model: {model}")
-            return EWAAgent(client=self.client, model=model, summary_prompt=summary_prompt)
-        except Exception as e:
-            print(f"Error creating agent for model {model}: {str(e)}")
-            raise
+    def _create_agent(self, summary_prompt: str | None = None) -> EWAAgent:
+        print(f"Creating EWAAgent with model: {self.summary_model}")
+        if not self.azure_openai_endpoint:
+            raise ValueError("AZURE_OPENAI_ENDPOINT environment variable is required")
+        if not self.azure_openai_api_key:
+            raise ValueError("AZURE_OPENAI_API_KEY environment variable is required")
+        if not self.azure_openai_api_version:
+            raise ValueError("AZURE_OPENAI_API_VERSION environment variable is required")
+        client = AzureOpenAI(
+            api_version=self.azure_openai_api_version,
+            azure_endpoint=self.azure_openai_endpoint,
+            api_key=self.azure_openai_api_key,
+        )
+        return EWAAgent(client=client, model=self.summary_model, summary_prompt=summary_prompt)
     
     async def download_markdown_from_blob(self, blob_name: str) -> str:
         """Download markdown content from Azure Blob Storage"""
