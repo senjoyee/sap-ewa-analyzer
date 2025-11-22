@@ -105,6 +105,7 @@ sap.ui.define([
             var currentBlock = { type: "text", content: [] };
             var inJsonBlock = false;
             var headerCount = 0;
+            var currentSectionTitle = "";
 
             for (var i = 0; i < lines.length; i++) {
                 var line = lines[i];
@@ -116,7 +117,7 @@ sap.ui.define([
 
                 // Header detection
                 if (line.startsWith("#")) {
-                    this._flushBlock(oContainer, currentBlock);
+                    this._flushBlock(oContainer, currentBlock, currentSectionTitle);
 
                     // Special handling for "Executive Summary" -> Objective Card
                     if (line.includes("Executive Summary") || line.includes("Objective")) {
@@ -125,22 +126,25 @@ sap.ui.define([
                     }
 
                     var sId = "section_" + headerCount++;
+                    var titleText = line.replace(/^#+\s*/, "").trim();
+                    currentSectionTitle = titleText;
+
                     currentBlock = { type: "header", content: [line], id: sId };
-                    this._flushBlock(oContainer, currentBlock);
+                    this._flushBlock(oContainer, currentBlock, currentSectionTitle);
                     currentBlock = { type: "text", content: [] };
                     continue;
                 }
 
                 // JSON Block detection (for Key Findings)
                 if (line.trim().startsWith("```json")) {
-                    this._flushBlock(oContainer, currentBlock);
+                    this._flushBlock(oContainer, currentBlock, currentSectionTitle);
                     inJsonBlock = true;
                     currentBlock = { type: "json", content: [] };
                     continue;
                 }
                 if (inJsonBlock && line.trim().startsWith("```")) {
                     inJsonBlock = false;
-                    this._flushBlock(oContainer, currentBlock);
+                    this._flushBlock(oContainer, currentBlock, currentSectionTitle);
                     currentBlock = { type: "text", content: [] };
                     continue;
                 }
@@ -151,24 +155,24 @@ sap.ui.define([
 
                 // Table detection
                 if (line.trim().startsWith("|") && (lines[i + 1] && lines[i + 1].trim().startsWith("|"))) {
-                    this._flushBlock(oContainer, currentBlock);
+                    this._flushBlock(oContainer, currentBlock, currentSectionTitle);
                     currentBlock = { type: "table", content: [] };
                     while (i < lines.length && lines[i].trim().startsWith("|")) {
                         currentBlock.content.push(lines[i]);
                         i++;
                     }
                     i--;
-                    this._flushBlock(oContainer, currentBlock);
+                    this._flushBlock(oContainer, currentBlock, currentSectionTitle);
                     currentBlock = { type: "text", content: [] };
                     continue;
                 }
 
                 currentBlock.content.push(line);
             }
-            this._flushBlock(oContainer, currentBlock);
+            this._flushBlock(oContainer, currentBlock, currentSectionTitle);
         },
 
-        _flushBlock: function (oContainer, block) {
+        _flushBlock: function (oContainer, block, sSectionTitle) {
             if (!block || (block.content.length === 0 && block.type !== "header" && block.type !== "objective_card")) {
                 return;
             }
@@ -176,6 +180,8 @@ sap.ui.define([
             if (block.type === "objective_card") {
                 // Render as a styled VBox (Card)
                 var sDescription = block.content.join("\n");
+                var htmlContent = this._simpleMdToHtml(sDescription);
+
                 var oCard = new VBox({
                     width: "100%",
                     class: "objectiveCard sapUiMediumMarginBottom",
@@ -185,8 +191,8 @@ sap.ui.define([
                             items: [
                                 new VBox({
                                     items: [
-                                        new Title({ text: block.title, level: "H3" }).addStyleClass("objectiveTitle"),
-                                        new Text({ text: sDescription }).addStyleClass("objectiveText")
+                                        new Title({ text: block.title, level: "H2" }).addStyleClass("markdown-header-2"),
+                                        new HTML({ content: "<div class='markdown-content'>" + htmlContent + "</div>" })
                                     ]
                                 })
                             ]
@@ -236,12 +242,42 @@ sap.ui.define([
                 }
 
             } else {
+                // Check for Overall Risk Assessment
+                var sContent = block.content.join("\n");
+                var riskMatch = sContent.match(/Overall Risk Assessment:\s*(.*)/i);
+
+                if (riskMatch) {
+                    var sRisk = riskMatch[1].trim().replace(/[`*]/g, ""); // Remove backticks and asterisks
+                    var sState = "None";
+                    var sIcon = "sap-icon://information";
+
+                    if (sRisk.toLowerCase().includes("critical")) { sState = "Error"; sIcon = "sap-icon://message-error"; }
+                    else if (sRisk.toLowerCase().includes("high")) { sState = "Error"; sIcon = "sap-icon://message-error"; }
+                    else if (sRisk.toLowerCase().includes("medium")) { sState = "Warning"; sIcon = "sap-icon://message-warning"; }
+                    else if (sRisk.toLowerCase().includes("low")) { sState = "Success"; sIcon = "sap-icon://message-success"; }
+
+                    oContainer.addItem(new HBox({
+                        alignItems: "Center",
+                        items: [
+                            new Title({ text: "Overall Risk Assessment:", level: "H3" }).addStyleClass("sapUiTinyMarginEnd"),
+                            new ObjectStatus({
+                                text: sRisk.charAt(0).toUpperCase() + sRisk.slice(1), // Capitalize
+                                state: sState,
+                                icon: sIcon,
+                                inverted: true
+                            })
+                        ]
+                    }).addStyleClass("sapUiSmallMarginBottom"));
+                    return;
+                }
+
                 // Text
                 var html = block.content.join("\n");
                 html = this._simpleMdToHtml(html);
                 if (html.trim()) {
+                    var sSectionClass = sSectionTitle ? "section-" + sSectionTitle.toLowerCase().replace(/[^a-z0-9]/g, "-") : "";
                     oContainer.addItem(new HTML({
-                        content: "<div class='markdown-content'>" + html + "</div>",
+                        content: "<div class='markdown-content " + sSectionClass + "'>" + html + "</div>",
                         sanitizeContent: true
                     }));
                 }
@@ -260,6 +296,8 @@ sap.ui.define([
             else if (sSeverity === "medium") { sState = "Warning"; sIcon = "sap-icon://message-warning"; }
             else if (sSeverity === "low") { sState = "Success"; sIcon = "sap-icon://message-success"; }
 
+            var sSeverityLabel = sSeverity.charAt(0).toUpperCase() + sSeverity.slice(1);
+
             var oPanel = new Panel({
                 expandable: true,
                 expanded: false,
@@ -267,19 +305,19 @@ sap.ui.define([
                 headerToolbar: new sap.m.Toolbar({
                     content: [
                         new Title({ text: item["Issue ID"], level: "H3" }).addStyleClass("sapUiTinyMarginBegin"),
-                        new ToolbarSpacer(),
                         new ObjectStatus({
-                            text: item.Area,
+                            text: sSeverityLabel, // Show Severity instead of Area
                             state: sState,
                             icon: sIcon,
                             inverted: true
-                        })
+                        }).addStyleClass("sapUiMediumMarginBegin")
                     ]
                 })
             }).addStyleClass("sapUiSmallMarginBottom");
 
             // Build content HTML
             var htmlContent = "";
+            htmlContent += "<p><strong>Area:</strong> " + item.Area + "</p>"; // Add Area to content
             htmlContent += "<p><strong>" + item.Finding + "</strong></p>";
 
             if (item.Impact) htmlContent += "<p><strong>Impact:</strong> " + item.Impact + "</p>";
@@ -328,6 +366,7 @@ sap.ui.define([
             var html = md;
             html = html.replace(/\*\*(.*?)\*\*/g, "<b>$1</b>");
             html = html.replace(/^- (.*)/gm, "<li>$1</li>");
+            html = html.replace(/<\/li>\n/g, "</li>"); // Remove newline after list item to avoid <br>
             html = html.replace(/\n\n/g, "</p><p>");
             html = html.replace(/\n/g, "<br>");
             return "<p>" + html + "</p>";
@@ -363,7 +402,7 @@ sap.ui.define([
                                                 template: new CustomListItem({
                                                     content: [
                                                         new HBox({
-                                                            justifyContent: "{= ${analysis>role} === 'user' ? 'End' : 'Start' }",
+                                                            justifyContent: "Start",
                                                             width: "100%",
                                                             items: [
                                                                 new VBox({
@@ -383,7 +422,8 @@ sap.ui.define([
                                 new FeedInput("chatInput", {
                                     post: this.onChatSend.bind(this),
                                     showIcon: false,
-                                    placeholder: "{i18n>chatPlaceholder}"
+                                    placeholder: "{i18n>chatPlaceholder}",
+                                    submit: this.onChatSend.bind(this)
                                 }).addStyleClass("sapUiSmallMarginTop")
                             ]
                         })
@@ -400,6 +440,7 @@ sap.ui.define([
             this._oChatDialog.open();
         },
 
+
         onChatSend: function (oEvent) {
             var sValue = oEvent.getParameter("value");
             var oModel = this.getView().getModel("analysis");
@@ -408,11 +449,19 @@ sap.ui.define([
             aHistory.push({ role: "user", content: sValue });
             oModel.refresh();
 
+            // Convert frontend format (role/content) to backend format (isUser/text)
+            var backendHistory = aHistory.map(function (h) {
+                return {
+                    isUser: h.role === "user",
+                    text: h.content
+                };
+            });
+
             var oPayload = {
                 message: sValue,
                 fileName: this._sBlobName,
                 documentContent: this._sDocumentContent,
-                chatHistory: aHistory.map(h => ({ role: h.role, content: h.content }))
+                chatHistory: backendHistory
             };
 
             fetch(Config.getEndpoint("chat"), {
@@ -422,7 +471,7 @@ sap.ui.define([
             })
                 .then(response => response.json())
                 .then(data => {
-                    var sResponse = data.reply || data.message || "No response";
+                    var sResponse = data.response || data.reply || data.message || "No response";
                     aHistory.push({ role: "assistant", content: sResponse });
                     oModel.refresh();
                 })

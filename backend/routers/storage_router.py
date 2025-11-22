@@ -302,6 +302,9 @@ async def list_files():
             processed = base_name in json_files or base_name in md_files
             ai_analyzed = base_name in ai_analyzed_files
             
+            # Check for processing flag in metadata
+            is_processing = metadata.get("processing", "").lower() == "true"
+            
             file_info = {
                 "name": blob.name,
                 "last_modified": blob.last_modified,
@@ -312,6 +315,7 @@ async def list_files():
                 "system_id": system_id,
                 "processed": processed,
                 "ai_analyzed": ai_analyzed,
+                "processing": is_processing,  # Add processing flag
             }
             
             files.append(file_info)

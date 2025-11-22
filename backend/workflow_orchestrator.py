@@ -250,6 +250,33 @@ class EWAWorkflowOrchestrator:
             print(f"Error retrieving metadata for {blob_name}: {str(e)}")
             return {}
 
+    async def set_processing_flag(self, blob_name: str, is_processing: bool) -> bool:
+        """Ensure the original blob metadata reflects current processing state."""
+        try:
+            blob_client = self.blob_service_client.get_blob_client(
+                container=AZURE_STORAGE_CONTAINER_NAME,
+                blob=blob_name
+            )
+
+            properties = await asyncio.to_thread(blob_client.get_blob_properties)
+            metadata = (properties.metadata or {}).copy()
+
+            if is_processing:
+                if metadata.get("processing") == "true":
+                    return True
+                metadata["processing"] = "true"
+            else:
+                if "processing" not in metadata:
+                    return True
+                metadata.pop("processing", None)
+
+            await asyncio.to_thread(blob_client.set_blob_metadata, metadata)
+            return True
+        except Exception as e:
+            state = "set" if is_processing else "clear"
+            print(f"Warning: could not {state} processing metadata for {blob_name}: {e}")
+            return False
+
     def _extract_pdf_text(self, pdf_bytes: bytes) -> str:
         if fitz is None:
             raise RuntimeError(
@@ -412,6 +439,12 @@ class EWAWorkflowOrchestrator:
             blob_name: Name of the original PDF blob to analyze.
             skip_markdown: If True, do not download or rely on converted markdown; run analysis directly on the PDF.
         """
+        processing_flag_set = False
+        try:
+            processing_flag_set = await self.set_processing_flag(blob_name, True)
+        except Exception as flag_err:
+            print(f"Warning: unable to mark {blob_name} as processing: {flag_err}")
+
         try:
             print(f"Starting workflow for {blob_name}")
             
@@ -464,6 +497,9 @@ class EWAWorkflowOrchestrator:
                 "message": error_message,
                 "original_file": blob_name
             }
+        finally:
+            if processing_flag_set:
+                await self.set_processing_flag(blob_name, False)
 
 # Global orchestrator instance
 ewa_orchestrator = EWAWorkflowOrchestrator()

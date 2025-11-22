@@ -51,7 +51,7 @@ sap.ui.define([
             this._intervalId = setInterval(this._loadFiles.bind(this), 10000);
         },
 
-        onExit: function() {
+        onExit: function () {
             if (this._intervalId) {
                 clearInterval(this._intervalId);
             }
@@ -62,14 +62,18 @@ sap.ui.define([
                 .then(response => response.json())
                 .then(data => {
                     // Transform data to match UI model
-                    var aFiles = (data.files || []).map(function(oFile) {
+                    var aFiles = (data.files || []).map(function (oFile) {
                         var sStatus = "New";
-                        if (oFile.ai_analyzed) {
+
+                        // Check processing flag first (takes priority)
+                        if (oFile.processing) {
+                            sStatus = "Processing";
+                        } else if (oFile.ai_analyzed) {
                             sStatus = "Analyzed";
                         } else if (oFile.processed) {
                             sStatus = "Processing";
                         }
-                        
+
                         return {
                             name: oFile.name,
                             customer: oFile.customer_name,
@@ -83,7 +87,7 @@ sap.ui.define([
                 .catch(err => console.error("Failed to load files", err));
         },
 
-        onRefreshFiles: function() {
+        onRefreshFiles: function () {
             this._loadFiles();
             MessageToast.show("Refreshing files...");
         },
@@ -116,24 +120,24 @@ sap.ui.define([
                 method: "POST",
                 body: formData
             })
-            .then(response => {
-                if (response.ok) {
-                    return response.json();
-                }
-                throw new Error("Upload failed");
-            })
-            .then(data => {
-                MessageToast.show("Upload successful");
-                oFileUploader.setValue("");
-                this.byId("customerInput").setValue("");
-                this._loadFiles();
-            })
-            .catch(err => {
-                MessageBox.error("Upload failed: " + err.message);
-            })
-            .finally(() => {
-                oFileUploader.setBusy(false);
-            });
+                .then(response => {
+                    if (response.ok) {
+                        return response.json();
+                    }
+                    throw new Error("Upload failed");
+                })
+                .then(data => {
+                    MessageToast.show("Upload successful");
+                    oFileUploader.setValue("");
+                    this.byId("customerInput").setValue("");
+                    this._loadFiles();
+                })
+                .catch(err => {
+                    MessageBox.error("Upload failed: " + err.message);
+                })
+                .finally(() => {
+                    oFileUploader.setBusy(false);
+                });
         },
 
         onProcessPress: function (oEvent) {
@@ -141,41 +145,53 @@ sap.ui.define([
             this._processFile(oItem);
         },
 
-        _processFile: function(oFile) {
+        _processFile: function (oFile) {
             MessageToast.show("Processing started for " + oFile.name);
-            
+
             // Optimistic update
             var oModel = this.getView().getModel("files");
             var aFiles = oModel.getData();
             var oFileInModel = aFiles.find(f => f.name === oFile.name);
             if (oFileInModel) {
-                oFileInModel.status = "processing";
+                oFileInModel.status = "Processing";
                 oModel.refresh();
             }
 
             fetch(Config.getEndpoint("process"), {
                 method: "POST",
                 headers: { "Content-Type": "application/json" },
-                body: JSON.stringify({ blob_name: oFile.name }) // Backend expects 'blob_name' or 'filename' depending on implementation. Memory says blob_name
+                body: JSON.stringify({ blob_name: oFile.name })
             })
-            .then(response => {
-                if (response.ok) {
-                    MessageToast.show("Processing queued for " + oFile.name);
-                } else {
-                    throw new Error("Processing request failed");
-                }
-                this._loadFiles(); // Refresh to get real status
-            })
-            .catch(err => {
-                MessageBox.error("Processing failed: " + err.message);
-                this._loadFiles();
-            });
+                .then(response => {
+                    if (!response.ok) {
+                        return response.json().then(data => {
+                            throw new Error(data.detail || "Processing request failed");
+                        }).catch(() => {
+                            throw new Error(`Processing request failed with status ${response.status}`);
+                        });
+                    }
+                    return response.json();
+                })
+                .then(data => {
+                    console.log("Process response:", data);
+                    if (data.success) {
+                        MessageToast.show("Re-analysis completed successfully for " + oFile.name);
+                    } else {
+                        throw new Error(data.message || "Processing failed");
+                    }
+                    this._loadFiles(); // Refresh to get real status
+                })
+                .catch(err => {
+                    console.error("Processing error:", err);
+                    MessageBox.error("Processing failed: " + err.message);
+                    this._loadFiles();
+                });
         },
 
         onViewAnalysisPress: function (oEvent) {
             var oItem = oEvent.getSource().getBindingContext("files").getObject();
             var sBaseName = oItem.name.replace(".pdf", "");
-            
+
             this.getOwnerComponent().getRouter().navTo("Preview", {
                 baseName: sBaseName
             });
@@ -193,50 +209,50 @@ sap.ui.define([
                             headers: { "Content-Type": "application/json" },
                             body: JSON.stringify({ fileName: oItem.name, baseName: sBaseName })
                         })
-                        .then(response => {
-                            if (response.ok) {
-                                MessageToast.show("Deleted successfully");
-                                this._loadFiles();
-                            } else {
-                                throw new Error("Delete failed");
-                            }
-                        })
-                        .catch(err => {
-                            MessageBox.error("Delete failed: " + err.message);
-                        });
+                            .then(response => {
+                                if (response.ok) {
+                                    MessageToast.show("Deleted successfully");
+                                    this._loadFiles();
+                                } else {
+                                    throw new Error("Delete failed");
+                                }
+                            })
+                            .catch(err => {
+                                MessageBox.error("Delete failed: " + err.message);
+                            });
                     }
                 }
             });
         },
 
-        onBatchProcessPress: function() {
+        onBatchProcessPress: function () {
             var aSelectedContexts = this.byId("filesTable").getSelectedContexts();
             if (aSelectedContexts.length === 0) {
                 return;
             }
-            
+
             aSelectedContexts.forEach(context => {
                 var oFile = context.getObject();
                 this._processFile(oFile);
             });
-            
+
             this.byId("filesTable").removeSelections(true);
         },
 
-        onBatchDeletePress: function() {
+        onBatchDeletePress: function () {
             var aSelectedContexts = this.byId("filesTable").getSelectedContexts();
-             if (aSelectedContexts.length === 0) {
+            if (aSelectedContexts.length === 0) {
                 return;
             }
-            
+
             MessageBox.confirm("Delete " + aSelectedContexts.length + " files?", {
                 onClose: (oAction) => {
                     if (oAction === MessageBox.Action.OK) {
-                         aSelectedContexts.forEach(context => {
+                        aSelectedContexts.forEach(context => {
                             var oFile = context.getObject();
                             // Reuse delete logic (simplified for batch here)
-                             var sBaseName = oFile.name.replace(".pdf", "");
-                             fetch(Config.getEndpoint("deleteAnalysis"), {
+                            var sBaseName = oFile.name.replace(".pdf", "");
+                            fetch(Config.getEndpoint("deleteAnalysis"), {
                                 method: "DELETE",
                                 headers: { "Content-Type": "application/json" },
                                 body: JSON.stringify({ fileName: oFile.name, baseName: sBaseName })
@@ -246,6 +262,12 @@ sap.ui.define([
                     }
                 }
             });
+        },
+
+        onSelectionChange: function (oEvent) {
+            var oTable = oEvent.getSource();
+            var iSelectedCount = oTable.getSelectedItems().length;
+            this.getView().getModel("selectedFiles").setProperty("/count", iSelectedCount);
         }
     });
 });

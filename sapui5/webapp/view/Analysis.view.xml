@@ -14,13 +14,6 @@
                 
                 <!-- Centered Paper Sheet -->
                 <VBox class="paperSheet">
-                    <!-- Breadcrumbs -->
-                    <Breadcrumbs id="breadcrumbs" class="sapUiSmallMarginBottom">
-                        <Link text="Home" press=".onNavBack"/>
-                        <Link text="Analysis"/>
-                        <Link text="{analysis>/fileName}"/>
-                    </Breadcrumbs>
-
                     <!-- Dynamic Report Content -->
                     <VBox id="reportContainer" width="100%"/>
                 </VBox>

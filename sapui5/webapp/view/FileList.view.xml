@@ -40,7 +40,8 @@
                     growing="true"
                     growingThreshold="20"
                     class="sapUiResponsiveMargin"
-                    width="auto">
+                    width="auto"
+                    selectionChange="onSelectionChange">
                     <headerToolbar>
                         <OverflowToolbar>
                             <Title text="Files ({= ${files>/}.length })" level="H2"/>
