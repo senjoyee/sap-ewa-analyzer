@@ -82,7 +82,9 @@
                                     icon="{path: 'files>status', formatter: '.formatter.statusIcon'}"/>
                                 <Text text="{path: 'files>uploadDate', type: 'sap.ui.model.type.Date', formatOptions: { style: 'medium' }}"/>
                                 <Text text="{path: 'files>reportDate', type: 'sap.ui.model.type.Date', formatOptions: { style: 'medium' }}"/>
-                                <HBox justifyContent="End">
+                                <HBox
+                                    justifyContent="End"
+                                    visible="{= ${files>status} ? ${files>status}.toLowerCase() !== 'processing' : true }">
                                     <Button
                                         text="{i18n>viewAnalysis}"
                                         icon="sap-icon://show"
@@ -94,7 +96,7 @@
                                         icon="sap-icon://activate"
                                         type="Ghost"
                                         press=".onProcessPress"
-                                        visible="{= ${files>status} !== 'Analyzed' &amp;&amp; ${files>status} !== 'completed' &amp;&amp; ${files>status} !== 'processing' }"/>
+                                        visible="{= ${files>status} ? ${files>status}.toLowerCase() !== 'processed' &amp;&amp; ${files>status}.toLowerCase() !== 'analyzed' &amp;&amp; ${files>status}.toLowerCase() !== 'completed' &amp;&amp; ${files>status}.toLowerCase() !== 'processing' : true }"/>
                                     <Button
                                         icon="sap-icon://delete"
                                         type="Transparent"
