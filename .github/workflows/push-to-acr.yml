@@ -5,6 +5,7 @@ on:
     branches:
       - main
       - heidegger
+      - fiori-migration
   workflow_dispatch:
 
 jobs:
