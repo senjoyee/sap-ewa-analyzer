@@ -197,6 +197,18 @@ sap.ui.define([
             });
         },
 
+        onDownloadPress: function (oEvent) {
+            var oItem = oEvent.getSource().getBindingContext("files").getObject();
+            var sBaseName = oItem.name.replace(".pdf", "");
+
+            // Construct the download URL
+            // The backend expects blob_name as a query parameter
+            var sUrl = Config.getEndpoint("exportPdf") + "?blob_name=" + encodeURIComponent(oItem.name);
+
+            // Trigger download in new window/tab
+            window.open(sUrl, "_blank");
+        },
+
         onDeletePress: function (oEvent) {
             var oItem = oEvent.getSource().getBindingContext("files").getObject();
             var sBaseName = oItem.name.replace(".pdf", "");

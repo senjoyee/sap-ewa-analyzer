@@ -10,6 +10,7 @@ sap.ui.define([], function () {
             process: "/api/reprocess-ai",
             deleteAnalysis: "/api/delete-analysis",
             getAnalysis: "/api/download/", // + blobName
+            exportPdf: "/api/export-pdf-enhanced",
             chat: "/api/chat"
         },
 

@@ -92,6 +92,12 @@
                                         press=".onViewAnalysisPress"
                                         visible="{= ${files>status} === 'Analyzed' || ${files>status} === 'completed' }"/>
                                     <Button
+                                        tooltip="Download PDF Report"
+                                        icon="sap-icon://download"
+                                        type="Transparent"
+                                        press=".onDownloadPress"
+                                        visible="{= ${files>status} === 'Analyzed' || ${files>status} === 'completed' }"/>
+                                    <Button
                                         text="{i18n>process}"
                                         icon="sap-icon://activate"
                                         type="Ghost"
