@@ -116,8 +116,9 @@ class EWAWorkflowOrchestrator:
             print(f"Error initializing clients: {str(e)}")
             raise
     
-    def _create_agent(self, summary_prompt: str | None = None) -> EWAAgent:
-        print(f"Creating EWAAgent with model: {self.summary_model}")
+    def _create_agent(self, model: str | None = None, summary_prompt: str | None = None) -> EWAAgent:
+        model_name = model or self.summary_model
+        print(f"Creating EWAAgent with model: {model_name}")
         if not self.azure_openai_endpoint:
             raise ValueError("AZURE_OPENAI_ENDPOINT environment variable is required")
         if not self.azure_openai_api_key:
@@ -129,7 +130,7 @@ class EWAWorkflowOrchestrator:
             azure_endpoint=self.azure_openai_endpoint,
             api_key=self.azure_openai_api_key,
         )
-        return EWAAgent(client=client, model=self.summary_model, summary_prompt=summary_prompt)
+        return EWAAgent(client=client, model=model_name, summary_prompt=summary_prompt)
     
     async def download_markdown_from_blob(self, blob_name: str) -> str:
         """Download markdown content from Azure Blob Storage"""
