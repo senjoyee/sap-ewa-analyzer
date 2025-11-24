@@ -241,14 +241,20 @@ class EWAWorkflowOrchestrator:
             properties = await asyncio.to_thread(blob_client.get_blob_properties)
             metadata = (properties.metadata or {}).copy()
 
+            updated = False
             if is_processing:
-                if metadata.get("processing") == "true":
-                    return True
-                metadata["processing"] = "true"
+                if metadata.get("processing") != "true":
+                    metadata["processing"] = "true"
+                    updated = True
+                if metadata.get("last_status") != "processing":
+                    metadata["last_status"] = "processing"
+                    updated = True
             else:
-                if "processing" not in metadata:
-                    return True
-                metadata.pop("processing", None)
+                if metadata.pop("processing", None) is not None:
+                    updated = True
+
+            if not updated:
+                return True
 
             await asyncio.to_thread(blob_client.set_blob_metadata, metadata)
             return True
@@ -256,6 +262,31 @@ class EWAWorkflowOrchestrator:
             state = "set" if is_processing else "clear"
             print(f"Warning: could not {state} processing metadata for {blob_name}: {e}")
             return False
+
+    async def _set_metadata_field(self, blob_name: str, key: str, value: str | None) -> bool:
+        try:
+            blob_client = self.blob_service_client.get_blob_client(
+                container=AZURE_STORAGE_CONTAINER_NAME,
+                blob=blob_name
+            )
+            properties = await asyncio.to_thread(blob_client.get_blob_properties)
+            metadata = (properties.metadata or {}).copy()
+
+            if value is None:
+                metadata.pop(key, None)
+            else:
+                metadata[key] = value
+
+            await asyncio.to_thread(blob_client.set_blob_metadata, metadata)
+            return True
+        except Exception as e:
+            action = "set" if value is not None else "clear"
+            print(f"Warning: could not {action} metadata '{key}' for {blob_name}: {e}")
+            return False
+
+    async def _set_last_status(self, blob_name: str, status: str | None) -> bool:
+        normalized = status.lower() if isinstance(status, str) else None
+        return await self._set_metadata_field(blob_name, "last_status", normalized)
 
     # Workflow step functions
     async def download_content_step(self, state: WorkflowState, skip_conversion: bool = False) -> WorkflowState:
