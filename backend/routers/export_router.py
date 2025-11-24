@@ -210,7 +210,7 @@ def _enhanced_markdown_to_html(markdown_text: str) -> str:
     # Enhanced CSS styling for professional appearance
     enhanced_css = """
         /* Import Google Fonts */
-        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap');
+        @import url('https://fonts.googleapis.com/css2?family=72:wght@300;400;600;700&family=Inter:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap');
         
         /* Reset and base styles */
         * {
@@ -220,9 +220,9 @@ def _enhanced_markdown_to_html(markdown_text: str) -> str:
         }
         
         body {
-            font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
-            line-height: 1.6;
-            color: #2c3e50;
+            font-family: '72', 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            line-height: 1.5;
+            color: #333333;
             background: #ffffff;
             font-size: 11pt;
         }
@@ -231,38 +231,38 @@ def _enhanced_markdown_to_html(markdown_text: str) -> str:
         h1 {
             font-size: 24pt;
             font-weight: 700;
-            color: #1a202c;
+            color: #F0AB00; /* SAP Gold */
             margin: 30px 0 20px 0;
-            padding-bottom: 10px;
-            border-bottom: 3px solid #4299e1;
+            padding-bottom: 0;
+            border-bottom: none;
             page-break-after: avoid;
         }
         
         h2 {
             font-size: 18pt;
-            font-weight: 600;
-            color: #2d3748;
+            font-weight: 700;
+            color: #F0AB00; /* SAP Gold */
             margin: 25px 0 15px 0;
-            padding: 10px 0;
-            border-left: 4px solid #4299e1;
-            padding-left: 15px;
+            padding: 0;
+            border-left: none;
+            padding-left: 0;
             page-break-after: avoid;
             break-after: avoid-page;
-            background: #f7fafc;
+            background: transparent;
         }
         
         h3 {
             font-size: 14pt;
-            font-weight: 600;
-            color: #4a5568;
+            font-weight: 700;
+            color: #333333;
             margin: 20px 0 10px 0;
             page-break-after: avoid;
         }
         
         h4 {
             font-size: 12pt;
-            font-weight: 500;
-            color: #718096;
+            font-weight: 600;
+            color: #666666;
             margin: 15px 0 8px 0;
             page-break-after: avoid;
         }
@@ -270,7 +270,7 @@ def _enhanced_markdown_to_html(markdown_text: str) -> str:
         /* Paragraphs and lists */
         p {
             margin-bottom: 12px;
-            text-align: justify;
+            text-align: left;
         }
         
         ul, ol {
@@ -292,187 +292,122 @@ def _enhanced_markdown_to_html(markdown_text: str) -> str:
             border-collapse: collapse;
             margin: 20px 0;
             font-size: 10pt;
-            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
-            border-radius: 8px;
-            overflow: hidden;
+            box-shadow: none;
+            border-radius: 0;
+            overflow: visible;
+            border: 1px solid #cccccc;
         }
         
         th {
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-            color: white;
-            font-weight: 600;
-            padding: 12px 8px;
+            background: #E5E5E5;
+            color: #333333;
+            font-weight: 700;
+            padding: 8px 10px;
             text-align: left;
-            border-bottom: 2px solid #4c51bf;
+            border-bottom: 1px solid #999999;
         }
         
         td {
-            padding: 10px 8px;
-            border-bottom: 1px solid #e2e8f0;
+            padding: 8px 10px;
+            border-bottom: 1px solid #eeeeee;
             vertical-align: top;
         }
         
         tr:nth-child(even) {
-            background-color: #f8fafc;
+            background-color: #f9f9f9;
         }
         
         tr:hover {
-            background-color: #edf2f7;
+            background-color: #f0f0f0;
         }
         
-        /* Risk level styling */
+        /* Risk level styling - kept functional but cleaner */
         .risk-critical {
-            background: linear-gradient(135deg, #fed7d7, #feb2b2);
-            color: #742a2a;
-            font-weight: 600;
-            padding: 4px 8px;
-            border-radius: 4px;
+            background: #ffe5e5;
+            color: #cc0000;
+            font-weight: 700;
+            padding: 2px 6px;
+            border-radius: 2px;
             font-size: 9pt;
         }
         
         .risk-high {
-            background: linear-gradient(135deg, #feebc8, #fbd38d);
-            color: #7b341e;
-            font-weight: 600;
-            padding: 4px 8px;
-            border-radius: 4px;
+            background: #fff0e0;
+            color: #e07000;
+            font-weight: 700;
+            padding: 2px 6px;
+            border-radius: 2px;
             font-size: 9pt;
         }
         
         .risk-medium {
-            background: linear-gradient(135deg, #fefcbf, #faf089);
-            color: #744210;
-            font-weight: 600;
-            padding: 4px 8px;
-            border-radius: 4px;
+            background: #fffae0;
+            color: #998a00;
+            font-weight: 700;
+            padding: 2px 6px;
+            border-radius: 2px;
             font-size: 9pt;
         }
         
         .risk-low {
-            background: linear-gradient(135deg, #c6f6d5, #9ae6b4);
-            color: #22543d;
-            font-weight: 600;
-            padding: 4px 8px;
-            border-radius: 4px;
+            background: #e5ffe5;
+            color: #008000;
+            font-weight: 700;
+            padding: 2px 6px;
+            border-radius: 2px;
             font-size: 9pt;
         }
         
         /* Status indicators */
-        .status-good {
-            color: #38a169;
-            font-weight: 600;
-        }
-        
-        .status-fair {
-            color: #d69e2e;
-            font-weight: 600;
-        }
-        
-        .status-poor {
-            color: #e53e3e;
-            font-weight: 600;
-        }
+        .status-good { color: #008000; font-weight: 700; }
+        .status-fair { color: #e07000; font-weight: 700; }
+        .status-poor { color: #cc0000; font-weight: 700; }
         
         /* Code blocks */
         pre {
-            background: #2d3748;
-            color: #e2e8f0;
+            background: #f5f5f5;
+            color: #333333;
             padding: 15px;
-            border-radius: 6px;
+            border-radius: 0;
             font-family: 'JetBrains Mono', 'Consolas', monospace;
             font-size: 9pt;
             overflow-x: auto;
             margin: 15px 0;
-            border-left: 4px solid #4299e1;
+            border-left: 4px solid #F0AB00; /* SAP Gold */
         }
         
         code {
-            background: #edf2f7;
-            color: #2d3748;
+            background: #f0f0f0;
+            color: #333333;
             padding: 2px 4px;
-            border-radius: 3px;
+            border-radius: 2px;
             font-family: 'JetBrains Mono', 'Consolas', monospace;
             font-size: 9pt;
         }
         
-        /* Blockquotes */
+        /* Blockquotes / Notes */
         blockquote {
-            border-left: 4px solid #4299e1;
+            border-left: 4px solid #F0AB00;
             margin: 20px 0;
-            padding: 15px 20px;
-            background: #f7fafc;
-            font-style: italic;
-            color: #4a5568;
+            padding: 10px 20px;
+            background: #fffdf5;
+            font-style: normal;
+            color: #333333;
         }
         
         /* Horizontal rules */
         hr {
             border: none;
-            height: 2px;
-            background: linear-gradient(90deg, #4299e1, #667eea, #764ba2);
+            height: 1px;
+            background: #F0AB00;
             margin: 30px 0;
-            border-radius: 1px;
         }
         
         /* Page breaks */
-        .page-break {
-            page-break-before: always;
-        }
+        .page-break { page-break-before: always; }
+        .avoid-break { page-break-inside: avoid; }
         
-        .avoid-break {
-            page-break-inside: avoid;
-        }
-        
-        /* Headers with icons */
-        .section-header {
-            display: flex;
-            align-items: center;
-            margin-bottom: 15px;
-        }
-        
-        .section-icon {
-            font-size: 1.2em;
-            margin-right: 10px;
-        }
-        
-        /* Summary boxes */
-        .summary-box {
-            background: linear-gradient(135deg, #f7fafc, #edf2f7);
-            border: 1px solid #e2e8f0;
-            border-radius: 8px;
-            padding: 20px;
-            margin: 20px 0;
-            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
-        }
-        
-        .critical-alert {
-            background: linear-gradient(135deg, #fed7d7, #feb2b2);
-            border: 1px solid #fc8181;
-            border-left: 5px solid #e53e3e;
-            border-radius: 8px;
-            padding: 15px;
-            margin: 20px 0;
-        }
-        
-        .warning-alert {
-            background: linear-gradient(135deg, #fef5e7, #fed7aa);
-            border: 1px solid #f6ad55;
-            border-left: 5px solid #ed8936;
-            border-radius: 8px;
-            padding: 15px;
-            margin: 20px 0;
-        }
-        
-        .info-alert {
-            background: linear-gradient(135deg, #e6fffa, #b2f5ea);
-            border: 1px solid #81e6d9;
-            border-left: 5px solid #38b2ac;
-            border-radius: 8px;
-            padding: 15px;
-            margin: 20px 0;
-        }
-        
-        /* Card-based layout for findings */
+        /* Card-based layout for findings - Updated for SAP Style */
         .findings-cards-container {
             display: block;
             margin: 8px 0 20px 0;
@@ -480,39 +415,38 @@ def _enhanced_markdown_to_html(markdown_text: str) -> str:
             page-break-before: avoid !important;
         }
 
-        /* Ensure first card follows the heading without page break */
         h2 + .findings-cards-container {
             break-before: auto !important;
             page-break-before: auto !important;
             margin-top: 6px;
         }
         
-        /* Logical divider between finding cards */
         .findings-cards-container .finding-card + .finding-card::before {
             content: "";
             display: block;
-            height: 2px;
-            background: linear-gradient(90deg, #e2e8f0, #cbd5e1, #e2e8f0);
-            margin: 8px 0 16px 0;
+            height: 1px;
+            background: #cccccc;
+            margin: 15px 0;
         }
         
         .finding-card {
             background: #ffffff;
-            border: 1px solid #e2e8f0;
+            border: 1px solid #e0e0e0;
+            border-left: 4px solid #F0AB00; /* Gold accent */
             border-radius: 0;
             margin-bottom: 20px;
             page-break-inside: auto;
             break-inside: auto;
             break-before: auto !important;
             page-break-before: auto !important;
-            box-shadow: none;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.05);
             overflow: visible;
         }
         
         .card-header {
-            background: linear-gradient(135deg, #f7fafc, #edf2f7);
-            padding: 12px 15px;
-            border-bottom: 2px solid #e2e8f0;
+            background: #f9f9f9;
+            padding: 10px 15px;
+            border-bottom: 1px solid #e0e0e0;
             display: flex;
             justify-content: space-between;
             align-items: center;
@@ -525,72 +459,49 @@ def _enhanced_markdown_to_html(markdown_text: str) -> str:
         }
         
         .area-badge {
-            background: #3182ce;
-            color: white;
-            padding: 4px 12px;
-            border-radius: 999px;
+            background: #333333;
+            color: #F0AB00;
+            padding: 2px 10px;
+            border-radius: 0;
             font-size: 9pt;
-            font-weight: 600;
-            letter-spacing: 0.3px;
+            font-weight: 700;
+            text-transform: uppercase;
         }
         
         .severity-badge {
-            padding: 4px 14px;
-            border-radius: 999px;
+            padding: 2px 10px;
+            border-radius: 0;
             font-weight: 700;
             font-size: 9pt;
             text-transform: uppercase;
-            letter-spacing: 0.5px;
             display: inline-block;
         }
         
-        .severity-critical {
-            background: #fee2e2;
-            color: #7f1d1d;
-        }
+        .severity-critical { background: #cc0000; color: white; }
+        .severity-high { background: #e07000; color: white; }
+        .severity-medium { background: #F0AB00; color: black; }
+        .severity-low { background: #008000; color: white; }
         
-        .severity-high {
-            background: #fef3c7;
-            color: #78350f;
-        }
-        
-        .severity-medium {
-            background: #fef9c3;
-            color: #854d0e;
-        }
-        
-        .severity-low {
-            background: #dcfce7;
-            color: #14532d;
-        }
-        
-        .card-body {
-            padding: 15px;
-        }
+        .card-body { padding: 15px; }
         
         .card-field {
-            margin-bottom: 15px;
+            margin-bottom: 12px;
             page-break-inside: auto;
             break-inside: auto;
         }
         
-        .card-field:last-child {
-            margin-bottom: 0;
-        }
-        
         .field-label {
-            font-weight: 600;
-            color: #4a5568;
+            font-weight: 700;
+            color: #666666;
             font-size: 9pt;
             text-transform: uppercase;
-            letter-spacing: 0.5px;
-            margin-bottom: 5px;
+            margin-bottom: 4px;
         }
         
         .field-value {
-            color: #2d3748;
+            color: #333333;
             font-size: 10pt;
-            line-height: 1.6;
+            line-height: 1.5;
         }
         
         .field-value ul {
@@ -752,40 +663,98 @@ async def export_markdown_to_pdf_enhanced(
                     margin: 20mm 15mm;
                     @top-center {{
                         content: "EarlyWatch Alert Deep Dive";
-                        font-size: 10pt;
-                        color: #4a5568;
-                        border-bottom: 1px solid #e2e8f0;
+                        font-size: 9pt;
+                        color: #666666;
+                        border-bottom: 1px solid #cccccc;
                         padding-bottom: 5px;
                     }}
                     @bottom-center {{
                         content: "Page " counter(page) " of " counter(pages);
                         font-size: 9pt;
-                        color: #718096;
-                        border-top: 1px solid #e2e8f0;
+                        color: #666666;
+                        border-top: 1px solid #cccccc;
                         padding-top: 5px;
                     }}
                     @top-right {{
                         content: "Generated: " string(date);
                         font-size: 9pt;
-                        color: #718096;
+                        color: #666666;
                     }}
                 }}
                 
-                /* First page special styling */
-                h1:first-of-type {{
-                    margin-top: 0;
-                    font-size: 28pt;
-                    text-align: center;
-                    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-                    -webkit-background-clip: text;
-                    -webkit-text-fill-color: transparent;
-                    background-clip: text;
-                    border-bottom: 3px solid #667eea;
-                    padding-bottom: 15px;
+                /* Cover Page Styling - SAP Style */
+                .cover-page {{
+                    page-break-after: always;
+                    display: flex;
+                    flex-direction: column;
+                    justify-content: center;
+                    align-items: center;
+                    height: 100%;
+                    width: 100%;
+                    position: relative;
+                }}
+                
+                .cover-block {{
+                    background-color: #F0AB00; /* SAP Gold */
+                    width: 100%;
+                    padding: 60px 40px;
+                    margin-bottom: 40px;
+                    color: #ffffff;
+                }}
+                
+                .cover-title {{
+                    font-size: 36pt;
+                    font-weight: 700;
+                    margin: 0;
+                    line-height: 1.2;
+                    text-align: left;
+                }}
+                
+                .cover-subtitle {{
+                    font-size: 18pt;
+                    font-weight: 400;
+                    margin-top: 20px;
+                    color: #ffffff;
+                    text-align: left;
+                }}
+                
+                .cover-footer {{
+                    position: absolute;
+                    bottom: 0;
+                    left: 0;
+                    width: 100%;
+                    text-align: left;
+                    font-size: 10pt;
+                    color: #666666;
+                    border-top: 1px solid #F0AB00;
+                    padding-top: 10px;
+                }}
+
+                /* First page special styling to hide default headers */
+                @page:first {{
+                    margin: 0;
+                    @top-center {{ content: none; }}
+                    @bottom-center {{ content: none; }}
+                    @top-right {{ content: none; }}
                 }}
             </style>
         </head>
         <body>
+            <!-- Cover Page -->
+            <div class="cover-page">
+                <div class="cover-block">
+                    <div class="cover-title">EarlyWatch Alert Analysis</div>
+                    <div class="cover-subtitle">Deep Dive Report</div>
+                </div>
+                <div style="padding: 0 40px;">
+                    <p><strong>File:</strong> {blob_name}</p>
+                    <p><strong>Generated:</strong> {os.getenv('CURRENT_DATE', 'Today')}</p>
+                </div>
+                <div class="cover-footer" style="margin: 40px;">
+                    &copy; 2025 SAP SE or an SAP affiliate company. All rights reserved.
+                </div>
+            </div>
+
             <div class="report-container">
                 {body_html}
             </div>
