@@ -191,7 +191,13 @@ async def upload_file(file: UploadFile = File(...), customer_name: str = Form(..
                 file_metadata = validate_filename_and_extract_metadata(file.filename)
                 print(f"Filename validation successful - System ID: {file_metadata['system_id']}, Report Date: {file_metadata['report_date_str']}")
             except ValueError as filename_error:
-                raise HTTPException(status_code=400, detail=f"{str(ai_error)} | {str(filename_error)}")
+                raise HTTPException(
+                    status_code=400,
+                    detail=(
+                        "Filename validation failed: Ensure the file follows the expected naming convention "
+                        "or provide a readable PDF so AI extraction can succeed."
+                    ),
+                ) from filename_error
             
         # Generate new filename based on extracted metadata
         new_filename = generate_standardized_filename(file_metadata, file.filename)
