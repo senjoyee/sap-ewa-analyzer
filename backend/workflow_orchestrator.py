@@ -257,13 +257,20 @@ class EWAWorkflowOrchestrator:
             return False
 
     # Workflow step functions
-    async def download_content_step(self, state: WorkflowState) -> WorkflowState:
-        """Step 1: Download markdown content from blob storage"""
+    async def download_content_step(self, state: WorkflowState, skip_conversion: bool = False) -> WorkflowState:
+        """Step 1: Download markdown content from blob storage.
+
+        When skip_conversion is True we avoid invoking the document converter fallback
+        (callers already handled conversion), so we surface the original error instead.
+        """
         try:
             print(f"[STEP 1] Downloading content for {state.blob_name}")
             state.markdown_content = await self.download_markdown_from_blob(state.blob_name)
             return state
         except Exception as e:
+            if skip_conversion:
+                state.error = str(e)
+                return state
             # Attempt to generate markdown via converter when missing
             try:
                 print(f"[STEP 1] Markdown not found for {state.blob_name}; attempting conversion to markdown")
@@ -382,11 +389,12 @@ class EWAWorkflowOrchestrator:
             return state
     
 
-    async def execute_workflow(self, blob_name: str) -> Dict[str, Any]:
+    async def execute_workflow(self, blob_name: str, skip_markdown: bool = False) -> Dict[str, Any]:
         """Execute the complete workflow.
 
         Args:
             blob_name: Name of the original PDF blob to analyze.
+            skip_markdown: If True, assume markdown conversion already ran and skip converter fallback.
         """
         processing_flag_set = False
         try:
@@ -401,7 +409,7 @@ class EWAWorkflowOrchestrator:
             state = WorkflowState(blob_name=blob_name)
             
             # Execute workflow steps sequentially (markdown required)
-            state = await self.download_content_step(state)
+            state = await self.download_content_step(state, skip_conversion=skip_markdown)
             if state.error:
                 raise Exception(state.error)
             
