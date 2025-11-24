@@ -51,9 +51,14 @@ async def process_and_analyze_document_endpoint(request: ProcessAnalyzeRequest):
         raise HTTPException(status_code=500, detail="Azure Blob Service client not initialized.")
     try:
         try:
-            await asyncio.to_thread(convert_document_to_markdown, request.blob_name)
+            conversion_result = await asyncio.to_thread(convert_document_to_markdown, request.blob_name)
         except Exception as conv_err:
-            print(f"Markdown conversion failed for {request.blob_name}: {conv_err}")
+            print(f"Markdown conversion crashed for {request.blob_name}: {conv_err}")
+            raise HTTPException(status_code=500, detail=f"Markdown conversion failed: {conv_err}")
+
+        if not conversion_result or conversion_result.get("status") != "completed":
+            error_msg = conversion_result.get("message") if isinstance(conversion_result, dict) else "Unknown conversion error"
+            raise HTTPException(status_code=500, detail=f"Markdown conversion failed: {error_msg}")
 
         result = await ewa_orchestrator.execute_workflow(request.blob_name, skip_markdown=True)
         if not result.get("success", False):
