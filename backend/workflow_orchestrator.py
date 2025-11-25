@@ -199,8 +199,14 @@ class EWAWorkflowOrchestrator:
             print(f"Error retrieving metadata for {blob_name}: {str(e)}")
             return {}
 
-    async def set_processing_flag(self, blob_name: str, is_processing: bool) -> bool:
-        """Ensure the original blob metadata reflects current processing state."""
+    async def set_processing_flag(self, blob_name: str, is_processing: bool, failed: bool = False) -> bool:
+        """Ensure the original blob metadata reflects current processing state.
+        
+        Args:
+            blob_name: Name of the blob to update
+            is_processing: True to mark as processing, False to clear
+            failed: If True and is_processing=False, set last_status to 'failed'
+        """
         try:
             blob_client = self.blob_service_client.get_blob_client(
                 container=AZURE_STORAGE_CONTAINER_NAME,
@@ -219,7 +225,13 @@ class EWAWorkflowOrchestrator:
                     metadata["last_status"] = "processing"
                     updated = True
             else:
+                # Clear processing flag
                 if metadata.pop("processing", None) is not None:
+                    updated = True
+                # Update last_status based on success/failure
+                new_status = "failed" if failed else "analyzed"
+                if metadata.get("last_status") != new_status:
+                    metadata["last_status"] = new_status
                     updated = True
 
             if not updated:
@@ -432,6 +444,7 @@ class EWAWorkflowOrchestrator:
             skip_markdown: If True, assume markdown conversion already ran and skip converter fallback.
         """
         processing_flag_set = False
+        workflow_failed = False
         try:
             processing_flag_set = await self.set_processing_flag(blob_name, True)
         except Exception as flag_err:
@@ -448,7 +461,7 @@ class EWAWorkflowOrchestrator:
             if state.error:
                 raise Exception(state.error)
             
-            # Run the EWA analysis using single enhanced agent
+            # Run the EWA analysis using 3-phase pipeline
             summary_state = await self.run_analysis_step(state)
             
             # Check for errors
@@ -478,6 +491,7 @@ class EWAWorkflowOrchestrator:
             }
             
         except Exception as e:
+            workflow_failed = True
             error_message = f"Workflow error: {str(e)}"
             print(error_message)
             return {
@@ -488,7 +502,7 @@ class EWAWorkflowOrchestrator:
             }
         finally:
             if processing_flag_set:
-                await self.set_processing_flag(blob_name, False)
+                await self.set_processing_flag(blob_name, False, failed=workflow_failed)
 
 # Global orchestrator instance
 ewa_orchestrator = EWAWorkflowOrchestrator()
