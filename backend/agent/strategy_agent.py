@@ -9,6 +9,7 @@ from typing import Dict, Any
 
 from openai import AzureOpenAI
 from jsonschema import validate, ValidationError
+from json_repair import repair_json
 
 
 class StrategyAgent:
@@ -84,14 +85,22 @@ class StrategyAgent:
         return result
 
     def _parse_response(self, response) -> Dict[str, Any]:
-        """Parse response from Responses API."""
+        """Parse response from Responses API with JSON repair fallback."""
         parsed = getattr(response, "output_parsed", None)
         if parsed and isinstance(parsed, dict):
             return parsed
 
         text = getattr(response, "output_text", None)
         if text:
-            return json.loads(text)
+            try:
+                return json.loads(text)
+            except json.JSONDecodeError as e:
+                print(f"[StrategyAgent] JSON parse failed, attempting repair: {e}")
+                repaired = repair_json(text, return_objects=True)
+                if isinstance(repaired, dict):
+                    print("[StrategyAgent] JSON repair successful")
+                    return repaired
+                raise RuntimeError(f"JSON repair failed: got {type(repaired)}")
 
         raise RuntimeError("No output from StrategyAgent")
 
