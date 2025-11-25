@@ -681,6 +681,7 @@ async def export_markdown_to_pdf_enhanced(
         report_date = os.getenv('CURRENT_DATE', 'Today')
         
         # 1. Try to get metadata from blob properties
+        # 1. Try to get metadata from blob properties
         try:
             blob_props = blob_client.get_blob_properties()
             if blob_props.metadata:
@@ -707,6 +708,31 @@ async def export_markdown_to_pdf_enhanced(
             if customer_match:
                 customer = customer_match.group(1).strip()
         
+        # Format date to "9th November, 2025"
+        try:
+            from datetime import datetime
+            # Try parsing ISO format first (2025-11-09T00:00:00)
+            if 'T' in report_date:
+                dt = datetime.fromisoformat(report_date)
+            else:
+                # Try common formats like 09.11.2025 or 2025-11-09
+                for fmt in ["%d.%m.%Y", "%Y-%m-%d", "%d/%m/%Y"]:
+                    try:
+                        dt = datetime.strptime(report_date, fmt)
+                        break
+                    except ValueError:
+                        continue
+                else:
+                    dt = None
+            
+            if dt:
+                # Custom formatting for "9th November, 2025"
+                day = dt.day
+                suffix = "th" if 11 <= day <= 13 else {1: "st", 2: "nd", 3: "rd"}.get(day % 10, "th")
+                report_date = f"{day}{suffix} {dt.strftime('%B, %Y')}"
+        except Exception as e:
+            print(f"[PDF Export] Date formatting error: {e}")
+
         full_html = f"""
         <!DOCTYPE html>
         <html lang="en">
@@ -716,7 +742,6 @@ async def export_markdown_to_pdf_enhanced(
             <title>EWA Analysis Report</title>
             <style>
                 html, body {{
-                    height: 100%;
                     margin: 0;
                     padding: 0;
                 }}
@@ -783,6 +808,8 @@ async def export_markdown_to_pdf_enhanced(
                     text-align: left;
                 }}
                 
+                /* Removed copyright footer as requested */
+                /*
                 .cover-footer {{
                     position: absolute;
                     bottom: 0;
@@ -793,9 +820,10 @@ async def export_markdown_to_pdf_enhanced(
                     color: #666666;
                     border-top: 1px solid #F0AB00;
                     padding-top: 10px;
-                    margin: 40px; /* Margin around the footer content */
-                    box-sizing: border-box; /* Include padding/border in width */
+                    margin: 40px; 
+                    box-sizing: border-box; 
                 }}
+                */
 
                 /* First page special styling to hide default headers */
                 @page:first {{
@@ -818,9 +846,7 @@ async def export_markdown_to_pdf_enhanced(
                     <p style="font-size: 14pt; margin-bottom: 15px;"><strong>Customer Name:</strong> {customer}</p>
                     <p style="font-size: 14pt; margin-bottom: 15px;"><strong>Generated On:</strong> {report_date}</p>
                 </div>
-                <div class="cover-footer">
-                    &copy; 2025 SAP SE or an SAP affiliate company. All rights reserved.
-                </div>
+                <!-- Removed copyright footer -->
             </div>
 
             <div class="report-container">
