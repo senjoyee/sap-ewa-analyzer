@@ -40,6 +40,7 @@
         "CPU Utilization": { "type": "string" },
         "Memory Utilization": { "type": "string" }
       },
+      "required": ["Database Size", "Database Growth", "CPU Utilization", "Memory Utilization"],
       "additionalProperties": false
     }
   },
