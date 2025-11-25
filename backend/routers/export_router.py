@@ -205,7 +205,8 @@ def _enhanced_markdown_to_html(markdown_text: str) -> str:
     )
     
     # Convert findings table to cards for better PDF layout
-    html_body = _convert_findings_table_to_cards(html_body)
+    # Disable card conversion to ensure content visibility and use standard tables
+    # html_body = _convert_findings_table_to_cards(html_body)
     
     # Enhanced CSS styling for professional appearance
     enhanced_css = """
@@ -628,9 +629,11 @@ async def export_markdown_to_pdf_enhanced(
         
         # Regenerate markdown from JSON for PDF export (converts JSON cards to tables, removes KPIs)
         markdown_text = _get_pdf_optimized_markdown(blob_name, markdown_text)
+        print(f"[PDF Export] Markdown length: {len(markdown_text)}")
 
         # Get enhanced CSS and HTML
         enhanced_css, body_html = _enhanced_markdown_to_html(markdown_text)
+        print(f"[PDF Export] Body HTML length: {len(body_html)}")
         
         # Post-process HTML for additional styling (skip extra page break and risk replacements for cards)
         body_html = _post_process_html(
