@@ -41,7 +41,11 @@ def _get_pdf_optimized_markdown(blob_name: str, markdown_text: str) -> str:
     This ensures that JSON card sections are rendered as tables in PDF exports
     and KPI sections are excluded.
     """
+    print(f"[PDF Export] _get_pdf_optimized_markdown called with blob_name={blob_name}")
+    print(f"[PDF Export] Original markdown length: {len(markdown_text)}")
+    
     if not blob_service_client:
+        print(f"[PDF Export] No blob service client, returning original markdown")
         return markdown_text
     
     try:
@@ -49,6 +53,7 @@ def _get_pdf_optimized_markdown(blob_name: str, markdown_text: str) -> str:
         # Pattern: filename_AI.md -> filename_AI.json
         base_name = os.path.splitext(blob_name)[0]
         json_blob_name = f"{base_name}.json"
+        print(f"[PDF Export] Looking for JSON: {json_blob_name}")
         
         # Try to download the JSON file
         json_blob_client = blob_service_client.get_blob_client(
@@ -56,18 +61,24 @@ def _get_pdf_optimized_markdown(blob_name: str, markdown_text: str) -> str:
         )
         
         if json_blob_client.exists():
+            print(f"[PDF Export] JSON file exists, downloading...")
             json_bytes = json_blob_client.download_blob().readall()
             json_data = json.loads(json_bytes.decode("utf-8", errors="replace"))
+            print(f"[PDF Export] JSON loaded successfully, keys: {list(json_data.keys())}")
             
             # Regenerate markdown with pdf_export=True
-            print(f"[PDF Export] Regenerating markdown from JSON: {json_blob_name}")
-            return json_to_markdown(json_data, pdf_export=True)
+            print(f"[PDF Export] Regenerating markdown from JSON with pdf_export=True")
+            regenerated = json_to_markdown(json_data, pdf_export=True)
+            print(f"[PDF Export] Regenerated markdown length: {len(regenerated)}")
+            return regenerated
         else:
             print(f"[PDF Export] JSON not found ({json_blob_name}), using original markdown")
             return markdown_text
             
     except Exception as e:
         print(f"[PDF Export] Error loading JSON for PDF optimization: {e}")
+        import traceback
+        traceback.print_exc()
         return markdown_text
 
 
@@ -194,6 +205,16 @@ def _convert_findings_table_to_cards(html_content: str) -> str:
 
 def _enhanced_markdown_to_html(markdown_text: str) -> str:
     """Convert markdown to HTML with enhanced styling and structure."""
+    
+    # Remove JSON card blocks that are used for UI rendering but not suitable for PDF
+    # Pattern: ```json ... ``` blocks that contain card layout definitions
+    import re
+    markdown_text = re.sub(
+        r'```json\s*\n\{[^`]*"layout"\s*:\s*"cards"[^`]*\}\s*\n```',
+        '',
+        markdown_text,
+        flags=re.DOTALL
+    )
     
     # Convert markdown to HTML with enhanced features
     html_body = markdown(
@@ -627,9 +648,10 @@ async def export_markdown_to_pdf_enhanced(
         markdown_bytes = blob_client.download_blob().readall()
         markdown_text = markdown_bytes.decode("utf-8", errors="replace")
         
-        # Regenerate markdown from JSON for PDF export (converts JSON cards to tables, removes KPIs)
-        markdown_text = _get_pdf_optimized_markdown(blob_name, markdown_text)
-        print(f"[PDF Export] Markdown length: {len(markdown_text)}")
+        # DISABLE JSON regeneration - use original markdown directly to preserve all content
+        # The JSON regeneration was causing content loss (only 550 chars instead of full report)
+        # markdown_text = _get_pdf_optimized_markdown(blob_name, markdown_text)
+        print(f"[PDF Export] Using original markdown, length: {len(markdown_text)}")
 
         # Get enhanced CSS and HTML
         enhanced_css, body_html = _enhanced_markdown_to_html(markdown_text)
