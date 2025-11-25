@@ -672,6 +672,27 @@ async def export_markdown_to_pdf_enhanced(
         # Build complete HTML document with professional structure
         orientation = " landscape" if landscape else ""
         
+        # Extract metadata for cover page
+        import re
+        
+        # Default values
+        sid = "Unknown"
+        customer = "Unknown"
+        report_date = os.getenv('CURRENT_DATE', 'Today')
+        
+        # Try to extract from markdown content
+        # Pattern: # EWA Analysis for <SID> (<DATE>)
+        title_match = re.search(r'^# EWA Analysis for\s+(.*?)\s+\((.*?)\)', markdown_text, re.MULTILINE)
+        if title_match:
+            sid = title_match.group(1).strip()
+            report_date = title_match.group(2).strip()
+            
+        # Try to find Customer Name if available (not standard in current markdown but good to have logic)
+        # Assuming a line like "**Customer:** <Name>" might exist or we default to Unknown
+        customer_match = re.search(r'\*\*Customer:?\*\*\s*(.*)', markdown_text, re.IGNORECASE)
+        if customer_match:
+            customer = customer_match.group(1).strip()
+        
         full_html = f"""
         <!DOCTYPE html>
         <html lang="en">
@@ -771,9 +792,10 @@ async def export_markdown_to_pdf_enhanced(
                     <div class="cover-title">EarlyWatch Alert Analysis</div>
                     <div class="cover-subtitle">Deep Dive Report</div>
                 </div>
-                <div style="padding: 0 40px;">
-                    <p><strong>File:</strong> {blob_name}</p>
-                    <p><strong>Generated:</strong> {os.getenv('CURRENT_DATE', 'Today')}</p>
+                <div style="padding: 0 40px; width: 100%;">
+                    <p style="font-size: 14pt; margin-bottom: 10px;"><strong>SAP System ID:</strong> {sid}</p>
+                    <p style="font-size: 14pt; margin-bottom: 10px;"><strong>Customer Name:</strong> {customer}</p>
+                    <p style="font-size: 14pt; margin-bottom: 10px;"><strong>Generated On:</strong> {report_date}</p>
                 </div>
                 <div class="cover-footer" style="margin: 40px;">
                     &copy; 2025 SAP SE or an SAP affiliate company. All rights reserved.
