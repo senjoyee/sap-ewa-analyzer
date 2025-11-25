@@ -16,6 +16,7 @@ dependencies = [
     "python-docx>=1.1.2",
     "python-dotenv>=1.1.0",
     "python-multipart>=0.0.20",
+    "json-repair>=0.0.2",
     "uvicorn>=0.34.2",
     "markdown2>=2.4.13",
     "WeasyPrint>=62.0",
