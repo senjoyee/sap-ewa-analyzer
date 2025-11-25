@@ -226,8 +226,8 @@ def _enhanced_markdown_to_html(markdown_text: str) -> str:
     )
     
     # Convert findings table to cards for better PDF layout
-    # Disable card conversion to ensure content visibility and use standard tables
-    # html_body = _convert_findings_table_to_cards(html_body)
+    # Re-enable card conversion for proper layout
+    html_body = _convert_findings_table_to_cards(html_body)
     
     # Enhanced CSS styling for professional appearance
     enhanced_css = """
@@ -648,10 +648,10 @@ async def export_markdown_to_pdf_enhanced(
         markdown_bytes = blob_client.download_blob().readall()
         markdown_text = markdown_bytes.decode("utf-8", errors="replace")
         
-        # DISABLE JSON regeneration - use original markdown directly to preserve all content
-        # The JSON regeneration was causing content loss (only 550 chars instead of full report)
-        # markdown_text = _get_pdf_optimized_markdown(blob_name, markdown_text)
-        print(f"[PDF Export] Using original markdown, length: {len(markdown_text)}")
+        # Regenerate markdown from JSON for PDF export (converts JSON cards to tables, removes KPIs)
+        # Re-enabled to ensure Key Findings are processed correctly
+        markdown_text = _get_pdf_optimized_markdown(blob_name, markdown_text)
+        print(f"[PDF Export] Regenerated markdown length: {len(markdown_text)}")
 
         # Get enhanced CSS and HTML
         enhanced_css, body_html = _enhanced_markdown_to_html(markdown_text)
