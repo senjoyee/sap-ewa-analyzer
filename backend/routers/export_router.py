@@ -216,6 +216,15 @@ def _enhanced_markdown_to_html(markdown_text: str) -> str:
         flags=re.DOTALL
     )
     
+    # Remove explicit page break divs to prevent double breaks or blank pages
+    # This fixes the issue where "Capacity Outlook" or other sections might have a preceding blank page
+    markdown_text = re.sub(
+        r'<div style=[\'"]page-break-before:\s*always;?[\'"]>\s*</div>',
+        '',
+        markdown_text,
+        flags=re.IGNORECASE
+    )
+    
     # Convert markdown to HTML with enhanced features
     html_body = markdown(
         markdown_text,
