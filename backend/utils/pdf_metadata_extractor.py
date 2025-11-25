@@ -141,7 +141,7 @@ async def extract_metadata_with_ai(pdf_bytes: bytes) -> Dict[str, Any]:
         import sys
         import os
         sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
-        from workflow_orchestrator import AZURE_OPENAI_ENDPOINT, AZURE_OPENAI_API_KEY, AZURE_OPENAI_API_VERSION, AZURE_OPENAI_FAST_MODEL
+        from workflow_orchestrator import AZURE_OPENAI_ENDPOINT, AZURE_OPENAI_API_KEY, AZURE_OPENAI_API_VERSION, EXTRACTION_MODEL
         
         if not AZURE_OPENAI_ENDPOINT or not AZURE_OPENAI_API_KEY:
             raise ValueError("Azure OpenAI configuration not found")
@@ -155,7 +155,7 @@ async def extract_metadata_with_ai(pdf_bytes: bytes) -> Dict[str, Any]:
         
         # Call the AI model
         response = await client.chat.completions.create(
-            model=AZURE_OPENAI_FAST_MODEL,
+            model=EXTRACTION_MODEL,
             messages=[
                 {"role": "system", "content": _get_extraction_prompt()},
                 {"role": "user", "content": text[:4000]}  # Limit text to 4000 chars
