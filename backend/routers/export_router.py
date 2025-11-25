@@ -680,18 +680,32 @@ async def export_markdown_to_pdf_enhanced(
         customer = "Unknown"
         report_date = os.getenv('CURRENT_DATE', 'Today')
         
-        # Try to extract from markdown content
-        # Pattern: # EWA Analysis for <SID> (<DATE>)
-        title_match = re.search(r'^# EWA Analysis for\s+(.*?)\s+\((.*?)\)', markdown_text, re.MULTILINE)
-        if title_match:
-            sid = title_match.group(1).strip()
-            report_date = title_match.group(2).strip()
+        # 1. Try to get metadata from blob properties
+        try:
+            blob_props = blob_client.get_blob_properties()
+            if blob_props.metadata:
+                # Look for common keys
+                customer = blob_props.metadata.get('customer_name', blob_props.metadata.get('Customer', customer))
+                sid = blob_props.metadata.get('system_id', blob_props.metadata.get('SystemID', sid))
+                # If report date is in metadata, use it
+                report_date = blob_props.metadata.get('report_date', report_date)
+        except Exception as e:
+            print(f"[PDF Export] Error fetching blob metadata: {e}")
+
+        # 2. Fallback: Try to extract from markdown content if still unknown
+        if sid == "Unknown":
+            # Pattern: # EWA Analysis for <SID> (<DATE>)
+            title_match = re.search(r'^# EWA Analysis for\s+(.*?)\s+\((.*?)\)', markdown_text, re.MULTILINE)
+            if title_match:
+                sid = title_match.group(1).strip()
+                if report_date == "Today": # Only override if not set from metadata
+                    report_date = title_match.group(2).strip()
             
-        # Try to find Customer Name if available (not standard in current markdown but good to have logic)
-        # Assuming a line like "**Customer:** <Name>" might exist or we default to Unknown
-        customer_match = re.search(r'\*\*Customer:?\*\*\s*(.*)', markdown_text, re.IGNORECASE)
-        if customer_match:
-            customer = customer_match.group(1).strip()
+        # Try to find Customer Name if available in markdown
+        if customer == "Unknown":
+            customer_match = re.search(r'\*\*Customer:?\*\*\s*(.*)', markdown_text, re.IGNORECASE)
+            if customer_match:
+                customer = customer_match.group(1).strip()
         
         full_html = f"""
         <!DOCTYPE html>
@@ -701,6 +715,11 @@ async def export_markdown_to_pdf_enhanced(
             <meta name="viewport" content="width=device-width, initial-scale=1.0">
             <title>EWA Analysis Report</title>
             <style>
+                html, body {{
+                    height: 100%;
+                    margin: 0;
+                    padding: 0;
+                }}
                 {enhanced_css}
                 
                 /* Print-specific styles */
@@ -733,9 +752,9 @@ async def export_markdown_to_pdf_enhanced(
                     page-break-after: always;
                     display: flex;
                     flex-direction: column;
-                    justify-content: center;
+                    justify-content: flex-start; /* Align to top */
                     align-items: center;
-                    height: 100%;
+                    min-height: 90vh; /* Ensure full height for footer positioning */
                     width: 100%;
                     position: relative;
                 }}
@@ -744,7 +763,7 @@ async def export_markdown_to_pdf_enhanced(
                     background-color: #F0AB00; /* SAP Gold */
                     width: 100%;
                     padding: 60px 40px;
-                    margin-bottom: 40px;
+                    margin-bottom: 60px; /* Increased margin */
                     color: #ffffff;
                 }}
                 
@@ -774,6 +793,8 @@ async def export_markdown_to_pdf_enhanced(
                     color: #666666;
                     border-top: 1px solid #F0AB00;
                     padding-top: 10px;
+                    margin: 40px; /* Margin around the footer content */
+                    box-sizing: border-box; /* Include padding/border in width */
                 }}
 
                 /* First page special styling to hide default headers */
@@ -793,11 +814,11 @@ async def export_markdown_to_pdf_enhanced(
                     <div class="cover-subtitle">Deep Dive Report</div>
                 </div>
                 <div style="padding: 0 40px; width: 100%;">
-                    <p style="font-size: 14pt; margin-bottom: 10px;"><strong>SAP System ID:</strong> {sid}</p>
-                    <p style="font-size: 14pt; margin-bottom: 10px;"><strong>Customer Name:</strong> {customer}</p>
-                    <p style="font-size: 14pt; margin-bottom: 10px;"><strong>Generated On:</strong> {report_date}</p>
+                    <p style="font-size: 14pt; margin-bottom: 15px;"><strong>SAP System ID:</strong> {sid}</p>
+                    <p style="font-size: 14pt; margin-bottom: 15px;"><strong>Customer Name:</strong> {customer}</p>
+                    <p style="font-size: 14pt; margin-bottom: 15px;"><strong>Generated On:</strong> {report_date}</p>
                 </div>
-                <div class="cover-footer" style="margin: 40px;">
+                <div class="cover-footer">
                     &copy; 2025 SAP SE or an SAP affiliate company. All rights reserved.
                 </div>
             </div>
