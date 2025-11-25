@@ -199,8 +199,10 @@ sap.ui.define([
 
         onDownloadPress: function (oEvent) {
             var oItem = oEvent.getSource().getBindingContext("files").getObject();
-            // The backend expects the markdown file, not the PDF
-            var sMdName = oItem.name.replace(".pdf", ".md");
+            // The backend expects the AI-generated markdown file, not the original
+            // Pattern: ERP_09_Nov_25.pdf -> ERP_09_Nov_25_AI.md
+            var sBaseName = oItem.name.replace(".pdf", "");
+            var sMdName = sBaseName + "_AI.md";
 
             // Construct the download URL
             // The backend expects blob_name as a query parameter
