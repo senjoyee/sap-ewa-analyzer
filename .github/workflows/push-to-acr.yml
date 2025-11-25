@@ -4,8 +4,7 @@ on:
   push:
     branches:
       - main
-      - heidegger
-      - fiori-migration
+      - 3-phase-workflow
   workflow_dispatch:
 
 jobs:

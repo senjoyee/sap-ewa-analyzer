@@ -1,14 +1,17 @@
 """
 SAP EWA Analysis Workflow Orchestration Module
 
-This module implements a custom orchestration system for analyzing SAP Early Watch Alert (EWA) reports
-using Azure OpenAI services. It manages the workflow for generating comprehensive analysis of EWA reports:
+This module implements a 3-phase agentic pipeline for analyzing SAP Early Watch Alert (EWA) reports
+using Azure OpenAI Responses API with Structured Outputs.
 
-1. Summary Workflow - Generates an executive summary with findings and recommendations
+Pipeline Architecture:
+- Phase 1 (Extraction): gpt-4o-mini, effort=low - Pure data extraction
+- Phase 2 (Analysis): gpt-5, effort=high - Deep analytical assessment  
+- Phase 3 (Strategy): gpt-4o, effort=medium - Executive synthesis
 
 Key Functionality:
-- Orchestrating AI analysis workflow using single enhanced GPT-4.1 agent
-- Specialized prompting for comprehensive information extraction
+- 3-phase sequential agent pipeline with phase-specific models and reasoning effort
+- Progressive validation between phases
 - Integration with Azure Blob Storage for document persistence
 - Error handling and status reporting
 
@@ -18,15 +21,16 @@ The orchestrator ensures a cohesive end-to-end analysis process for SAP EWA repo
 import os
 import json
 import asyncio
-import traceback # Added for exception logging
+import traceback
 from datetime import datetime
 from typing import Dict, Any
 from dataclasses import dataclass
 from azure.storage.blob import BlobServiceClient
 from openai import AzureOpenAI
 from dotenv import load_dotenv
-from agent.ewa_agent import EWAAgent
-from agent.kpi_image_agent import KPIImageAgent
+from agent.extraction_agent import ExtractionAgent
+from agent.analysis_agent import AnalysisAgent
+from agent.strategy_agent import StrategyAgent
 from utils.markdown_utils import json_to_markdown
 from converters.document_converter import convert_document_to_markdown
 
@@ -38,45 +42,17 @@ AZURE_OPENAI_ENDPOINT = os.getenv("AZURE_OPENAI_ENDPOINT")
 AZURE_OPENAI_API_KEY = os.getenv("AZURE_OPENAI_API_KEY")
 AZURE_OPENAI_API_VERSION = os.getenv("AZURE_OPENAI_API_VERSION")
 
-# Model deployment names
-AZURE_OPENAI_SUMMARY_MODEL = os.getenv("AZURE_OPENAI_SUMMARY_MODEL", "gpt-4.1")
-AZURE_OPENAI_FAST_MODEL = (
-    os.getenv("AZURE_OPENAI_FAST_MODEL")
-    or AZURE_OPENAI_SUMMARY_MODEL
-    or "gpt-4.1-mini"
-)
+# Model deployment names for each phase
+# Phase 1 (Extraction): Fast, cheap model
+EXTRACTION_MODEL = os.getenv("AZURE_OPENAI_FAST_MODEL") or os.getenv("AZURE_OPENAI_SUMMARY_MODEL") or "gpt-4o-mini"
+# Phase 2 (Analysis): Most capable model with high reasoning
+ANALYSIS_MODEL = os.getenv("AZURE_OPENAI_SUMMARY_MODEL") or "gpt-5"
+# Phase 3 (Strategy): Mid-tier model
+STRATEGY_MODEL = os.getenv("AZURE_OPENAI_STRATEGY_MODEL") or os.getenv("AZURE_OPENAI_SUMMARY_MODEL") or "gpt-4o"
 
 # Azure Storage configuration
 AZURE_STORAGE_CONNECTION_STRING = os.getenv("AZURE_STORAGE_CONNECTION_STRING")
 AZURE_STORAGE_CONTAINER_NAME = os.getenv("AZURE_STORAGE_CONTAINER_NAME")
-
-# System prompts for each workflow
-# System prompts for each workflow
-def load_summary_prompt() -> str | None:
-    """Return the first available summary prompt content, or None if none found."""
-    current_dir = os.path.dirname(os.path.abspath(__file__))
-    prompt_dir = os.path.join(current_dir, "prompts")
-
-    candidate_files = [
-        "ewa_summary_prompt_openai_gpt5.md",
-        "ewa_summary_prompt_openai.md",
-        "ewa_summary_prompt.md",
-    ]
-
-    for filename in candidate_files:
-        path = os.path.join(prompt_dir, filename)
-        if os.path.exists(path):
-            try:
-                with open(path, "r", encoding="utf-8") as f:
-                    print(f"Loaded summary prompt from {path}")
-                    return f.read()
-            except Exception as e:
-                print(f"Warning: Could not read prompt file {path}: {e}")
-    # No prompt files found – return None so that downstream logic can fall back
-    print("No summary prompt files found; EWAAgent will use its internal default prompts.")
-    return None
-
-SUMMARY_PROMPT: str | None = load_summary_prompt()
 
 
 
@@ -91,46 +67,39 @@ class WorkflowState:
     error: str = ""
 
 class EWAWorkflowOrchestrator:
-    """Custom orchestrator for EWA analysis workflows"""
+    """Custom orchestrator for 3-phase EWA analysis workflow"""
     
     def __init__(self):
-        self.client = None
         self.blob_service_client = None
-        self.summary_model = AZURE_OPENAI_SUMMARY_MODEL
         self.azure_openai_endpoint = AZURE_OPENAI_ENDPOINT
         self.azure_openai_api_key = AZURE_OPENAI_API_KEY
         self.azure_openai_api_version = AZURE_OPENAI_API_VERSION
         self._initialize_clients()
     
     def _initialize_clients(self):
-        """Initialize Azure OpenAI and Blob Storage clients"""
+        """Initialize Azure Blob Storage client"""
         try:
-            # Initialize Blob Storage client
             self.blob_service_client = BlobServiceClient.from_connection_string(
                 AZURE_STORAGE_CONNECTION_STRING
             )
-            
             print("Successfully initialized Blob Storage client")
-            
         except Exception as e:
             print(f"Error initializing clients: {str(e)}")
             raise
     
-    def _create_agent(self, model: str | None = None, summary_prompt: str | None = None) -> EWAAgent:
-        model_name = model or self.summary_model
-        print(f"Creating EWAAgent with model: {model_name}")
+    def _create_openai_client(self) -> AzureOpenAI:
+        """Create Azure OpenAI client for agent use."""
         if not self.azure_openai_endpoint:
             raise ValueError("AZURE_OPENAI_ENDPOINT environment variable is required")
         if not self.azure_openai_api_key:
             raise ValueError("AZURE_OPENAI_API_KEY environment variable is required")
         if not self.azure_openai_api_version:
             raise ValueError("AZURE_OPENAI_API_VERSION environment variable is required")
-        client = AzureOpenAI(
+        return AzureOpenAI(
             api_version=self.azure_openai_api_version,
             azure_endpoint=self.azure_openai_endpoint,
             api_key=self.azure_openai_api_key,
         )
-        return EWAAgent(client=client, model=model_name, summary_prompt=summary_prompt)
     
     async def download_markdown_from_blob(self, blob_name: str) -> str:
         """Download markdown content from Azure Blob Storage"""
@@ -321,57 +290,88 @@ class EWAWorkflowOrchestrator:
     
 
     async def run_analysis_step(self, state: WorkflowState) -> WorkflowState:
-        """Step 2: Generate comprehensive EWA analysis; then extract KPIs via image agent"""
+        """Step 2: Run 3-phase agentic pipeline for EWA analysis.
+        
+        Phase 1 (Extraction): gpt-4o-mini, effort=low - Pure data extraction
+        Phase 2 (Analysis): gpt-5, effort=high - Deep analytical assessment
+        Phase 3 (Strategy): gpt-4o, effort=medium - Executive synthesis
+        """
         try:
-            print(f"[STEP 2] Running EWA analysis for {state.blob_name}")
-            
-            # Get metadata from original blob for KPI management
-            original_metadata = await self.get_blob_metadata(state.blob_name)
-            customer_name = original_metadata.get('customer_name', '')
-            system_id = original_metadata.get('system_id', '')
-            report_date_str = original_metadata.get('report_date_str', '')
-            
-            print(f"Analysis - Customer: {customer_name}, System: {system_id}, Report Date: {report_date_str}")
-            
-            # Step 1: Run AI analysis for all other sections (excluding KPIs)
-            # Update prompt to exclude KPI extraction since we handle it separately
-            if isinstance(SUMMARY_PROMPT, str):
-                ai_prompt = SUMMARY_PROMPT.replace(
-                    "### KPIs\n- Create a list of key performance indicator objects with structured format.\n- Each KPI object must include: `name`, `current_value`, and `trend` information.\n- **Canonical KPI Enforcement**: If canonical KPIs are provided below, you MUST reuse exactly those KPI names. Do not create new KPI names.\n- **Trend Calculation Rules**:\n  - **FIRST ANALYSIS**: If no previous KPI data is provided below, set ALL trend directions to \"none\" with description \"First analysis - no previous data for comparison\"\n  - **SUBSEQUENT ANALYSIS**: If previous KPI data is provided below, compare current values with previous values:\n    - Extract numeric values from both current and previous (ignore units like ms, %, GB)\n    - `direction`: \"up\" if current > previous (+5% threshold), \"down\" if current < previous (-5% threshold), \"flat\" if within ±5%\n    - `percent_change`: calculate exact percentage change: ((current - previous) / previous) × 100\n    - `description`: brief explanation with actual values (e.g., \"Increased from 528ms to 629ms (+19%)\")\n  - **New KPIs**: For KPIs not found in previous data, use trend direction \"none\" and note \"New KPI - no previous data\"",
-                    "### KPIs\n- KPIs will be provided separately via an image-based KPI extraction step. Do NOT include KPIs in your analysis output."
-                )
-            else:
-                ai_prompt = SUMMARY_PROMPT  # None -> EWAAgent will use its internal default
-            
-            # Run AI analysis for all sections except KPIs
-            agent = self._create_agent(AZURE_OPENAI_SUMMARY_MODEL, ai_prompt)
+            print(f"[STEP 2] Running 3-phase EWA analysis for {state.blob_name}")
             
             text_input = (state.markdown_content or "").strip()
             if not text_input:
                 raise ValueError("Markdown content is empty; conversion must succeed before analysis.")
 
-            print(f"[ANALYSIS] Using markdown-only input ({len(text_input)} chars) for analysis")
-            ai_result = await agent.run(text_input, pdf_data=None)
+            print(f"[3-PHASE] Input: {len(text_input)} chars of markdown")
             
-            # Step 2: Extract KPIs via image-based agent (single high-res page to GPT-5)
-            final_json = ai_result.copy() if ai_result else {}
-            try:
-                pdf_data = await self.download_pdf_from_blob(state.blob_name)
-                kpi_agent = KPIImageAgent(client=self.client)
-                kpi_result = await asyncio.to_thread(kpi_agent.extract_kpis_from_pdf_bytes, pdf_data)
-                final_json['kpis'] = kpi_result.get('kpis', [])
-                print(f"[KPI IMAGE AGENT] Extracted {len(final_json['kpis'])} KPI rows")
-            except Exception as kpi_e:
-                print(f"[KPI IMAGE AGENT] KPI extraction failed: {kpi_e}")
+            # Create shared OpenAI client
+            client = self._create_openai_client()
+            
+            # ─────────────────────────────────────────────────────────────────
+            # PHASE 1: Extraction (gpt-4o-mini, effort=low)
+            # ─────────────────────────────────────────────────────────────────
+            print(f"[PHASE 1] Starting extraction with model: {EXTRACTION_MODEL}")
+            extraction_agent = ExtractionAgent(client=client, model=EXTRACTION_MODEL)
+            phase1_result = await extraction_agent.run(text_input)
+            print(f"[PHASE 1] Complete - SID: {phase1_result.get('System Metadata', {}).get('System ID', 'Unknown')}")
+            
+            # ─────────────────────────────────────────────────────────────────
+            # PHASE 2: Analysis (gpt-5, effort=high)
+            # ─────────────────────────────────────────────────────────────────
+            print(f"[PHASE 2] Starting analysis with model: {ANALYSIS_MODEL}")
+            analysis_agent = AnalysisAgent(client=client, model=ANALYSIS_MODEL)
+            phase2_result = await analysis_agent.run(text_input, phase1_result)
+            findings_count = len(phase2_result.get("Key Findings", []))
+            print(f"[PHASE 2] Complete - {findings_count} findings, risk: {phase2_result.get('Overall Risk', 'unknown')}")
+            
+            # ─────────────────────────────────────────────────────────────────
+            # PHASE 3: Strategy (gpt-4o, effort=medium)
+            # ─────────────────────────────────────────────────────────────────
+            print(f"[PHASE 3] Starting strategy with model: {STRATEGY_MODEL}")
+            strategy_agent = StrategyAgent(client=client, model=STRATEGY_MODEL)
+            phase3_result = await strategy_agent.run(phase1_result, phase2_result)
+            rec_count = len(phase3_result.get("Recommendations", []))
+            print(f"[PHASE 3] Complete - {rec_count} recommendations")
+            
+            # ─────────────────────────────────────────────────────────────────
+            # MERGE: Combine all phases into final output
+            # ─────────────────────────────────────────────────────────────────
+            final_json = self._merge_phase_results(phase1_result, phase2_result, phase3_result)
+            print(f"[MERGE] Final JSON assembled with {len(final_json)} top-level keys")
             
             state.summary_json = final_json
             state.summary_result = json_to_markdown(final_json)
             return state
+            
         except Exception as e:
             state.error = str(e)
             print(f"Error in run_analysis_step: {str(e)}")
             traceback.print_exc()
             return state
+
+    def _merge_phase_results(
+        self,
+        phase1: Dict[str, Any],
+        phase2: Dict[str, Any],
+        phase3: Dict[str, Any],
+    ) -> Dict[str, Any]:
+        """Merge outputs from all 3 phases into final schema-compliant JSON."""
+        return {
+            "Schema Version": "1.1",
+            # From Phase 1
+            "System Metadata": phase1.get("System Metadata", {}),
+            "Chapters Reviewed": phase1.get("Chapters Reviewed", []),
+            # From Phase 2
+            "System Health Overview": phase2.get("System Health Overview", {}),
+            "Positive Findings": phase2.get("Positive Findings", []),
+            "Key Findings": phase2.get("Key Findings", []),
+            "Capacity Outlook": phase2.get("Capacity Outlook", {}),
+            "Overall Risk": phase2.get("Overall Risk", "medium"),
+            # From Phase 3
+            "Executive Summary": phase3.get("Executive Summary", ""),
+            "Recommendations": phase3.get("Recommendations", []),
+        }
 
     
     async def save_results_step(self, state: WorkflowState) -> WorkflowState:
@@ -394,7 +394,10 @@ class EWAWorkflowOrchestrator:
                 await self.upload_to_blob(summary_json_blob_name, json.dumps(state.summary_json, indent=2), "application/json", original_metadata)
 
                 # Persist report_date as blob metadata so that list_files can group by week/month
-                report_date = state.summary_json.get("report_date")
+                # Support both Title Case (3-phase output) and snake_case (legacy)
+                report_date = state.summary_json.get("Report Date")
+                if report_date is None:
+                    report_date = state.summary_json.get("System Metadata", {}).get("Report Date")
                 if report_date is None:
                     report_date = state.summary_json.get("system_metadata", {}).get("report_date")
                 if report_date:

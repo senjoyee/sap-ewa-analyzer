@@ -1,0 +1,52 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://example.com/schemas/ewa_extraction/v1.0.json",
+  "title": "EWAExtraction",
+  "description": "Phase 1: Pure data extraction from SAP EWA report - no analysis.",
+  "type": "object",
+  "properties": {
+    "System Metadata": {
+      "type": "object",
+      "required": ["System ID", "Report Date", "Analysis Period"],
+      "properties": {
+        "System ID": {
+          "type": "string",
+          "description": "3-letter SAP System ID (SID)."
+        },
+        "Report Date": {
+          "type": "string",
+          "description": "Report generation date in ISO format (YYYY-MM-DD)."
+        },
+        "Analysis Period": {
+          "type": "string",
+          "description": "Date range the report covers."
+        }
+      },
+      "additionalProperties": false
+    },
+    "Chapters Reviewed": {
+      "type": "array",
+      "description": "List of all chapters/sections found in the EWA document.",
+      "items": {
+        "type": "string"
+      }
+    },
+    "Raw Capacity Data": {
+      "type": "object",
+      "description": "Raw numeric capacity metrics extracted verbatim.",
+      "properties": {
+        "Database Size": { "type": "string" },
+        "Database Growth": { "type": "string" },
+        "CPU Utilization": { "type": "string" },
+        "Memory Utilization": { "type": "string" }
+      },
+      "additionalProperties": false
+    }
+  },
+  "required": [
+    "System Metadata",
+    "Chapters Reviewed",
+    "Raw Capacity Data"
+  ],
+  "additionalProperties": false
+}

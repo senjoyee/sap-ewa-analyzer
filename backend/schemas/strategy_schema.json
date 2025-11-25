@@ -1,0 +1,77 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://example.com/schemas/ewa_strategy/v1.0.json",
+  "title": "EWAStrategy",
+  "description": "Phase 3: Executive synthesis and actionable recommendations.",
+  "type": "object",
+  "properties": {
+    "Executive Summary": {
+      "type": "string",
+      "description": "Concise bullet-point summary for C-level audience. Use newline-delimited bullets."
+    },
+    "Recommendations": {
+      "type": "array",
+      "description": "1:1 mapping to Key Findings from Phase 2.",
+      "items": {
+        "type": "object",
+        "required": [
+          "Recommendation ID",
+          "Linked issue ID",
+          "Responsible Area",
+          "Action",
+          "Preventative Action",
+          "Estimated Effort"
+        ],
+        "properties": {
+          "Recommendation ID": {
+            "type": "string",
+            "pattern": "^REC-[0-9]{2}$"
+          },
+          "Linked issue ID": {
+            "type": "string",
+            "pattern": "^KF-[0-9]{2}$",
+            "description": "Must match a Key Finding ID from Phase 2."
+          },
+          "Responsible Area": {
+            "type": "string",
+            "enum": [
+              "SAP Basis Team",
+              "Database Administration",
+              "Operating System Administration",
+              "Network & Connectivity",
+              "Security / Compliance Team",
+              "Application Development",
+              "Functional / Business Process Owner",
+              "Infrastructure / Hardware Team",
+              "Third-Party Vendor",
+              "Project / Change Management"
+            ]
+          },
+          "Action": {
+            "type": "string",
+            "description": "Specific remediation steps. Use newline-delimited bullets."
+          },
+          "Preventative Action": {
+            "type": "string",
+            "description": "Steps to prevent recurrence. Use newline-delimited bullets."
+          },
+          "Estimated Effort": {
+            "type": "object",
+            "required": ["analysis", "implementation"],
+            "properties": {
+              "analysis": { "type": "string", "enum": ["low", "medium", "high"] },
+              "implementation": { "type": "string", "enum": ["low", "medium", "high"] }
+            },
+            "additionalProperties": false
+          }
+        },
+        "additionalProperties": false
+      }
+    }
+  },
+  "required": [
+    "Executive Summary",
+    "Recommendations"
+  ],
+  "additionalProperties": false
+}

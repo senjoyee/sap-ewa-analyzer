@@ -1,0 +1,94 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://example.com/schemas/ewa_analysis/v1.0.json",
+  "title": "EWAAnalysis",
+  "description": "Phase 2: Deep analytical findings from SAP EWA report.",
+  "type": "object",
+  "properties": {
+    "System Health Overview": {
+      "type": "object",
+      "properties": {
+        "Performance": { "type": "string", "enum": ["good", "fair", "poor"] },
+        "Security": { "type": "string", "enum": ["good", "fair", "poor"] },
+        "Stability": { "type": "string", "enum": ["good", "fair", "poor"] },
+        "Configuration": { "type": "string", "enum": ["good", "fair", "poor"] }
+      },
+      "required": ["Performance", "Security", "Stability", "Configuration"],
+      "additionalProperties": false
+    },
+    "Positive Findings": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["Area", "Description"],
+        "properties": {
+          "Area": { "type": "string" },
+          "Description": { "type": "string" }
+        },
+        "additionalProperties": false
+      }
+    },
+    "Key Findings": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["Issue ID", "Area", "Finding", "Impact", "Business impact", "Severity", "Source"],
+        "properties": {
+          "Issue ID": {
+            "type": "string",
+            "pattern": "^KF-[0-9]{2}$",
+            "description": "Unique key finding identifier (KF-01, KF-02, etc.)."
+          },
+          "Area": {
+            "type": "string",
+            "enum": [
+              "Hardware",
+              "Operating System",
+              "Database",
+              "SAP Kernel / Basis",
+              "ABAP Stack",
+              "Java Stack",
+              "SAP HANA",
+              "Performance & Workload",
+              "Security & Compliance",
+              "Configuration & House-keeping",
+              "Interfaces / Connectivity",
+              "Backup & Recovery",
+              "Upgrade / Patch Management",
+              "Capacity & Sizing"
+            ]
+          },
+          "Finding": { "type": "string" },
+          "Impact": { "type": "string", "description": "Technical impact." },
+          "Business impact": { "type": "string", "description": "Business risk translation." },
+          "Severity": { "type": "string", "enum": ["medium", "high", "critical"] },
+          "Source": { "type": "string", "description": "EWA section/evidence." }
+        },
+        "additionalProperties": false
+      }
+    },
+    "Capacity Outlook": {
+      "type": "object",
+      "properties": {
+        "Database Growth": { "type": "string" },
+        "CPU Utilization": { "type": "string" },
+        "Memory Utilization": { "type": "string" },
+        "Summary": { "type": "string" }
+      },
+      "required": ["Database Growth", "CPU Utilization", "Memory Utilization", "Summary"],
+      "additionalProperties": false
+    },
+    "Overall Risk": {
+      "type": "string",
+      "enum": ["low", "medium", "high", "critical"]
+    }
+  },
+  "required": [
+    "System Health Overview",
+    "Positive Findings",
+    "Key Findings",
+    "Capacity Outlook",
+    "Overall Risk"
+  ],
+  "additionalProperties": false
+}
