@@ -105,10 +105,6 @@
                                         type="Ghost"
                                         press=".onProcessPress"
                                         visible="{= ${files>status} ? ${files>status}.toLowerCase() !== 'processed' &amp;&amp; ${files>status}.toLowerCase() !== 'analyzed' &amp;&amp; ${files>status}.toLowerCase() !== 'completed' &amp;&amp; ${files>status}.toLowerCase() !== 'processing' : true }"/>
-                                    <Button
-                                        icon="sap-icon://delete"
-                                        type="Transparent"
-                                        press=".onDeletePress"/>
                                 </HBox>
                             </cells>
                         </ColumnListItem>

@@ -143,54 +143,44 @@ body {
     font-weight: bold;
 }
 
-/* Severity Chips - Refined styling */
-.severityCritical.sapMObjStatusInverted {
-    background-color: #c0392b !important;
+/* Severity Chips - Solid colors, no border effects */
+.severityCritical.sapMObjStatusInverted,
+.severityHigh.sapMObjStatusInverted,
+.severityMedium.sapMObjStatusInverted,
+.severityLow.sapMObjStatusInverted {
+    border: none !important;
+    box-shadow: none !important;
     border-radius: 4px;
 }
 
-.severityCritical.sapMObjStatusInverted .sapMObjStatusText {
+.severityCritical.sapMObjStatusInverted .sapMObjStatusText,
+.severityHigh.sapMObjStatusInverted .sapMObjStatusText,
+.severityMedium.sapMObjStatusInverted .sapMObjStatusText,
+.severityLow.sapMObjStatusInverted .sapMObjStatusText {
     font-weight: 500;
     font-size: 0.75rem;
     letter-spacing: 0.02em;
+}
+
+.severityCritical.sapMObjStatusInverted {
+    background-color: #c0392b !important;
 }
 
 .severityHigh.sapMObjStatusInverted {
     background-color: #e67e22 !important;
-    border-radius: 4px;
-}
-
-.severityHigh.sapMObjStatusInverted .sapMObjStatusText {
-    font-weight: 500;
-    font-size: 0.75rem;
-    letter-spacing: 0.02em;
 }
 
 .severityMedium.sapMObjStatusInverted {
     background-color: #f39c12 !important;
-    border-radius: 4px;
 }
 
-.severityMedium.sapMObjStatusInverted .sapMObjStatusText {
-    color: #1a1a1a !important;
-    font-weight: 500;
-    font-size: 0.75rem;
-    letter-spacing: 0.02em;
-}
-
+.severityMedium.sapMObjStatusInverted .sapMObjStatusText,
 .severityMedium.sapMObjStatusInverted .sapMObjStatusIcon {
     color: #1a1a1a !important;
 }
 
 .severityLow.sapMObjStatusInverted {
     background-color: #27ae60 !important;
-    border-radius: 4px;
-}
-
-.severityLow.sapMObjStatusInverted .sapMObjStatusText {
-    font-weight: 500;
-    font-size: 0.75rem;
-    letter-spacing: 0.02em;
 }
 
 /* Layout Utilities */
