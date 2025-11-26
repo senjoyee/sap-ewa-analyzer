@@ -147,10 +147,43 @@ body {
 .severityCritical.sapMObjStatusInverted,
 .severityHigh.sapMObjStatusInverted,
 .severityMedium.sapMObjStatusInverted,
-.severityLow.sapMObjStatusInverted {
+.severityLow.sapMObjStatusInverted,
+.severityCritical.sapMObjStatusInverted *,
+.severityHigh.sapMObjStatusInverted *,
+.severityMedium.sapMObjStatusInverted *,
+.severityLow.sapMObjStatusInverted * {
     border: none !important;
     box-shadow: none !important;
+    outline: none !important;
+    background-image: none !important;
+    text-shadow: none !important;
+}
+
+.severityCritical.sapMObjStatusInverted,
+.severityHigh.sapMObjStatusInverted,
+.severityMedium.sapMObjStatusInverted,
+.severityLow.sapMObjStatusInverted {
     border-radius: 4px;
+}
+
+/* Remove any pseudo-element effects */
+.severityCritical.sapMObjStatusInverted::before,
+.severityCritical.sapMObjStatusInverted::after,
+.severityHigh.sapMObjStatusInverted::before,
+.severityHigh.sapMObjStatusInverted::after,
+.severityMedium.sapMObjStatusInverted::before,
+.severityMedium.sapMObjStatusInverted::after,
+.severityLow.sapMObjStatusInverted::before,
+.severityLow.sapMObjStatusInverted::after,
+.severityCritical.sapMObjStatusInverted *::before,
+.severityCritical.sapMObjStatusInverted *::after,
+.severityHigh.sapMObjStatusInverted *::before,
+.severityHigh.sapMObjStatusInverted *::after,
+.severityMedium.sapMObjStatusInverted *::before,
+.severityMedium.sapMObjStatusInverted *::after,
+.severityLow.sapMObjStatusInverted *::before,
+.severityLow.sapMObjStatusInverted *::after {
+    display: none !important;
 }
 
 .severityCritical.sapMObjStatusInverted .sapMObjStatusText,
