@@ -26,7 +26,6 @@ from azure.storage.blob import BlobServiceClient
 from openai import AzureOpenAI
 from dotenv import load_dotenv
 from agent.ewa_agent import EWAAgent
-from agent.kpi_image_agent import KPIImageAgent
 from utils.markdown_utils import json_to_markdown
 from converters.document_converter import convert_document_to_markdown
 
@@ -353,19 +352,8 @@ class EWAWorkflowOrchestrator:
             print(f"[ANALYSIS] Using markdown-only input ({len(text_input)} chars) for analysis")
             ai_result = await agent.run(text_input, pdf_data=None)
             
-            # Step 2: Extract KPIs via image-based agent (single high-res page to GPT-5)
-            final_json = ai_result.copy() if ai_result else {}
-            try:
-                pdf_data = await self.download_pdf_from_blob(state.blob_name)
-                kpi_agent = KPIImageAgent(client=self.client)
-                kpi_result = await asyncio.to_thread(kpi_agent.extract_kpis_from_pdf_bytes, pdf_data)
-                final_json['kpis'] = kpi_result.get('kpis', [])
-                print(f"[KPI IMAGE AGENT] Extracted {len(final_json['kpis'])} KPI rows")
-            except Exception as kpi_e:
-                print(f"[KPI IMAGE AGENT] KPI extraction failed: {kpi_e}")
-            
-            state.summary_json = final_json
-            state.summary_result = json_to_markdown(final_json)
+            state.summary_json = ai_result if ai_result else {}
+            state.summary_result = json_to_markdown(state.summary_json)
             return state
         except Exception as e:
             state.error = str(e)
