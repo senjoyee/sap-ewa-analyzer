@@ -219,19 +219,45 @@ body {
     min-height: 80vh;
 }
 
-/* File List specific - slightly wider for table content */
+/* File List specific - wider container to fit table content */
 .fileListSheet {
-    max-width: 1300px;
+    max-width: 1600px;
     padding: 2rem 2.5rem;
     min-height: 0;
 }
 
 /* Responsive adjustments for file list */
-@media (max-width: 1400px) {
+@media (max-width: 1700px) {
     .fileListSheet {
         margin: 1.5rem;
         max-width: calc(100% - 3rem);
     }
+}
+
+/* Center table column contents */
+.fileListSheet .sapMListTblCell {
+    text-align: center;
+}
+
+.fileListSheet .sapMListTblCell:first-child {
+    text-align: left;
+}
+
+.fileListSheet .sapMListTblCell:last-child {
+    text-align: right;
+}
+
+/* Center column headers */
+.fileListSheet .sapMListTblHeaderCell {
+    text-align: center;
+}
+
+.fileListSheet .sapMListTblHeaderCell:first-child {
+    text-align: left;
+}
+
+.fileListSheet .sapMListTblHeaderCell:last-child {
+    text-align: right;
 }
 
 @media (max-width: 768px) {
