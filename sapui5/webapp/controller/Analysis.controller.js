@@ -248,25 +248,20 @@ sap.ui.define([
 
                 if (riskMatch) {
                     var sRisk = riskMatch[1].trim().replace(/[`*]/g, ""); // Remove backticks and asterisks
-                    var sState = "None";
-                    var sIcon = "sap-icon://information";
-                    var sRiskClass = "severityLow";
+                    var sRiskClass = "severity-chip-low";
 
-                    if (sRisk.toLowerCase().includes("critical")) { sState = "Error"; sIcon = "sap-icon://status-negative"; sRiskClass = "severityCritical"; }
-                    else if (sRisk.toLowerCase().includes("high")) { sState = "Warning"; sIcon = "sap-icon://status-critical"; sRiskClass = "severityHigh"; }
-                    else if (sRisk.toLowerCase().includes("medium")) { sState = "None"; sIcon = "sap-icon://status-in-process"; sRiskClass = "severityMedium"; }
-                    else if (sRisk.toLowerCase().includes("low")) { sState = "Success"; sIcon = "sap-icon://status-positive"; sRiskClass = "severityLow"; }
+                    if (sRisk.toLowerCase().includes("critical")) { sRiskClass = "severity-chip-critical"; }
+                    else if (sRisk.toLowerCase().includes("high")) { sRiskClass = "severity-chip-high"; }
+                    else if (sRisk.toLowerCase().includes("medium")) { sRiskClass = "severity-chip-medium"; }
+
+                    var sRiskLabel = sRisk.charAt(0).toUpperCase() + sRisk.slice(1);
+                    var sChipHtml = "<span class='severity-chip " + sRiskClass + "'>" + sRiskLabel + "</span>";
 
                     oContainer.addItem(new HBox({
                         alignItems: "Center",
                         items: [
                             new Title({ text: "Overall Risk Assessment:", level: "H3" }).addStyleClass("sapUiTinyMarginEnd"),
-                            new ObjectStatus({
-                                text: sRisk.charAt(0).toUpperCase() + sRisk.slice(1), // Capitalize
-                                state: sState,
-                                icon: sIcon,
-                                inverted: true
-                            }).addStyleClass(sRiskClass)
+                            new HTML({ content: sChipHtml })
                         ]
                     }).addStyleClass("sapUiSmallMarginBottom"));
                     return;
@@ -289,16 +284,13 @@ sap.ui.define([
             var sTitle = item.Finding || "Finding";
             var sSeverity = (item.Severity || "low").toLowerCase();
 
-            var sState = "None";
-            var sIcon = "sap-icon://information";
-
-            var sSeverityClass = "severityLow";
-            if (sSeverity === "critical") { sState = "Error"; sIcon = "sap-icon://status-negative"; sSeverityClass = "severityCritical"; }
-            else if (sSeverity === "high") { sState = "Warning"; sIcon = "sap-icon://status-critical"; sSeverityClass = "severityHigh"; }
-            else if (sSeverity === "medium") { sState = "None"; sIcon = "sap-icon://status-in-process"; sSeverityClass = "severityMedium"; }
-            else if (sSeverity === "low") { sState = "Success"; sIcon = "sap-icon://status-positive"; sSeverityClass = "severityLow"; }
+            var sSeverityClass = "severity-chip-low";
+            if (sSeverity === "critical") { sSeverityClass = "severity-chip-critical"; }
+            else if (sSeverity === "high") { sSeverityClass = "severity-chip-high"; }
+            else if (sSeverity === "medium") { sSeverityClass = "severity-chip-medium"; }
 
             var sSeverityLabel = sSeverity.charAt(0).toUpperCase() + sSeverity.slice(1);
+            var sChipHtml = "<span class='severity-chip " + sSeverityClass + "'>" + sSeverityLabel + "</span>";
 
             var oPanel = new Panel({
                 expandable: true,
@@ -307,12 +299,7 @@ sap.ui.define([
                 headerToolbar: new sap.m.Toolbar({
                     content: [
                         new Title({ text: item["Issue ID"], level: "H3" }).addStyleClass("sapUiTinyMarginBegin"),
-                        new ObjectStatus({
-                            text: sSeverityLabel,
-                            state: sState,
-                            icon: sIcon,
-                            inverted: true
-                        }).addStyleClass("sapUiMediumMarginBegin " + sSeverityClass)
+                        new HTML({ content: sChipHtml }).addStyleClass("sapUiMediumMarginBegin")
                     ]
                 })
             }).addStyleClass("sapUiSmallMarginBottom");

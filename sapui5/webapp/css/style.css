@@ -143,77 +143,35 @@ body {
     font-weight: bold;
 }
 
-/* Severity Chips - Solid colors, no border effects */
-.severityCritical.sapMObjStatusInverted,
-.severityHigh.sapMObjStatusInverted,
-.severityMedium.sapMObjStatusInverted,
-.severityLow.sapMObjStatusInverted,
-.severityCritical.sapMObjStatusInverted *,
-.severityHigh.sapMObjStatusInverted *,
-.severityMedium.sapMObjStatusInverted *,
-.severityLow.sapMObjStatusInverted * {
-    border: none !important;
-    box-shadow: none !important;
-    outline: none !important;
-    background-image: none !important;
-    text-shadow: none !important;
-}
-
-.severityCritical.sapMObjStatusInverted,
-.severityHigh.sapMObjStatusInverted,
-.severityMedium.sapMObjStatusInverted,
-.severityLow.sapMObjStatusInverted {
+/* Custom Severity Chips - Built from scratch */
+.severity-chip {
+    display: inline-block;
+    padding: 4px 10px;
     border-radius: 4px;
-}
-
-/* Remove any pseudo-element effects */
-.severityCritical.sapMObjStatusInverted::before,
-.severityCritical.sapMObjStatusInverted::after,
-.severityHigh.sapMObjStatusInverted::before,
-.severityHigh.sapMObjStatusInverted::after,
-.severityMedium.sapMObjStatusInverted::before,
-.severityMedium.sapMObjStatusInverted::after,
-.severityLow.sapMObjStatusInverted::before,
-.severityLow.sapMObjStatusInverted::after,
-.severityCritical.sapMObjStatusInverted *::before,
-.severityCritical.sapMObjStatusInverted *::after,
-.severityHigh.sapMObjStatusInverted *::before,
-.severityHigh.sapMObjStatusInverted *::after,
-.severityMedium.sapMObjStatusInverted *::before,
-.severityMedium.sapMObjStatusInverted *::after,
-.severityLow.sapMObjStatusInverted *::before,
-.severityLow.sapMObjStatusInverted *::after {
-    display: none !important;
-}
-
-.severityCritical.sapMObjStatusInverted .sapMObjStatusText,
-.severityHigh.sapMObjStatusInverted .sapMObjStatusText,
-.severityMedium.sapMObjStatusInverted .sapMObjStatusText,
-.severityLow.sapMObjStatusInverted .sapMObjStatusText {
-    font-weight: 500;
+    font-family: "72", "72full", Arial, Helvetica, sans-serif;
     font-size: 0.75rem;
+    font-weight: 500;
     letter-spacing: 0.02em;
+    color: #ffffff;
+    line-height: 1.4;
+    vertical-align: middle;
 }
 
-.severityCritical.sapMObjStatusInverted {
-    background-color: #c0392b !important;
+.severity-chip-critical {
+    background-color: #c0392b;
 }
 
-.severityHigh.sapMObjStatusInverted {
-    background-color: #e67e22 !important;
+.severity-chip-high {
+    background-color: #e67e22;
 }
 
-.severityMedium.sapMObjStatusInverted {
-    background-color: #f39c12 !important;
+.severity-chip-medium {
+    background-color: #f39c12;
+    color: #1a1a1a;
 }
 
-.severityMedium.sapMObjStatusInverted .sapMObjStatusText,
-.severityMedium.sapMObjStatusInverted .sapMObjStatusIcon {
-    color: #1a1a1a !important;
-}
-
-.severityLow.sapMObjStatusInverted {
-    background-color: #27ae60 !important;
+.severity-chip-low {
+    background-color: #27ae60;
 }
 
 /* Layout Utilities */
