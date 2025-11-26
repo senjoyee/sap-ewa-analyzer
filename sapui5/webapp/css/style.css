@@ -155,6 +155,7 @@ body {
     color: #ffffff;
     line-height: 1.4;
     vertical-align: middle;
+    margin-left: 0.5rem;
 }
 
 .severity-chip-critical {
