@@ -250,11 +250,12 @@ sap.ui.define([
                     var sRisk = riskMatch[1].trim().replace(/[`*]/g, ""); // Remove backticks and asterisks
                     var sState = "None";
                     var sIcon = "sap-icon://information";
+                    var sRiskClass = "severityLow";
 
-                    if (sRisk.toLowerCase().includes("critical")) { sState = "Error"; sIcon = "sap-icon://message-error"; }
-                    else if (sRisk.toLowerCase().includes("high")) { sState = "Error"; sIcon = "sap-icon://message-error"; }
-                    else if (sRisk.toLowerCase().includes("medium")) { sState = "Warning"; sIcon = "sap-icon://message-warning"; }
-                    else if (sRisk.toLowerCase().includes("low")) { sState = "Success"; sIcon = "sap-icon://message-success"; }
+                    if (sRisk.toLowerCase().includes("critical")) { sState = "Error"; sIcon = "sap-icon://status-negative"; sRiskClass = "severityCritical"; }
+                    else if (sRisk.toLowerCase().includes("high")) { sState = "Warning"; sIcon = "sap-icon://status-critical"; sRiskClass = "severityHigh"; }
+                    else if (sRisk.toLowerCase().includes("medium")) { sState = "None"; sIcon = "sap-icon://status-in-process"; sRiskClass = "severityMedium"; }
+                    else if (sRisk.toLowerCase().includes("low")) { sState = "Success"; sIcon = "sap-icon://status-positive"; sRiskClass = "severityLow"; }
 
                     oContainer.addItem(new HBox({
                         alignItems: "Center",
@@ -265,7 +266,7 @@ sap.ui.define([
                                 state: sState,
                                 icon: sIcon,
                                 inverted: true
-                            })
+                            }).addStyleClass(sRiskClass)
                         ]
                     }).addStyleClass("sapUiSmallMarginBottom"));
                     return;
@@ -291,10 +292,11 @@ sap.ui.define([
             var sState = "None";
             var sIcon = "sap-icon://information";
 
-            if (sSeverity === "critical") { sState = "Error"; sIcon = "sap-icon://message-error"; }
-            else if (sSeverity === "high") { sState = "Error"; sIcon = "sap-icon://message-error"; }
-            else if (sSeverity === "medium") { sState = "Warning"; sIcon = "sap-icon://message-warning"; }
-            else if (sSeverity === "low") { sState = "Success"; sIcon = "sap-icon://message-success"; }
+            var sSeverityClass = "severityLow";
+            if (sSeverity === "critical") { sState = "Error"; sIcon = "sap-icon://status-negative"; sSeverityClass = "severityCritical"; }
+            else if (sSeverity === "high") { sState = "Warning"; sIcon = "sap-icon://status-critical"; sSeverityClass = "severityHigh"; }
+            else if (sSeverity === "medium") { sState = "None"; sIcon = "sap-icon://status-in-process"; sSeverityClass = "severityMedium"; }
+            else if (sSeverity === "low") { sState = "Success"; sIcon = "sap-icon://status-positive"; sSeverityClass = "severityLow"; }
 
             var sSeverityLabel = sSeverity.charAt(0).toUpperCase() + sSeverity.slice(1);
 
@@ -306,11 +308,11 @@ sap.ui.define([
                     content: [
                         new Title({ text: item["Issue ID"], level: "H3" }).addStyleClass("sapUiTinyMarginBegin"),
                         new ObjectStatus({
-                            text: sSeverityLabel, // Show Severity instead of Area
+                            text: sSeverityLabel,
                             state: sState,
                             icon: sIcon,
                             inverted: true
-                        }).addStyleClass("sapUiMediumMarginBegin")
+                        }).addStyleClass("sapUiMediumMarginBegin " + sSeverityClass)
                     ]
                 })
             }).addStyleClass("sapUiSmallMarginBottom");

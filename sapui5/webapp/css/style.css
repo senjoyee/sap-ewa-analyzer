@@ -127,7 +127,7 @@ body {
     background-color: #f7f8fa;
 }
 
-/* Risk Badges */
+/* Risk Badges (legacy) */
 .risk-high {
     color: #b00;
     font-weight: bold;
@@ -141,6 +141,56 @@ body {
 .risk-low {
     color: #15803d;
     font-weight: bold;
+}
+
+/* Severity Chips - Refined styling */
+.severityCritical.sapMObjStatusInverted {
+    background-color: #c0392b !important;
+    border-radius: 4px;
+}
+
+.severityCritical.sapMObjStatusInverted .sapMObjStatusText {
+    font-weight: 500;
+    font-size: 0.75rem;
+    letter-spacing: 0.02em;
+}
+
+.severityHigh.sapMObjStatusInverted {
+    background-color: #e67e22 !important;
+    border-radius: 4px;
+}
+
+.severityHigh.sapMObjStatusInverted .sapMObjStatusText {
+    font-weight: 500;
+    font-size: 0.75rem;
+    letter-spacing: 0.02em;
+}
+
+.severityMedium.sapMObjStatusInverted {
+    background-color: #f39c12 !important;
+    border-radius: 4px;
+}
+
+.severityMedium.sapMObjStatusInverted .sapMObjStatusText {
+    color: #1a1a1a !important;
+    font-weight: 500;
+    font-size: 0.75rem;
+    letter-spacing: 0.02em;
+}
+
+.severityMedium.sapMObjStatusInverted .sapMObjStatusIcon {
+    color: #1a1a1a !important;
+}
+
+.severityLow.sapMObjStatusInverted {
+    background-color: #27ae60 !important;
+    border-radius: 4px;
+}
+
+.severityLow.sapMObjStatusInverted .sapMObjStatusText {
+    font-weight: 500;
+    font-size: 0.75rem;
+    letter-spacing: 0.02em;
 }
 
 /* Layout Utilities */
