@@ -219,6 +219,36 @@ body {
     min-height: 80vh;
 }
 
+/* File List specific - slightly wider for table content */
+.fileListSheet {
+    max-width: 1300px;
+    padding: 2rem 2.5rem;
+    min-height: 0;
+}
+
+/* Responsive adjustments for file list */
+@media (max-width: 1400px) {
+    .fileListSheet {
+        margin: 1.5rem;
+        max-width: calc(100% - 3rem);
+    }
+}
+
+@media (max-width: 768px) {
+    .fileListSheet {
+        margin: 0.75rem;
+        padding: 1rem;
+        max-width: calc(100% - 1.5rem);
+        border-radius: 6px;
+    }
+    
+    /* Slightly smaller table text on mobile */
+    .fileListSheet .sapMListTblCell .sapMText,
+    .fileListSheet .sapMObjLTitle {
+        font-size: 0.875rem !important;
+    }
+}
+
 /* Typography Enhancements for Paper */
 .paperSheet .sapMTitle {
     font-family: "72", "72full", Arial, Helvetica, sans-serif !important;

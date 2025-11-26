@@ -6,9 +6,12 @@
     xmlns:l="sap.ui.layout"
     xmlns:f="sap.f"
     xmlns:core="sap.ui.core">
-    <Page title="{i18n>fileListTitle}" backgroundDesign="List">
+    <Page title="{i18n>fileListTitle}">
         <content>
-            <VBox class="contentContainer">
+            <!-- Grey Background Container -->
+            <ScrollContainer height="100%" width="100%" vertical="true" horizontal="false" class="appBackground">
+                <!-- White Centered Content -->
+                <VBox class="paperSheet fileListSheet">
                 <!-- Upload Area -->
                 <Panel headerText="{i18n>uploadTitle}" expandable="true" expanded="true" width="auto">
                     <content>
@@ -111,7 +114,8 @@
                         </ColumnListItem>
                     </items>
                 </Table>
-            </VBox>
+                </VBox>
+            </ScrollContainer>
         </content>
     </Page>
 </mvc:View>
