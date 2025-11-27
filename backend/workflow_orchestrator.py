@@ -26,6 +26,7 @@ from azure.storage.blob import BlobServiceClient
 from openai import AzureOpenAI
 from dotenv import load_dotenv
 from agent.ewa_agent import EWAAgent
+from agent.anthropic_ewa_agent import AnthropicEWAAgent
 from utils.markdown_utils import json_to_markdown
 from converters.document_converter import convert_document_to_markdown
 
@@ -44,6 +45,14 @@ AZURE_OPENAI_FAST_MODEL = (
     or AZURE_OPENAI_SUMMARY_MODEL
     or "gpt-4.1-mini"
 )
+
+# Provider selection: "openai" (default) or "anthropic"
+PROVIDER = os.getenv("PROVIDER", "openai").lower()
+
+# Azure AI Foundry / Anthropic configuration (used when PROVIDER=anthropic)
+ANTHROPIC_SUMMARY_MODEL = os.getenv("ANTHROPIC_SUMMARY_MODEL", "claude-sonnet-4-5")
+AZURE_ANTHROPIC_ENDPOINT = os.getenv("AZURE_ANTHROPIC_ENDPOINT")
+AZURE_ANTHROPIC_API_KEY = os.getenv("AZURE_ANTHROPIC_API_KEY")
 
 # Azure Storage configuration
 AZURE_STORAGE_CONNECTION_STRING = os.getenv("AZURE_STORAGE_CONNECTION_STRING")
@@ -130,6 +139,25 @@ class EWAWorkflowOrchestrator:
             api_key=self.azure_openai_api_key,
         )
         return EWAAgent(client=client, model=model_name, summary_prompt=summary_prompt)
+    
+    def _create_anthropic_agent(self, model: str | None = None, summary_prompt: str | None = None) -> AnthropicEWAAgent:
+        """Create an AnthropicEWAAgent for Azure AI Foundry (Claude) models."""
+        model_name = model or ANTHROPIC_SUMMARY_MODEL
+        print(f"Creating AnthropicEWAAgent with model: {model_name}")
+        
+        if not AZURE_ANTHROPIC_ENDPOINT:
+            raise ValueError("AZURE_ANTHROPIC_ENDPOINT environment variable is required for PROVIDER=anthropic")
+        if not AZURE_ANTHROPIC_API_KEY:
+            raise ValueError("AZURE_ANTHROPIC_API_KEY environment variable is required for PROVIDER=anthropic")
+        
+        # Import AnthropicFoundry from anthropic SDK
+        from anthropic import AnthropicFoundry
+        
+        client = AnthropicFoundry(
+            api_key=AZURE_ANTHROPIC_API_KEY,
+            base_url=AZURE_ANTHROPIC_ENDPOINT,
+        )
+        return AnthropicEWAAgent(client=client, model=model_name, summary_prompt=summary_prompt)
     
     async def download_markdown_from_blob(self, blob_name: str) -> str:
         """Download markdown content from Azure Blob Storage"""
@@ -343,13 +371,20 @@ class EWAWorkflowOrchestrator:
                 ai_prompt = SUMMARY_PROMPT  # None -> EWAAgent will use its internal default
             
             # Run AI analysis for all sections except KPIs
-            agent = self._create_agent(AZURE_OPENAI_SUMMARY_MODEL, ai_prompt)
-            
+            # Branch based on PROVIDER environment variable
             text_input = (state.markdown_content or "").strip()
             if not text_input:
                 raise ValueError("Markdown content is empty; conversion must succeed before analysis.")
 
-            print(f"[ANALYSIS] Using markdown-only input ({len(text_input)} chars) for analysis")
+            print(f"[ANALYSIS] Using PROVIDER={PROVIDER}, markdown-only input ({len(text_input)} chars)")
+            
+            if PROVIDER == "anthropic":
+                # Use Claude via Azure AI Foundry
+                agent = self._create_anthropic_agent(ANTHROPIC_SUMMARY_MODEL, ai_prompt)
+            else:
+                # Default: Use OpenAI via Azure OpenAI
+                agent = self._create_agent(AZURE_OPENAI_SUMMARY_MODEL, ai_prompt)
+            
             ai_result = await agent.run(text_input, pdf_data=None)
             
             state.summary_json = ai_result if ai_result else {}

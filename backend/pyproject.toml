@@ -5,6 +5,7 @@ description = "Add your description here"
 readme = "README.md"
 requires-python = ">=3.12"
 dependencies = [
+    "anthropic>=0.74.0",
     "azure-ai-documentintelligence>=1.0.2",
     "azure-storage-blob>=12.25.1",
     "docx2txt>=0.9",
@@ -19,4 +20,5 @@ dependencies = [
     "uvicorn>=0.34.2",
     "markdown2>=2.4.13",
     "WeasyPrint>=62.0",
+    "anthropic>=0.74.0",
 ]
