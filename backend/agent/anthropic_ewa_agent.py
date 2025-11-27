@@ -103,36 +103,40 @@ EWA Document:
 """
 
         try:
-            # Use streaming to handle long-running requests (>10 min)
-            # Azure AI Foundry requires streaming for large inputs
-            def _stream_response() -> str:
-                collected_text = ""
-                in_tokens = 0
-                out_tokens = 0
-                
-                with self.client.messages.stream(
+            # Azure AI Foundry does NOT support streaming for Claude.
+            # Use synchronous API. Timeout is configured on the client (30 min).
+            def _call_messages() -> tuple[str, int, int]:
+                """Make the API call and return (text, input_tokens, output_tokens)."""
+                response = self.client.messages.create(
                     model=self.model,
                     max_tokens=32768,
                     system=self.summary_prompt,
                     messages=[
                         {"role": "user", "content": user_content}
                     ],
-                ) as stream:
-                    for text in stream.text_stream:
-                        collected_text += text
-                    
-                    # Get final message for usage stats
-                    final_message = stream.get_final_message()
-                    if final_message and hasattr(final_message, "usage"):
-                        usage = final_message.usage
-                        in_tokens = getattr(usage, "input_tokens", 0)
-                        out_tokens = getattr(usage, "output_tokens", 0)
+                )
                 
-                print(f"[AnthropicEWAAgent._call_anthropic] Token usage: input_tokens={in_tokens}, output_tokens={out_tokens}")
-                return collected_text
+                # Extract token usage
+                in_tokens = 0
+                out_tokens = 0
+                if hasattr(response, "usage") and response.usage:
+                    in_tokens = getattr(response.usage, "input_tokens", 0)
+                    out_tokens = getattr(response.usage, "output_tokens", 0)
+                
+                # Extract text content
+                text = ""
+                if hasattr(response, "content") and response.content:
+                    for block in response.content:
+                        if hasattr(block, "text"):
+                            text += block.text
+                        elif isinstance(block, dict) and "text" in block:
+                            text += block["text"]
+                
+                return text, in_tokens, out_tokens
             
-            # Offload streaming to a thread to avoid blocking
-            text = await asyncio.to_thread(_stream_response)
+            # Offload blocking API call to a thread
+            text, in_tokens, out_tokens = await asyncio.to_thread(_call_messages)
+            print(f"[AnthropicEWAAgent._call_anthropic] Token usage: input_tokens={in_tokens}, output_tokens={out_tokens}")
 
             if not text:
                 print("[AnthropicEWAAgent._call_anthropic] No text content in response")

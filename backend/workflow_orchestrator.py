@@ -152,10 +152,13 @@ class EWAWorkflowOrchestrator:
         
         # Import AnthropicFoundry from anthropic SDK
         from anthropic import AnthropicFoundry
+        import httpx
         
+        # Configure extended timeout (30 min) for long-running requests
         client = AnthropicFoundry(
             api_key=AZURE_ANTHROPIC_API_KEY,
             base_url=AZURE_ANTHROPIC_ENDPOINT,
+            timeout=httpx.Timeout(timeout=1800.0, connect=30.0),  # 30 min read timeout
         )
         return AnthropicEWAAgent(client=client, model=model_name, summary_prompt=summary_prompt)
     
