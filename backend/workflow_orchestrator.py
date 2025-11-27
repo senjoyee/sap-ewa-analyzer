@@ -379,16 +379,26 @@ class EWAWorkflowOrchestrator:
             if not text_input:
                 raise ValueError("Markdown content is empty; conversion must succeed before analysis.")
 
-            print(f"[ANALYSIS] Using PROVIDER={PROVIDER}, markdown-only input ({len(text_input)} chars)")
+            print(f"[ANALYSIS] Using PROVIDER={PROVIDER}")
             
             if PROVIDER == "anthropic":
-                # Use Claude via Azure AI Foundry
+                # Use Claude via Azure AI Foundry - send raw PDF for better extraction
                 agent = self._create_anthropic_agent(ANTHROPIC_SUMMARY_MODEL, ai_prompt)
+                
+                # Download raw PDF for Anthropic (Claude supports native PDF input)
+                try:
+                    pdf_data = await self.download_pdf_from_blob(state.blob_name)
+                    print(f"[ANALYSIS] Anthropic: using PDF input ({len(pdf_data)} bytes)")
+                except Exception as pdf_err:
+                    print(f"[ANALYSIS] Anthropic: PDF download failed ({pdf_err}), falling back to markdown")
+                    pdf_data = None
+                
+                ai_result = await agent.run(text_input, pdf_data=pdf_data)
             else:
-                # Default: Use OpenAI via Azure OpenAI
+                # Default: Use OpenAI via Azure OpenAI (markdown only)
                 agent = self._create_agent(AZURE_OPENAI_SUMMARY_MODEL, ai_prompt)
-            
-            ai_result = await agent.run(text_input, pdf_data=None)
+                print(f"[ANALYSIS] OpenAI: using markdown input ({len(text_input)} chars)")
+                ai_result = await agent.run(text_input, pdf_data=None)
             
             state.summary_json = ai_result if ai_result else {}
             state.summary_result = json_to_markdown(state.summary_json)
