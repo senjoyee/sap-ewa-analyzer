@@ -103,39 +103,46 @@ EWA Document:
 """
 
         try:
-            # Azure AI Foundry does NOT support streaming for Claude.
-            # Use synchronous API. Timeout is configured on the client (30 min).
-            def _call_messages() -> tuple[str, int, int]:
-                """Make the API call and return (text, input_tokens, output_tokens)."""
-                response = self.client.messages.create(
+            # Try streaming with stream=True parameter to avoid server-side timeout
+            # This uses SSE (Server-Sent Events) which keeps the connection alive
+            def _call_messages_streaming() -> tuple[str, int, int]:
+                """Make streaming API call and return (text, input_tokens, output_tokens)."""
+                collected_text = ""
+                in_tokens = 0
+                out_tokens = 0
+                
+                # Use stream=True parameter for SSE streaming
+                stream = self.client.messages.create(
                     model=self.model,
                     max_tokens=32768,
                     system=self.summary_prompt,
                     messages=[
                         {"role": "user", "content": user_content}
                     ],
+                    stream=True,
                 )
                 
-                # Extract token usage
-                in_tokens = 0
-                out_tokens = 0
-                if hasattr(response, "usage") and response.usage:
-                    in_tokens = getattr(response.usage, "input_tokens", 0)
-                    out_tokens = getattr(response.usage, "output_tokens", 0)
+                # Iterate over SSE events
+                for event in stream:
+                    # Handle different event types
+                    if hasattr(event, "type"):
+                        if event.type == "content_block_delta":
+                            # Extract text from delta
+                            if hasattr(event, "delta") and hasattr(event.delta, "text"):
+                                collected_text += event.delta.text
+                        elif event.type == "message_delta":
+                            # Extract usage from final message delta
+                            if hasattr(event, "usage"):
+                                out_tokens = getattr(event.usage, "output_tokens", 0)
+                        elif event.type == "message_start":
+                            # Extract input tokens from message start
+                            if hasattr(event, "message") and hasattr(event.message, "usage"):
+                                in_tokens = getattr(event.message.usage, "input_tokens", 0)
                 
-                # Extract text content
-                text = ""
-                if hasattr(response, "content") and response.content:
-                    for block in response.content:
-                        if hasattr(block, "text"):
-                            text += block.text
-                        elif isinstance(block, dict) and "text" in block:
-                            text += block["text"]
-                
-                return text, in_tokens, out_tokens
+                return collected_text, in_tokens, out_tokens
             
-            # Offload blocking API call to a thread
-            text, in_tokens, out_tokens = await asyncio.to_thread(_call_messages)
+            # Offload streaming call to a thread
+            text, in_tokens, out_tokens = await asyncio.to_thread(_call_messages_streaming)
             print(f"[AnthropicEWAAgent._call_anthropic] Token usage: input_tokens={in_tokens}, output_tokens={out_tokens}")
 
             if not text:
