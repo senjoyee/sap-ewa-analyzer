@@ -5,7 +5,6 @@ import os
 import json
 import asyncio
 import copy
-import base64
 from typing import Dict, Any
 from jsonschema import validate, ValidationError
 from utils.json_repair import JSONRepair
@@ -56,15 +55,10 @@ class AnthropicEWAAgent:
         """Return a validated summary JSON object.
         
         Args:
-            markdown: Markdown text of the document (used as fallback if no PDF)
-            pdf_data: Raw PDF bytes to send directly to Claude (preferred)
+            markdown: Markdown text of the document
+            pdf_data: Unused, kept for API compatibility with EWAAgent
         """
-        if pdf_data:
-            print(f"[AnthropicEWAAgent] Using PDF input ({len(pdf_data)} bytes)")
-            summary_json = await self._call_anthropic_with_pdf(pdf_data)
-        else:
-            print(f"[AnthropicEWAAgent] Using markdown input ({len(markdown)} chars)")
-            summary_json = await self._call_anthropic(markdown)
+        summary_json = await self._call_anthropic(markdown)
         
         if self._is_valid(summary_json):
             print("[AnthropicEWAAgent.run] Initial JSON valid; skipping repair")
@@ -158,93 +152,6 @@ EWA Document:
 
         except Exception as e:
             print(f"[AnthropicEWAAgent._call_anthropic] Error: {e}")
-            return {"_parse_error": str(e), "raw_arguments": ""}
-
-    async def _call_anthropic_with_pdf(self, pdf_data: bytes) -> Dict[str, Any]:
-        """Call Azure AI Foundry (Anthropic Claude) Messages API with PDF document."""
-        
-        # Encode PDF as base64
-        pdf_base64 = base64.standard_b64encode(pdf_data).decode("utf-8")
-        
-        # Build the user message with schema instruction and PDF
-        schema_str = json.dumps(self.schema, indent=2)
-        text_instruction = f"""Analyze the attached SAP EarlyWatch Alert PDF document and produce a JSON output that strictly conforms to this schema:
-
-```json
-{schema_str}
-```
-
-Important:
-- Output ONLY valid JSON, no markdown formatting or explanations.
-- Include "Schema Version": "1.1" in your output.
-- Use lowercase for severity, risk, and health rating values.
-- Use ISO date format (YYYY-MM-DD) for dates.
-- Extract all relevant information from the PDF including tables, charts, and text.
-"""
-
-        try:
-            # Use streaming with PDF document input
-            def _call_messages_streaming_pdf() -> tuple[str, int, int]:
-                """Make streaming API call with PDF and return (text, input_tokens, output_tokens)."""
-                collected_text = ""
-                in_tokens = 0
-                out_tokens = 0
-                
-                # Build message with PDF as document type
-                stream = self.client.messages.create(
-                    model=self.model,
-                    max_tokens=32768,
-                    system=self.summary_prompt,
-                    messages=[
-                        {
-                            "role": "user",
-                            "content": [
-                                {
-                                    "type": "document",
-                                    "source": {
-                                        "type": "base64",
-                                        "media_type": "application/pdf",
-                                        "data": pdf_base64,
-                                    },
-                                },
-                                {
-                                    "type": "text",
-                                    "text": text_instruction,
-                                },
-                            ],
-                        }
-                    ],
-                    stream=True,
-                )
-                
-                # Iterate over SSE events
-                for event in stream:
-                    if hasattr(event, "type"):
-                        if event.type == "content_block_delta":
-                            if hasattr(event, "delta") and hasattr(event.delta, "text"):
-                                collected_text += event.delta.text
-                        elif event.type == "message_delta":
-                            if hasattr(event, "usage"):
-                                out_tokens = getattr(event.usage, "output_tokens", 0)
-                        elif event.type == "message_start":
-                            if hasattr(event, "message") and hasattr(event.message, "usage"):
-                                in_tokens = getattr(event.message.usage, "input_tokens", 0)
-                
-                return collected_text, in_tokens, out_tokens
-            
-            # Offload streaming call to a thread
-            text, in_tokens, out_tokens = await asyncio.to_thread(_call_messages_streaming_pdf)
-            print(f"[AnthropicEWAAgent._call_anthropic_with_pdf] Token usage: input_tokens={in_tokens}, output_tokens={out_tokens}")
-
-            if not text:
-                print("[AnthropicEWAAgent._call_anthropic_with_pdf] No text content in response")
-                return {"_parse_error": "No text content in response", "raw_arguments": ""}
-
-            # Parse JSON from response
-            return self._parse_json_from_text(text)
-
-        except Exception as e:
-            print(f"[AnthropicEWAAgent._call_anthropic_with_pdf] Error: {e}")
             return {"_parse_error": str(e), "raw_arguments": ""}
 
     def _parse_json_from_text(self, text: str) -> Dict[str, Any]:
