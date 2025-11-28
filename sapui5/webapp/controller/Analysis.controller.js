@@ -378,8 +378,8 @@ sap.ui.define([
                 width: "auto",
                 headerToolbar: new sap.m.Toolbar({
                     content: [
-                        new Title({ text: issueId, level: "H3" }).addStyleClass("sapUiTinyMarginBegin"),
-                        new HTML({ content: "<span class='area-badge'>" + area + "</span>" }).addStyleClass("sapUiSmallMarginBegin"),
+                        new Title({ text: issueId, level: "H3" }).addStyleClass("sapUiSmallMarginBegin sapUiSmallMarginEnd"),
+                        new HTML({ content: "<span class='area-badge'>" + area + "</span>" }),
                         new ToolbarSpacer(),
                         new HTML({ content: sChipHtml })
                     ]

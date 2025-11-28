@@ -465,7 +465,13 @@ body {
     border-radius: 8px;
     padding: 1.5rem;
     margin-bottom: 1rem;
-    text-align: left;
+}
+
+.executive-summary,
+.executive-summary p,
+.executive-summary li,
+.executive-summary ul {
+    text-align: left !important;
 }
 
 .executive-summary p {
@@ -474,6 +480,7 @@ body {
 
 .executive-summary ul {
     margin: 0.5rem 0 0.5rem 1.25rem;
+    padding-left: 1rem;
 }
 
 /* Capacity Outlook styling */
