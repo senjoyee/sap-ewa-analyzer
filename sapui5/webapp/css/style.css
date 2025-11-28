@@ -410,6 +410,10 @@ body {
     margin-bottom: 1rem;
 }
 
+.findingPanel .sapMPanelWrappingDivTb {
+    padding-left: 0.5rem;
+}
+
 .findingPanel .sapMPanelHdr {
     background-color: #f7f8fa;
 }
@@ -461,6 +465,7 @@ body {
     border-radius: 8px;
     padding: 1.5rem;
     margin-bottom: 1rem;
+    text-align: left;
 }
 
 .executive-summary p {
