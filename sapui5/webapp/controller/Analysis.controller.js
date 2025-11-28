@@ -264,6 +264,8 @@ sap.ui.define([
             if (!text) return "";
             // Escape HTML
             var escaped = text.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
+            // Convert **bold** to <strong>
+            escaped = escaped.replace(/\*\*(.*?)\*\*/g, "<strong>$1</strong>");
             // Convert bullet points
             var lines = escaped.split("\n");
             var inList = false;
