@@ -295,6 +295,29 @@ def _escape(text: Any) -> str:
     return html.escape(str(text))
 
 
+def _escape_with_basic_markdown(text: Any) -> str:
+    """Escape text but keep **bold** markers as <strong>."""
+    if text is None:
+        return ""
+
+    source = str(text)
+    result: list[str] = []
+    last = 0
+
+    for match in re.finditer(r"\*\*(.*?)\*\*", source, flags=re.DOTALL):
+        if match.start() > last:
+            result.append(html.escape(source[last:match.start()]))
+
+        bold_content = match.group(1)
+        result.append(f"<strong>{html.escape(bold_content)}</strong>")
+        last = match.end()
+
+    if last < len(source):
+        result.append(html.escape(source[last:]))
+
+    return "".join(result)
+
+
 def _to_title_case(s: Any) -> str:
     """Convert to title case for display."""
     try:
@@ -504,9 +527,9 @@ def _render_executive_summary(data: Dict[str, Any]) -> str:
         if "\n" in summary and any(line.strip().startswith("-") for line in summary.split("\n")):
             summary_html = _text_to_bullet_html(summary)
         else:
-            summary_html = _escape(summary).replace("\n", "<br>")
+            summary_html = _escape_with_basic_markdown(summary).replace("\n", "<br>")
     else:
-        summary_html = _escape(str(summary))
+        summary_html = _escape_with_basic_markdown(str(summary))
     
     return f'<h2>Executive Summary</h2><div>{summary_html}</div><hr>'
 
