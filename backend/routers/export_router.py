@@ -16,6 +16,7 @@ from dotenv import load_dotenv
 from weasyprint import HTML
 from markdown2 import markdown
 from utils.markdown_utils import json_to_markdown
+from utils.html_utils import json_to_html
 
 load_dotenv()
 AZURE_STORAGE_CONNECTION_STRING = os.getenv("AZURE_STORAGE_CONNECTION_STRING")
@@ -1144,3 +1145,78 @@ async def export_markdown_to_pdf(
         raise
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Error exporting markdown to PDF: {str(e)}")
+
+
+@router.get("/export-pdf-v2")
+async def export_json_to_pdf(
+    blob_name: str,
+    landscape: bool = Query(True, description="Render PDF in landscape orientation (default: true)"),
+    page_size: str = Query("A4", description="Page size for PDF (e.g., A4, A3, Letter). Default: A4"),
+):
+    """
+    Export EWA analysis to PDF directly from JSON.
+    
+    This endpoint bypasses Markdown entirely for cleaner output.
+    Accepts either a .json or .md blob_name (will derive JSON name from MD).
+    """
+    if not blob_service_client:
+        raise HTTPException(status_code=500, detail="Azure Blob Service client not initialized")
+
+    try:
+        # Derive JSON blob name
+        base_name = os.path.splitext(blob_name)[0]
+        if blob_name.lower().endswith(".md"):
+            json_blob_name = f"{base_name}.json"
+        elif blob_name.lower().endswith(".json"):
+            json_blob_name = blob_name
+        else:
+            # Assume it's a base name, try _AI.json
+            json_blob_name = f"{base_name}_AI.json"
+        
+        print(f"[PDF Export V2] Looking for JSON: {json_blob_name}")
+        
+        json_blob_client = blob_service_client.get_blob_client(
+            container=AZURE_STORAGE_CONTAINER_NAME, blob=json_blob_name
+        )
+        
+        if not json_blob_client.exists():
+            raise HTTPException(status_code=404, detail=f"JSON file {json_blob_name} not found")
+        
+        # Load JSON data
+        json_bytes = json_blob_client.download_blob().readall()
+        json_data = json.loads(json_bytes.decode("utf-8", errors="replace"))
+        print(f"[PDF Export V2] JSON loaded, keys: {list(json_data.keys())}")
+        
+        # Convert JSON directly to HTML
+        full_html = json_to_html(
+            json_data,
+            include_cover_page=True,
+            include_css=True,
+            page_size=page_size,
+            landscape=landscape,
+        )
+        print(f"[PDF Export V2] HTML generated, length: {len(full_html)}")
+        
+        # Generate PDF
+        pdf_bytes = HTML(string=full_html, base_url=".").write_pdf(
+            presentational_hints=True
+        )
+        
+        pdf_filename = base_name + ".pdf"
+        
+        return Response(
+            content=pdf_bytes,
+            media_type="application/pdf",
+            headers={
+                "Content-Disposition": f'attachment; filename="{pdf_filename}"',
+                "Cache-Control": "no-cache, no-store, must-revalidate",
+            },
+        )
+    except HTTPException:
+        raise
+    except json.JSONDecodeError as e:
+        raise HTTPException(status_code=400, detail=f"Invalid JSON: {str(e)}")
+    except Exception as e:
+        import traceback
+        traceback.print_exc()
+        raise HTTPException(status_code=500, detail=f"Error exporting JSON to PDF: {str(e)}")

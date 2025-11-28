@@ -370,3 +370,123 @@ body {
     margin-bottom: 0.5rem;
     /* Match Capacity Outlook */
 }
+
+/* ═══════════════════════════════════════════════════════════════════════════
+   JSON-BASED RENDERING STYLES
+   ═══════════════════════════════════════════════════════════════════════════ */
+
+/* Status indicators for System Health */
+.status-good {
+    color: #27ae60 !important;
+    font-weight: 600;
+}
+
+.status-fair {
+    color: #f39c12 !important;
+    font-weight: 600;
+}
+
+.status-poor {
+    color: #c0392b !important;
+    font-weight: 600;
+}
+
+/* Area badge in finding panels */
+.area-badge {
+    display: inline-block;
+    background-color: #0064d9;
+    color: #ffffff;
+    padding: 3px 10px;
+    border-radius: 4px;
+    font-size: 0.75rem;
+    font-weight: 500;
+    text-transform: uppercase;
+    letter-spacing: 0.02em;
+}
+
+/* Finding panel styling */
+.findingPanel {
+    border-left: 4px solid #0064d9 !important;
+    margin-bottom: 1rem;
+}
+
+.findingPanel .sapMPanelHdr {
+    background-color: #f7f8fa;
+}
+
+/* Finding content styling */
+.finding-content {
+    padding: 0.5rem 0;
+}
+
+.field-group {
+    margin-bottom: 1rem;
+    padding-bottom: 0.75rem;
+    border-bottom: 1px solid #f0f0f0;
+}
+
+.field-group:last-child {
+    border-bottom: none;
+    margin-bottom: 0;
+    padding-bottom: 0;
+}
+
+.field-group strong {
+    display: block;
+    color: #32363a;
+    font-weight: 600;
+    margin-bottom: 0.25rem;
+    font-size: 0.875rem;
+}
+
+.field-group div {
+    color: #555;
+    line-height: 1.6;
+}
+
+.field-group ul {
+    margin: 0.5rem 0 0 1.25rem;
+    padding: 0;
+}
+
+.field-group li {
+    margin-bottom: 0.35rem;
+    color: #555;
+}
+
+/* Executive Summary styling */
+.executive-summary {
+    background-color: #fdfdfd;
+    border: 1px solid #e0e0e0;
+    border-radius: 8px;
+    padding: 1.5rem;
+    margin-bottom: 1rem;
+}
+
+.executive-summary p {
+    margin-bottom: 0.75rem;
+}
+
+.executive-summary ul {
+    margin: 0.5rem 0 0.5rem 1.25rem;
+}
+
+/* Capacity Outlook styling */
+.capacity-outlook ul {
+    list-style: none;
+    padding: 0;
+    margin: 0;
+}
+
+.capacity-outlook li {
+    padding: 0.5rem 0;
+    border-bottom: 1px solid #f0f0f0;
+}
+
+.capacity-outlook li:last-child {
+    border-bottom: none;
+}
+
+.capacity-outlook strong {
+    color: #32363a;
+}

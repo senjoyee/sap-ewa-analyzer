@@ -45,48 +45,75 @@ sap.ui.define([
             var sBaseName = oEvent.getParameter("arguments").baseName;
             this._sBaseName = sBaseName;
             this._sBlobName = sBaseName + ".pdf";
-            this._sMdName = sBaseName + "_AI.md";
+            this._sJsonName = sBaseName + "_AI.json";
+            this._sMdName = sBaseName + "_AI.md"; // Keep for chat context
 
-            this._loadAnalysis(this._sMdName);
+            this._loadAnalysisJson(this._sJsonName);
         },
 
-        _loadAnalysis: function (sMdName) {
-            var sUrl = Config.getDownloadUrl(sMdName);
+        _loadAnalysisJson: function (sJsonName) {
+            var sUrl = Config.getDownloadUrl(sJsonName);
+            var that = this;
 
             this.getView().setBusy(true);
 
             fetch(sUrl)
-                .then(response => {
-                    if (!response.ok) throw new Error("Analysis not found");
-                    return response.text();
+                .then(function(response) {
+                    if (!response.ok) throw new Error("Analysis JSON not found");
+                    return response.json();
                 })
-                .then(text => {
-                    this._sDocumentContent = text;
-                    this._parseAndRender(text);
-                    this._extractMetadata(text);
+                .then(function(data) {
+                    that._oAnalysisData = data;
+                    that._renderFromJson(data);
+                    that._extractMetadataFromJson(data);
+                    // Also load MD for chat context (non-blocking)
+                    that._loadMdForChat();
                 })
-                .catch(err => {
+                .catch(function(err) {
                     MessageBox.error("Failed to load analysis: " + err.message);
                 })
-                .finally(() => {
-                    this.getView().setBusy(false);
+                .finally(function() {
+                    that.getView().setBusy(false);
                 });
         },
 
-        _extractMetadata: function (text) {
-            var oModel = this.getView().getModel("analysis");
-            oModel.setProperty("/title", this._sBaseName.replace(/_/g, " "));
-            oModel.setProperty("/reportDate", new Date().toLocaleDateString());
+        _loadMdForChat: function () {
+            var sUrl = Config.getDownloadUrl(this._sMdName);
+            var that = this;
+            fetch(sUrl)
+                .then(function(response) {
+                    if (response.ok) return response.text();
+                    return "";
+                })
+                .then(function(text) {
+                    that._sDocumentContent = text;
+                })
+                .catch(function() {
+                    // Fallback: stringify JSON for chat
+                    that._sDocumentContent = JSON.stringify(that._oAnalysisData, null, 2);
+                });
+        },
 
-            if (text.match(/Critical/i)) {
+        _extractMetadataFromJson: function (data) {
+            var oModel = this.getView().getModel("analysis");
+            var meta = data["System Metadata"] || data.system_metadata || {};
+            
+            oModel.setProperty("/title", meta["System ID"] || meta.system_id || this._sBaseName.replace(/_/g, " "));
+            oModel.setProperty("/reportDate", meta["Report Date"] || meta.report_date || new Date().toLocaleDateString());
+            oModel.setProperty("/analysisPeriod", meta["Analysis Period"] || meta.analysis_period || "");
+            oModel.setProperty("/customer", meta["Customer"] || meta.customer || "");
+
+            var sRisk = (data["Overall Risk"] || data.overall_risk || "low").toLowerCase();
+            
+            if (sRisk === "critical") {
                 oModel.setProperty("/overallRisk", "Critical");
                 oModel.setProperty("/riskState", "Error");
                 oModel.setProperty("/riskIcon", "sap-icon://message-error");
-            } else if (text.match(/High/i)) {
+            } else if (sRisk === "high") {
                 oModel.setProperty("/overallRisk", "High");
                 oModel.setProperty("/riskState", "Error");
                 oModel.setProperty("/riskIcon", "sap-icon://message-error");
-            } else if (text.match(/Medium/i)) {
+            } else if (sRisk === "medium") {
                 oModel.setProperty("/overallRisk", "Medium");
                 oModel.setProperty("/riskState", "Warning");
                 oModel.setProperty("/riskIcon", "sap-icon://message-warning");
@@ -96,6 +123,341 @@ sap.ui.define([
                 oModel.setProperty("/riskIcon", "sap-icon://message-success");
             }
         },
+
+        // ═══════════════════════════════════════════════════════════════════════
+        // JSON-BASED RENDERING (New approach - no Markdown parsing needed)
+        // ═══════════════════════════════════════════════════════════════════════
+
+        _renderFromJson: function (data) {
+            var oContainer = this.byId("reportContainer");
+            oContainer.destroyItems();
+
+            var meta = data["System Metadata"] || data.system_metadata || {};
+            var sid = meta["System ID"] || meta.system_id || "Unknown";
+            var reportDate = this._formatDate(meta["Report Date"] || meta.report_date);
+            var analysisPeriod = meta["Analysis Period"] || meta.analysis_period || "N/A";
+            var overallRisk = data["Overall Risk"] || data.overall_risk || "Unknown";
+
+            // Header
+            oContainer.addItem(new Title({
+                text: "EWA Analysis for " + sid + " (" + reportDate + ")",
+                level: "H1"
+            }).addStyleClass("sapUiMediumMarginBottom markdown-header-1"));
+
+            // Analysis Period
+            oContainer.addItem(new Text({
+                text: "Analysis Period: " + analysisPeriod
+            }).addStyleClass("sapUiTinyMarginBottom"));
+
+            // Overall Risk
+            this._renderRiskBadge(oContainer, overallRisk);
+
+            // System Health Overview
+            this._renderSystemHealth(oContainer, data);
+
+            // Executive Summary
+            this._renderExecutiveSummary(oContainer, data);
+
+            // Positive Findings
+            this._renderPositiveFindings(oContainer, data);
+
+            // Key Findings & Recommendations
+            this._renderKeyFindings(oContainer, data);
+
+            // Capacity Outlook
+            this._renderCapacityOutlook(oContainer, data);
+        },
+
+        _formatDate: function (sDate) {
+            if (!sDate) return "N/A";
+            // Try to parse and format nicely
+            try {
+                var d = new Date(sDate);
+                if (!isNaN(d.getTime())) {
+                    return d.toLocaleDateString("en-GB", { day: "2-digit", month: "2-digit", year: "numeric" });
+                }
+            } catch (e) { /* ignore */ }
+            return sDate;
+        },
+
+        _renderRiskBadge: function (oContainer, sRisk) {
+            var sRiskLower = sRisk.toLowerCase();
+            var sRiskClass = "severity-chip-low";
+            if (sRiskLower === "critical") sRiskClass = "severity-chip-critical";
+            else if (sRiskLower === "high") sRiskClass = "severity-chip-high";
+            else if (sRiskLower === "medium") sRiskClass = "severity-chip-medium";
+
+            var sChipHtml = "<span class='severity-chip " + sRiskClass + "'>" + sRisk.toUpperCase() + "</span>";
+
+            oContainer.addItem(new HBox({
+                alignItems: "Center",
+                items: [
+                    new Title({ text: "Overall Risk Assessment:", level: "H3" }).addStyleClass("sapUiTinyMarginEnd"),
+                    new HTML({ content: sChipHtml })
+                ]
+            }).addStyleClass("sapUiSmallMarginBottom sapUiMediumMarginTop"));
+        },
+
+        _renderSystemHealth: function (oContainer, data) {
+            var health = data["System Health Overview"] || data.system_health_overview || {};
+            if (!health || Object.keys(health).length === 0) return;
+
+            oContainer.addItem(new Title({
+                text: "System Health Overview",
+                level: "H2"
+            }).addStyleClass("sapUiMediumMarginTop sapUiSmallMarginBottom markdown-header-2"));
+
+            var oTable = new Table({
+                width: "100%",
+                fixedLayout: false,
+                columns: [
+                    new Column({ header: new Text({ text: "Area" }) }),
+                    new Column({ header: new Text({ text: "Status" }) })
+                ]
+            });
+
+            Object.keys(health).forEach(function (area) {
+                var status = health[area];
+                var sStatusClass = "";
+                if (status && status.toLowerCase() === "good") sStatusClass = "status-good";
+                else if (status && status.toLowerCase() === "fair") sStatusClass = "status-fair";
+                else if (status && status.toLowerCase() === "poor") sStatusClass = "status-poor";
+
+                var oStatusText = new Text({ text: status || "N/A" });
+                if (sStatusClass) oStatusText.addStyleClass(sStatusClass);
+
+                oTable.addItem(new ColumnListItem({
+                    cells: [
+                        new Text({ text: this._toTitleCase(area) }),
+                        oStatusText
+                    ]
+                }));
+            }.bind(this));
+
+            oContainer.addItem(oTable);
+        },
+
+        _toTitleCase: function (str) {
+            if (!str) return "";
+            return str.replace(/\w\S*/g, function (txt) {
+                return txt.charAt(0).toUpperCase() + txt.substr(1).toLowerCase();
+            });
+        },
+
+        _renderExecutiveSummary: function (oContainer, data) {
+            var summary = data["Executive Summary"] || data.executive_summary || "";
+            if (!summary) return;
+
+            oContainer.addItem(new Title({
+                text: "Executive Summary",
+                level: "H2"
+            }).addStyleClass("sapUiMediumMarginTop sapUiSmallMarginBottom markdown-header-2"));
+
+            // Convert newlines to HTML
+            var htmlContent = this._textToHtml(summary);
+            oContainer.addItem(new HTML({
+                content: "<div class='markdown-content executive-summary'>" + htmlContent + "</div>"
+            }));
+        },
+
+        _textToHtml: function (text) {
+            if (!text) return "";
+            // Escape HTML
+            var escaped = text.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
+            // Convert bullet points
+            var lines = escaped.split("\n");
+            var inList = false;
+            var html = "";
+            
+            lines.forEach(function (line) {
+                var trimmed = line.trim();
+                if (trimmed.startsWith("- ") || trimmed.startsWith("• ")) {
+                    if (!inList) {
+                        html += "<ul>";
+                        inList = true;
+                    }
+                    html += "<li>" + trimmed.substring(2) + "</li>";
+                } else {
+                    if (inList) {
+                        html += "</ul>";
+                        inList = false;
+                    }
+                    if (trimmed) {
+                        html += "<p>" + trimmed + "</p>";
+                    }
+                }
+            });
+            
+            if (inList) html += "</ul>";
+            return html;
+        },
+
+        _renderPositiveFindings: function (oContainer, data) {
+            var findings = data["Positive Findings"] || data.positive_findings || [];
+            if (!findings || findings.length === 0) return;
+
+            oContainer.addItem(new Title({
+                text: "Positive Findings",
+                level: "H2"
+            }).addStyleClass("sapUiMediumMarginTop sapUiSmallMarginBottom markdown-header-2"));
+
+            // Get headers from first item
+            var headers = Object.keys(findings[0]);
+            var oTable = new Table({
+                width: "100%",
+                fixedLayout: false,
+                popinLayout: "GridSmall"
+            });
+
+            headers.forEach(function (h) {
+                oTable.addColumn(new Column({
+                    header: new Text({ text: h, wrapping: true }),
+                    minScreenWidth: "Tablet",
+                    demandPopin: true
+                }));
+            });
+
+            findings.forEach(function (item) {
+                var oCLI = new ColumnListItem();
+                headers.forEach(function (h) {
+                    oCLI.addCell(new Text({ text: item[h] || "N/A", wrapping: true }));
+                });
+                oTable.addItem(oCLI);
+            });
+
+            oContainer.addItem(oTable);
+        },
+
+        _renderKeyFindings: function (oContainer, data) {
+            var findings = data["Key Findings"] || data.key_findings || [];
+            var recommendations = data["Recommendations"] || data.recommendations || [];
+
+            if (findings.length === 0 && recommendations.length === 0) return;
+
+            oContainer.addItem(new Title({
+                text: "Key Findings & Recommendations",
+                level: "H2"
+            }).addStyleClass("sapUiMediumMarginTop sapUiSmallMarginBottom markdown-header-2"));
+
+            // Build recommendation lookup
+            var recMap = {};
+            recommendations.forEach(function (rec) {
+                var linkedId = rec["Linked issue ID"] || rec.linked_issue_id;
+                if (linkedId) {
+                    if (!recMap[linkedId]) recMap[linkedId] = [];
+                    recMap[linkedId].push(rec);
+                }
+            });
+
+            // Render each finding as a panel
+            findings.forEach(function (finding) {
+                var issueId = finding["Issue ID"] || finding.issue_id;
+                var linkedRecs = recMap[issueId] || [];
+                this._renderFindingPanelFromJson(oContainer, finding, linkedRecs);
+            }.bind(this));
+        },
+
+        _renderFindingPanelFromJson: function (oContainer, finding, recommendations) {
+            var issueId = finding["Issue ID"] || finding.issue_id || "N/A";
+            var area = finding["Area"] || finding.area || "General";
+            var severity = (finding["Severity"] || finding.severity || "low").toLowerCase();
+            var findingText = finding["Finding"] || finding.finding || "";
+            var impact = finding["Impact"] || finding.impact || "";
+            var businessImpact = finding["Business impact"] || finding.business_impact || "";
+
+            var sSeverityClass = "severity-chip-low";
+            if (severity === "critical") sSeverityClass = "severity-chip-critical";
+            else if (severity === "high") sSeverityClass = "severity-chip-high";
+            else if (severity === "medium") sSeverityClass = "severity-chip-medium";
+
+            var sChipHtml = "<span class='severity-chip " + sSeverityClass + "'>" + severity.toUpperCase() + "</span>";
+
+            var oPanel = new Panel({
+                expandable: true,
+                expanded: false,
+                width: "auto",
+                headerToolbar: new sap.m.Toolbar({
+                    content: [
+                        new Title({ text: issueId, level: "H3" }).addStyleClass("sapUiTinyMarginBegin"),
+                        new HTML({ content: "<span class='area-badge'>" + area + "</span>" }).addStyleClass("sapUiSmallMarginBegin"),
+                        new ToolbarSpacer(),
+                        new HTML({ content: sChipHtml })
+                    ]
+                })
+            }).addStyleClass("sapUiSmallMarginBottom findingPanel");
+
+            // Build content
+            var htmlContent = "";
+            
+            if (findingText) {
+                htmlContent += "<div class='field-group'><strong>Finding:</strong><div>" + this._textToHtml(findingText) + "</div></div>";
+            }
+            if (impact) {
+                htmlContent += "<div class='field-group'><strong>Impact:</strong><div>" + this._textToHtml(impact) + "</div></div>";
+            }
+            if (businessImpact) {
+                htmlContent += "<div class='field-group'><strong>Business Impact:</strong><div>" + this._textToHtml(businessImpact) + "</div></div>";
+            }
+
+            // Add recommendations if linked
+            recommendations.forEach(function (rec) {
+                var action = rec["Action"] || rec.action || "";
+                var preventative = rec["Preventative Action"] || rec.preventative_action || "";
+                var effort = rec["Estimated Effort"] || rec.estimated_effort;
+                var responsible = rec["Responsible Area"] || rec.responsible_area || "";
+
+                if (action) {
+                    htmlContent += "<div class='field-group'><strong>Action:</strong><div>" + this._textToHtml(action) + "</div></div>";
+                }
+                if (preventative) {
+                    htmlContent += "<div class='field-group'><strong>Preventative Action:</strong><div>" + this._textToHtml(preventative) + "</div></div>";
+                }
+                if (effort) {
+                    var effortText = typeof effort === "object" 
+                        ? "Analysis: " + (effort.analysis || "N/A") + ", Implementation: " + (effort.implementation || "N/A")
+                        : effort;
+                    htmlContent += "<div class='field-group'><strong>Estimated Effort:</strong> " + effortText + "</div>";
+                }
+                if (responsible) {
+                    htmlContent += "<div class='field-group'><strong>Responsible Area:</strong> " + responsible + "</div>";
+                }
+            }.bind(this));
+
+            oPanel.addContent(new HTML({ content: "<div class='finding-content'>" + htmlContent + "</div>" }));
+            oContainer.addItem(oPanel);
+        },
+
+        _renderCapacityOutlook: function (oContainer, data) {
+            var capacity = data["Capacity Outlook"] || data.capacity_outlook || {};
+            if (!capacity || Object.keys(capacity).length === 0) return;
+
+            oContainer.addItem(new Title({
+                text: "Capacity Outlook",
+                level: "H2"
+            }).addStyleClass("sapUiMediumMarginTop sapUiSmallMarginBottom markdown-header-2"));
+
+            var htmlContent = "<ul>";
+            var fields = [
+                { key: "Database Growth", label: "Database Growth" },
+                { key: "CPU Utilization", label: "CPU Utilization" },
+                { key: "Memory Utilization", label: "Memory Utilization" },
+                { key: "Summary", label: "Capacity Summary" }
+            ];
+
+            fields.forEach(function (field) {
+                var value = capacity[field.key] || "N/A";
+                htmlContent += "<li><strong>" + field.label + ":</strong> " + value + "</li>";
+            });
+
+            htmlContent += "</ul>";
+            oContainer.addItem(new HTML({
+                content: "<div class='markdown-content capacity-outlook'>" + htmlContent + "</div>"
+            }));
+        },
+
+        // ═══════════════════════════════════════════════════════════════════════
+        // LEGACY MARKDOWN PARSING (Kept for backwards compatibility)
+        // ═══════════════════════════════════════════════════════════════════════
 
         _parseAndRender: function (text) {
             var oContainer = this.byId("reportContainer");

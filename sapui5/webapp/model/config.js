@@ -9,8 +9,9 @@ sap.ui.define([], function () {
             upload: "/api/upload",
             process: "/api/reprocess-ai",
             deleteAnalysis: "/api/delete-analysis",
-            getAnalysis: "/api/download/", // + blobName
-            exportPdf: "/api/export-pdf-enhanced",
+            getAnalysis: "/api/download/", // + blobName (for .md or .json)
+            exportPdf: "/api/export-pdf-v2", // New JSON-based PDF export
+            exportPdfLegacy: "/api/export-pdf-enhanced", // Legacy MD-based export
             chat: "/api/chat"
         },
 
