@@ -54,29 +54,26 @@ body {
 
 /* Markdown Rendering Helpers */
 .markdown-content h1 {
-    font-size: 2.25rem;
-    font-weight: 700;
+    font-size: 2rem;
+    font-weight: 600;
     color: #1d2d3e;
-    /* SAP Dark Blue/Black */
     margin-top: 2.5rem;
     margin-bottom: 1.5rem;
     border-bottom: none;
-    letter-spacing: -0.025em;
+    letter-spacing: -0.02em;
 }
 
 .markdown-content h2 {
-    font-size: 1.75rem;
+    font-size: 1.5rem;
     font-weight: 400;
-    /* Lighter weight for H2 */
     color: #0064d9;
-    /* SAP Blue */
     margin-top: 2rem;
     margin-bottom: 1rem;
     letter-spacing: -0.01em;
 }
 
 .markdown-content h3 {
-    font-size: 1.25rem;
+    font-size: 1.125rem;
     font-weight: 600;
     color: #32363a;
     margin-top: 1.5rem;
@@ -84,22 +81,26 @@ body {
 }
 
 .markdown-content p {
-    margin-bottom: 1.25rem;
-    line-height: 1.75;
-    font-size: 1rem;
-    color: #32363a;
+    margin-bottom: 1rem;
+    line-height: 1.7;
+    font-size: 0.9375rem;
+    font-weight: 400;
+    color: #454a50;
+    letter-spacing: 0.01em;
 }
 
 .markdown-content ul,
 .markdown-content ol {
-    margin-left: 1.5rem;
+    margin-left: 1.25rem;
     margin-bottom: 1rem;
 }
 
 .markdown-content li {
-    margin-bottom: 0.5rem;
-    color: #32363a;
-    line-height: 1.6;
+    margin-bottom: 0.625rem;
+    color: #454a50;
+    line-height: 1.65;
+    font-size: 0.9375rem;
+    font-weight: 400;
 }
 
 /* Upload Area */
@@ -315,29 +316,29 @@ body {
 
 .paperSheet .sapMText {
     font-family: "72", "72full", Arial, Helvetica, sans-serif !important;
-    color: #32363a;
-    line-height: 1.6;
-    font-size: 1rem;
+    color: #454a50;
+    line-height: 1.65;
+    font-size: 0.9375rem;
+    font-weight: 400;
 }
 
 /* Ensure Headers look clean (Overrides for UI5 Controls) */
 .markdown-header-1 {
-    font-size: 2.25rem !important;
-    font-weight: 700 !important;
+    font-size: 1.75rem !important;
+    font-weight: 600 !important;
     color: #1d2d3e !important;
-    margin-top: 2.5rem !important;
-    margin-bottom: 1.5rem !important;
+    margin-top: 1.5rem !important;
+    margin-bottom: 1rem !important;
     border-bottom: none !important;
-    letter-spacing: -0.025em !important;
+    letter-spacing: -0.015em !important;
 }
 
 .markdown-header-2 {
-    font-size: 1.75rem !important;
+    font-size: 1.375rem !important;
     font-weight: 400 !important;
     color: #0064d9 !important;
-    /* SAP Blue */
-    margin-top: 2rem !important;
-    margin-bottom: 1rem !important;
+    margin-top: 1.75rem !important;
+    margin-bottom: 0.75rem !important;
     letter-spacing: -0.01em !important;
 }
 
@@ -356,8 +357,9 @@ body {
 }
 
 .sapMListTblCell .sapMText {
-    color: #32363a !important;
-    font-size: 0.95rem !important;
+    color: #454a50 !important;
+    font-size: 0.875rem !important;
+    font-weight: 400 !important;
 }
 
 /* Section Specific Spacing */
