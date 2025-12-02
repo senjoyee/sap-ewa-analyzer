@@ -17,34 +17,17 @@ to the local filesystem except for temporary processing.
 """
 
 import os
-import time
-from datetime import datetime
-import pathlib
-import subprocess
 import tempfile
-from azure.storage.blob import BlobServiceClient, ContentSettings
-from dotenv import load_dotenv
+from datetime import datetime
+
+from azure.storage.blob import ContentSettings
 import docx2txt
+
+from core.azure_clients import (
+    blob_service_client,
+    AZURE_STORAGE_CONTAINER_NAME,
+)
 from converters.doc_extractor import extract_text_from_doc
-
-# Load environment variables from .env file
-load_dotenv()
-
-AZURE_STORAGE_CONNECTION_STRING = os.getenv("AZURE_STORAGE_CONNECTION_STRING")
-AZURE_STORAGE_CONTAINER_NAME = os.getenv("AZURE_STORAGE_CONTAINER_NAME")
-
-if not AZURE_STORAGE_CONNECTION_STRING or not AZURE_STORAGE_CONTAINER_NAME:
-    raise ValueError(
-        "Azure Storage connection string and container name must be set in .env file "
-        "(AZURE_STORAGE_CONNECTION_STRING, AZURE_STORAGE_CONTAINER_NAME)"
-    )
-
-# Initialize BlobServiceClient
-try:
-    blob_service_client = BlobServiceClient.from_connection_string(AZURE_STORAGE_CONNECTION_STRING)
-except Exception as e:
-    print(f"Error initializing BlobServiceClient: {e}")
-    blob_service_client = None
 
 # Dictionary to track the status of document conversion jobs
 # Structure: {blob_name: {"status": "pending|processing|completed|failed", "start_time": timestamp, "end_time": timestamp, "message": "message", "progress": progress_percentage}}
@@ -97,10 +80,11 @@ def convert_docx_to_markdown(blob_name: str) -> dict:
         blob_data = blob_client.download_blob()
         docx_content = blob_data.readall()
         
-        # Save document temporarily
-        temp_docx_path = os.path.join(os.path.dirname(os.path.abspath(__file__)), "temp.docx")
-        with open(temp_docx_path, "wb") as temp_file:
+        # Save document temporarily (thread-safe)
+        suffix = ".docx" if is_docx else ".doc"
+        with tempfile.NamedTemporaryFile(delete=False, suffix=suffix) as temp_file:
             temp_file.write(docx_content)
+            temp_docx_path = temp_file.name
         
         conversion_status_tracker[blob_name]["progress"] = 30
         conversion_status_tracker[blob_name]["message"] = "Converting Word document to markdown"

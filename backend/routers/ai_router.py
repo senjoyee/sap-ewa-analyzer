@@ -4,37 +4,23 @@ Endpoints:
 - POST /api/process-and-analyze        (combined conversion + analysis)
 - POST /api/analyze-ai                 (analyze markdown with AI)
 - POST /api/reprocess-ai               (delete old AI files then analyze again)
-
-NOTE: For simplicity we re-initialise BlobServiceClient here just like in storage_router.
 """
 
 from __future__ import annotations
 
-import os
-from typing import Dict, Any
 import asyncio
+from typing import Dict, Any
 
 from fastapi import APIRouter, HTTPException
 from models import BlobNameRequest
 from models.request_models import ProcessAnalyzeRequest
-from azure.storage.blob import BlobServiceClient
-from dotenv import load_dotenv
 from converters.document_converter import convert_document_to_markdown
 
+from core.azure_clients import (
+    blob_service_client,
+    AZURE_STORAGE_CONTAINER_NAME,
+)
 from workflow_orchestrator import ewa_orchestrator
-
-load_dotenv()
-AZURE_STORAGE_CONNECTION_STRING = os.getenv("AZURE_STORAGE_CONNECTION_STRING")
-AZURE_STORAGE_CONTAINER_NAME = os.getenv("AZURE_STORAGE_CONTAINER_NAME")
-
-if not AZURE_STORAGE_CONNECTION_STRING or not AZURE_STORAGE_CONTAINER_NAME:
-    raise ValueError("Azure storage env vars not set")
-
-try:
-    blob_service_client = BlobServiceClient.from_connection_string(AZURE_STORAGE_CONNECTION_STRING)
-except Exception as e:
-    print(f"Error initializing BlobServiceClient in ai_router: {e}")
-    blob_service_client = None
 
 router = APIRouter(prefix="/api", tags=["ai-workflow"])
 

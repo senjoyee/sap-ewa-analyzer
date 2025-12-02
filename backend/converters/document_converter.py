@@ -17,6 +17,9 @@ making it easy to check the progress of any document conversion process.
 
 import os
 from datetime import datetime
+
+from converters import pdf_markdown_converter
+from converters import docx_markdown_converter
 from converters.pdf_markdown_converter import convert_pdf_to_markdown
 from converters.docx_markdown_converter import convert_docx_to_markdown
 

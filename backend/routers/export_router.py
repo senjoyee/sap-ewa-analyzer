@@ -10,26 +10,17 @@ import re
 import json
 import html
 from typing import Dict, Any, List
+
 from fastapi import APIRouter, HTTPException, Response, Query
-from azure.storage.blob import BlobServiceClient
-from dotenv import load_dotenv
 from weasyprint import HTML
 from markdown2 import markdown
+
+from core.azure_clients import (
+    blob_service_client,
+    AZURE_STORAGE_CONTAINER_NAME,
+)
 from utils.markdown_utils import json_to_markdown
 from utils.html_utils import json_to_html
-
-load_dotenv()
-AZURE_STORAGE_CONNECTION_STRING = os.getenv("AZURE_STORAGE_CONNECTION_STRING")
-AZURE_STORAGE_CONTAINER_NAME = os.getenv("AZURE_STORAGE_CONTAINER_NAME")
-
-if not AZURE_STORAGE_CONNECTION_STRING or not AZURE_STORAGE_CONTAINER_NAME:
-    raise ValueError("Azure storage env vars not set")
-
-try:
-    blob_service_client = BlobServiceClient.from_connection_string(AZURE_STORAGE_CONNECTION_STRING)
-except Exception as e:
-    print(f"Error initializing BlobServiceClient in export_router: {e}")
-    blob_service_client = None
 
 router = APIRouter(prefix="/api", tags=["export"])
 
@@ -633,14 +624,26 @@ def _post_process_html(
     return html_content
 
 
-@router.get("/export-pdf-enhanced")
+@router.get("/export-pdf-enhanced", deprecated=True)
 async def export_markdown_to_pdf_enhanced(
     blob_name: str,
     landscape: bool = Query(True, description="Render PDF in landscape orientation (default: true)"),
     page_size: str = Query("A4", description="Page size for PDF (e.g., A4, A3, Letter). Default: A4"),
     include_header_footer: bool = Query(True, description="Include professional header and footer"),
 ):
-    """Convert a Markdown blob to PDF with enhanced professional styling."""
+    """
+    DEPRECATED: Use /api/export-pdf-v2 instead.
+    
+    Convert a Markdown blob to PDF with enhanced professional styling.
+    This endpoint is maintained for backward compatibility but will be removed in a future version.
+    """
+    import warnings
+    warnings.warn(
+        "export-pdf-enhanced is deprecated. Use export-pdf-v2 for JSON-first PDF export.",
+        DeprecationWarning,
+        stacklevel=2
+    )
+    print("[DEPRECATED] /api/export-pdf-enhanced called. Use /api/export-pdf-v2 instead.")
     if not blob_service_client:
         raise HTTPException(status_code=500, detail="Azure Blob Service client not initialized")
 
@@ -891,13 +894,25 @@ async def export_markdown_to_pdf_enhanced(
 
 
 # Keep the original endpoint for backward compatibility
-@router.get("/export-pdf")
+@router.get("/export-pdf", deprecated=True)
 async def export_markdown_to_pdf(
     blob_name: str,
     landscape: bool = Query(True, description="Render PDF in landscape orientation (default: true)"),
     page_size: str = Query("A4", description="Page size for PDF (e.g., A4, A3, Letter). Default: A4"),
 ):
-    """Original endpoint - kept for backward compatibility."""
+    """
+    DEPRECATED: Use /api/export-pdf-v2 instead.
+    
+    Original endpoint - kept for backward compatibility.
+    This endpoint is maintained for backward compatibility but will be removed in a future version.
+    """
+    import warnings
+    warnings.warn(
+        "export-pdf is deprecated. Use export-pdf-v2 for JSON-first PDF export.",
+        DeprecationWarning,
+        stacklevel=2
+    )
+    print("[DEPRECATED] /api/export-pdf called. Use /api/export-pdf-v2 instead.")
     if not blob_service_client:
         raise HTTPException(status_code=500, detail="Azure Blob Service client not initialized")
 

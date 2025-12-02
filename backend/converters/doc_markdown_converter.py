@@ -8,23 +8,14 @@ It is intended to be called only for .doc files (not .docx).
 import os
 import subprocess
 import tempfile
-from azure.storage.blob import BlobServiceClient, ContentSettings
-from dotenv import load_dotenv
 from datetime import datetime
 
-# Load environment variables from .env file
-load_dotenv()
+from azure.storage.blob import ContentSettings
 
-AZURE_STORAGE_CONNECTION_STRING = os.getenv("AZURE_STORAGE_CONNECTION_STRING")
-AZURE_STORAGE_CONTAINER_NAME = os.getenv("AZURE_STORAGE_CONTAINER_NAME")
-
-if not AZURE_STORAGE_CONNECTION_STRING or not AZURE_STORAGE_CONTAINER_NAME:
-    raise ValueError(
-        "Azure Storage connection string and container name must be set in .env file "
-        "(AZURE_STORAGE_CONNECTION_STRING, AZURE_STORAGE_CONTAINER_NAME)"
-    )
-
-blob_service_client = BlobServiceClient.from_connection_string(AZURE_STORAGE_CONNECTION_STRING)
+from core.azure_clients import (
+    blob_service_client,
+    AZURE_STORAGE_CONTAINER_NAME,
+)
 
 # Conversion status tracker (optional, for integration)
 conversion_status_tracker = {}

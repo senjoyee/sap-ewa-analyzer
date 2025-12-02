@@ -11,18 +11,20 @@ This is a straight extraction; functionality is unchanged so existing frontend c
 from __future__ import annotations
 
 import os
+import re
+import json
 from typing import Dict, Any, List
+from datetime import datetime
 
 from fastapi import APIRouter, UploadFile, File, HTTPException, Form, Response, Body
 from pydantic import BaseModel
-from azure.storage.blob import BlobServiceClient
-from dotenv import load_dotenv
-import json
-import os
-import re
 from azure.core.exceptions import ResourceNotFoundError
-from datetime import datetime
 
+from core.azure_clients import (
+    blob_service_client,
+    AZURE_STORAGE_CONNECTION_STRING,
+    AZURE_STORAGE_CONTAINER_NAME,
+)
 from workflow_orchestrator import EWAWorkflowOrchestrator
 
 # ---------------------------------------------------------------------------
@@ -134,29 +136,6 @@ def validate_filename_and_extract_metadata(filename: str) -> Dict[str, Any]:
         "report_date": report_date,
         "report_date_str": report_date_str
     }
-
-# ---------------------------------------------------------------------------
-# Azure Blob setup (duplicated from main for now – we will unify later)
-# ---------------------------------------------------------------------------
-load_dotenv()
-
-AZURE_STORAGE_CONNECTION_STRING = os.getenv("AZURE_STORAGE_CONNECTION_STRING")
-AZURE_STORAGE_CONTAINER_NAME = os.getenv("AZURE_STORAGE_CONTAINER_NAME")
-
-if not AZURE_STORAGE_CONNECTION_STRING:
-    raise ValueError(
-        "AZURE_STORAGE_CONNECTION_STRING not found in environment variables. Please set it in your .env file."
-    )
-if not AZURE_STORAGE_CONTAINER_NAME:
-    raise ValueError(
-        "AZURE_STORAGE_CONTAINER_NAME not found in environment variables. Please set it in your .env file."
-    )
-
-try:
-    blob_service_client = BlobServiceClient.from_connection_string(AZURE_STORAGE_CONNECTION_STRING)
-except Exception as e:
-    print(f"Error initializing BlobServiceClient in storage_router: {e}")
-    blob_service_client = None
 
 # ---------------------------------------------------------------------------
 # Router definition

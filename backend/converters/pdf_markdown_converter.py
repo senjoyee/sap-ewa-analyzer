@@ -17,31 +17,16 @@ of documents during conversion for better analysis by AI systems.
 """
 
 import os
-import time
+import tempfile
 from datetime import datetime
-import pathlib
-from azure.storage.blob import BlobServiceClient, ContentSettings
-from dotenv import load_dotenv
+
+from azure.storage.blob import ContentSettings
 import pymupdf4llm
 
-# Load environment variables from .env file
-load_dotenv()
-
-AZURE_STORAGE_CONNECTION_STRING = os.getenv("AZURE_STORAGE_CONNECTION_STRING")
-AZURE_STORAGE_CONTAINER_NAME = os.getenv("AZURE_STORAGE_CONTAINER_NAME")
-
-if not AZURE_STORAGE_CONNECTION_STRING or not AZURE_STORAGE_CONTAINER_NAME:
-    raise ValueError(
-        "Azure Storage connection string and container name must be set in .env file "
-        "(AZURE_STORAGE_CONNECTION_STRING, AZURE_STORAGE_CONTAINER_NAME)"
-    )
-
-# Initialize BlobServiceClient
-try:
-    blob_service_client = BlobServiceClient.from_connection_string(AZURE_STORAGE_CONNECTION_STRING)
-except Exception as e:
-    print(f"Error initializing BlobServiceClient: {e}")
-    blob_service_client = None
+from core.azure_clients import (
+    blob_service_client,
+    AZURE_STORAGE_CONTAINER_NAME,
+)
 
 # Dictionary to track the status of document conversion jobs
 # Structure: {blob_name: {"status": "pending|processing|completed|failed", "start_time": timestamp, "end_time": timestamp, "message": "message", "progress": progress_percentage}}
@@ -90,10 +75,10 @@ def convert_pdf_to_markdown(blob_name: str) -> dict:
         blob_data = blob_client.download_blob()
         pdf_content = blob_data.readall()
         
-        # Save PDF temporarily
-        temp_pdf_path = os.path.join(os.path.dirname(os.path.abspath(__file__)), "temp.pdf")
-        with open(temp_pdf_path, "wb") as temp_file:
+        # Save PDF temporarily (thread-safe)
+        with tempfile.NamedTemporaryFile(delete=False, suffix=".pdf") as temp_file:
             temp_file.write(pdf_content)
+            temp_pdf_path = temp_file.name
         
         conversion_status_tracker[blob_name]["progress"] = 30
         conversion_status_tracker[blob_name]["message"] = "Converting PDF to markdown"
