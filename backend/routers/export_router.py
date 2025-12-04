@@ -1202,6 +1202,27 @@ async def export_json_to_pdf(
         json_data = json.loads(json_bytes.decode("utf-8", errors="replace"))
         print(f"[PDF Export V2] JSON loaded, keys: {list(json_data.keys())}")
         
+        # Fetch customer_name from original PDF blob metadata
+        customer_name = ""
+        try:
+            # Derive original PDF blob name from JSON blob name
+            # JSON is typically <base>_AI.json, original PDF is <base>.pdf
+            if json_blob_name.endswith("_AI.json"):
+                original_blob_name = json_blob_name.replace("_AI.json", ".pdf")
+            else:
+                original_blob_name = base_name + ".pdf"
+            
+            original_blob_client = blob_service_client.get_blob_client(
+                container=AZURE_STORAGE_CONTAINER_NAME, blob=original_blob_name
+            )
+            if original_blob_client.exists():
+                blob_props = original_blob_client.get_blob_properties()
+                if blob_props.metadata:
+                    customer_name = blob_props.metadata.get('customer_name', '')
+                    print(f"[PDF Export V2] Customer name from metadata: {customer_name}")
+        except Exception as e:
+            print(f"[PDF Export V2] Error fetching customer metadata: {e}")
+        
         # Convert JSON directly to HTML
         full_html = json_to_html(
             json_data,
@@ -1209,6 +1230,7 @@ async def export_json_to_pdf(
             include_css=True,
             page_size=page_size,
             landscape=landscape,
+            customer_name=customer_name,
         )
         print(f"[PDF Export V2] HTML generated, length: {len(full_html)}")
         

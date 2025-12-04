@@ -458,10 +458,16 @@ def _get_status_class(status: str) -> str:
 # Section renderers
 # ────────────────────────────────────────────────────────────────────────────────
 
-def _render_cover_page(meta: Dict[str, Any]) -> str:
-    """Render the PDF cover page."""
+def _render_cover_page(meta: Dict[str, Any], customer_name: str = "") -> str:
+    """Render the PDF cover page.
+    
+    Args:
+        meta: System metadata from JSON
+        customer_name: Customer name from blob metadata (takes precedence)
+    """
     sid = meta.get("System ID", meta.get("system_id", "Unknown"))
-    customer = meta.get("Customer", meta.get("customer", "Unknown"))
+    # Use passed customer_name if provided, otherwise try to get from meta
+    customer = customer_name if customer_name else meta.get("Customer", meta.get("customer", "Unknown"))
     report_date = _normalize_report_date(meta)
     
     return f'''
@@ -687,6 +693,7 @@ def json_to_html(
     include_css: bool = True,
     page_size: str = "A4",
     landscape: bool = True,
+    customer_name: str = "",
 ) -> str:
     """
     Convert an EWA JSON document directly to HTML.
@@ -697,6 +704,7 @@ def json_to_html(
         include_css: Whether to include CSS styles in the output
         page_size: Page size for PDF (A4, A3, Letter)
         landscape: Whether to use landscape orientation
+        customer_name: Customer name from blob metadata
     
     Returns:
         Complete HTML document string
@@ -707,7 +715,7 @@ def json_to_html(
     body_parts = []
     
     if include_cover_page:
-        body_parts.append(_render_cover_page(meta))
+        body_parts.append(_render_cover_page(meta, customer_name=customer_name))
     
     body_parts.append('<div class="report-container">')
     body_parts.append(_render_header(data))
