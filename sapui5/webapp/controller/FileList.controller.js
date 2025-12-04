@@ -183,8 +183,14 @@ sap.ui.define([
                 })
                 .catch(err => {
                     console.error("Processing error:", err);
-                    MessageBox.error("Processing failed: " + err.message);
-                    this._loadFiles();
+                    // "Failed to fetch" usually means timeout - refresh to check actual status
+                    if (err.message === "Failed to fetch") {
+                        MessageToast.show("Request timed out. Checking status...");
+                        this._loadFiles();
+                    } else {
+                        MessageBox.error("Processing failed: " + err.message);
+                        this._loadFiles();
+                    }
                 });
         },
 
