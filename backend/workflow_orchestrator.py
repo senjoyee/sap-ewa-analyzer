@@ -25,7 +25,7 @@ from dataclasses import dataclass
 from azure.storage.blob import BlobServiceClient
 from openai import AzureOpenAI
 from dotenv import load_dotenv
-from agent.ewa_agent import EWAAgent
+from agent.openai_ewa_agent import OpenAIEWAAgent
 from agent.anthropic_ewa_agent import AnthropicEWAAgent
 from utils.markdown_utils import json_to_markdown
 from converters.document_converter import convert_document_to_markdown
@@ -124,9 +124,9 @@ class EWAWorkflowOrchestrator:
             print(f"Error initializing clients: {str(e)}")
             raise
     
-    def _create_agent(self, model: str | None = None, summary_prompt: str | None = None) -> EWAAgent:
+    def _create_agent(self, model: str | None = None, summary_prompt: str | None = None) -> OpenAIEWAAgent:
         model_name = model or self.summary_model
-        print(f"Creating EWAAgent with model: {model_name}")
+        print(f"Creating OpenAIEWAAgent with model: {model_name}")
         if not self.azure_openai_endpoint:
             raise ValueError("AZURE_OPENAI_ENDPOINT environment variable is required")
         if not self.azure_openai_api_key:
@@ -138,7 +138,7 @@ class EWAWorkflowOrchestrator:
             azure_endpoint=self.azure_openai_endpoint,
             api_key=self.azure_openai_api_key,
         )
-        return EWAAgent(client=client, model=model_name, summary_prompt=summary_prompt)
+        return OpenAIEWAAgent(client=client, model=model_name, summary_prompt=summary_prompt)
     
     def _create_anthropic_agent(self, model: str | None = None, summary_prompt: str | None = None) -> AnthropicEWAAgent:
         """Create an AnthropicEWAAgent for Azure AI Foundry (Claude) models."""

@@ -11,14 +11,15 @@ from jsonschema import validate, ValidationError
 from utils.json_repair import JSONRepair
 
 # Note: LLM-based JSON repair has been removed.
-# EWAAgent uses local deterministic repair via utils.json_repair.JSONRepair.
+# OpenAIEWAAgent uses local deterministic repair via utils.json_repair.JSONRepair.
 
 # Directory containing prompt templates
 _PROMPT_DIR = os.path.join(os.path.dirname(os.path.abspath(__file__)), "..", "prompts")
 _OPENAI_PROMPT_PATH = os.path.join(_PROMPT_DIR, "ewa_summary_prompt_openai.md")
 _OPENAI_GPT5_PROMPT_PATH = os.path.join(_PROMPT_DIR, "ewa_summary_prompt_openai_gpt5.md")
 
-class EWAAgent:
+
+class OpenAIEWAAgent:
     """Small agent that plans (single step) and returns a validated JSON summary."""
 
     def __init__(self, client: Union[object, None], model: str, summary_prompt: str | None = None, schema_path: str | None = None):
@@ -46,10 +47,10 @@ class EWAAgent:
                     try:
                         with open(p, "r", encoding="utf-8") as _p:
                             loaded = _p.read()
-                            print(f"[EWAAgent] Loaded summary prompt from {p}")
+                            print(f"[OpenAIEWAAgent] Loaded summary prompt from {p}")
                             break
                     except Exception as e:
-                        print(f"[EWAAgent] Warning: Could not read prompt file {p}: {e}")
+                        print(f"[OpenAIEWAAgent] Warning: Could not read prompt file {p}: {e}")
                         continue
             if loaded is None:
                 raise FileNotFoundError(
@@ -80,19 +81,19 @@ class EWAAgent:
         """
         summary_json = await self._call_openai_responses(markdown, pdf_data)
         if self._is_valid(summary_json):
-            print("[EWAAgent.run] Initial JSON valid; skipping repair")
+            print("[OpenAIEWAAgent.run] Initial JSON valid; skipping repair")
             return summary_json
 
         # Try local repair (no LLM)
-        print("[EWAAgent.run] Initial JSON invalid; invoking local JSON repair")
+        print("[OpenAIEWAAgent.run] Initial JSON invalid; invoking local JSON repair")
         summary_json = self._repair_local(markdown, summary_json)
         # Log result validity (return value unchanged)
         try:
             is_valid_after = self._is_valid(summary_json)
-            print(f"[EWAAgent.run] Local repair completed; valid={is_valid_after}")
+            print(f"[OpenAIEWAAgent.run] Local repair completed; valid={is_valid_after}")
         except Exception:
             # Be resilient to unexpected types
-            print("[EWAAgent.run] Repair completed; validity check raised an exception")
+            print("[OpenAIEWAAgent.run] Repair completed; validity check raised an exception")
         return summary_json
     
 
@@ -184,7 +185,7 @@ class EWAAgent:
                                 out_tok = u.get("output_tokens")
                     except Exception:
                         pass
-                print(f"[EWAAgent._call_openai_responses] Token usage: input_tokens={in_tok}, output_tokens={out_tok}")
+                print(f"[OpenAIEWAAgent._call_openai_responses] Token usage: input_tokens={in_tok}, output_tokens={out_tok}")
             except Exception:
                 # Do not fail if usage is unavailable
                 pass
@@ -218,7 +219,7 @@ class EWAAgent:
                     return {"_parse_error": "Failed to parse structured output", "raw_arguments": text[:50000]}
 
             # If neither parsed nor text available, dump raw for debugging and return empty result
-            print("[EWAAgent._call_openai_responses] No output_parsed or output_text; raw response:")
+            print("[OpenAIEWAAgent._call_openai_responses] No output_parsed or output_text; raw response:")
             try:
                 print(response.model_dump_json(indent=2))
             except Exception:
@@ -290,7 +291,7 @@ class EWAAgent:
             if rr.success and isinstance(rr.data, dict):
                 return rr.data
         except Exception as e:
-            print(f"[EWAAgent._repair_local] Exception during local repair: {e}")
+            print(f"[OpenAIEWAAgent._repair_local] Exception during local repair: {e}")
         return previous_json
     
     def _is_valid(self, data: Dict[str, Any]) -> bool:
