@@ -143,19 +143,9 @@ async def reprocess_document_with_ai(request: BlobNameRequest):
         print(f"[REPROCESS] Error deleting old AI blobs: {e}")
         # Proceed anyway
 
-    # Run analysis again (always from PDF)
+    # Run analysis again (skip conversion, use existing .md)
     print(f"[REPROCESS] Starting workflow execution for {original_blob_name}")
     try:
-        try:
-            conversion_result = await asyncio.to_thread(convert_document_to_markdown, original_blob_name)
-        except Exception as conv_err:
-            print(f"[REPROCESS] Markdown conversion crashed for {original_blob_name}: {conv_err}")
-            raise HTTPException(status_code=500, detail=f"Markdown conversion failed: {conv_err}")
-
-        if not conversion_result or conversion_result.get("status") != "completed":
-            error_msg = conversion_result.get("message") if isinstance(conversion_result, dict) else "Unknown conversion error"
-            raise HTTPException(status_code=500, detail=f"Markdown conversion failed: {error_msg}")
-
         result = await ewa_orchestrator.execute_workflow(original_blob_name, skip_markdown=True)
         print(f"[REPROCESS] Workflow completed with result: {result}")
         
