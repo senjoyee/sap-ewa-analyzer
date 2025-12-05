@@ -266,32 +266,16 @@ sap.ui.define([
             var escaped = text.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
             // Convert **bold** to <strong>
             escaped = escaped.replace(/\*\*(.*?)\*\*/g, "<strong>$1</strong>");
-            // Convert bullet points
-            var lines = escaped.split("\n");
-            var inList = false;
-            var html = "";
-            
-            lines.forEach(function (line) {
-                var trimmed = line.trim();
-                if (trimmed.startsWith("- ") || trimmed.startsWith("• ")) {
-                    if (!inList) {
-                        html += "<ul>";
-                        inList = true;
-                    }
-                    html += "<li>" + trimmed.substring(2) + "</li>";
-                } else {
-                    if (inList) {
-                        html += "</ul>";
-                        inList = false;
-                    }
-                    if (trimmed) {
-                        html += "<p>" + trimmed + "</p>";
-                    }
+            // Render each non-empty line as a bullet (keeps executive summary compact)
+            var lines = escaped.split("\n").map(function (line) { return line.trim(); }).filter(function (line) { return line.length > 0; });
+            if (lines.length === 0) return "";
+            var items = lines.map(function (line) {
+                if (line.startsWith("- ") || line.startsWith("• ")) {
+                    return "<li>" + line.substring(2) + "</li>";
                 }
+                return "<li>" + line + "</li>";
             });
-            
-            if (inList) html += "</ul>";
-            return html;
+            return "<ul>" + items.join("") + "</ul>";
         },
 
         _renderPositiveFindings: function (oContainer, data) {
