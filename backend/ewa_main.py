@@ -51,7 +51,6 @@ app.add_middleware(
 # Routers registration
 # ---------------------------------------------------------------------------
 from routers.storage_router import router as storage_router  # noqa: E402
-from routers.conversion_router import router as conversion_router  # noqa: E402
 from routers.ai_router import router as ai_router  # noqa: E402
 from routers.export_router import router as export_router  # noqa: E402
 from routers.health_router import router as health_router  # noqa: E402
@@ -59,7 +58,6 @@ from routers.chat_router import router as chat_router  # noqa: E402
 
 
 app.include_router(storage_router)
-app.include_router(conversion_router)
 app.include_router(ai_router)
 app.include_router(export_router)
 app.include_router(health_router)
