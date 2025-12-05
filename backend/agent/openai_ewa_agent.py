@@ -16,7 +16,6 @@ from utils.json_repair import JSONRepair
 # Directory containing prompt templates
 _PROMPT_DIR = os.path.join(os.path.dirname(os.path.abspath(__file__)), "..", "prompts")
 _OPENAI_PROMPT_PATH = os.path.join(_PROMPT_DIR, "ewa_summary_prompt_openai.md")
-_OPENAI_GPT5_PROMPT_PATH = os.path.join(_PROMPT_DIR, "ewa_summary_prompt_openai_gpt5.md")
 
 
 class OpenAIEWAAgent:
@@ -29,17 +28,7 @@ class OpenAIEWAAgent:
         if summary_prompt is not None:
             self.summary_prompt = summary_prompt
         else:
-            model_lc = (self.model or "").lower()
-            if "gpt-5" in model_lc:
-                candidate_paths = [
-                    _OPENAI_GPT5_PROMPT_PATH,  # preferred for GPT-5 family
-                    _OPENAI_PROMPT_PATH,
-                ]
-            else:
-                candidate_paths = [
-                    _OPENAI_PROMPT_PATH,
-                    _OPENAI_GPT5_PROMPT_PATH,
-                ]
+            candidate_paths = [_OPENAI_PROMPT_PATH]
 
             loaded = None
             for p in candidate_paths:
