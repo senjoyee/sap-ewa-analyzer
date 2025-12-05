@@ -170,7 +170,20 @@ sap.ui.define([
 
         _formatDate: function (sDate) {
             if (!sDate) return "N/A";
-            // Try to parse and format nicely
+            // Normalize common formats to DD.MM.YYYY
+            var isoMatch = /^(\d{4})-(\d{2})-(\d{2})$/.exec(sDate);
+            if (isoMatch) {
+                return isoMatch[3] + "." + isoMatch[2] + "." + isoMatch[1];
+            }
+            var dotMatch = /^(\d{2})\.(\d{2})\.(\d{4})$/.exec(sDate);
+            if (dotMatch) {
+                return sDate;
+            }
+            var slashMatch = /^(\d{2})\/(\d{2})\/(\d{4})$/.exec(sDate);
+            if (slashMatch) {
+                return slashMatch[1] + "." + slashMatch[2] + "." + slashMatch[3];
+            }
+            // Fallback: Date parser, then format
             try {
                 var d = new Date(sDate);
                 if (!isNaN(d.getTime())) {
