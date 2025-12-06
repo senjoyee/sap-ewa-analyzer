@@ -161,6 +161,64 @@ class EWAWorkflowOrchestrator:
         )
         return AnthropicEWAAgent(client=client, model=model_name, summary_prompt=summary_prompt)
     
+    def _fix_report_date_if_invalid(self, summary_json: dict, blob_name: str) -> dict:
+        """Validate report_date; if obviously wrong, extract from filename pattern {SID}_{DD}_{Mon}_{YY}.pdf."""
+        import re
+        MONTH_MAP = {
+            "jan": "01", "feb": "02", "mar": "03", "apr": "04",
+            "may": "05", "jun": "06", "jul": "07", "aug": "08",
+            "sep": "09", "oct": "10", "nov": "11", "dec": "12",
+        }
+        
+        def is_valid_date(d: str) -> bool:
+            if not d:
+                return False
+            # Accept DD.MM.YYYY or YYYY-MM-DD in 2020-2039 range
+            m = re.match(r"^(\d{2})\.(\d{2})\.(\d{4})$", d)
+            if m:
+                year = int(m.group(3))
+                return 2020 <= year <= 2039
+            m = re.match(r"^(\d{4})-(\d{2})-(\d{2})$", d)
+            if m:
+                year = int(m.group(1))
+                return 2020 <= year <= 2039
+            return False
+        
+        def extract_date_from_filename(fname: str) -> str | None:
+            # Pattern: {SID}_{DD}_{Mon}_{YY}.pdf  e.g. ERP_09_Nov_25.pdf
+            m = re.match(r"^[A-Za-z0-9]+_(\d{2})_([A-Za-z]{3})_(\d{2})", fname)
+            if m:
+                day, mon, yy = m.group(1), m.group(2).lower(), m.group(3)
+                mm = MONTH_MAP.get(mon)
+                if mm:
+                    year = 2000 + int(yy)
+                    return f"{day}.{mm}.{year}"
+            return None
+        
+        # Locate report_date in JSON (could be top-level or nested under System Metadata)
+        meta = summary_json.get("System Metadata") or summary_json.get("system_metadata") or {}
+        report_date = meta.get("Report Date") or meta.get("report_date") or summary_json.get("Report Date") or summary_json.get("report_date")
+        
+        if is_valid_date(report_date):
+            return summary_json
+        
+        # Attempt extraction from filename
+        fallback = extract_date_from_filename(blob_name)
+        if fallback:
+            print(f"[_fix_report_date_if_invalid] Invalid date '{report_date}'; using filename fallback '{fallback}'")
+            # Update in-place
+            if "System Metadata" in summary_json and isinstance(summary_json["System Metadata"], dict):
+                summary_json["System Metadata"]["Report Date"] = fallback
+            elif "system_metadata" in summary_json and isinstance(summary_json["system_metadata"], dict):
+                summary_json["system_metadata"]["report_date"] = fallback
+            else:
+                # Create System Metadata if missing
+                summary_json["System Metadata"] = {"Report Date": fallback}
+        else:
+            print(f"[_fix_report_date_if_invalid] Invalid date '{report_date}' and no filename fallback available")
+        
+        return summary_json
+    
     async def download_markdown_from_blob(self, blob_name: str) -> str:
         """Download markdown content from Azure Blob Storage"""
         try:
@@ -390,6 +448,10 @@ class EWAWorkflowOrchestrator:
             ai_result = await agent.run(text_input, pdf_data=None)
             
             state.summary_json = ai_result if ai_result else {}
+            
+            # Validate and fix report_date if obviously wrong (fallback to filename)
+            state.summary_json = self._fix_report_date_if_invalid(state.summary_json, state.blob_name)
+            
             state.summary_result = json_to_markdown(state.summary_json)
             return state
         except Exception as e:

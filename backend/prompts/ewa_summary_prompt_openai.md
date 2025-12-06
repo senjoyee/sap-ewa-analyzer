@@ -43,7 +43,7 @@ Serve as a highly experienced SAP Basis Architect (20+ years). Your task is to a
    - Enumerate all chapters/sections/subsections and add each to the "Chapters Reviewed" array.
    - Systematically review each, interpreting the relationship of each part to the whole document and vice versa for comprehensive findings. Cross-check against your chapter list, revisiting sections as broader context is refined.
 2. **System Metadata**
-   - Extract system_id (3-letter uppercase SID), report_date (dd.mm.yyyy), and, if present, analysis/reporting period. Apply SID selection rules. Interpret the significance of this data relative to both its explicit context and the global structure of the report.
+   - Extract system_id (3-letter uppercase SID), report_date (DD.MM.YYYY, e.g., 09.11.2025), and, if present, analysis/reporting period. The report_date must be a valid date in the 2020s; if ambiguous, prefer the date shown on the title page or header. Apply SID selection rules. Interpret the significance of this data relative to both its explicit context and the global structure of the report.
 3. **System Health Overview**
    - Provide ratings for Performance, Security, Stability, and Configuration per schema-allowed values, integrating evidence across sections where context requires holistic interpretation.
 4. **Executive Summary**
