@@ -348,12 +348,125 @@ sap.ui.define([
                 }
             });
 
-            // Render each finding as a panel
+            // Group findings by severity
+            var severityOrder = ["critical", "high", "medium", "low"];
+            var severityGroups = { critical: [], high: [], medium: [], low: [] };
+            var severityLabels = {
+                critical: "Critical Issues",
+                high: "High Priority Issues",
+                medium: "Medium Priority Issues",
+                low: "Low Priority Issues"
+            };
+            var severityIcons = {
+                critical: "sap-icon://error",
+                high: "sap-icon://warning2",
+                medium: "sap-icon://hint",
+                low: "sap-icon://information"
+            };
+
             findings.forEach(function (finding) {
-                var issueId = finding["Issue ID"] || finding.issue_id;
-                var linkedRecs = recMap[issueId] || [];
-                this._renderFindingPanelFromJson(oContainer, finding, linkedRecs);
+                var severity = (finding["Severity"] || finding.severity || "low").toLowerCase();
+                if (!severityGroups[severity]) severity = "low";
+                severityGroups[severity].push(finding);
+            });
+
+            // Render each severity group
+            severityOrder.forEach(function (severity) {
+                var groupFindings = severityGroups[severity];
+                if (groupFindings.length === 0) return;
+
+                // Create severity group panel
+                var oGroupPanel = new Panel({
+                    expandable: true,
+                    expanded: severity === "critical" || severity === "high",
+                    width: "auto",
+                    headerToolbar: new sap.m.Toolbar({
+                        content: [
+                            new sap.ui.core.Icon({
+                                src: severityIcons[severity],
+                                size: "1.25rem"
+                            }).addStyleClass("sapUiSmallMarginEnd severity-icon-" + severity),
+                            new Title({
+                                text: severityLabels[severity] + " (" + groupFindings.length + ")",
+                                level: "H3"
+                            }),
+                            new ToolbarSpacer(),
+                            new HTML({ content: "<span class='severity-chip severity-chip-" + severity + "'>" + severity.toUpperCase() + "</span>" })
+                        ]
+                    })
+                }).addStyleClass("sapUiSmallMarginBottom severityGroupPanel severityGroupPanel-" + severity);
+
+                // Render findings within this group
+                var oGroupContent = new VBox({ width: "100%" }).addStyleClass("sapUiSmallMarginTop");
+                groupFindings.forEach(function (finding) {
+                    var issueId = finding["Issue ID"] || finding.issue_id;
+                    var linkedRecs = recMap[issueId] || [];
+                    this._renderFindingPanelInGroup(oGroupContent, finding, linkedRecs);
+                }.bind(this));
+
+                oGroupPanel.addContent(oGroupContent);
+                oContainer.addItem(oGroupPanel);
             }.bind(this));
+        },
+
+        _renderFindingPanelInGroup: function (oContainer, finding, recommendations) {
+            var issueId = finding["Issue ID"] || finding.issue_id || "N/A";
+            var area = finding["Area"] || finding.area || "General";
+            var findingText = finding["Finding"] || finding.finding || "";
+            var impact = finding["Impact"] || finding.impact || "";
+            var businessImpact = finding["Business impact"] || finding.business_impact || "";
+
+            var oPanel = new Panel({
+                expandable: true,
+                expanded: false,
+                width: "auto",
+                headerToolbar: new sap.m.Toolbar({
+                    content: [
+                        new Title({ text: issueId, level: "H4" }).addStyleClass("sapUiSmallMarginBegin sapUiSmallMarginEnd"),
+                        new HTML({ content: "<span class='area-badge'>" + area + "</span>" })
+                    ]
+                })
+            }).addStyleClass("sapUiTinyMarginBottom findingPanelNested");
+
+            // Build content
+            var htmlContent = "";
+            
+            if (findingText) {
+                htmlContent += "<div class='field-group'><strong>Finding:</strong><div>" + this._textToHtml(findingText) + "</div></div>";
+            }
+            if (impact) {
+                htmlContent += "<div class='field-group'><strong>Impact:</strong><div>" + this._textToHtml(impact) + "</div></div>";
+            }
+            if (businessImpact) {
+                htmlContent += "<div class='field-group'><strong>Business Impact:</strong><div>" + this._textToHtml(businessImpact) + "</div></div>";
+            }
+
+            // Add recommendations if linked
+            recommendations.forEach(function (rec) {
+                var action = rec["Action"] || rec.action || "";
+                var preventative = rec["Preventative Action"] || rec.preventative_action || "";
+                var effort = rec["Estimated Effort"] || rec.estimated_effort;
+                var responsible = rec["Responsible Area"] || rec.responsible_area || "";
+
+                if (action) {
+                    htmlContent += "<div class='field-group'><strong>Action:</strong><div>" + this._textToHtml(action) + "</div></div>";
+                }
+                if (preventative) {
+                    htmlContent += "<div class='field-group'><strong>Preventative Action:</strong><div>" + this._textToHtml(preventative) + "</div></div>";
+                }
+                if (effort) {
+                    var effortText = typeof effort === "object" 
+                        ? "Analysis: " + (effort.analysis || "N/A") + ", Implementation: " + (effort.implementation || "N/A")
+                        : effort;
+                    htmlContent += "<div class='field-group'><strong>Estimated Effort:</strong> " + effortText + "</div>";
+                }
+                if (responsible) {
+                    htmlContent += "<div class='field-group'><strong>Responsible Area:</strong> " + responsible + "</div>";
+                }
+            }.bind(this));
+
+            oPanel.addContent(new HTML({ content: "<div class='finding-content'>" + htmlContent + "</div>" }));
+            oContainer.addItem(oPanel);
         },
 
         _renderFindingPanelFromJson: function (oContainer, finding, recommendations) {

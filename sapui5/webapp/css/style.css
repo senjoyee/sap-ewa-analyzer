@@ -521,3 +521,70 @@ body {
 .capacity-outlook strong {
     color: #32363a;
 }
+
+/* ═══════════════════════════════════════════════════════════════════════════
+   SEVERITY GROUP PANELS
+   ═══════════════════════════════════════════════════════════════════════════ */
+
+/* Base severity group panel styling */
+.severityGroupPanel {
+    border-radius: 8px !important;
+    overflow: hidden;
+    margin-bottom: 1rem;
+}
+
+.severityGroupPanel .sapMPanelHdr,
+.severityGroupPanel .sapMPanelWrappingDivTb {
+    background-color: #f7f8fa;
+}
+
+/* Severity-specific border colors */
+.severityGroupPanel-critical {
+    border-left: 4px solid #c0392b !important;
+}
+
+.severityGroupPanel-high {
+    border-left: 4px solid #e67e22 !important;
+}
+
+.severityGroupPanel-medium {
+    border-left: 4px solid #f39c12 !important;
+}
+
+.severityGroupPanel-low {
+    border-left: 4px solid #27ae60 !important;
+}
+
+/* Severity icon colors */
+.severity-icon-critical {
+    color: #c0392b !important;
+}
+
+.severity-icon-high {
+    color: #e67e22 !important;
+}
+
+.severity-icon-medium {
+    color: #f39c12 !important;
+}
+
+.severity-icon-low {
+    color: #27ae60 !important;
+}
+
+/* Nested finding panels within severity groups */
+.findingPanelNested {
+    border-left: 3px solid #0064d9 !important;
+    margin-bottom: 0.5rem;
+    background-color: #ffffff;
+}
+
+.findingPanelNested .sapMPanelHdr,
+.findingPanelNested .sapMPanelWrappingDivTb {
+    background-color: #fafbfc;
+}
+
+/* Severity group content padding */
+.severityGroupPanel > .sapMPanelContent {
+    padding: 0.5rem 1rem 1rem 1rem;
+}

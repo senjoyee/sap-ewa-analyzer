@@ -198,6 +198,75 @@ def get_pdf_css() -> str:
         
         .card-body { padding: 15px; }
         
+        /* Severity group styling */
+        .severity-group {
+            margin-bottom: 25px;
+            border-radius: 6px;
+            overflow: hidden;
+            border: 1px solid #e0e0e0;
+        }
+        
+        .severity-group-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 12px 15px;
+            background: #f5f5f5;
+            border-bottom: 1px solid #e0e0e0;
+        }
+        
+        .severity-group-title {
+            font-weight: 700;
+            font-size: 12pt;
+            color: #333;
+        }
+        
+        .severity-group-content {
+            padding: 15px;
+            background: #fafafa;
+        }
+        
+        .severity-group-critical {
+            border-left: 4px solid #cc0000;
+        }
+        
+        .severity-group-critical .severity-group-header {
+            background: linear-gradient(90deg, rgba(204,0,0,0.1) 0%, #f5f5f5 100%);
+        }
+        
+        .severity-group-high {
+            border-left: 4px solid #e07000;
+        }
+        
+        .severity-group-high .severity-group-header {
+            background: linear-gradient(90deg, rgba(224,112,0,0.1) 0%, #f5f5f5 100%);
+        }
+        
+        .severity-group-medium {
+            border-left: 4px solid #F0AB00;
+        }
+        
+        .severity-group-medium .severity-group-header {
+            background: linear-gradient(90deg, rgba(240,171,0,0.1) 0%, #f5f5f5 100%);
+        }
+        
+        .severity-group-low {
+            border-left: 4px solid #008000;
+        }
+        
+        .severity-group-low .severity-group-header {
+            background: linear-gradient(90deg, rgba(0,128,0,0.1) 0%, #f5f5f5 100%);
+        }
+        
+        .severity-group .finding-card {
+            margin-bottom: 15px;
+            border-left-width: 3px;
+        }
+        
+        .severity-group .finding-card:last-child {
+            margin-bottom: 0;
+        }
+        
         .card-field {
             margin-bottom: 12px;
         }
@@ -561,7 +630,7 @@ def _render_positive_findings(data: Dict[str, Any]) -> str:
 
 
 def _render_findings_and_recommendations(data: Dict[str, Any]) -> str:
-    """Render Key Findings & Recommendations as cards."""
+    """Render Key Findings & Recommendations as cards grouped by severity."""
     findings = data.get("Key Findings", data.get("key_findings", []))
     recommendations = data.get("Recommendations", data.get("recommendations", []))
     
@@ -607,57 +676,90 @@ def _render_findings_and_recommendations(data: Dict[str, Any]) -> str:
     if not merged:
         return '<h2>Key Findings &amp; Recommendations</h2><p>No findings provided.</p><hr>'
     
-    # Render as cards
-    cards_html = '<div class="findings-cards-container">'
+    # Group findings by severity
+    severity_order = ["critical", "high", "medium", "low"]
+    severity_groups: Dict[str, List[Dict[str, Any]]] = {s: [] for s in severity_order}
+    severity_labels = {
+        "critical": "Critical Issues",
+        "high": "High Priority Issues",
+        "medium": "Medium Priority Issues",
+        "low": "Low Priority Issues",
+    }
     
     for item in merged:
-        issue_id = item.get("Issue ID", "N/A")
-        area = item.get("Area", "General")
-        severity = item.get("Severity", "low")
+        severity = str(item.get("Severity", "low")).lower().strip()
+        if severity not in severity_groups:
+            severity = "low"
+        severity_groups[severity].append(item)
+    
+    # Render grouped cards
+    html_parts = ['<h2>Key Findings &amp; Recommendations</h2>']
+    
+    for severity in severity_order:
+        group_items = severity_groups[severity]
+        if not group_items:
+            continue
+        
         severity_class = _get_severity_class(severity)
+        count = len(group_items)
         
-        cards_html += f'''
-        <div class="finding-card">
-            <div class="card-header">
-                <div class="card-header-left">
-                    <span class="issue-id">{_escape(issue_id)}</span>
-                    <span class="area-badge">{_escape(area)}</span>
-                </div>
-                <span class="severity-badge {severity_class}">{_escape(severity).upper()}</span>
+        # Severity group header
+        html_parts.append(f'''
+        <div class="severity-group severity-group-{severity}">
+            <div class="severity-group-header">
+                <span class="severity-group-title">{severity_labels[severity]} ({count})</span>
+                <span class="severity-badge {severity_class}">{severity.upper()}</span>
             </div>
-            <div class="card-body">
-        '''
+            <div class="severity-group-content">
+        ''')
         
-        # Render fields (skip Issue ID, Area, Severity - already in header)
-        skip_fields = {"Issue ID", "Area", "Severity"}
-        bullet_fields = {"finding", "action", "preventative action", "preventive action", "impact", "business impact"}
-        
-        for key, value in item.items():
-            if key in skip_fields or value is None:
-                continue
+        # Render cards within this group
+        for item in group_items:
+            issue_id = item.get("Issue ID", "N/A")
+            area = item.get("Area", "General")
             
-            key_lower = key.lower().strip()
-            
-            # Handle effort object
-            if isinstance(value, dict) and set(value.keys()) == {"analysis", "implementation"}:
-                value_html = f"Analysis: {_escape(value.get('analysis', 'N/A'))}, Implementation: {_escape(value.get('implementation', 'N/A'))}"
-            elif key_lower in bullet_fields and isinstance(value, str):
-                value_html = _text_to_bullet_html(value)
-            else:
-                value_html = _escape(str(value))
-            
-            cards_html += f'''
-                <div class="card-field">
-                    <div class="field-label">{_escape(key)}</div>
-                    <div class="field-value">{value_html}</div>
+            html_parts.append(f'''
+            <div class="finding-card">
+                <div class="card-header">
+                    <div class="card-header-left">
+                        <span class="issue-id">{_escape(issue_id)}</span>
+                        <span class="area-badge">{_escape(area)}</span>
+                    </div>
                 </div>
-            '''
+                <div class="card-body">
+            ''')
+            
+            # Render fields (skip Issue ID, Area, Severity - already in header)
+            skip_fields = {"Issue ID", "Area", "Severity"}
+            bullet_fields = {"finding", "action", "preventative action", "preventive action", "impact", "business impact"}
+            
+            for key, value in item.items():
+                if key in skip_fields or value is None:
+                    continue
+                
+                key_lower = key.lower().strip()
+                
+                # Handle effort object
+                if isinstance(value, dict) and set(value.keys()) == {"analysis", "implementation"}:
+                    value_html = f"Analysis: {_escape(value.get('analysis', 'N/A'))}, Implementation: {_escape(value.get('implementation', 'N/A'))}"
+                elif key_lower in bullet_fields and isinstance(value, str):
+                    value_html = _text_to_bullet_html(value)
+                else:
+                    value_html = _escape(str(value))
+                
+                html_parts.append(f'''
+                    <div class="card-field">
+                        <div class="field-label">{_escape(key)}</div>
+                        <div class="field-value">{value_html}</div>
+                    </div>
+                ''')
+            
+            html_parts.append('</div></div>')
         
-        cards_html += '</div></div>'
+        html_parts.append('</div></div>')  # Close severity-group-content and severity-group
     
-    cards_html += '</div>'
-    
-    return f'<h2>Key Findings &amp; Recommendations</h2>{cards_html}<hr>'
+    html_parts.append('<hr>')
+    return ''.join(html_parts)
 
 
 def _render_capacity_outlook(data: Dict[str, Any]) -> str:
