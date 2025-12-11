@@ -389,9 +389,7 @@ sap.ui.define([
                             new Title({
                                 text: severityLabels[severity] + " (" + groupFindings.length + ")",
                                 level: "H3"
-                            }),
-                            new ToolbarSpacer(),
-                            new HTML({ content: "<span class='severity-chip severity-chip-" + severity + "'>" + severity.toUpperCase() + "</span>" })
+                            })
                         ]
                     })
                 }).addStyleClass("sapUiSmallMarginBottom severityGroupPanel severityGroupPanel-" + severity);
