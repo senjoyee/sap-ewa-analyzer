@@ -630,7 +630,7 @@ def _render_positive_findings(data: Dict[str, Any]) -> str:
 
 
 def _render_findings_and_recommendations(data: Dict[str, Any]) -> str:
-    """Render Key Findings & Recommendations as cards grouped by severity."""
+    """Render Key Findings & Recommendations with severity subheaders."""
     findings = data.get("Key Findings", data.get("key_findings", []))
     recommendations = data.get("Recommendations", data.get("recommendations", []))
     
@@ -692,7 +692,7 @@ def _render_findings_and_recommendations(data: Dict[str, Any]) -> str:
             severity = "low"
         severity_groups[severity].append(item)
     
-    # Render grouped cards
+    # Render cards by severity with simple headers
     html_parts = ['<h2>Key Findings &amp; Recommendations</h2>']
     
     for severity in severity_order:
@@ -703,17 +703,15 @@ def _render_findings_and_recommendations(data: Dict[str, Any]) -> str:
         severity_class = _get_severity_class(severity)
         count = len(group_items)
         
-        # Severity group header
+        # Severity subheader
         html_parts.append(f'''
-        <div class="severity-group severity-group-{severity}">
-            <div class="severity-group-header">
-                <span class="severity-group-title">{severity_labels[severity]} ({count})</span>
-                <span class="severity-badge {severity_class}">{severity.upper()}</span>
-            </div>
-            <div class="severity-group-content">
+        <h3 style="margin: 18px 0 10px 0; display: flex; align-items: center; gap: 8px;">
+            <span class="severity-badge {severity_class}">{severity.upper()}</span>
+            <span>{severity_labels[severity]} ({count})</span>
+        </h3>
         ''')
         
-        # Render cards within this group
+        # Render cards within this severity
         for item in group_items:
             issue_id = item.get("Issue ID", "N/A")
             area = item.get("Area", "General")
@@ -755,8 +753,6 @@ def _render_findings_and_recommendations(data: Dict[str, Any]) -> str:
                 ''')
             
             html_parts.append('</div></div>')
-        
-        html_parts.append('</div></div>')  # Close severity-group-content and severity-group
     
     html_parts.append('<hr>')
     return ''.join(html_parts)
