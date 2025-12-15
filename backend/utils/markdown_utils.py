@@ -206,6 +206,10 @@ def _array_to_card_json(
 def _merge_findings_and_recommendations(
     findings: List[Dict[str, Any]], recommendations: List[Dict[str, Any]]
 ) -> List[Dict[str, Any]]:
+    """
+    Merge findings with their linked recommendations.
+    Assumes findings/recommendations have already been normalized (issue IDs).
+    """
     rec_map: Dict[str, List[Dict[str, Any]]] = {}
     for rec in recommendations:
         linked_id = rec.get("Linked issue ID") or rec.get("linked_issue_id")
@@ -247,6 +251,51 @@ def _merge_findings_and_recommendations(
             )
 
     return merged
+
+
+# ────────────────────────────────────────────────────────────────────────────────
+# Normalization helpers
+# ────────────────────────────────────────────────────────────────────────────────
+def _normalize_issue_ids(
+    findings: List[Dict[str, Any]], recommendations: List[Dict[str, Any]]
+) -> tuple[List[Dict[str, Any]], List[Dict[str, Any]]]:
+    """
+    Renumber Issue IDs sequentially by severity prefix (C/H/M/L) based on list order.
+    Also rewrites recommendation links to match the new IDs.
+    """
+    prefix_map = {"critical": "C", "high": "H", "medium": "M", "low": "L"}
+    counters: Dict[str, int] = {}
+    id_map: Dict[str, str] = {}
+
+    normalized_findings: List[Dict[str, Any]] = []
+    for finding in findings:
+        severity = str(finding.get("Severity") or finding.get("severity") or "").lower().strip()
+        prefix = prefix_map.get(severity, "C")
+        counters[prefix] = counters.get(prefix, 0) + 1
+        new_id = f"{prefix}{counters[prefix]:02d}"
+
+        original_id = finding.get("Issue ID") or finding.get("issue_id")
+        if original_id:
+            id_map[str(original_id)] = new_id
+
+        nf = dict(finding)
+        nf["Issue ID"] = new_id
+        nf.pop("issue_id", None)
+        normalized_findings.append(nf)
+
+    normalized_recs: List[Dict[str, Any]] = []
+    for rec in recommendations:
+        nr = dict(rec)
+        linked_id = rec.get("Linked issue ID") or rec.get("linked_issue_id")
+        if linked_id and linked_id in id_map:
+            nr["Linked issue ID"] = id_map[linked_id]
+        elif linked_id:
+            nr["Linked issue ID"] = linked_id
+        if "linked_issue_id" in nr:
+            nr.pop("linked_issue_id", None)
+        normalized_recs.append(nr)
+
+    return normalized_findings, normalized_recs
 
 
 # ────────────────────────────────────────────────────────────────────────────────
@@ -305,8 +354,9 @@ def json_to_markdown(data: Dict[str, Any], pdf_export: bool = False) -> str:
     if pdf_export:
         md.append("<div style='page-break-before: always;'></div>")
         md.append("")
-    findings = data.get("Key Findings", data.get("key_findings", []))
-    recommendations = data.get("Recommendations", data.get("recommendations", []))
+    findings_raw = data.get("Key Findings", data.get("key_findings", []))
+    recommendations_raw = data.get("Recommendations", data.get("recommendations", []))
+    findings, recommendations = _normalize_issue_ids(findings_raw, recommendations_raw)
     merged_items = _merge_findings_and_recommendations(findings, recommendations)
     
     # For PDF export, use table format; for UI, use JSON cards

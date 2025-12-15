@@ -10,6 +10,7 @@ import re
 import json
 import html
 from typing import Dict, Any, List
+from datetime import datetime
 
 from fastapi import APIRouter, HTTPException, Response, Query
 from weasyprint import HTML
@@ -23,6 +24,31 @@ from utils.markdown_utils import json_to_markdown
 from utils.html_utils import json_to_html
 
 router = APIRouter(prefix="/api", tags=["export"])
+
+
+def _sanitize_filename_component(value: str) -> str:
+    """Sanitize a string for safe filename usage."""
+    cleaned = re.sub(r"[^\w\-]+", "_", value or "").strip("_")
+    return cleaned or "unknown"
+
+
+def _parse_date_for_filename(raw_date: str) -> str:
+    """Return a YYYYMMDD string if the date can be parsed; otherwise return 'nodate'."""
+    if not raw_date or not isinstance(raw_date, str):
+        return "nodate"
+    raw = raw_date.strip()
+    patterns = [
+        "%Y-%m-%d", "%d.%m.%Y", "%d/%m/%Y", "%m/%d/%Y",
+        "%d-%m-%Y", "%Y/%m/%d", "%d.%m.%y", "%d-%m-%y", "%Y%m%d",
+    ]
+    for p in patterns:
+        try:
+            dt = datetime.strptime(raw, p)
+            if 2000 <= dt.year <= 2100:
+                return dt.strftime("%Y%m%d")
+        except Exception:
+            continue
+    return "nodate"
 
 
 def _get_pdf_optimized_markdown(blob_name: str, markdown_text: str) -> str:
@@ -1239,7 +1265,17 @@ async def export_json_to_pdf(
             presentational_hints=True
         )
         
-        pdf_filename = base_name + ".pdf"
+        # Build filename: <SID>_<Customer>_<date>.pdf
+        meta = json_data.get("System Metadata", json_data.get("system_metadata", {})) or {}
+        sid_raw = meta.get("System ID", meta.get("system_id", base_name))
+        customer_raw = customer_name if customer_name else meta.get("Customer", meta.get("customer", ""))
+        report_date_raw = meta.get("Report Date", meta.get("report_date", ""))
+
+        sid = _sanitize_filename_component(str(sid_raw))
+        customer = _sanitize_filename_component(str(customer_raw)) if customer_raw else "Customer"
+        date_str = _parse_date_for_filename(str(report_date_raw)) if report_date_raw else "nodate"
+
+        pdf_filename = f"{sid}_{customer}_{date_str}.pdf"
         
         return Response(
             content=pdf_bytes,

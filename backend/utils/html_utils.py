@@ -499,6 +499,47 @@ def _get_severity_class(severity: str) -> str:
     return "severity-low"
 
 
+def _normalize_issue_ids(
+    findings: List[Dict[str, Any]], recommendations: List[Dict[str, Any]]
+) -> tuple[List[Dict[str, Any]], List[Dict[str, Any]]]:
+    """
+    Renumber Issue IDs sequentially by severity prefix (C/H/M/L) based on list order,
+    and rewrite recommendation links to match the new IDs.
+    """
+    prefix_map = {"critical": "C", "high": "H", "medium": "M", "low": "L"}
+    counters: Dict[str, int] = {}
+    id_map: Dict[str, str] = {}
+
+    normalized_findings: List[Dict[str, Any]] = []
+    for finding in findings:
+        severity = str(finding.get("Severity") or finding.get("severity") or "").lower().strip()
+        prefix = prefix_map.get(severity, "C")
+        counters[prefix] = counters.get(prefix, 0) + 1
+        new_id = f"{prefix}{counters[prefix]:02d}"
+
+        original_id = finding.get("Issue ID") or finding.get("issue_id")
+        if original_id:
+            id_map[str(original_id)] = new_id
+
+        nf = dict(finding)
+        nf["Issue ID"] = new_id
+        nf.pop("issue_id", None)
+        normalized_findings.append(nf)
+
+    normalized_recs: List[Dict[str, Any]] = []
+    for rec in recommendations:
+        nr = dict(rec)
+        linked_id = rec.get("Linked issue ID") or rec.get("linked_issue_id")
+        if linked_id and linked_id in id_map:
+            nr["Linked issue ID"] = id_map[linked_id]
+        elif linked_id:
+            nr["Linked issue ID"] = linked_id
+        nr.pop("linked_issue_id", None)
+        normalized_recs.append(nr)
+
+    return normalized_findings, normalized_recs
+
+
 def _get_risk_class(risk: str) -> str:
     """Get CSS class for risk level."""
     r = str(risk).lower().strip()
@@ -631,8 +672,10 @@ def _render_positive_findings(data: Dict[str, Any]) -> str:
 
 def _render_findings_and_recommendations(data: Dict[str, Any]) -> str:
     """Render Key Findings & Recommendations with severity subheaders."""
-    findings = data.get("Key Findings", data.get("key_findings", []))
-    recommendations = data.get("Recommendations", data.get("recommendations", []))
+    findings_raw = data.get("Key Findings", data.get("key_findings", []))
+    recommendations_raw = data.get("Recommendations", data.get("recommendations", []))
+
+    findings, recommendations = _normalize_issue_ids(findings_raw, recommendations_raw)
     
     # Build recommendation lookup by linked issue ID
     rec_map: Dict[str, List[Dict[str, Any]]] = {}
