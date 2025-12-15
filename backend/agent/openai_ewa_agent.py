@@ -152,7 +152,7 @@ class OpenAIEWAAgent:
                     input=[{"role": "user", "content": user_content}],
                     text=text_format,
                     max_output_tokens=32768,
-                    reasoning={"effort": "medium"},
+                    # reasoning={"effort": "medium"},  # use default reasoning effort
                 )
             )
             # Log token usage for visibility
