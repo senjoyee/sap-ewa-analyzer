@@ -692,6 +692,16 @@ def _render_findings_and_recommendations(data: Dict[str, Any]) -> str:
             severity = "low"
         severity_groups[severity].append(item)
     
+    def _format_issue_id_with_severity(issue_id: Any, severity: str) -> str:
+        """Prefix issue id with severity initial (C/H/M/L)."""
+        prefix_map = {"critical": "C", "high": "H", "medium": "M", "low": "L"}
+        sev_key = str(severity or "low").lower()
+        prefix = prefix_map.get(sev_key, "L")
+        base = str(issue_id or "N/A")
+        match = re.search(r"(\d+)", base)
+        number_part = match.group(1) if match else base
+        return f"{prefix}{number_part}"
+
     # Render cards by severity with simple headers
     html_parts = ['<h2>Key Findings &amp; Recommendations</h2>']
     
@@ -715,12 +725,13 @@ def _render_findings_and_recommendations(data: Dict[str, Any]) -> str:
         for item in group_items:
             issue_id = item.get("Issue ID", "N/A")
             area = item.get("Area", "General")
+            display_issue_id = _format_issue_id_with_severity(issue_id, severity)
             
             html_parts.append(f'''
             <div class="finding-card">
                 <div class="card-header">
                     <div class="card-header-left">
-                        <span class="issue-id">{_escape(issue_id)}</span>
+                        <span class="issue-id">{_escape(display_issue_id)}</span>
                         <span class="area-badge">{_escape(area)}</span>
                     </div>
                 </div>

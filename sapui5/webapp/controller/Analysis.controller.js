@@ -378,7 +378,7 @@ sap.ui.define([
                 // Create severity group panel
                 var oGroupPanel = new Panel({
                     expandable: true,
-                    expanded: severity === "critical" || severity === "high",
+                    expanded: false,
                     width: "auto",
                     headerToolbar: new sap.m.Toolbar({
                         content: [
@@ -399,7 +399,7 @@ sap.ui.define([
                 groupFindings.forEach(function (finding) {
                     var issueId = finding["Issue ID"] || finding.issue_id;
                     var linkedRecs = recMap[issueId] || [];
-                    this._renderFindingPanelInGroup(oGroupContent, finding, linkedRecs);
+                    this._renderFindingPanelInGroup(oGroupContent, finding, linkedRecs, severity);
                 }.bind(this));
 
                 oGroupPanel.addContent(oGroupContent);
@@ -407,9 +407,20 @@ sap.ui.define([
             }.bind(this));
         },
 
-        _renderFindingPanelInGroup: function (oContainer, finding, recommendations) {
+        _formatIssueIdWithSeverity: function (issueId, severity) {
+            var prefixMap = { critical: "C", high: "H", medium: "M", low: "L" };
+            var sevKey = (severity || "low").toLowerCase();
+            var prefix = prefixMap[sevKey] || "L";
+            var base = issueId || "N/A";
+            var match = String(base).match(/(\d+)/);
+            var numberPart = match ? match[1] : base;
+            return prefix + numberPart;
+        },
+
+        _renderFindingPanelInGroup: function (oContainer, finding, recommendations, severity) {
             var issueId = finding["Issue ID"] || finding.issue_id || "N/A";
             var area = finding["Area"] || finding.area || "General";
+            var displayIssueId = this._formatIssueIdWithSeverity(issueId, severity);
             var findingText = finding["Finding"] || finding.finding || "";
             var impact = finding["Impact"] || finding.impact || "";
             var businessImpact = finding["Business impact"] || finding.business_impact || "";
@@ -420,7 +431,7 @@ sap.ui.define([
                 width: "auto",
                 headerToolbar: new sap.m.Toolbar({
                     content: [
-                        new Title({ text: issueId, level: "H4" }).addStyleClass("sapUiSmallMarginBegin sapUiSmallMarginEnd"),
+                        new Title({ text: displayIssueId, level: "H4" }).addStyleClass("sapUiSmallMarginBegin sapUiSmallMarginEnd"),
                         new HTML({ content: "<span class='area-badge'>" + area + "</span>" })
                     ]
                 })
