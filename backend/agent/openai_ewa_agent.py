@@ -142,7 +142,7 @@ class OpenAIEWAAgent:
                     "schema": strict_schema,
                     "strict": True,
                 },
-                "verbosity": "high",
+                # "verbosity": "high",  # use default verbosity
             }
 
             # Single-path call using text.format; offload blocking call to a thread
@@ -152,7 +152,7 @@ class OpenAIEWAAgent:
                     input=[{"role": "user", "content": user_content}],
                     text=text_format,
                     max_output_tokens=32768,
-                    reasoning={"effort": "low"},
+                    reasoning={"effort": "medium"},
                 )
             )
             # Log token usage for visibility
