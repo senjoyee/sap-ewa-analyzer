@@ -413,8 +413,10 @@ class EWAWorkflowOrchestrator:
             state.markdown_content = await self.download_markdown_from_blob(state.blob_name)
             return state
         except Exception as e:
-            if skip_conversion:
-                state.error = str(e)
+            error_text = str(e)
+            missing_md = "BlobNotFound" in error_text or "does not exist" in error_text
+            if skip_conversion and not missing_md:
+                state.error = error_text
                 return state
             # Attempt to generate markdown via converter when missing
             try:
