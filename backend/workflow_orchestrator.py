@@ -301,6 +301,32 @@ class EWAWorkflowOrchestrator:
             error_message = f"Error uploading to blob storage: {str(e)}"
             print(error_message)
             raise Exception(error_message)
+
+    async def save_results_step_from_json(self, blob_name: str, summary_json: dict) -> dict:
+        """Save summary JSON/markdown for a blob without running analysis again."""
+        try:
+            if not isinstance(summary_json, dict):
+                raise ValueError("summary_json must be a dict")
+
+            summary_md = json_to_markdown(summary_json)
+            base_name = os.path.splitext(blob_name)[0]
+
+            md_blob = f"{base_name}_AI.md"
+            json_blob = f"{base_name}_AI.json"
+
+            await self.upload_to_blob(md_blob, summary_md, content_type="text/markdown")
+            await self.upload_to_blob(json_blob, json.dumps(summary_json, ensure_ascii=False, indent=2), content_type="application/json")
+
+            return {
+                "summary_file": md_blob,
+                "summary_json_file": json_blob,
+                "summary_result": summary_md,
+                "summary_json": summary_json,
+            }
+        except Exception as e:
+            error_message = f"Error saving summary results: {str(e)}"
+            print(error_message)
+            raise Exception(error_message)
     
     async def get_blob_metadata(self, blob_name: str) -> dict:
         """Retrieve metadata from a blob"""

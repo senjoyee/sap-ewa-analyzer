@@ -25,6 +25,9 @@ from core.azure_clients import (
     AZURE_STORAGE_CONNECTION_STRING,
     AZURE_STORAGE_CONTAINER_NAME,
 )
+from batch.batch_registry import upsert_batch
+from batch.openai_batch_client import submit_batch
+from batch.poller import refresh_batches_on_demand
 from workflow_orchestrator import EWAWorkflowOrchestrator
 
 # ---------------------------------------------------------------------------
@@ -220,12 +223,41 @@ async def upload_file(file: UploadFile = File(...), customer_name: str = Form(..
         print(
             f"Successfully uploaded {file.filename} to {blob_name} with metadata: {metadata}"
         )
+        # Auto-schedule batch processing
+        try:
+            # mark scheduled in blob metadata
+            props = blob_client.get_blob_properties()
+            meta = (props.metadata or {}).copy()
+            meta["processing"] = "true"
+            meta["last_status"] = "scheduled"
+            blob_client.set_blob_metadata(meta)
+
+            # Build single-task batch payload
+            task = {
+                "custom_id": blob_name,
+                "input": {
+                    "blob_name": blob_name,
+                    "container": AZURE_STORAGE_CONTAINER_NAME,
+                },
+            }
+            batch_id = await submit_batch([task])
+            upsert_batch(blob_name, batch_id, status="scheduled")
+            # Store batch_id on blob metadata for visibility
+            meta["batch_id"] = batch_id
+            blob_client.set_blob_metadata(meta)
+            print(f"[UPLOAD] Scheduled batch {batch_id} for {blob_name}")
+            scheduled = True
+        except Exception as sched_err:
+            print(f"[UPLOAD] Warning: could not schedule batch for {blob_name}: {sched_err}")
+            scheduled = False
+
         return {
             "filename": blob_name,  # Return the new standardized filename
             "original_filename": file.filename,  # Include original for reference
             "customer_name": customer_name,
             "system_id": file_metadata["system_id"],
             "report_date": report_date_str,
+            "scheduled": scheduled,
             "message": "File uploaded successfully to Azure Blob Storage with extracted metadata and standardized filename.",
         }
 
@@ -247,6 +279,12 @@ async def list_files():
         raise HTTPException(status_code=500, detail="Azure Blob Service client not initialized.")
 
     try:
+        # On-demand batch refresh so statuses reflect latest batch completion
+        try:
+            await refresh_batches_on_demand()
+        except Exception as refresh_err:
+            print(f"[FILES] Warning: batch refresh failed: {refresh_err}")
+
         container_client = blob_service_client.get_container_client(AZURE_STORAGE_CONTAINER_NAME)
         blob_list = list(container_client.list_blobs())
 

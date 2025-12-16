@@ -101,89 +101,67 @@ async def analyze_document_with_ai_endpoint(request: BlobNameRequest):
 
 @router.post("/reprocess-ai")
 async def reprocess_document_with_ai(request: BlobNameRequest):
+    """Re-queue analysis as a new batch job (does not run inline)."""
     if not blob_service_client:
         raise HTTPException(status_code=500, detail="Azure Blob Service client not initialized.")
 
     original_blob_name = request.blob_name
-    base_name, ext = os.path.splitext(original_blob_name)
-    
-    print(f"[REPROCESS] Starting reprocess for {original_blob_name}")
+    base_name, _ = os.path.splitext(original_blob_name)
 
-    # Determine AI filenames
-    ai_md_blob = f"{base_name}_AI.md"
-    ai_json_blob = f"{base_name}_AI.json"
-
-    container_client = blob_service_client.get_container_client(AZURE_STORAGE_CONTAINER_NAME)
-
-    # Set processing flag in metadata BEFORE deleting old files
     try:
         orig_blob_client = blob_service_client.get_blob_client(
             container=AZURE_STORAGE_CONTAINER_NAME,
             blob=original_blob_name
         )
-        existing_properties = orig_blob_client.get_blob_properties()
-        existing_metadata = (existing_properties.metadata or {}).copy()
-        existing_metadata["processing"] = "true"
-        orig_blob_client.set_blob_metadata(existing_metadata)
-        print(f"[REPROCESS] Set processing=true metadata on {original_blob_name}")
+        props = orig_blob_client.get_blob_properties()
+        meta = (props.metadata or {}).copy()
+        meta["processing"] = "true"
+        meta["last_status"] = "scheduled"
+        orig_blob_client.set_blob_metadata(meta)
     except Exception as meta_err:
         print(f"[REPROCESS] Warning: Could not set processing metadata: {meta_err}")
 
     # Delete old AI files
-    print(f"[REPROCESS] Deleting old AI files: {ai_md_blob}, {ai_json_blob}")
+    container_client = blob_service_client.get_container_client(AZURE_STORAGE_CONTAINER_NAME)
+    ai_md_blob = f"{base_name}_AI.md"
+    ai_json_blob = f"{base_name}_AI.json"
     try:
         for blob_name in (ai_md_blob, ai_json_blob):
             blob_client = container_client.get_blob_client(blob_name)
             if blob_client.exists():
                 blob_client.delete_blob()
-                print(f"[REPROCESS] Deleted existing {blob_name}")
-            else:
-                print(f"[REPROCESS] {blob_name} does not exist, skipping delete")
     except Exception as e:
-        print(f"[REPROCESS] Error deleting old AI blobs: {e}")
-        # Proceed anyway
+        print(f"[REPROCESS] Warning deleting old AI blobs: {e}")
 
-    # Run analysis again (skip conversion, use existing .md)
-    print(f"[REPROCESS] Starting workflow execution for {original_blob_name}")
+    # Submit batch
     try:
-        result = await ewa_orchestrator.execute_workflow(original_blob_name, skip_markdown=True)
-        print(f"[REPROCESS] Workflow completed with result: {result}")
-        
-        # Clear processing flag after completion (success or failure)
+        task = {
+            "custom_id": original_blob_name,
+            "input": {
+                "blob_name": original_blob_name,
+                "container": AZURE_STORAGE_CONTAINER_NAME,
+            },
+        }
+        batch_id = await submit_batch([task])
+        upsert_batch(original_blob_name, batch_id, status="scheduled")
         try:
-            existing_properties = orig_blob_client.get_blob_properties()
-            existing_metadata = (existing_properties.metadata or {}).copy()
-            existing_metadata.pop("processing", None)
-            orig_blob_client.set_blob_metadata(existing_metadata)
-            print(f"[REPROCESS] Cleared processing metadata on {original_blob_name}")
-        except Exception as meta_err:
-            print(f"[REPROCESS] Warning: Could not clear processing metadata: {meta_err}")
-        
-        if not result.get("success", False):
-            error_msg = result.get('message', 'Unknown error')
-            print(f"[REPROCESS] Workflow failed: {error_msg}")
-            raise HTTPException(status_code=500, detail=f"Re-analysis failed: {error_msg}")
-        
-        print(f"[REPROCESS] Re-analysis completed successfully for {original_blob_name}")
+            meta["batch_id"] = batch_id
+            orig_blob_client.set_blob_metadata(meta)
+        except Exception:
+            pass
         return {
             "success": True,
-            "message": "Re-analysis completed successfully.",
-            "analysis_file": result.get("summary_file"),
-            "analysis_json_file": result.get("summary_json_file"),
+            "message": "Re-analysis queued via batch.",
+            "batch_id": batch_id,
         }
-    except HTTPException:
-        raise
     except Exception as e:
         # Clear processing flag on error
         try:
-            existing_properties = orig_blob_client.get_blob_properties()
-            existing_metadata = (existing_properties.metadata or {}).copy()
-            existing_metadata.pop("processing", None)
-            orig_blob_client.set_blob_metadata(existing_metadata)
-        except:
+            props = orig_blob_client.get_blob_properties()
+            meta = (props.metadata or {}).copy()
+            meta.pop("processing", None)
+            meta["last_status"] = "failed"
+            orig_blob_client.set_blob_metadata(meta)
+        except Exception:
             pass
-        
-        print(f"[REPROCESS] Exception during workflow execution: {str(e)}")
-        import traceback
-        traceback.print_exc()
-        raise HTTPException(status_code=500, detail=f"Re-analysis failed: {str(e)}")
+        raise HTTPException(status_code=500, detail=f"Could not queue re-analysis: {str(e)}")
