@@ -443,7 +443,7 @@ const useStyles = makeStyles({
     width: '100%',
     borderCollapse: 'collapse',
     tableLayout: 'auto',
-    fontSize: tokens.fontSizeBase300,
+    fontSize: '15px',
     fontFamily: tokens.fontFamilyBase,
     selectors: {
       'tbody tr': {
@@ -468,7 +468,7 @@ const useStyles = makeStyles({
     textAlign: 'left',
     padding: `${tokens.spacingVerticalM} ${tokens.spacingHorizontalM}`,
     fontWeight: tokens.fontWeightBold,
-    fontSize: tokens.fontSizeBase300,
+    fontSize: '15px',
     fontFamily: tokens.fontFamilyBase,
     color: tokens.colorNeutralForeground1,
     borderBottom: `2px solid ${tokens.colorNeutralStroke2}`,
@@ -491,7 +491,7 @@ const useStyles = makeStyles({
   },
   mdTd: {
     padding: `${tokens.spacingVerticalM} ${tokens.spacingHorizontalM}`,
-    fontSize: tokens.fontSizeBase300,
+    fontSize: '15px',
     fontFamily: tokens.fontFamilyBase,
     color: tokens.colorNeutralForeground1,
     fontWeight: tokens.fontWeightRegular,
