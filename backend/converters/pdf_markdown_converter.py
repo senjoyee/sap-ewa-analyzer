@@ -22,6 +22,7 @@ from datetime import datetime
 
 from azure.storage.blob import ContentSettings
 import pymupdf4llm
+import fitz  # PyMuPDF fallback for text extraction
 
 from core.azure_clients import (
     blob_service_client,
@@ -83,8 +84,20 @@ def convert_pdf_to_markdown(blob_name: str) -> dict:
         conversion_status_tracker[blob_name]["progress"] = 30
         conversion_status_tracker[blob_name]["message"] = "Converting PDF to markdown"
         
-        # Use pymupdf4llm to convert PDF to markdown
-        md_text = pymupdf4llm.to_markdown(temp_pdf_path)
+        # Use pymupdf4llm to convert PDF to markdown; fallback to plain text on failure
+        try:
+            md_text = pymupdf4llm.to_markdown(temp_pdf_path)
+        except Exception as conv_err:
+            # Fallback: extract plain text with PyMuPDF to avoid hard failure
+            conversion_status_tracker[blob_name]["message"] = (
+                f"pymupdf4llm failed ({conv_err}); falling back to plain text extraction"
+            )
+            doc = fitz.open(temp_pdf_path)
+            pages_text = []
+            for page in doc:
+                pages_text.append(page.get_text("text"))
+            doc.close()
+            md_text = "\n\n".join(pages_text)
         
         conversion_status_tracker[blob_name]["progress"] = 70
         conversion_status_tracker[blob_name]["message"] = "Uploading markdown to blob storage"
