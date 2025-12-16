@@ -388,6 +388,7 @@ const useStyles = makeStyles({
   tableCard: {
     marginTop: tokens.spacingVerticalL,
     marginBottom: tokens.spacingVerticalL,
+    fontFamily: tokens.fontFamilyBase,
     borderRadius: tokens.borderRadiusLarge,
     overflow: 'hidden',
     background: `linear-gradient(135deg, ${tokens.colorNeutralBackground1} 0%, ${tokens.colorSubtleBackground} 100%)`,
@@ -443,6 +444,7 @@ const useStyles = makeStyles({
     borderCollapse: 'collapse',
     tableLayout: 'auto',
     fontSize: tokens.fontSizeBase300,
+    fontFamily: tokens.fontFamilyBase,
     selectors: {
       'tbody tr': {
         transition: 'all 200ms ease',
@@ -467,6 +469,7 @@ const useStyles = makeStyles({
     padding: `${tokens.spacingVerticalM} ${tokens.spacingHorizontalM}`,
     fontWeight: tokens.fontWeightBold,
     fontSize: tokens.fontSizeBase300,
+    fontFamily: tokens.fontFamilyBase,
     color: tokens.colorNeutralForeground1,
     borderBottom: `2px solid ${tokens.colorNeutralStroke2}`,
     background: `linear-gradient(135deg, ${tokens.colorNeutralBackground2} 0%, ${tokens.colorSubtleBackground} 100%)`,
@@ -489,6 +492,7 @@ const useStyles = makeStyles({
   mdTd: {
     padding: `${tokens.spacingVerticalM} ${tokens.spacingHorizontalM}`,
     fontSize: tokens.fontSizeBase300,
+    fontFamily: tokens.fontFamilyBase,
     color: tokens.colorNeutralForeground1,
     fontWeight: tokens.fontWeightRegular,
     borderBottom: `1px solid ${tokens.colorNeutralStroke1}`,
