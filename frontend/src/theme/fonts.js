@@ -1,4 +1,9 @@
 export const FONT_OPTIONS = {
+  sap72: {
+    name: 'SAP 72',
+    base: '"72", "72full", "72-Regular", "72 Roman", "Segoe UI", "Helvetica Neue", Arial, sans-serif',
+    mono: '"72 Monospace", "JetBrains Mono", Consolas, "Courier New", monospace',
+  },
   inter: {
     name: 'Inter',
     base: '"Inter", system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif',
@@ -31,4 +36,4 @@ export const FONT_OPTIONS = {
   },
 };
 
-export const DEFAULT_FONT_KEY = 'inter';
+export const DEFAULT_FONT_KEY = 'sap72';
