@@ -63,6 +63,7 @@ sap.ui.define([
                     { key: "ASAHI", text: "ASAHI" }
                 ]
             }), "customers");
+            this.getView().setModel(new JSONModel({ expanded: false }), "uploadPanel");
             this._loadFiles();
 
             // Poll for updates every 10 seconds
@@ -191,6 +192,11 @@ sap.ui.define([
                     }
 
                     this._loadFiles();
+                    // Collapse and reset upload panel/queue after completion
+                    this.getView().getModel("uploadPanel").setProperty("/expanded", false);
+                    this.getView().getModel("uploadQueue").setData({ files: [] });
+                    this._selectedFiles = [];
+                    this.byId("customerSelect").setSelectedKey("");
                 })
                 .catch(err => {
                     MessageBox.error("Upload failed: " + err.message);

@@ -13,7 +13,11 @@
                 <!-- White Centered Content -->
                 <VBox class="paperSheet fileListSheet">
                 <!-- Upload Area -->
-                <Panel headerText="{i18n>uploadTitle}" expandable="true" expanded="false" width="auto">
+                <Panel
+                    headerText="{i18n>uploadTitle}"
+                    expandable="true"
+                    expanded="{uploadPanel>/expanded}"
+                    width="auto">
                     <content>
                         <VBox class="uploadArea">
                             <HBox justifyContent="Center" alignItems="Center" wrap="Wrap">

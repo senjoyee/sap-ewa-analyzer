@@ -107,10 +107,11 @@ body {
 .analysis-table .sapMText,
 .analysis-table .sapMLabel {
     font-family: "72", "72full", Arial, Helvetica, sans-serif !important;
-    font-size: 1rem !important;
+    font-size: 0.9375rem !important;
     font-weight: 400 !important;
     color: #454a50 !important;
-    line-height: 1.6;
+    line-height: 1.65;
+    letter-spacing: 0.01em;
 }
 
 /* Upload Area */
