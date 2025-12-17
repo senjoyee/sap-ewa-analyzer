@@ -37,15 +37,6 @@ jobs:
           cache-from: type=registry,ref=${{ env.REGISTRY }}/ewa-backend:buildcache
           cache-to: type=registry,ref=${{ env.REGISTRY }}/ewa-backend:buildcache,mode=max
 
-      - name: Build and push frontend with cache
-        uses: docker/build-push-action@v5
-        with:
-          context: ./frontend
-          push: true
-          tags: ${{ env.REGISTRY }}/ewa-frontend:latest
-          cache-from: type=registry,ref=${{ env.REGISTRY }}/ewa-frontend:buildcache
-          cache-to: type=registry,ref=${{ env.REGISTRY }}/ewa-frontend:buildcache,mode=max
-
       - name: Build and push SAPUI5 frontend with cache
         uses: docker/build-push-action@v5
         with:
