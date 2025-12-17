@@ -17,7 +17,17 @@
                     <content>
                         <VBox class="uploadArea">
                             <HBox justifyContent="Center" alignItems="Center" wrap="Wrap">
-                                <Input id="customerInput" placeholder="{i18n>customerLabel}" width="300px" class="sapUiSmallMarginEnd"/>
+                                <Select id="customerSelect" width="300px" class="sapUiSmallMarginEnd" forceSelection="true">
+                                    <items>
+                                        <core:Item key="" text="Select customer"/>
+                                        <core:Item key="TBS" text="TBS"/>
+                                        <core:Item key="BSW" text="BSW"/>
+                                        <core:Item key="SHOOSMITHS" text="SHOOSMITHS"/>
+                                        <core:Item key="COREX" text="COREX"/>
+                                        <core:Item key="SONOCO" text="SONOCO"/>
+                                        <core:Item key="ASAHI" text="ASAHI"/>
+                                    </items>
+                                </Select>
                                 <u:FileUploader
                                     id="fileUploader"
                                     name="file"

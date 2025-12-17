@@ -1,10 +1,17 @@
 sap.ui.define([
     "sap/ui/core/mvc/Controller",
+    "sap/m/Panel",
+    "sap/ui/core/HTML",
+    "sap/m/CustomListItem",
+    "sap/m/ObjectStatus",
+    "ewa/analyzer/model/config",
+    "sap/m/ToolbarSpacer",
+    "sap/m/Select",
+    "sap/ui/core/Item",
     "sap/ui/model/json/JSONModel",
     "sap/m/MessageToast",
-    "sap/m/MessageBox",
-    "ewa/analyzer/model/config"
-], function (Controller, JSONModel, MessageToast, MessageBox, Config) {
+    "sap/m/MessageBox"
+], function (Controller, Panel, HTML, CustomListItem, ObjectStatus, Config, ToolbarSpacer, Select, Item, JSONModel, MessageToast, MessageBox) {
     "use strict";
 
     return Controller.extend("ewa.analyzer.controller.FileList", {
@@ -94,7 +101,7 @@ sap.ui.define([
 
         onUploadPress: function () {
             var oFileUploader = this.byId("fileUploader");
-            var sCustomer = this.byId("customerInput").getValue();
+            var sCustomer = this.byId("customerSelect").getSelectedKey();
 
             if (!oFileUploader.getValue()) {
                 MessageToast.show("Please select a file first.");
@@ -102,7 +109,7 @@ sap.ui.define([
             }
 
             if (!sCustomer) {
-                MessageToast.show("Please enter a customer name.");
+                MessageToast.show("Please select a customer.");
                 return;
             }
 
@@ -129,7 +136,7 @@ sap.ui.define([
                 .then(data => {
                     MessageToast.show("Upload successful");
                     oFileUploader.setValue("");
-                    this.byId("customerInput").setValue("");
+                    this.byId("customerSelect").setSelectedKey("");
                     this._loadFiles();
                 })
                 .catch(err => {
