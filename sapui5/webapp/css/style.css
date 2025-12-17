@@ -103,6 +103,16 @@ body {
     font-weight: 400;
 }
 
+/* Normalize tables (System Health, Positive Findings) to match Executive Summary body font */
+.analysis-table .sapMText,
+.analysis-table .sapMLabel {
+    font-family: "72", "72full", Arial, Helvetica, sans-serif !important;
+    font-size: 0.9375rem !important;
+    font-weight: 400 !important;
+    color: #454a50 !important;
+    line-height: 1.6;
+}
+
 /* Upload Area */
 .uploadArea {
     border: 1px dashed #d0d0d0;

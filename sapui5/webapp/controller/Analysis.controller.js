@@ -227,7 +227,7 @@ sap.ui.define([
                     new Column({ header: new Text({ text: "Area" }) }),
                     new Column({ header: new Text({ text: "Status" }) })
                 ]
-            });
+            }).addStyleClass("analysis-table");
 
             Object.keys(health).forEach(function (area) {
                 var status = health[area];
@@ -306,7 +306,7 @@ sap.ui.define([
                 width: "100%",
                 fixedLayout: false,
                 popinLayout: "GridSmall"
-            });
+            }).addStyleClass("analysis-table");
 
             headers.forEach(function (h) {
                 oTable.addColumn(new Column({
