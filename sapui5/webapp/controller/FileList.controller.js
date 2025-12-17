@@ -52,6 +52,17 @@ sap.ui.define([
         onInit: function () {
             this.getView().setModel(new JSONModel([]), "files");
             this.getView().setModel(new JSONModel({ count: 0 }), "selectedFiles");
+            this.getView().setModel(new JSONModel({ files: [] }), "uploadQueue");
+            this.getView().setModel(new JSONModel({
+                customers: [
+                    { key: "TBS", text: "TBS" },
+                    { key: "BSW", text: "BSW" },
+                    { key: "SHOOSMITHS", text: "SHOOSMITHS" },
+                    { key: "COREX", text: "COREX" },
+                    { key: "SONOCO", text: "SONOCO" },
+                    { key: "ASAHI", text: "ASAHI" }
+                ]
+            }), "customers");
             this._loadFiles();
 
             // Poll for updates every 10 seconds
@@ -99,52 +110,101 @@ sap.ui.define([
             MessageToast.show("Refreshing files...");
         },
 
+        onFileChange: function () {
+            var oFileUploader = this.byId("fileUploader");
+            var oDomRef = oFileUploader.getDomRef("fu");
+            var aFiles = Array.from(oDomRef && oDomRef.files ? oDomRef.files : []);
+
+            // Cache actual File objects off-model to avoid serialization issues
+            this._selectedFiles = aFiles;
+
+            var sDefaultCustomer = this.byId("customerSelect").getSelectedKey();
+            var aQueue = aFiles.map(function (oFile, idx) {
+                return {
+                    index: idx,
+                    name: oFile.name,
+                    size: oFile.size,
+                    customer: sDefaultCustomer || ""
+                };
+            });
+
+            this.getView().getModel("uploadQueue").setData({ files: aQueue });
+        },
+
         onUploadPress: function () {
             var oFileUploader = this.byId("fileUploader");
-            var sCustomer = this.byId("customerSelect").getSelectedKey();
+            var sFallbackCustomer = this.byId("customerSelect").getSelectedKey();
+            var aFiles = this._selectedFiles || [];
 
-            if (!oFileUploader.getValue()) {
-                MessageToast.show("Please select a file first.");
+            if (!aFiles.length) {
+                MessageToast.show("Please select at least one file.");
                 return;
             }
 
-            if (!sCustomer) {
-                MessageToast.show("Please select a customer.");
+            var aQueue = this.getView().getModel("uploadQueue").getProperty("/files") || [];
+            var aMissingCustomer = aQueue.filter(function (q) {
+                return !(q.customer || sFallbackCustomer);
+            });
+            if (aMissingCustomer.length) {
+                MessageToast.show("Please select a customer for each file.");
                 return;
             }
-
-            // Manually upload using fetch to handle FormData with customer name
-            var oDomRef = oFileUploader.getDomRef("fu");
-            var oFile = oDomRef.files[0];
-
-            var formData = new FormData();
-            formData.append("file", oFile);
-            formData.append("customer_name", sCustomer);
 
             oFileUploader.setBusy(true);
 
-            fetch(Config.getEndpoint("upload"), {
-                method: "POST",
-                body: formData
-            })
-                .then(response => {
-                    if (response.ok) {
-                        return response.json();
-                    }
-                    throw new Error("Upload failed");
+            Promise.allSettled(
+                aFiles.map((oFile, idx) => {
+                    var oQueueItem = aQueue.find(q => q.index === idx);
+                    var sCustomer = oQueueItem && oQueueItem.customer ? oQueueItem.customer : sFallbackCustomer;
+
+                    var formData = new FormData();
+                    formData.append("file", oFile);
+                    formData.append("customer_name", sCustomer);
+
+                    return fetch(Config.getEndpoint("upload"), {
+                        method: "POST",
+                        body: formData
+                    }).then(response => {
+                        if (response.ok) {
+                            return response.json();
+                        }
+                        return response.json()
+                            .then(data => {
+                                throw new Error(data.detail || "Upload failed");
+                            })
+                            .catch(() => {
+                                throw new Error("Upload failed with status " + response.status);
+                            });
+                    });
                 })
-                .then(data => {
-                    MessageToast.show("Upload successful");
-                    oFileUploader.setValue("");
-                    this.byId("customerSelect").setSelectedKey("");
+            )
+                .then(results => {
+                    var iSuccess = results.filter(r => r.status === "fulfilled").length;
+                    var iFailed = results.length - iSuccess;
+
+                    if (iSuccess > 0) {
+                        MessageToast.show("Uploaded " + iSuccess + " file" + (iSuccess > 1 ? "s" : "") + " successfully");
+                    }
+                    if (iFailed > 0) {
+                        MessageBox.error(iFailed + " file" + (iFailed > 1 ? "s" : "") + " failed to upload. Please check the console for details.");
+                        console.error("Upload failures:", results.filter(r => r.status === "rejected").map(r => r.reason));
+                    }
+
                     this._loadFiles();
                 })
                 .catch(err => {
                     MessageBox.error("Upload failed: " + err.message);
                 })
                 .finally(() => {
+                    oFileUploader.setValue("");
                     oFileUploader.setBusy(false);
                 });
+        },
+
+        onUploadQueueCustomerChange: function (oEvent) {
+            var sKey = oEvent.getSource().getSelectedKey();
+            var sPath = oEvent.getSource().getBindingContext("uploadQueue").getPath() + "/customer";
+            this.getView().getModel("uploadQueue").setProperty(sPath, sKey);
         },
 
         onProcessPress: function (oEvent) {

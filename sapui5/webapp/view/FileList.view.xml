@@ -31,6 +31,7 @@
                                 <u:FileUploader
                                     id="fileUploader"
                                     name="file"
+                                    multiple="true"
                                     tooltip="Upload your file to the local server"
                                     uploadComplete="onUploadComplete"
                                     change="onFileChange"
@@ -41,6 +42,45 @@
                                     class="sapUiSmallMarginEnd"/>
                                 <Button text="{i18n>uploadButton}" type="Emphasized" press="onUploadPress" icon="sap-icon://upload"/>
                             </HBox>
+                            <Table
+                                id="uploadQueueTable"
+                                items="{uploadQueue>/files}"
+                                visible="{= ${uploadQueue>/files}.length > 0 }"
+                                width="auto">
+                                <headerToolbar>
+                                    <OverflowToolbar>
+                                        <Title text="Selected files (set customer per file)" level="H3"/>
+                                    </OverflowToolbar>
+                                </headerToolbar>
+                                <columns>
+                                    <Column>
+                                        <Text text="File"/>
+                                    </Column>
+                                    <Column hAlign="End">
+                                        <Text text="Size (bytes)"/>
+                                    </Column>
+                                    <Column hAlign="Begin">
+                                        <Text text="Customer"/>
+                                    </Column>
+                                </columns>
+                                <items>
+                                    <ColumnListItem>
+                                        <cells>
+                                            <ObjectIdentifier title="{uploadQueue>name}"/>
+                                            <Text text="{uploadQueue>size}"/>
+                                            <Select
+                                                selectedKey="{uploadQueue>customer}"
+                                                change=".onUploadQueueCustomerChange"
+                                                width="200px"
+                                                forceSelection="true"
+                                                items="{customers>/customers}">
+                                                <core:Item key="" text="Select customer"/>
+                                                <core:Item key="{customers>key}" text="{customers>text}"/>
+                                            </Select>
+                                        </cells>
+                                    </ColumnListItem>
+                                </items>
+                            </Table>
                         </VBox>
                     </content>
                 </Panel>
