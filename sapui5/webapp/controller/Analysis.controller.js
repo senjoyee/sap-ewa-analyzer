@@ -220,17 +220,34 @@ sap.ui.define([
                 level: "H2"
             }).addStyleClass("sapUiMediumMarginTop sapUiSmallMarginBottom markdown-header-2"));
 
-            var lines = Object.keys(health).map(function (area) {
+            var oTable = new Table({
+                width: "100%",
+                fixedLayout: false,
+                columns: [
+                    new Column({ header: new Text({ text: "Area" }) }),
+                    new Column({ header: new Text({ text: "Status" }) })
+                ]
+            }).addStyleClass("analysis-table system-health-table");
+
+            Object.keys(health).forEach(function (area) {
                 var status = health[area];
-                var areaText = this._toTitleCase(area);
-                var statusText = status || "N/A";
-                return areaText + ": " + statusText;
+                var sStatusClass = "";
+                if (status && status.toLowerCase() === "good") sStatusClass = "status-good";
+                else if (status && status.toLowerCase() === "fair") sStatusClass = "status-fair";
+                else if (status && status.toLowerCase() === "poor") sStatusClass = "status-poor";
+
+                var oStatusText = new Text({ text: status || "N/A" });
+                if (sStatusClass) oStatusText.addStyleClass(sStatusClass);
+
+                oTable.addItem(new ColumnListItem({
+                    cells: [
+                        new Text({ text: this._toTitleCase(area) }),
+                        oStatusText
+                    ]
+                }));
             }.bind(this));
 
-            var htmlContent = this._textToHtml(lines.join("\n"));
-            oContainer.addItem(new HTML({
-                content: "<div class='markdown-content executive-summary'>" + htmlContent + "</div>"
-            }));
+            oContainer.addItem(oTable);
         },
 
         _toTitleCase: function (str) {
@@ -289,7 +306,7 @@ sap.ui.define([
                 width: "100%",
                 fixedLayout: false,
                 popinLayout: "GridSmall"
-            }).addStyleClass("analysis-table");
+            }).addStyleClass("analysis-table positive-findings-table");
 
             headers.forEach(function (h) {
                 oTable.addColumn(new Column({

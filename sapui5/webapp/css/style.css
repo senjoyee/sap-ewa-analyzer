@@ -391,17 +391,69 @@ body {
 /* Status indicators for System Health */
 .status-good {
     color: #27ae60 !important;
-    font-weight: 600;
+    font-weight: 400 !important;
 }
 
 .status-fair {
     color: #f39c12 !important;
-    font-weight: 600;
+    font-weight: 400 !important;
 }
 
 .status-poor {
     color: #c0392b !important;
-    font-weight: 600;
+    font-weight: 400 !important;
+}
+
+.system-health-table .sapMListTblCell .sapMText,
+.system-health-table .sapMListTblCell .sapMLabel {
+    font-family: "72", "72full", Arial, Helvetica, sans-serif !important;
+    font-size: 0.9375rem !important;
+    font-weight: 400 !important;
+    color: #454a50 !important;
+    line-height: 1.65 !important;
+    letter-spacing: 0.01em !important;
+}
+
+.system-health-table .sapMListTblHeader .sapMText {
+    font-family: "72", "72full", Arial, Helvetica, sans-serif !important;
+    font-size: 0.9375rem !important;
+    font-weight: 400 !important;
+    color: #454a50 !important;
+    line-height: 1.65 !important;
+    letter-spacing: 0.01em !important;
+    text-transform: none !important;
+}
+
+.system-health-table .sapMListTblCell .sapMText.status-good {
+    color: #27ae60 !important;
+}
+
+.system-health-table .sapMListTblCell .sapMText.status-fair {
+    color: #f39c12 !important;
+}
+
+.system-health-table .sapMListTblCell .sapMText.status-poor {
+    color: #c0392b !important;
+}
+
+.positive-findings-table .sapMListTblCell .sapMText,
+.positive-findings-table .sapMListTblCell .sapMLabel {
+    font-family: "72", "72full", Arial, Helvetica, sans-serif !important;
+    font-size: 0.9375rem !important;
+    font-weight: 400 !important;
+    color: #454a50 !important;
+    line-height: 1.65 !important;
+    letter-spacing: 0.01em !important;
+}
+
+.positive-findings-table .sapMListTblHeader .sapMText {
+    font-family: "72", "72full", Arial, Helvetica, sans-serif !important;
+    font-size: 0.9375rem !important;
+    font-weight: 400 !important;
+    color: #454a50 !important;
+    line-height: 1.65 !important;
+    letter-spacing: 0.01em !important;
+    text-transform: none !important;
 }
 
 /* Area badge in finding panels */
