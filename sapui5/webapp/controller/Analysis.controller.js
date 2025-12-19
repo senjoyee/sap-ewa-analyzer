@@ -862,17 +862,24 @@ sap.ui.define([
             var lines = escaped.split("\n");
             var htmlParts = [];
             var inList = false;
+            var listTag = "ul";
             var inCode = false;
             var codeLines = [];
 
-            lines.forEach(function (line) {
-                var trimmed = (line || "").trim();
+            var closeList = function () {
+                if (inList) {
+                    htmlParts.push("</" + listTag + ">");
+                    inList = false;
+                }
+            };
 
+            lines.forEach(function (line) {
+                var rawLine = line || "";
+                var trimmed = rawLine.trim();
+
+                // Code fences
                 if (trimmed.indexOf("```") === 0) {
-                    if (inList) {
-                        htmlParts.push("</ul>");
-                        inList = false;
-                    }
+                    closeList();
                     if (inCode) {
                         htmlParts.push("<pre><code>" + codeLines.join("\n") + "</code></pre>");
                         codeLines = [];
@@ -884,34 +891,68 @@ sap.ui.define([
                 }
 
                 if (inCode) {
-                    codeLines.push(line);
+                    codeLines.push(rawLine);
                     return;
                 }
 
-                line = (line || "")
-                    .replace(/\*\*(.*?)\*\*/g, "<strong>$1</strong>")
-                    .replace(/`([^`]+)`/g, "<code>$1</code>");
+                // Horizontal rule
+                if (/^(-{3,}|\*{3,})$/.test(trimmed)) {
+                    closeList();
+                    htmlParts.push("<hr>");
+                    return;
+                }
 
-                if (trimmed.indexOf("- ") === 0) {
-                    if (!inList) {
-                        htmlParts.push("<ul>");
+                // Headings (#, ##, ###)
+                var headingMatch = trimmed.match(/^(#{1,6})\\s+(.*)$/);
+                if (headingMatch) {
+                    closeList();
+                    var level = headingMatch[1].length;
+                    var headingText = headingMatch[2]
+                        .replace(/\\*\\*(.*?)\\*\\*/g, "<strong>$1</strong>")
+                        .replace(/`([^`]+)`/g, "<code>$1</code>")
+                        .replace(/\\[(.+?)\\]\\((https?:[^\\s)]+)\\)/g, "<a href='$2' target='_blank'>$1</a>");
+                    htmlParts.push("<p class='chatHeading h" + level + "'><strong>" + headingText + "</strong></p>");
+                    return;
+                }
+
+                // Ordered / unordered lists
+                var isUl = trimmed.indexOf("- ") === 0 || trimmed.indexOf("* ") === 0;
+                var isOl = /^\\d+\\.\\s+/.test(trimmed);
+                if (isUl || isOl) {
+                    var desiredTag = isOl ? "ol" : "ul";
+                    if (!inList || listTag !== desiredTag) {
+                        closeList();
+                        listTag = desiredTag;
                         inList = true;
+                        htmlParts.push("<" + listTag + ">");
                     }
-                    htmlParts.push("<li>" + line.trim().substring(2) + "</li>");
+                    var itemText = rawLine.replace(/^(-\\s+|\\*\\s+|\\d+\\.\\s+)/, "");
+                    itemText = itemText
+                        .replace(/\\*\\*(.*?)\\*\\*/g, "<strong>$1</strong>")
+                        .replace(/\\*(.*?)\\*/g, "<em>$1</em>")
+                        .replace(/`([^`]+)`/g, "<code>$1</code>")
+                        .replace(/\\[(.+?)\\]\\((https?:[^\\s)]+)\\)/g, "<a href='$2' target='_blank'>$1</a>");
+                    htmlParts.push("<li>" + itemText + "</li>");
                     return;
                 }
 
-                if (inList) {
-                    htmlParts.push("</ul>");
-                    inList = false;
-                }
+                // Close list if we move out
+                closeList();
 
+                // Blank line -> spacer
                 if (trimmed.length === 0) {
                     htmlParts.push("<br>");
                     return;
                 }
 
-                htmlParts.push("<p>" + line + "</p>");
+                // Paragraph with inline markdown
+                var paragraph = rawLine
+                    .replace(/\\*\\*(.*?)\\*\\*/g, "<strong>$1</strong>")
+                    .replace(/\\*(.*?)\\*/g, "<em>$1</em>")
+                    .replace(/`([^`]+)`/g, "<code>$1</code>")
+                    .replace(/\\[(.+?)\\]\\((https?:[^\\s)]+)\\)/g, "<a href='$2' target='_blank'>$1</a>");
+
+                htmlParts.push("<p>" + paragraph + "</p>");
             });
 
             if (inCode) {
@@ -919,7 +960,7 @@ sap.ui.define([
             }
 
             if (inList) {
-                htmlParts.push("</ul>");
+                htmlParts.push("</" + listTag + ">");
             }
 
             return htmlParts.join("");
