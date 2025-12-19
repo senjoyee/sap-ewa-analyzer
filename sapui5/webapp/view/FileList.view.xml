@@ -92,7 +92,14 @@
                 <!-- File List Table -->
                 <Table
                     id="filesTable"
-                    items="{files>/}"
+                    items="{
+                        path: 'files>/',
+                        sorter: [{
+                            path: 'customer',
+                            group: true
+                        }]
+                    }"
+                    groupHeaderFactory=".createCustomerGroupHeader"
                     mode="MultiSelect"
                     growing="true"
                     growingThreshold="20"

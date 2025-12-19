@@ -10,8 +10,9 @@ sap.ui.define([
     "sap/ui/core/Item",
     "sap/ui/model/json/JSONModel",
     "sap/m/MessageToast",
-    "sap/m/MessageBox"
-], function (Controller, Panel, HTML, CustomListItem, ObjectStatus, Config, ToolbarSpacer, Select, Item, JSONModel, MessageToast, MessageBox) {
+    "sap/m/MessageBox",
+    "sap/m/GroupHeaderListItem"
+], function (Controller, Panel, HTML, CustomListItem, ObjectStatus, Config, ToolbarSpacer, Select, Item, JSONModel, MessageToast, MessageBox, GroupHeaderListItem) {
     "use strict";
 
     return Controller.extend("ewa.analyzer.controller.FileList", {
@@ -76,6 +77,17 @@ sap.ui.define([
             }
         },
 
+        createCustomerGroupHeader: function (oGroup) {
+            var sTitle = oGroup && (oGroup.text || oGroup.key);
+            if (!sTitle) {
+                sTitle = "Unknown Customer";
+            }
+            return new GroupHeaderListItem({
+                title: sTitle,
+                upperCase: false
+            });
+        },
+
         _loadFiles: function () {
             fetch(Config.getEndpoint("listFiles"))
                 .then(response => response.json())
@@ -100,6 +112,16 @@ sap.ui.define([
                             uploadDate: oFile.last_modified ? new Date(oFile.last_modified) : null,
                             reportDate: oFile.report_date ? new Date(oFile.report_date) : null
                         };
+                    });
+                    // Sort by customer then upload date desc for stable grouping
+                    aFiles.sort(function (a, b) {
+                        var custA = (a.customer || "").toLowerCase();
+                        var custB = (b.customer || "").toLowerCase();
+                        if (custA < custB) return -1;
+                        if (custA > custB) return 1;
+                        var timeA = a.uploadDate ? a.uploadDate.getTime() : 0;
+                        var timeB = b.uploadDate ? b.uploadDate.getTime() : 0;
+                        return timeB - timeA;
                     });
                     this.getView().getModel("files").setData(aFiles);
                 })
