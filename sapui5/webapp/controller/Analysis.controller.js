@@ -6,7 +6,7 @@ sap.ui.define([
     "sap/m/Dialog",
     "sap/m/List",
     "sap/m/StandardListItem",
-    "sap/m/FeedInput",
+    "sap/m/TextArea",
     "sap/m/Button",
     "sap/m/VBox",
     "sap/m/HBox",
@@ -16,12 +16,18 @@ sap.ui.define([
     "sap/m/Column",
     "sap/m/ColumnListItem",
     "sap/m/Panel",
+    "sap/m/Toolbar",
     "sap/ui/core/HTML",
+    "sap/ui/core/Icon",
     "sap/m/CustomListItem",
+    "sap/m/FormattedText",
     "sap/m/ObjectStatus",
+    "sap/m/BusyIndicator",
+    "sap/m/ScrollContainer",
+    "sap/m/FlexItemData",
     "ewa/analyzer/model/config",
     "sap/m/ToolbarSpacer"
-], function (Controller, JSONModel, MessageToast, MessageBox, Dialog, List, StandardListItem, FeedInput, Button, VBox, HBox, Text, Title, Table, Column, ColumnListItem, Panel, HTML, CustomListItem, ObjectStatus, Config, ToolbarSpacer) {
+], function (Controller, JSONModel, MessageToast, MessageBox, Dialog, List, StandardListItem, TextArea, Button, VBox, HBox, Text, Title, Table, Column, ColumnListItem, Panel, Toolbar, HTML, Icon, CustomListItem, FormattedText, ObjectStatus, BusyIndicator, ScrollContainer, FlexItemData, Config, ToolbarSpacer) {
     "use strict";
 
     return Controller.extend("ewa.analyzer.controller.Analysis", {
@@ -35,7 +41,8 @@ sap.ui.define([
                 riskIcon: "sap-icon://question-mark",
                 analysisPeriod: "",
                 customer: "",
-                chatHistory: []
+                chatHistory: [],
+                chatBusy: false
             }), "analysis");
 
             this.getOwnerComponent().getRouter().getRoute("Preview").attachPatternMatched(this._onRouteMatched, this);
@@ -380,9 +387,9 @@ sap.ui.define([
                     expandable: true,
                     expanded: false,
                     width: "auto",
-                    headerToolbar: new sap.m.Toolbar({
+                    headerToolbar: new Toolbar({
                         content: [
-                            new sap.ui.core.Icon({
+                            new Icon({
                                 src: severityIcons[severity],
                                 size: "1.25rem"
                             }).addStyleClass("sapUiSmallMarginEnd severity-icon-" + severity),
@@ -429,7 +436,7 @@ sap.ui.define([
                 expandable: true,
                 expanded: false,
                 width: "auto",
-                headerToolbar: new sap.m.Toolbar({
+                headerToolbar: new Toolbar({
                     content: [
                         new Title({ text: displayIssueId, level: "H4" }).addStyleClass("sapUiSmallMarginBegin sapUiSmallMarginEnd"),
                         new HTML({ content: "<span class='area-badge'>" + area + "</span>" })
@@ -497,7 +504,7 @@ sap.ui.define([
                 expandable: true,
                 expanded: false,
                 width: "auto",
-                headerToolbar: new sap.m.Toolbar({
+                headerToolbar: new Toolbar({
                     content: [
                         new Title({ text: issueId, level: "H3" }).addStyleClass("sapUiSmallMarginBegin sapUiSmallMarginEnd"),
                         new HTML({ content: "<span class='area-badge'>" + area + "</span>" }),
@@ -779,7 +786,7 @@ sap.ui.define([
                 expandable: true,
                 expanded: false,
                 width: "auto",
-                headerToolbar: new sap.m.Toolbar({
+                headerToolbar: new Toolbar({
                     content: [
                         new Title({ text: item["Issue ID"], level: "H3" }).addStyleClass("sapUiTinyMarginBegin"),
                         new HTML({ content: sChipHtml }).addStyleClass("sapUiMediumMarginBegin")
@@ -844,59 +851,235 @@ sap.ui.define([
             return "<p>" + html + "</p>";
         },
 
+        _chatMdToHtml: function (text) {
+            if (!text) return "";
+
+            var escaped = text
+                .replace(/&/g, "&amp;")
+                .replace(/</g, "&lt;")
+                .replace(/>/g, "&gt;");
+
+            var lines = escaped.split("\n");
+            var htmlParts = [];
+            var inList = false;
+            var inCode = false;
+            var codeLines = [];
+
+            lines.forEach(function (line) {
+                var trimmed = (line || "").trim();
+
+                if (trimmed.indexOf("```") === 0) {
+                    if (inList) {
+                        htmlParts.push("</ul>");
+                        inList = false;
+                    }
+                    if (inCode) {
+                        htmlParts.push("<pre><code>" + codeLines.join("\n") + "</code></pre>");
+                        codeLines = [];
+                        inCode = false;
+                    } else {
+                        inCode = true;
+                    }
+                    return;
+                }
+
+                if (inCode) {
+                    codeLines.push(line);
+                    return;
+                }
+
+                line = (line || "")
+                    .replace(/\*\*(.*?)\*\*/g, "<strong>$1</strong>")
+                    .replace(/`([^`]+)`/g, "<code>$1</code>");
+
+                if (trimmed.indexOf("- ") === 0) {
+                    if (!inList) {
+                        htmlParts.push("<ul>");
+                        inList = true;
+                    }
+                    htmlParts.push("<li>" + line.trim().substring(2) + "</li>");
+                    return;
+                }
+
+                if (inList) {
+                    htmlParts.push("</ul>");
+                    inList = false;
+                }
+
+                if (trimmed.length === 0) {
+                    htmlParts.push("<br>");
+                    return;
+                }
+
+                htmlParts.push("<p>" + line + "</p>");
+            });
+
+            if (inCode) {
+                htmlParts.push("<pre><code>" + codeLines.join("\n") + "</code></pre>");
+            }
+
+            if (inList) {
+                htmlParts.push("</ul>");
+            }
+
+            return htmlParts.join("");
+        },
+
+        _scrollChatToBottom: function () {
+            if (this._oChatScroll && this._oChatScroll.scrollTo) {
+                this._oChatScroll.scrollTo(0, 999999, 0);
+            }
+        },
+
         onNavBack: function () {
             this.getOwnerComponent().getRouter().navTo("Main");
         },
 
         onChatPress: function () {
+            var oModel = this.getView().getModel("analysis");
+            var aHistory = oModel.getProperty("/chatHistory") || [];
+
+            aHistory.forEach(function (h) {
+                if (h && !h.html) {
+                    h.html = this._chatMdToHtml(h.content || "");
+                }
+            }.bind(this));
+            oModel.refresh();
+
             if (!this._oChatDialog) {
+                this._oChatList = new List("chatList", {
+                    showNoData: false,
+                    separators: "None",
+                    items: {
+                        path: "analysis>/chatHistory",
+                        template: new CustomListItem({
+                            content: [
+                                new HBox({
+                                    width: "100%",
+                                    justifyContent: "End",
+                                    visible: "{= ${analysis>role} === 'user' }",
+                                    items: [
+                                        new VBox({
+                                            items: [
+                                                new FormattedText({
+                                                    htmlText: "{analysis>html}"
+                                                }).addStyleClass("chatFormattedText")
+                                            ]
+                                        }).addStyleClass("chatBubbleUser")
+                                    ]
+                                }).addStyleClass("chatMessageRow"),
+                                new HBox({
+                                    width: "100%",
+                                    justifyContent: "Start",
+                                    visible: "{= ${analysis>role} === 'assistant' }",
+                                    items: [
+                                        new VBox({
+                                            items: [
+                                                new FormattedText({
+                                                    htmlText: "{analysis>html}"
+                                                }).addStyleClass("chatFormattedText")
+                                            ]
+                                        }).addStyleClass("chatBubbleBot")
+                                    ]
+                                }).addStyleClass("chatMessageRow"),
+                                new HBox({
+                                    width: "100%",
+                                    justifyContent: "Start",
+                                    visible: "{= ${analysis>role} === 'system' }",
+                                    items: [
+                                        new VBox({
+                                            items: [
+                                                new FormattedText({
+                                                    htmlText: "{analysis>html}"
+                                                }).addStyleClass("chatFormattedText")
+                                            ]
+                                        }).addStyleClass("chatBubbleSystem")
+                                    ]
+                                }).addStyleClass("chatMessageRow")
+                            ]
+                        })
+                    }
+                }).addStyleClass("chatList");
+
+                this._oChatScroll = new ScrollContainer({
+                    height: "100%",
+                    vertical: true,
+                    horizontal: false,
+                    content: [
+                        this._oChatList
+                    ]
+                }).addStyleClass("chatScrollArea").setLayoutData(new FlexItemData({ growFactor: 1, minHeight: "0px" }));
+
+                this._oChatBusyIndicator = new BusyIndicator({
+                    text: "{i18n>chatThinking}",
+                    visible: "{analysis>/chatBusy}",
+                    size: "1rem"
+                }).addStyleClass("chatBusyIndicator");
+
+                this._oChatInput = new TextArea("chatInput", {
+                    placeholder: "{i18n>chatPlaceholder}",
+                    growing: true,
+                    growingMaxLines: 6,
+                    width: "100%",
+                    enabled: "{= !${analysis>/chatBusy} }"
+                }).addStyleClass("chatInput").setLayoutData(new FlexItemData({ growFactor: 1 }));
+
+                this._oChatSendButton = new Button({
+                    text: "{i18n>send}",
+                    type: "Emphasized",
+                    enabled: "{= !${analysis>/chatBusy} }",
+                    press: this.onChatSend.bind(this)
+                }).addStyleClass("chatSendButton");
+
+                var oInputRow = new HBox({
+                    width: "100%",
+                    items: [
+                        this._oChatInput,
+                        this._oChatSendButton
+                    ]
+                }).addStyleClass("chatInputContainer");
+
+                this._oChatInput.addEventDelegate({
+                    onAfterRendering: function () {
+                        var oDomRef = this._oChatInput.getDomRef();
+                        if (oDomRef && !oDomRef.__chatKeyHandlerAttached) {
+                            oDomRef.__chatKeyHandlerAttached = true;
+                            oDomRef.addEventListener("keydown", function (e) {
+                                if (e.key === "Enter" && !e.shiftKey) {
+                                    e.preventDefault();
+                                    this.onChatSend();
+                                }
+                            }.bind(this));
+                        }
+                    }.bind(this)
+                });
+
                 this._oChatDialog = new Dialog({
                     title: "{i18n>chatTitle}",
-                    contentWidth: "500px",
+                    contentWidth: "560px",
                     contentHeight: "600px",
                     resizable: true,
                     draggable: true,
+                    afterOpen: function () {
+                        if (this._oChatInput) {
+                            this._oChatInput.focus();
+                        }
+                        setTimeout(function () {
+                            this._scrollChatToBottom();
+                        }.bind(this), 0);
+                    }.bind(this),
                     content: [
                         new VBox({
                             height: "100%",
                             justifyContent: "SpaceBetween",
                             items: [
-                                new sap.m.ScrollContainer({
-                                    height: "100%",
-                                    vertical: true,
-                                    horizontal: false,
-                                    content: [
-                                        new List("chatList", {
-                                            showNoData: false,
-                                            separators: "None",
-                                            items: {
-                                                path: "analysis>/chatHistory",
-                                                template: new CustomListItem({
-                                                    content: [
-                                                        new HBox({
-                                                            justifyContent: "Start",
-                                                            width: "100%",
-                                                            items: [
-                                                                new VBox({
-                                                                    items: [
-                                                                        new Text({ text: "{analysis>content}" })
-                                                                    ]
-                                                                }).addStyleClass("{= ${analysis>role} === 'user' ? 'chatBubbleUser' : 'chatBubbleBot' }")
-                                                            ]
-                                                        }).addStyleClass("sapUiTinyMarginBottom")
-                                                    ]
-                                                })
-                                            }
-                                        })
+                                this._oChatScroll,
+                                new VBox({
+                                    items: [
+                                        this._oChatBusyIndicator,
+                                        oInputRow
                                     ]
-                                }).setLayoutData(new sap.m.FlexItemData({ growFactor: 1, minHeight: "0px" })),
-
-                                new FeedInput("chatInput", {
-                                    post: this.onChatSend.bind(this),
-                                    showIcon: false,
-                                    placeholder: "{i18n>chatPlaceholder}",
-                                    submit: this.onChatSend.bind(this)
-                                }).addStyleClass("sapUiSmallMarginTop")
+                                })
                             ]
                         })
                     ],
@@ -909,17 +1092,46 @@ sap.ui.define([
                 });
                 this.getView().addDependent(this._oChatDialog);
             }
+
             this._oChatDialog.open();
+            setTimeout(function () {
+                this._scrollChatToBottom();
+            }.bind(this), 0);
         },
 
 
         onChatSend: function (oEvent) {
-            var sValue = oEvent.getParameter("value");
             var oModel = this.getView().getModel("analysis");
-            var aHistory = oModel.getProperty("/chatHistory");
+            if (oModel.getProperty("/chatBusy")) {
+                return;
+            }
 
-            aHistory.push({ role: "user", content: sValue });
+            var sValue = "";
+            if (oEvent && oEvent.getParameter) {
+                sValue = oEvent.getParameter("value");
+            }
+            if (!sValue && this._oChatInput) {
+                sValue = this._oChatInput.getValue();
+            }
+
+            sValue = (sValue || "").trim();
+            if (!sValue) {
+                return;
+            }
+
+            var aHistory = oModel.getProperty("/chatHistory") || [];
+            aHistory.push({ role: "user", content: sValue, html: this._chatMdToHtml(sValue) });
+            oModel.setProperty("/chatBusy", true);
             oModel.refresh();
+
+            if (this._oChatInput) {
+                this._oChatInput.setValue("");
+                this._oChatInput.focus();
+            }
+
+            setTimeout(function () {
+                this._scrollChatToBottom();
+            }.bind(this), 0);
 
             // Convert frontend format (role/content) to backend format (isUser/text)
             var backendHistory = aHistory.map(function (h) {
@@ -941,15 +1153,30 @@ sap.ui.define([
                 headers: { "Content-Type": "application/json" },
                 body: JSON.stringify(oPayload)
             })
-                .then(response => response.json())
+                .then(response => {
+                    if (!response.ok) {
+                        throw new Error("Chat request failed (" + response.status + ")");
+                    }
+                    return response.json();
+                })
                 .then(data => {
                     var sResponse = data.response || data.reply || data.message || "No response";
-                    aHistory.push({ role: "assistant", content: sResponse });
+                    aHistory.push({ role: "assistant", content: sResponse, html: this._chatMdToHtml(sResponse) });
                     oModel.refresh();
+                    setTimeout(function () {
+                        this._scrollChatToBottom();
+                    }.bind(this), 0);
                 })
                 .catch(err => {
-                    aHistory.push({ role: "system", content: "Error: " + err.message });
+                    var sErr = "Error: " + err.message;
+                    aHistory.push({ role: "system", content: sErr, html: this._chatMdToHtml(sErr) });
                     oModel.refresh();
+                    setTimeout(function () {
+                        this._scrollChatToBottom();
+                    }.bind(this), 0);
+                })
+                .finally(() => {
+                    oModel.setProperty("/chatBusy", false);
                 });
         }
     });

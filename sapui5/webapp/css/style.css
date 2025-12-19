@@ -31,25 +31,131 @@ body {
 
 /* Chat Bubbles */
 .chatBubbleUser {
-    background-color: #0070f2;
+    background: linear-gradient(180deg, #0a6ed1 0%, #0854a0 100%);
     color: #ffffff;
-    border-radius: 12px;
-    padding: 10px 14px;
-    margin: 5px 0;
-    align-self: flex-start;
-    max-width: 85%;
-    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.15);
+    border-radius: 16px;
+    border-top-right-radius: 6px;
+    padding: 0.65rem 0.85rem;
+    margin: 0.25rem 0;
+    max-width: 78%;
+    box-shadow: 0 2px 10px rgba(0, 0, 0, 0.14);
+    word-break: break-word;
 }
 
 .chatBubbleBot {
-    background-color: #f5f5f5;
-    color: #32363a;
+    background-color: #ffffff;
+    color: #1f2937;
+    border: 1px solid #e5e7eb;
+    border-radius: 16px;
+    border-top-left-radius: 6px;
+    padding: 0.65rem 0.85rem;
+    margin: 0.25rem 0;
+    max-width: 78%;
+    box-shadow: 0 2px 10px rgba(0, 0, 0, 0.08);
+    word-break: break-word;
+}
+
+.chatBubbleSystem {
+    background-color: #fff7ed;
+    color: #92400e;
+    border: 1px solid #fed7aa;
+    border-radius: 14px;
+    padding: 0.6rem 0.85rem;
+    margin: 0.25rem 0;
+    max-width: 90%;
+    box-shadow: 0 1px 4px rgba(0, 0, 0, 0.06);
+    word-break: break-word;
+}
+
+.chatMessageRow {
+    margin: 0.25rem 0;
+}
+
+.chatList.sapMList {
+    padding: 0.75rem 0.75rem 0.5rem;
+    background: transparent;
+}
+
+.chatList .sapMLIB {
+    background: transparent;
+    border: none;
+}
+
+.chatList .sapMLIBContent {
+    padding: 0;
+}
+
+.chatFormattedText {
+    line-height: 1.55;
+    font-size: 0.9375rem;
+}
+
+.chatFormattedText p {
+    margin: 0;
+}
+
+.chatFormattedText p + p {
+    margin-top: 0.5rem;
+}
+
+.chatFormattedText ul,
+.chatFormattedText ol {
+    margin: 0.35rem 0 0.35rem 1.25rem;
+    padding: 0;
+}
+
+.chatFormattedText li {
+    margin: 0.2rem 0;
+}
+
+.chatFormattedText code {
+    font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace;
+    font-size: 0.875em;
+    padding: 0.08rem 0.3rem;
+    border-radius: 6px;
+    background-color: rgba(0, 0, 0, 0.08);
+}
+
+.chatBubbleUser .chatFormattedText code {
+    background-color: rgba(255, 255, 255, 0.22);
+}
+
+.chatFormattedText pre {
+    margin: 0.5rem 0 0;
+    padding: 0.65rem 0.75rem;
+    border-radius: 10px;
+    background-color: rgba(0, 0, 0, 0.06);
+    overflow: auto;
+    white-space: pre;
+}
+
+.chatBubbleUser .chatFormattedText pre {
+    background-color: rgba(255, 255, 255, 0.18);
+}
+
+.chatInputContainer {
+    align-items: flex-end;
+    gap: 0.5rem;
+    padding: 0.75rem;
+    border-top: 1px solid #e5e7eb;
+}
+
+.chatInput textarea {
+    font-size: 0.9375rem;
+    line-height: 1.45;
+}
+
+.chatInput .sapMInputBaseContentWrapper {
     border-radius: 12px;
-    padding: 10px 14px;
-    margin: 5px 0;
-    align-self: flex-start;
-    max-width: 85%;
-    box-shadow: 0 1px 2px rgba(0, 0, 0, 0.1);
+}
+
+.chatSendButton {
+    margin-bottom: 2px;
+}
+
+.chatBusyIndicator {
+    margin: 0.25rem 0.75rem 0.25rem;
+    opacity: 0.9;
 }
 
 /* Markdown Rendering Helpers */
