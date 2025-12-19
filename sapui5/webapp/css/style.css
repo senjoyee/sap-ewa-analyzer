@@ -410,31 +410,10 @@ body {
     }
 }
 
-/* Center table column contents */
-.fileListSheet .sapMListTblCell {
-    text-align: center;
-}
-
-.fileListSheet .sapMListTblCell:first-child {
-    text-align: left;
-}
-
-.fileListSheet .sapMListTblCell:last-child {
-    text-align: right;
-}
-
-/* Center column headers */
-.fileListSheet .sapMListTblHeaderCell {
-    text-align: center;
-}
-
-.fileListSheet .sapMListTblHeaderCell:first-child {
-    text-align: left;
-}
-
-.fileListSheet .sapMListTblHeaderCell:last-child {
-    text-align: right;
-}
+/* 
+   REMOVED forced centering on cells. 
+   Let SAPUI5 hAlign property control text alignment.
+*/
 
 @media (max-width: 768px) {
     .fileListSheet {
@@ -487,22 +466,50 @@ body {
 
 /* Table Enhancements */
 .sapMListTblHeader {
-    background-color: #f9fafb !important;
-    border-bottom: 1px solid #e5e7eb !important;
+    background-color: #f5f7fa !important;
+    border-bottom: 2px solid #e5e7eb !important;
+    height: 3rem;
 }
 
 .sapMListTblHeader .sapMText {
-    color: #32363a !important;
-    font-weight: 600 !important;
+    color: #1d2d3e !important;
+    font-weight: 700 !important;
     text-transform: uppercase;
-    font-size: 0.75rem !important;
+    font-size: 0.8125rem !important;
     letter-spacing: 0.05em !important;
+    opacity: 0.9;
+}
+
+.sapMListTblCell {
+    padding-top: 1rem !important;
+    padding-bottom: 1rem !important;
+    vertical-align: middle !important;
 }
 
 .sapMListTblCell .sapMText {
     color: #454a50 !important;
-    font-size: 0.875rem !important;
+    font-size: 0.9375rem !important;
     font-weight: 400 !important;
+}
+
+/* Group Headers (Customer Names) */
+.sapMGHLI {
+    background-color: #fff !important;
+    border-bottom: 1px solid #0064d9 !important;
+    margin-top: 1.5rem !important;
+    padding-top: 0.5rem !important;
+}
+
+.sapMGHLI .sapMGroupTitle {
+    color: #0064d9 !important;
+    font-size: 1.1rem !important;
+    font-weight: 600 !important;
+    padding-left: 0.5rem;
+}
+
+/* Hover effect for table rows */
+.sapMListTblRow:hover {
+    background-color: #f8faff !important;
 }
 
 /* Section Specific Spacing */

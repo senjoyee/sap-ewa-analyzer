@@ -92,6 +92,7 @@
                 <!-- File List Table -->
                 <Table
                     id="filesTable"
+                    class="sapUiMediumMarginTop"
                     items="{
                         path: 'files>/',
                         sorter: [{
