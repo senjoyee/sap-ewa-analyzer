@@ -854,12 +854,22 @@ sap.ui.define([
         _chatMdToHtml: function (text) {
             if (!text) return "";
 
-            var escaped = text
-                .replace(/&/g, "&amp;")
-                .replace(/</g, "&lt;")
-                .replace(/>/g, "&gt;");
+            var escapeHtml = function (s) {
+                return (s || "")
+                    .replace(/&/g, "&amp;")
+                    .replace(/</g, "&lt;")
+                    .replace(/>/g, "&gt;");
+            };
 
-            var lines = escaped.split("\n");
+            var renderInline = function (str) {
+                return (str || "")
+                    .replace(/`([^`]+)`/g, function (_, code) { return "<code>" + escapeHtml(code) + "</code>"; })
+                    .replace(/\*\*(.*?)\*\*/g, "<strong>$1</strong>")
+                    .replace(/\*(.*?)\*/g, "<em>$1</em>")
+                    .replace(/\[(.+?)\]\((https?:[^\s)]+)\)/g, "<a href='$2' target='_blank'>$1</a>");
+            };
+
+            var lines = (text || "").split("\n");
             var htmlParts = [];
             var inList = false;
             var listTag = "ul";
@@ -903,21 +913,18 @@ sap.ui.define([
                 }
 
                 // Headings (#, ##, ###)
-                var headingMatch = trimmed.match(/^(#{1,6})\\s+(.*)$/);
+                var headingMatch = trimmed.match(/^(#{1,6})\s+(.*)$/);
                 if (headingMatch) {
                     closeList();
                     var level = headingMatch[1].length;
-                    var headingText = headingMatch[2]
-                        .replace(/\\*\\*(.*?)\\*\\*/g, "<strong>$1</strong>")
-                        .replace(/`([^`]+)`/g, "<code>$1</code>")
-                        .replace(/\\[(.+?)\\]\\((https?:[^\\s)]+)\\)/g, "<a href='$2' target='_blank'>$1</a>");
+                    var headingText = renderInline(headingMatch[2]);
                     htmlParts.push("<p class='chatHeading h" + level + "'><strong>" + headingText + "</strong></p>");
                     return;
                 }
 
                 // Ordered / unordered lists
                 var isUl = trimmed.indexOf("- ") === 0 || trimmed.indexOf("* ") === 0;
-                var isOl = /^\\d+\\.\\s+/.test(trimmed);
+                var isOl = /^\d+\.\s+/.test(trimmed);
                 if (isUl || isOl) {
                     var desiredTag = isOl ? "ol" : "ul";
                     if (!inList || listTag !== desiredTag) {
@@ -926,12 +933,8 @@ sap.ui.define([
                         inList = true;
                         htmlParts.push("<" + listTag + ">");
                     }
-                    var itemText = rawLine.replace(/^(-\\s+|\\*\\s+|\\d+\\.\\s+)/, "");
-                    itemText = itemText
-                        .replace(/\\*\\*(.*?)\\*\\*/g, "<strong>$1</strong>")
-                        .replace(/\\*(.*?)\\*/g, "<em>$1</em>")
-                        .replace(/`([^`]+)`/g, "<code>$1</code>")
-                        .replace(/\\[(.+?)\\]\\((https?:[^\\s)]+)\\)/g, "<a href='$2' target='_blank'>$1</a>");
+                    var itemText = rawLine.replace(/^(-\s+|\*\s+|\d+\.\s+)/, "");
+                    itemText = renderInline(itemText);
                     htmlParts.push("<li>" + itemText + "</li>");
                     return;
                 }
@@ -946,17 +949,13 @@ sap.ui.define([
                 }
 
                 // Paragraph with inline markdown
-                var paragraph = rawLine
-                    .replace(/\\*\\*(.*?)\\*\\*/g, "<strong>$1</strong>")
-                    .replace(/\\*(.*?)\\*/g, "<em>$1</em>")
-                    .replace(/`([^`]+)`/g, "<code>$1</code>")
-                    .replace(/\\[(.+?)\\]\\((https?:[^\\s)]+)\\)/g, "<a href='$2' target='_blank'>$1</a>");
+                var paragraph = renderInline(rawLine);
 
                 htmlParts.push("<p>" + paragraph + "</p>");
             });
 
             if (inCode) {
-                htmlParts.push("<pre><code>" + codeLines.join("\n") + "</code></pre>");
+                htmlParts.push("<pre><code>" + escapeHtml(codeLines.join("\n")) + "</code></pre>");
             }
 
             if (inList) {
