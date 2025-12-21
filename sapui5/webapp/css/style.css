@@ -418,7 +418,7 @@ body {
 
 .fileListSheet .sapMListTblHeader .sapMText {
     font-size: 0.75rem !important; /* Smaller header text (12px) */
-    font-weight: 800 !important; /* Bolder */
+    font-weight: 700 !important; /* Semi-bold to differentiate from rows */
     color: #1e293b !important; /* Darker slate color */
     letter-spacing: 0.06em !important;
     text-transform: uppercase;
@@ -447,7 +447,7 @@ body {
 
 .fileListSheet .sapMObjectIdentifierTitle .sapMText {
     font-size: 0.875rem !important; /* 14px for main file name */
-    font-weight: 600 !important;
+    font-weight: 500 !important; /* Regular-ish weight so file names are not bold */
     color: #0f172a !important; /* Slate 900 */
 }
 
