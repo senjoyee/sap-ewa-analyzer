@@ -120,9 +120,6 @@
                             <Text text="{i18n>fileName}"/>
                         </Column>
                         <Column minScreenWidth="Tablet" demandPopin="true">
-                            <Text text="{i18n>customer}"/>
-                        </Column>
-                        <Column minScreenWidth="Tablet" demandPopin="true">
                             <Text text="{i18n>status}"/>
                         </Column>
                         <Column minScreenWidth="Desktop" demandPopin="true" hAlign="End">
@@ -139,7 +136,6 @@
                         <ColumnListItem>
                             <cells>
                                 <ObjectIdentifier title="{files>name}"/>
-                                <Text text="{files>customer}"/>
                                 <ObjectStatus
                                     text="{files>status}"
                                     state="{path: 'files>status', formatter: '.formatter.statusState'}"

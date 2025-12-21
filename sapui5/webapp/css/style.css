@@ -397,7 +397,7 @@ body {
 
 /* File List specific - wider container to fit table content */
 .fileListSheet {
-    max-width: 1600px;
+    max-width: 1300px;
     padding: 2rem 2.5rem;
     min-height: 0;
 }
