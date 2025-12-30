@@ -1,0 +1,90 @@
+{
+  "xsappname": "ewa-analyzer",
+  "tenant-mode": "dedicated",
+  "description": "SAP EWA Analyzer - AI-powered Early Watch Alert analysis",
+  "scopes": [
+    {
+      "name": "$XSAPPNAME.read",
+      "description": "Read access to EWA analysis data"
+    },
+    {
+      "name": "$XSAPPNAME.write",
+      "description": "Write access - upload and analyze EWA reports"
+    },
+    {
+      "name": "$XSAPPNAME.admin",
+      "description": "Administrative access - manage all analyses"
+    }
+  ],
+  "attributes": [
+    {
+      "name": "department",
+      "description": "User's department for filtering",
+      "valueType": "string"
+    }
+  ],
+  "role-templates": [
+    {
+      "name": "EWAViewer",
+      "description": "View EWA analysis results",
+      "scope-references": [
+        "$XSAPPNAME.read"
+      ],
+      "attribute-references": [
+        "department"
+      ]
+    },
+    {
+      "name": "EWAAnalyst",
+      "description": "Upload and analyze EWA reports",
+      "scope-references": [
+        "$XSAPPNAME.read",
+        "$XSAPPNAME.write"
+      ],
+      "attribute-references": [
+        "department"
+      ]
+    },
+    {
+      "name": "EWAAdmin",
+      "description": "Full administrative access",
+      "scope-references": [
+        "$XSAPPNAME.read",
+        "$XSAPPNAME.write",
+        "$XSAPPNAME.admin"
+      ]
+    }
+  ],
+  "role-collections": [
+    {
+      "name": "EWA Analyzer Viewer",
+      "description": "Users who can view EWA analysis results",
+      "role-template-references": [
+        "$XSAPPNAME.EWAViewer"
+      ]
+    },
+    {
+      "name": "EWA Analyzer Analyst",
+      "description": "Users who can upload and analyze EWA reports",
+      "role-template-references": [
+        "$XSAPPNAME.EWAAnalyst"
+      ]
+    },
+    {
+      "name": "EWA Analyzer Administrator",
+      "description": "Full administrative access to EWA Analyzer",
+      "role-template-references": [
+        "$XSAPPNAME.EWAAdmin"
+      ]
+    }
+  ],
+  "oauth2-configuration": {
+    "token-validity": 43200,
+    "refresh-token-validity": 604800,
+    "redirect-uris": [
+      "https://*.cfapps.*.hana.ondemand.com/**",
+      "https://*.hana.ondemand.com/**"
+    ],
+    "autoapprove": true
+  }
+}

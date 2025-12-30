@@ -1,0 +1,248 @@
+# =============================================================================
+# SAP EWA Analyzer - Multi-Target Application Descriptor
+# =============================================================================
+# This file defines the entire application stack for SAP BTP deployment.
+# 
+# Deployment: mbt build && cf deploy mta_archives/ewa-analyzer_1.0.0.mtar
+# =============================================================================
+
+_schema-version: "3.2"
+ID: ewa-analyzer
+version: 1.0.0
+description: SAP EWA Analyzer - AI-powered Early Watch Alert analysis
+
+# =============================================================================
+# PARAMETERS - Global settings
+# =============================================================================
+parameters:
+  # Enable parallel deployment for faster builds
+  enable-parallel-deployments: true
+  # Keep previous app versions during deployment (blue-green)
+  keep-existing-routes: true
+
+# =============================================================================
+# MODULES - Applications to deploy
+# =============================================================================
+modules:
+  # ---------------------------------------------------------------------------
+  # 1. App Router - Entry point for all requests
+  # ---------------------------------------------------------------------------
+  # The App Router handles:
+  # - Authentication via XSUAA
+  # - Routing to backend and frontend
+  # - Session management
+  # ---------------------------------------------------------------------------
+  - name: ewa-analyzer-approuter
+    type: approuter.nodejs
+    path: approuter
+    parameters:
+      disk-quota: 256M
+      memory: 256M
+      # Route configuration - this is your app's URL
+      routes:
+        - route: ewa-analyzer-${space}.${default-domain}
+    properties:
+      # Logout endpoint configuration
+      LOGOUT_ENDPOINT: /logout
+      # Session timeout (in minutes)
+      SESSION_TIMEOUT: 60
+    requires:
+      # Bind to XSUAA for authentication
+      - name: ewa-analyzer-xsuaa
+      # Bind to destination service for backend routing
+      - name: ewa-analyzer-destination
+      # Bind to HTML5 repo runtime for serving UI
+      - name: ewa-analyzer-html5-runtime
+    provides:
+      - name: approuter-url
+        properties:
+          url: ${default-url}
+
+  # ---------------------------------------------------------------------------
+  # 2. Backend - Python FastAPI Application
+  # ---------------------------------------------------------------------------
+  # Your existing FastAPI backend, deployed to Cloud Foundry
+  # Uses Python buildpack (auto-detected from runtime.txt)
+  # ---------------------------------------------------------------------------
+  - name: ewa-analyzer-backend
+    type: python
+    path: backend
+    parameters:
+      # Resource allocation - adjust based on workload
+      memory: 1024M
+      disk-quota: 1024M
+      # Health check configuration
+      health-check-type: http
+      health-check-http-endpoint: /health
+      # Buildpack to use
+      buildpack: python_buildpack
+    properties:
+      # These will be set from BTP service bindings
+      # Azure credentials should be configured in User-Provided Service or Destination
+      PYTHONUNBUFFERED: "1"
+    requires:
+      # Bind to XSUAA for JWT validation
+      - name: ewa-analyzer-xsuaa
+      # Bind to destination service for Azure connections
+      - name: ewa-analyzer-destination
+      # Bind to user-provided service for Azure credentials
+      - name: ewa-analyzer-azure-credentials
+    provides:
+      - name: backend-api
+        properties:
+          url: ${default-url}
+
+  # ---------------------------------------------------------------------------
+  # 3. Frontend - SAPUI5 Application (HTML5 Repository)
+  # ---------------------------------------------------------------------------
+  # Your SAPUI5 app, deployed to HTML5 Application Repository
+  # Served by the App Router (not a separate runtime)
+  # ---------------------------------------------------------------------------
+  - name: ewa-analyzer-ui
+    type: html5
+    path: sapui5
+    build-parameters:
+      # Build the UI5 app before deployment
+      builder: custom
+      commands:
+        - npm install
+        - npx ui5 build --dest dist
+      # The built artifacts location
+      build-result: dist
+      # Files to include in deployment
+      supported-platforms: []
+    requires:
+      - name: ewa-analyzer-html5-repo-host
+
+  # ---------------------------------------------------------------------------
+  # 4. HTML5 App Deployer
+  # ---------------------------------------------------------------------------
+  # Technical module that deploys UI to HTML5 Application Repository
+  # ---------------------------------------------------------------------------
+  - name: ewa-analyzer-ui-deployer
+    type: com.sap.application.content
+    path: .
+    requires:
+      - name: ewa-analyzer-html5-repo-host
+        parameters:
+          content-target: true
+    build-parameters:
+      build-result: resources
+      requires:
+        - name: ewa-analyzer-ui
+          artifacts:
+            - "*.zip"
+          target-path: resources/
+
+# =============================================================================
+# RESOURCES - BTP Services to create/bind
+# =============================================================================
+resources:
+  # ---------------------------------------------------------------------------
+  # 1. XSUAA - Authorization & Trust Management
+  # ---------------------------------------------------------------------------
+  # Provides OAuth2/JWT authentication for your application
+  # ---------------------------------------------------------------------------
+  - name: ewa-analyzer-xsuaa
+    type: org.cloudfoundry.managed-service
+    parameters:
+      service: xsuaa
+      service-plan: application
+      path: xs-security.json
+      config:
+        # Unique identifier for your app
+        xsappname: ewa-analyzer-${space}
+        # Use SAML for enterprise SSO
+        tenant-mode: dedicated
+        # OAuth2 settings
+        oauth2-configuration:
+          # Token validity (12 hours)
+          token-validity: 43200
+          # Redirect URIs (auto-configured)
+          redirect-uris:
+            - https://*.${default-domain}/**
+
+  # ---------------------------------------------------------------------------
+  # 2. Destination Service
+  # ---------------------------------------------------------------------------
+  # Manages connections to external systems (Azure Blob, OpenAI, etc.)
+  # Configure destinations in BTP Cockpit after deployment
+  # ---------------------------------------------------------------------------
+  - name: ewa-analyzer-destination
+    type: org.cloudfoundry.managed-service
+    parameters:
+      service: destination
+      service-plan: lite
+      config:
+        # Predefined destinations (can also create via Cockpit)
+        init_data:
+          instance:
+            existing_destinations_policy: update
+            destinations:
+              # Azure Blob Storage destination
+              - Name: AZURE_BLOB_STORAGE
+                Type: HTTP
+                URL: https://<your-storage-account>.blob.core.windows.net
+                ProxyType: Internet
+                Authentication: NoAuthentication
+                # Note: SAS token or connection string configured separately
+              # Azure OpenAI destination  
+              - Name: AZURE_OPENAI
+                Type: HTTP
+                URL: https://<your-resource>.openai.azure.com
+                ProxyType: Internet
+                Authentication: NoAuthentication
+                # Note: API key configured as additional property
+
+  # ---------------------------------------------------------------------------
+  # 3. HTML5 Application Repository - Host Service
+  # ---------------------------------------------------------------------------
+  # Stores your SAPUI5 application static files
+  # ---------------------------------------------------------------------------
+  - name: ewa-analyzer-html5-repo-host
+    type: org.cloudfoundry.managed-service
+    parameters:
+      service: html5-apps-repo
+      service-plan: app-host
+
+  # ---------------------------------------------------------------------------
+  # 4. HTML5 Application Repository - Runtime Service
+  # ---------------------------------------------------------------------------
+  # Serves your SAPUI5 application via App Router
+  # ---------------------------------------------------------------------------
+  - name: ewa-analyzer-html5-runtime
+    type: org.cloudfoundry.managed-service
+    parameters:
+      service: html5-apps-repo
+      service-plan: app-runtime
+
+  # ---------------------------------------------------------------------------
+  # 5. User-Provided Service - Azure Credentials
+  # ---------------------------------------------------------------------------
+  # Stores Azure credentials (create manually after deployment)
+  # 
+  # Create with:
+  # cf cups ewa-analyzer-azure-credentials -p '{
+  #   "AZURE_STORAGE_CONNECTION_STRING": "...",
+  #   "AZURE_STORAGE_CONTAINER_NAME": "...",
+  #   "AZURE_OPENAI_API_KEY": "...",
+  #   "AZURE_OPENAI_ENDPOINT": "...",
+  #   "AZURE_OPENAI_API_VERSION": "...",
+  #   "AZURE_OPENAI_SUMMARY_MODEL": "..."
+  # }'
+  # ---------------------------------------------------------------------------
+  - name: ewa-analyzer-azure-credentials
+    type: org.cloudfoundry.user-provided-service
+    parameters:
+      # This service must be created manually before deployment
+      # Or use: cf create-user-provided-service
+      service-name: ewa-analyzer-azure-credentials
+
+# =============================================================================
+# BUILD PARAMETERS - Global build settings
+# =============================================================================
+build-parameters:
+  before-all:
+    - builder: custom
+      commands:
+        - echo "Starting MTA build for EWA Analyzer..."

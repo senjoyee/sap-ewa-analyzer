@@ -1,0 +1,29 @@
+{
+  "authenticationMethod": "route",
+  "welcomeFile": "/index.html",
+  "logout": {
+    "logoutEndpoint": "/logout",
+    "logoutPage": "/"
+  },
+  "routes": [
+    {
+      "source": "^/api/(.*)$",
+      "target": "/api/$1",
+      "destination": "ewa-backend",
+      "authenticationType": "xsuaa",
+      "csrfProtection": false
+    },
+    {
+      "source": "^/health$",
+      "target": "/health",
+      "destination": "ewa-backend",
+      "authenticationType": "none"
+    },
+    {
+      "source": "^(.*)$",
+      "target": "$1",
+      "service": "html5-apps-repo-rt",
+      "authenticationType": "xsuaa"
+    }
+  ]
+}

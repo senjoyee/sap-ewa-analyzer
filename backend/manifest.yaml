@@ -1,0 +1,80 @@
+# =============================================================================
+# Cloud Foundry Deployment Manifest for EWA Analyzer Backend
+# =============================================================================
+# This file configures how the backend is deployed to SAP BTP Cloud Foundry.
+# 
+# Deploy standalone: cf push -f manifest.yaml
+# (Usually deployed via MTA, but this allows standalone deployment)
+# =============================================================================
+
+applications:
+  - name: ewa-analyzer-backend
+    # ---------------------------------------------------------------------------
+    # Resource Allocation
+    # ---------------------------------------------------------------------------
+    # Memory: FastAPI + WeasyPrint + PyMuPDF need decent memory
+    memory: 1024M
+    # Disk: Space for temporary files during PDF processing
+    disk_quota: 1024M
+    # Instances: Start with 1, scale based on load
+    instances: 1
+    
+    # ---------------------------------------------------------------------------
+    # Buildpack Configuration
+    # ---------------------------------------------------------------------------
+    # Python buildpack auto-detects from runtime.txt
+    buildpack: python_buildpack
+    
+    # ---------------------------------------------------------------------------
+    # Application Settings
+    # ---------------------------------------------------------------------------
+    # Path to application code (relative to this manifest)
+    path: .
+    # Command to start the application (also in Procfile)
+    command: gunicorn ewa_main:app -w 2 -k uvicorn.workers.UvicornWorker -b 0.0.0.0:$PORT
+    
+    # ---------------------------------------------------------------------------
+    # Health Check
+    # ---------------------------------------------------------------------------
+    health-check-type: http
+    health-check-http-endpoint: /health
+    health-check-invocation-timeout: 60
+    
+    # ---------------------------------------------------------------------------
+    # Route Configuration
+    # ---------------------------------------------------------------------------
+    # Random route for isolation (override in production)
+    random-route: true
+    # Or specify explicit route:
+    # routes:
+    #   - route: ewa-backend.cfapps.eu10.hana.ondemand.com
+    
+    # ---------------------------------------------------------------------------
+    # Environment Variables
+    # ---------------------------------------------------------------------------
+    env:
+      # Python configuration
+      PYTHONUNBUFFERED: "1"
+      # Disable debug in production
+      DEBUG: "false"
+      # Provider selection (openai or anthropic)
+      PROVIDER: "openai"
+    
+    # ---------------------------------------------------------------------------
+    # Service Bindings
+    # ---------------------------------------------------------------------------
+    # These services must exist before deployment
+    # Create with: cf create-service <service> <plan> <name>
+    services:
+      # XSUAA for JWT validation
+      - ewa-analyzer-xsuaa
+      # Destination service for external connections
+      - ewa-analyzer-destination
+      # User-provided service for Azure credentials
+      - ewa-analyzer-azure-credentials
+
+    # ---------------------------------------------------------------------------
+    # Timeout Settings
+    # ---------------------------------------------------------------------------
+    # Startup timeout (PDF processing can take time on first request)
+    timeout: 180
