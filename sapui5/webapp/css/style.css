@@ -430,6 +430,7 @@ body {
     padding-top: 0.6rem !important; /* Compact padding */
     padding-bottom: 0.6rem !important;
     border-bottom: 1px solid #f1f5f9 !important;
+    vertical-align: middle !important;
 }
 
 .fileListSheet .sapMListTblRow:hover {
@@ -458,10 +459,10 @@ body {
 }
 
 /* Action Buttons - Subtle adjustment */
-.fileListSheet .sapMBtn {
+.fileListSheet .sapMListTblCell .sapMBtn {
     height: 1.75rem; /* Smaller buttons */
 }
-.fileListSheet .sapMBtnInner {
+.fileListSheet .sapMListTblCell .sapMBtnInner {
     padding-top: 0;
     padding-bottom: 0;
     font-size: 0.8125rem !important;

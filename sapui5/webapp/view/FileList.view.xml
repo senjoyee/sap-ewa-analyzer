@@ -144,6 +144,7 @@
                                 <Text text="{path: 'files>reportDate', type: 'sap.ui.model.type.Date', formatOptions: { style: 'medium' }}"/>
                                 <HBox
                                     justifyContent="End"
+                                    alignItems="Center"
                                     visible="{= ${files>status} ? ${files>status}.toLowerCase() !== 'processing' : true }">
                                     <Button
                                         text="{i18n>viewAnalysis}"
