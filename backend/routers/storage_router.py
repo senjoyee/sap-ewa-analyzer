@@ -18,13 +18,12 @@ from datetime import datetime
 
 from fastapi import APIRouter, UploadFile, File, HTTPException, Form, Response, Body
 from pydantic import BaseModel
-from azure.core.exceptions import ResourceNotFoundError
-
 from core.azure_clients import (
     blob_service_client,
     AZURE_STORAGE_CONNECTION_STRING,
     AZURE_STORAGE_CONTAINER_NAME,
 )
+from services.storage_service import StorageService
 from workflow_orchestrator import EWAWorkflowOrchestrator
 
 # ---------------------------------------------------------------------------
@@ -141,6 +140,7 @@ def validate_filename_and_extract_metadata(filename: str) -> Dict[str, Any]:
 # Router definition
 # ---------------------------------------------------------------------------
 router = APIRouter(prefix="/api", tags=["storage"])
+storage_service = StorageService()
 
 # ------------------------- Upload endpoint ------------------------- #
 
@@ -416,24 +416,34 @@ async def download_file(blob_name: str):
         if not blob_service_client:
             raise HTTPException(status_code=500, detail="Azure Blob Service client not initialized")
 
-        blob_client = blob_service_client.get_blob_client(
-            container=AZURE_STORAGE_CONTAINER_NAME, blob=blob_name
-        )
-
-        if not blob_client.exists():
-            raise HTTPException(status_code=404, detail=f"File {blob_name} not found")
-
-        blob_data = blob_client.download_blob()
-        content = blob_data.readall()
-
         if blob_name.endswith(".md"):
+            try:
+                content = storage_service.get_text_content(blob_name)
+            except FileNotFoundError:
+                raise HTTPException(status_code=404, detail=f"File {blob_name} not found") from None
             content_type = "text/markdown"
         elif blob_name.endswith(".json"):
+            try:
+                content = storage_service.get_text_content(blob_name)
+            except FileNotFoundError:
+                raise HTTPException(status_code=404, detail=f"File {blob_name} not found") from None
             content_type = "application/json"
-        elif blob_name.endswith(".pdf"):
+        else:
+            try:
+                content = storage_service.get_bytes(blob_name)
+            except FileNotFoundError:
+                raise HTTPException(status_code=404, detail=f"File {blob_name} not found") from None
+
+            content_type = "application/pdf" if blob_name.endswith(".pdf") else "application/octet-stream"
+
+        if isinstance(content, str):
+            content = content.encode("utf-8")
+
+        if blob_name.endswith(".pdf"):
             content_type = "application/pdf"
         else:
-            content_type = "application/octet-stream"
+            # Keep previously determined content types for text/json/others
+            content_type = content_type
 
         return Response(
             content=content,

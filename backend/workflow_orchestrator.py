@@ -29,6 +29,7 @@ from agent.openai_ewa_agent import OpenAIEWAAgent
 from agent.anthropic_ewa_agent import AnthropicEWAAgent
 from utils.markdown_utils import json_to_markdown
 from converters.document_converter import convert_document_to_markdown
+from services.storage_service import StorageService
 
 # Load environment variables
 load_dotenv()
@@ -107,6 +108,7 @@ class EWAWorkflowOrchestrator:
         self.azure_openai_endpoint = AZURE_OPENAI_ENDPOINT
         self.azure_openai_api_key = AZURE_OPENAI_API_KEY
         self.azure_openai_api_version = AZURE_OPENAI_API_VERSION
+        self.storage_service = StorageService()
         self._initialize_clients()
     
     def _initialize_clients(self):
@@ -227,17 +229,7 @@ class EWAWorkflowOrchestrator:
             md_blob_name = f"{base_name}.md"
             
             print(f"Downloading markdown content from {md_blob_name}")
-            
-            blob_client = self.blob_service_client.get_blob_client(
-                container=AZURE_STORAGE_CONTAINER_NAME, 
-                blob=md_blob_name
-            )
-            
-            # Download the blob content off the event loop to avoid blocking
-            def _read_md() -> str:
-                downloader = blob_client.download_blob()
-                return downloader.readall().decode('utf-8')
-            content = await asyncio.to_thread(_read_md)
+            content = await asyncio.to_thread(self.storage_service.get_text_content, md_blob_name)
             
             print(f"Successfully downloaded {len(content)} characters of markdown content")
             return content
@@ -251,18 +243,7 @@ class EWAWorkflowOrchestrator:
         """Download original PDF content from Azure Blob Storage for multimodal analysis"""
         try:
             print(f"Downloading PDF content from {blob_name}")
-            
-            blob_client = self.blob_service_client.get_blob_client(
-                container=AZURE_STORAGE_CONTAINER_NAME, 
-                blob=blob_name
-            )
-            
-            # Download the blob content as bytes off the event loop
-            def _read_pdf() -> bytes:
-                downloader = blob_client.download_blob()
-                return downloader.readall()
-            content = await asyncio.to_thread(_read_pdf)
-            
+            content = await asyncio.to_thread(self.storage_service.get_bytes, blob_name)
             print(f"Successfully downloaded {len(content)} bytes of PDF content")
             return content
             

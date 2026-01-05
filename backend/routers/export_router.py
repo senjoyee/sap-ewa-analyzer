@@ -20,10 +20,12 @@ from core.azure_clients import (
     blob_service_client,
     AZURE_STORAGE_CONTAINER_NAME,
 )
+from services.storage_service import StorageService
 from utils.markdown_utils import json_to_markdown
 from utils.html_utils import json_to_html
 
 router = APIRouter(prefix="/api", tags=["export"])
+storage_service = StorageService()
 
 
 def _sanitize_filename_component(value: str) -> str:
@@ -62,10 +64,6 @@ def _get_pdf_optimized_markdown(blob_name: str, markdown_text: str) -> str:
     print(f"[PDF Export] _get_pdf_optimized_markdown called with blob_name={blob_name}")
     print(f"[PDF Export] Original markdown length: {len(markdown_text)}")
     
-    if not blob_service_client:
-        print(f"[PDF Export] No blob service client, returning original markdown")
-        return markdown_text
-    
     try:
         # Derive the JSON blob name from the markdown blob name
         # Pattern: filename_AI.md -> filename_AI.json
@@ -74,25 +72,19 @@ def _get_pdf_optimized_markdown(blob_name: str, markdown_text: str) -> str:
         print(f"[PDF Export] Looking for JSON: {json_blob_name}")
         
         # Try to download the JSON file
-        json_blob_client = blob_service_client.get_blob_client(
-            container=AZURE_STORAGE_CONTAINER_NAME, blob=json_blob_name
-        )
+        json_text = storage_service.get_text_content(json_blob_name)
+        json_data = json.loads(json_text)
+        print(f"[PDF Export] JSON loaded successfully, keys: {list(json_data.keys())}")
         
-        if json_blob_client.exists():
-            print(f"[PDF Export] JSON file exists, downloading...")
-            json_bytes = json_blob_client.download_blob().readall()
-            json_data = json.loads(json_bytes.decode("utf-8", errors="replace"))
-            print(f"[PDF Export] JSON loaded successfully, keys: {list(json_data.keys())}")
+        # Regenerate markdown with pdf_export=True
+        print(f"[PDF Export] Regenerating markdown from JSON with pdf_export=True")
+        regenerated = json_to_markdown(json_data, pdf_export=True)
+        print(f"[PDF Export] Regenerated markdown length: {len(regenerated)}")
+        return regenerated
             
-            # Regenerate markdown with pdf_export=True
-            print(f"[PDF Export] Regenerating markdown from JSON with pdf_export=True")
-            regenerated = json_to_markdown(json_data, pdf_export=True)
-            print(f"[PDF Export] Regenerated markdown length: {len(regenerated)}")
-            return regenerated
-        else:
-            print(f"[PDF Export] JSON not found ({json_blob_name}), using original markdown")
-            return markdown_text
-            
+    except FileNotFoundError:
+        print(f"[PDF Export] JSON not found ({json_blob_name}), using original markdown")
+        return markdown_text
     except Exception as e:
         print(f"[PDF Export] Error loading JSON for PDF optimization: {e}")
         import traceback
@@ -678,14 +670,10 @@ async def export_markdown_to_pdf_enhanced(
         if not blob_name.lower().endswith(".md"):
             raise HTTPException(status_code=400, detail="blob_name must point to a .md file")
 
-        blob_client = blob_service_client.get_blob_client(
-            container=AZURE_STORAGE_CONTAINER_NAME, blob=blob_name
-        )
-        if not blob_client.exists():
-            raise HTTPException(status_code=404, detail=f"File {blob_name} not found")
-
-        markdown_bytes = blob_client.download_blob().readall()
-        markdown_text = markdown_bytes.decode("utf-8", errors="replace")
+        try:
+            markdown_text = storage_service.get_text_content(blob_name)
+        except FileNotFoundError:
+            raise HTTPException(status_code=404, detail=f"File {blob_name} not found") from None
         
         # Regenerate markdown from JSON for PDF export (converts JSON cards to tables, removes KPIs)
         # Re-enabled to ensure Key Findings are processed correctly
@@ -946,14 +934,10 @@ async def export_markdown_to_pdf(
         if not blob_name.lower().endswith(".md"):
             raise HTTPException(status_code=400, detail="blob_name must point to a .md file")
 
-        blob_client = blob_service_client.get_blob_client(
-            container=AZURE_STORAGE_CONTAINER_NAME, blob=blob_name
-        )
-        if not blob_client.exists():
-            raise HTTPException(status_code=404, detail=f"File {blob_name} not found")
-
-        markdown_bytes = blob_client.download_blob().readall()
-        markdown_text = markdown_bytes.decode("utf-8", errors="replace")
+        try:
+            markdown_text = storage_service.get_text_content(blob_name)
+        except FileNotFoundError:
+            raise HTTPException(status_code=404, detail=f"File {blob_name} not found") from None
         
         # Regenerate markdown from JSON for PDF export (converts JSON cards to tables, removes KPIs)
         markdown_text = _get_pdf_optimized_markdown(blob_name, markdown_text)
@@ -1019,7 +1003,7 @@ async def export_markdown_to_pdf(
                 border-collapse: collapse; 
                 margin: 15px 0;
                 font-size: 10pt;
-                box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+                box-shadow: 0 1px 3px rgba(0,0,0,0.1);
             }
             
             th { 
@@ -1216,16 +1200,12 @@ async def export_json_to_pdf(
         
         print(f"[PDF Export V2] Looking for JSON: {json_blob_name}")
         
-        json_blob_client = blob_service_client.get_blob_client(
-            container=AZURE_STORAGE_CONTAINER_NAME, blob=json_blob_name
-        )
+        try:
+            json_text = storage_service.get_text_content(json_blob_name)
+        except FileNotFoundError:
+            raise HTTPException(status_code=404, detail=f"JSON file {json_blob_name} not found") from None
         
-        if not json_blob_client.exists():
-            raise HTTPException(status_code=404, detail=f"JSON file {json_blob_name} not found")
-        
-        # Load JSON data
-        json_bytes = json_blob_client.download_blob().readall()
-        json_data = json.loads(json_bytes.decode("utf-8", errors="replace"))
+        json_data = json.loads(json_text)
         print(f"[PDF Export V2] JSON loaded, keys: {list(json_data.keys())}")
         
         # Fetch customer_name from original PDF blob metadata

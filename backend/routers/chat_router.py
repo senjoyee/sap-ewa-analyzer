@@ -19,10 +19,12 @@ from core.azure_clients import (
     blob_service_client,
     AZURE_STORAGE_CONTAINER_NAME,
 )
+from services.storage_service import StorageService
 
 # Lazy import AzureOpenAI only when needed to avoid cost at module load
 
 router = APIRouter(prefix="/api", tags=["chat"])
+storage_service = StorageService()
 
 
 class ChatHistoryItem(BaseModel):
@@ -78,14 +80,11 @@ async def chat_with_document(request: ChatRequest):
             if blob_service_client and AZURE_STORAGE_CONTAINER_NAME and request.fileName:
                 base, _ = os.path.splitext(request.fileName)
                 md_blob_name = f"{base}.md"
-                blob_client = blob_service_client.get_blob_client(
-                    container=AZURE_STORAGE_CONTAINER_NAME, blob=md_blob_name
-                )
-                md_bytes = await asyncio.to_thread(lambda: blob_client.download_blob().readall())
-                if isinstance(md_bytes, (bytes, bytearray)):
-                    candidate = md_bytes.decode("utf-8", errors="ignore").strip()
-                    if candidate:
-                        doc_content = candidate
+                candidate = await asyncio.to_thread(storage_service.get_text_content, md_blob_name)
+                if isinstance(candidate, str):
+                    candidate = candidate.strip()
+                if candidate:
+                    doc_content = candidate
         except Exception:
             pass
 

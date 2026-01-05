@@ -28,10 +28,12 @@ from core.azure_clients import (
     blob_service_client,
     AZURE_STORAGE_CONTAINER_NAME,
 )
+from services.storage_service import StorageService
 
 # Dictionary to track the status of document conversion jobs
 # Structure: {blob_name: {"status": "pending|processing|completed|failed", "start_time": timestamp, "end_time": timestamp, "message": "message", "progress": progress_percentage}}
 conversion_status_tracker = {}
+storage_service = StorageService()
 
 def convert_pdf_to_markdown(blob_name: str) -> dict:
     """
@@ -61,20 +63,15 @@ def convert_pdf_to_markdown(blob_name: str) -> dict:
     }
     
     try:
-        # Get the container client
-        container_client = blob_service_client.get_container_client(AZURE_STORAGE_CONTAINER_NAME)
-        
         # Download the PDF from blob storage
         conversion_status_tracker[blob_name]["progress"] = 10
         conversion_status_tracker[blob_name]["message"] = "Downloading PDF from blob storage"
         
-        blob_client = container_client.get_blob_client(blob_name)
-        blob_properties = blob_client.get_blob_properties()
-        metadata = blob_properties.metadata
-        
-        # Download blob content
-        blob_data = blob_client.download_blob()
-        pdf_content = blob_data.readall()
+        pdf_content = storage_service.get_bytes(blob_name)
+        blob_client = blob_service_client.get_blob_client(
+            container=AZURE_STORAGE_CONTAINER_NAME, blob=blob_name
+        )
+        metadata = blob_client.get_blob_properties().metadata
         
         # Save PDF temporarily (thread-safe)
         with tempfile.NamedTemporaryFile(delete=False, suffix=".pdf") as temp_file:
