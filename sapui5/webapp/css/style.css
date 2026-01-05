@@ -427,8 +427,6 @@ body {
 
 /* Row & Cell Styling */
 .fileListSheet .sapMListTblCell {
-    padding-top: 0.6rem !important; /* Compact padding */
-    padding-bottom: 0.6rem !important;
     border-bottom: 1px solid #f1f5f9 !important;
     vertical-align: middle !important;
 }
@@ -460,12 +458,24 @@ body {
 
 /* Action Buttons - Subtle adjustment */
 .fileListSheet .sapMListTblCell .sapMBtn {
-    height: 1.75rem; /* Smaller buttons */
+    margin: 0 !important;
+    vertical-align: middle;
 }
 .fileListSheet .sapMListTblCell .sapMBtnInner {
-    padding-top: 0;
-    padding-bottom: 0;
     font-size: 0.8125rem !important;
+}
+
+.actionsContainer {
+    display: flex !important;
+    align-items: center !important;
+    justify-content: flex-end !important;
+    height: 100% !important;
+}
+
+.actionsContainer .sapMBtn {
+    margin-left: 0.5rem !important;
+    margin-top: 0 !important;
+    margin-bottom: 0 !important;
 }
 
 /* Group Headers */

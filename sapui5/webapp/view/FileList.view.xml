@@ -68,7 +68,7 @@
                                     </Column>
                                 </columns>
                                 <items>
-                                    <ColumnListItem>
+                                    <ColumnListItem vAlign="Middle">
                                         <cells>
                                             <ObjectIdentifier title="{uploadQueue>name}"/>
                                             <Text text="{uploadQueue>size}"/>
@@ -133,7 +133,7 @@
                         </Column>
                     </columns>
                     <items>
-                        <ColumnListItem>
+                        <ColumnListItem vAlign="Middle">
                             <cells>
                                 <ObjectIdentifier title="{files>name}"/>
                                 <ObjectStatus
@@ -143,6 +143,8 @@
                                 <Text text="{path: 'files>uploadDate', type: 'sap.ui.model.type.Date', formatOptions: { style: 'medium' }}"/>
                                 <Text text="{path: 'files>reportDate', type: 'sap.ui.model.type.Date', formatOptions: { style: 'medium' }}"/>
                                 <HBox
+                                    class="actionsContainer"
+                                    height="100%"
                                     justifyContent="End"
                                     alignItems="Center"
                                     visible="{= ${files>status} ? ${files>status}.toLowerCase() !== 'processing' : true }">
