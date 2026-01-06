@@ -491,12 +491,8 @@ body {
 .fileListSheet .sapMGHLI {
     background-color: #f8fafc !important;
     border-bottom: 1px solid #cbd5e1 !important;
-    padding-top: 0.25rem !important;
-    padding-bottom: 0.25rem !important;
-    margin-top: 0.25rem !important;
-    height: 2rem !important;
-    display: flex;
-    align-items: center;
+    height: 2.25rem !important;
+    vertical-align: middle !important;
 }
 
 .fileListSheet .sapMGHLI .sapMGroupTitle {
@@ -596,13 +592,8 @@ body {
     font-weight: 400 !important;
 }
 
-/* Group Headers (Customer Names) */
-.sapMGHLI {
-    background-color: #fff !important;
-    border-bottom: 1px solid #0064d9 !important;
-    margin-top: 1.5rem !important;
-    padding-top: 0.5rem !important;
-}
+/* Group Headers (Customer Names) - CLEANED UP */
+/* Removed conflicting global .sapMGHLI rule that was breaking layout */
 
 .sapMGHLI .sapMGroupTitle {
     color: #0064d9 !important;
