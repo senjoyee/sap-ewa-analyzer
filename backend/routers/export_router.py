@@ -1338,25 +1338,40 @@ async def export_json_to_excel(
         except Exception as e:
             print(f"[Excel Export] Error fetching customer metadata: {e}")
         
-        # Fetch markdown file and extract parameters
+        # Fetch parameters from pre-extracted JSON (created during analysis workflow)
+        # Falls back to regex-based extraction from markdown if JSON not available
         parameters = []
         try:
-            # Derive markdown blob name
+            # Try to load pre-extracted parameters JSON first
             if json_blob_name.endswith("_AI.json"):
-                md_blob_name = json_blob_name.replace("_AI.json", ".md")
+                params_blob_name = json_blob_name.replace("_AI.json", "_parameters.json")
             else:
-                md_blob_name = base_name + ".md"
+                params_blob_name = base_name + "_parameters.json"
             
-            print(f"[Excel Export] Looking for markdown: {md_blob_name}")
-            md_content = storage_service.get_text_content(md_blob_name)
-            
-            if md_content:
-                parameters = extract_parameters_from_markdown(md_content)
-                print(f"[Excel Export] Extracted {len(parameters)} parameters from markdown")
-        except FileNotFoundError:
-            print(f"[Excel Export] Markdown file not found, skipping parameter extraction")
+            print(f"[Excel Export] Looking for parameters JSON: {params_blob_name}")
+            params_text = storage_service.get_text_content(params_blob_name)
+            params_data = json.loads(params_text)
+            parameters = params_data.get("parameters", [])
+            print(f"[Excel Export] Loaded {len(parameters)} parameters from pre-extracted JSON")
+        except (FileNotFoundError, json.JSONDecodeError) as e:
+            # Fallback to regex-based extraction from markdown
+            print(f"[Excel Export] Parameters JSON not found, falling back to markdown extraction")
+            try:
+                if json_blob_name.endswith("_AI.json"):
+                    md_blob_name = json_blob_name.replace("_AI.json", ".md")
+                else:
+                    md_blob_name = base_name + ".md"
+                
+                md_content = storage_service.get_text_content(md_blob_name)
+                if md_content:
+                    parameters = extract_parameters_from_markdown(md_content)
+                    print(f"[Excel Export] Extracted {len(parameters)} parameters from markdown (fallback)")
+            except FileNotFoundError:
+                print(f"[Excel Export] Markdown file not found, skipping parameter extraction")
+            except Exception as md_e:
+                print(f"[Excel Export] Error extracting parameters from markdown: {md_e}")
         except Exception as e:
-            print(f"[Excel Export] Error extracting parameters: {e}")
+            print(f"[Excel Export] Error loading parameters: {e}")
         
         # Convert JSON to Excel
         excel_bytes = json_to_excel(json_data, customer_name=customer_name, parameters=parameters)
