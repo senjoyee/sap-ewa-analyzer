@@ -291,6 +291,9 @@ def _write_key_findings_sheet(ws: Worksheet, data: Dict[str, Any], styles: Dict[
         _apply_header_style(cell, styles)
     
     # Data rows
+    critical_rows = []
+    non_critical_rows = []
+    
     for row_idx, finding in enumerate(findings, 4):
         values = [
             finding.get("Issue ID", finding.get("issue_id", "")),
@@ -312,6 +315,12 @@ def _write_key_findings_sheet(ws: Worksheet, data: Dict[str, Any], styles: Dict[
                 cell.font = Font(name="Calibri", size=11, bold=True, color=COLORS["white"])
                 cell.fill = _get_severity_fill(str(value))
                 cell.alignment = Alignment(horizontal="center", vertical="center")
+                
+                # Track rows for initial filtering
+                if str(value).lower() == "critical":
+                    critical_rows.append(row_idx)
+                else:
+                    non_critical_rows.append(row_idx)
         
         # Set row height for wrapped text
         ws.row_dimensions[row_idx].height = 60
@@ -330,6 +339,12 @@ def _write_key_findings_sheet(ws: Worksheet, data: Dict[str, Any], styles: Dict[
         # Apply an auto-filter with Severity defaulted to "critical"
         ws.auto_filter.ref = f"A3:G{last_row}"
         ws.auto_filter.add_filter_column(2, ["critical"])  # Column C (0-based index)
+        
+        # Hide non-critical rows to match default filtered view
+        for r in non_critical_rows:
+            ws.row_dimensions[r].hidden = True
+        for r in critical_rows:
+            ws.row_dimensions[r].hidden = False
     
     # Column widths
     widths = [10, 20, 12, 50, 40, 40, 30]
