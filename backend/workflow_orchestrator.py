@@ -369,7 +369,13 @@ class EWAWorkflowOrchestrator:
             return state
         except Exception as e:
             error_text = str(e)
-            missing_md = "BlobNotFound" in error_text or "does not exist" in error_text
+            missing_md = (
+                isinstance(e, FileNotFoundError)
+                or "not found in storage" in error_text
+                or "filenotfound" in error_text.lower()
+                or "blobnotfound" in error_text
+                or "does not exist" in error_text
+            )
             if skip_conversion and not missing_md:
                 state.error = error_text
                 return state
