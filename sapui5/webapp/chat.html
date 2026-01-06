@@ -153,8 +153,8 @@
         document.getElementById('docName').textContent = fileName;
         document.title = 'Chat: ' + fileName;
 
-        // API endpoint - use relative URL for deployed environment
-        var apiBaseUrl = '/api/chat';
+        // API endpoint - must use full backend URL (frontend is served from different domain)
+        var apiBaseUrl = 'https://sap-ewa-analyzer-backend.azurewebsites.net/api/chat';
 
         // Handle Enter key
         document.getElementById('userInput').addEventListener('keypress', function(e) {
@@ -193,9 +193,16 @@
             var loadingMsg = addMessage('Thinking...', 'loading');
 
             // Call chat API - backend expects: message, fileName, documentContent, chatHistory
+            console.log('[Chat] Calling API:', apiBaseUrl);
+            console.log('[Chat] Payload:', { message: userText, fileName: fileName });
+            
             fetch(apiBaseUrl, {
                 method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
+                headers: { 
+                    'Content-Type': 'application/json',
+                    'Accept': 'application/json'
+                },
+                mode: 'cors',
                 body: JSON.stringify({
                     message: userText,
                     fileName: fileName,
@@ -204,9 +211,21 @@
                 })
             })
             .then(function(response) {
+                console.log('[Chat] Response status:', response.status, response.statusText);
+                console.log('[Chat] Response URL:', response.url);
+                var contentType = response.headers.get('content-type') || '';
+                console.log('[Chat] Content-Type:', contentType);
+                
+                if (!contentType.includes('application/json')) {
+                    // Log the actual response for debugging
+                    return response.text().then(function(text) {
+                        console.error('[Chat] Non-JSON response body:', text.substring(0, 500));
+                        throw new Error('Server returned HTML instead of JSON. The API endpoint may not be reachable.');
+                    });
+                }
                 if (!response.ok) {
                     return response.json().then(function(err) {
-                        throw new Error(err.detail || 'Chat request failed');
+                        throw new Error(err.detail || 'Chat request failed: ' + response.status);
                     });
                 }
                 return response.json();
