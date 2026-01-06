@@ -454,7 +454,7 @@ body {
 }
 
 .fileListSheet .sapMObjectIdentifierTitle .sapMText {
-    font-size: 0.875rem !important; /* 14px for main file name */
+    font-size: 0.8125rem !important; /* Match date text size for visual consistency */
     font-weight: 500 !important; /* Regular-ish weight so file names are not bold */
     color: #0f172a !important; /* Slate 900 */
 }
