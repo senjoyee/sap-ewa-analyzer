@@ -147,17 +147,14 @@
         // Get file name from URL parameter
         var urlParams = new URLSearchParams(window.location.search);
         var fileName = urlParams.get('file') || '';
-        var chatHistory = [];
+        var chatHistory = []; // Format: [{text: "...", isUser: true/false}]
 
         // Display document name in header
         document.getElementById('docName').textContent = fileName;
         document.title = 'Chat: ' + fileName;
 
-        // Get API base URL from config
-        var apiBaseUrl = '';
-        sap.ui.require(['ewa/analyzer/model/config'], function(Config) {
-            apiBaseUrl = Config.getEndpoint('chat');
-        });
+        // API endpoint - use relative URL for deployed environment
+        var apiBaseUrl = '/api/chat';
 
         // Handle Enter key
         document.getElementById('userInput').addEventListener('keypress', function(e) {
@@ -189,25 +186,28 @@
             input.value = '';
             sendBtn.disabled = true;
 
-            // Add to chat history
-            chatHistory.push({ role: 'user', content: userText });
+            // Add to chat history (backend expects {text, isUser} format)
+            chatHistory.push({ text: userText, isUser: true });
 
             // Show loading indicator
             var loadingMsg = addMessage('Thinking...', 'loading');
 
-            // Call chat API
-            fetch(apiBaseUrl || '/api/chat', {
+            // Call chat API - backend expects: message, fileName, documentContent, chatHistory
+            fetch(apiBaseUrl, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({
                     message: userText,
                     fileName: fileName,
-                    history: chatHistory.slice(-10) // Last 10 messages for context
+                    documentContent: '', // Backend will fetch from blob storage
+                    chatHistory: chatHistory.slice(-10) // Last 10 messages for context
                 })
             })
             .then(function(response) {
                 if (!response.ok) {
-                    throw new Error('Chat request failed');
+                    return response.json().then(function(err) {
+                        throw new Error(err.detail || 'Chat request failed');
+                    });
                 }
                 return response.json();
             })
@@ -220,7 +220,7 @@
                 addMessage(assistantText, 'assistant');
 
                 // Add to history
-                chatHistory.push({ role: 'assistant', content: assistantText });
+                chatHistory.push({ text: assistantText, isUser: false });
             })
             .catch(function(err) {
                 loadingMsg.remove();
