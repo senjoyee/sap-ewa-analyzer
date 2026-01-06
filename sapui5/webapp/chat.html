@@ -16,6 +16,7 @@
         data-sap-ui-frameOptions="trusted">
     </script>
     <link rel="stylesheet" type="text/css" href="css/style.css">
+    <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
     <style>
         html, body {
             height: 100%;
@@ -164,11 +165,19 @@
             }
         });
 
-        function addMessage(text, type) {
+        function addMessage(text, type, useMarkdown) {
             var messagesDiv = document.getElementById('chatMessages');
             var msgDiv = document.createElement('div');
             msgDiv.className = 'message ' + type;
-            msgDiv.textContent = text;
+            if (useMarkdown) {
+                try {
+                    msgDiv.innerHTML = marked.parse(text || '');
+                } catch (e) {
+                    msgDiv.textContent = text;
+                }
+            } else {
+                msgDiv.textContent = text;
+            }
             messagesDiv.appendChild(msgDiv);
             messagesDiv.scrollTop = messagesDiv.scrollHeight;
             return msgDiv;
@@ -182,7 +191,7 @@
             if (!userText) return;
 
             // Add user message to UI
-            addMessage(userText, 'user');
+            addMessage(userText, 'user', false);
             input.value = '';
             sendBtn.disabled = true;
 
@@ -190,7 +199,7 @@
             chatHistory.push({ text: userText, isUser: true });
 
             // Show loading indicator
-            var loadingMsg = addMessage('Thinking...', 'loading');
+            var loadingMsg = addMessage('Thinking...', 'loading', false);
 
             // Call chat API - backend expects: message, fileName, documentContent, chatHistory
             console.log('[Chat] Calling API:', apiBaseUrl);
@@ -236,14 +245,14 @@
 
                 // Add assistant response
                 var assistantText = data.response || data.message || 'No response received.';
-                addMessage(assistantText, 'assistant');
+                addMessage(assistantText, 'assistant', true);
 
                 // Add to history
                 chatHistory.push({ text: assistantText, isUser: false });
             })
             .catch(function(err) {
                 loadingMsg.remove();
-                addMessage('Error: ' + err.message, 'error');
+                addMessage('Error: ' + err.message, 'error', false);
             })
             .finally(function() {
                 sendBtn.disabled = false;
