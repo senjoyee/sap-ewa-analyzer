@@ -68,9 +68,8 @@ def convert_pdf_to_markdown(blob_name: str) -> dict:
         conversion_status_tracker[blob_name]["message"] = "Downloading PDF from blob storage"
         
         pdf_content = storage_service.get_bytes(blob_name)
-        blob_client = blob_service_client.get_blob_client(
-            container=AZURE_STORAGE_CONTAINER_NAME, blob=blob_name
-        )
+        container_client = blob_service_client.get_container_client(AZURE_STORAGE_CONTAINER_NAME)
+        blob_client = container_client.get_blob_client(blob_name)
         metadata = blob_client.get_blob_properties().metadata
         
         # Save PDF temporarily (thread-safe)
