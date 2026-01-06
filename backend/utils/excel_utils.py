@@ -269,7 +269,7 @@ def _write_positive_findings_sheet(ws: Worksheet, data: Dict[str, Any], styles: 
 
 
 def _write_key_findings_sheet(ws: Worksheet, data: Dict[str, Any], styles: Dict[str, NamedStyle]):
-    """Write the Key Findings sheet."""
+    """Write the Key Findings sheet with findings grouped by severity."""
     ws.title = "Key Findings"
     
     findings = data.get("Key Findings", data.get("key_findings", [])) or []
@@ -284,70 +284,78 @@ def _write_key_findings_sheet(ws: Worksheet, data: Dict[str, Any], styles: Dict[
         ws["A3"] = "No key findings recorded."
         return
     
-    # Headers
-    headers = ["Issue ID", "Area", "Severity", "Finding", "Impact", "Business Impact", "Source"]
-    for col, header in enumerate(headers, 1):
-        cell = ws.cell(row=3, column=col, value=header)
-        _apply_header_style(cell, styles)
+    # Group findings by severity
+    severity_order = ["critical", "high", "medium", "low"]
+    grouped = {sev: [] for sev in severity_order}
+    for finding in findings:
+        sev = str(finding.get("Severity", finding.get("severity", "medium"))).lower()
+        if sev not in grouped:
+            sev = "medium"
+        grouped[sev].append(finding)
     
-    # Data rows
-    critical_rows = []
-    non_critical_rows = []
+    # Headers (without Severity column since we're grouping)
+    headers = ["Issue ID", "Area", "Finding", "Impact", "Business Impact", "Source"]
     
-    for row_idx, finding in enumerate(findings, 4):
-        values = [
-            finding.get("Issue ID", finding.get("issue_id", "")),
-            finding.get("Area", finding.get("area", "")),
-            finding.get("Severity", finding.get("severity", "")) or "critical",
-            finding.get("Finding", finding.get("finding", "")),
-            finding.get("Impact", finding.get("impact", "")),
-            finding.get("Business impact", finding.get("business_impact", "")),
-            finding.get("Source", finding.get("source", "")),
-        ]
+    current_row = 3
+    group_ranges = {}  # Track row ranges for each severity group
+    
+    for severity in severity_order:
+        group_findings = grouped[severity]
+        if not group_findings:
+            continue
         
-        alt_row = (row_idx - 4) % 2 == 1
-        for col, value in enumerate(values, 1):
-            cell = ws.cell(row=row_idx, column=col, value=str(value) if value else "")
-            _apply_data_style(cell, styles, alt_row)
+        # Severity group header row
+        group_start_row = current_row
+        ws.cell(row=current_row, column=1, value=f"{severity.upper()} ({len(group_findings)})")
+        ws.merge_cells(f"A{current_row}:F{current_row}")
+        header_cell = ws[f"A{current_row}"]
+        header_cell.font = Font(name="Calibri", size=12, bold=True, color=COLORS["white"])
+        header_cell.fill = _get_severity_fill(severity)
+        header_cell.alignment = Alignment(horizontal="left", vertical="center")
+        ws.row_dimensions[current_row].height = 25
+        current_row += 1
+        
+        # Column headers for this group
+        for col, header in enumerate(headers, 1):
+            cell = ws.cell(row=current_row, column=col, value=header)
+            _apply_header_style(cell, styles)
+        current_row += 1
+        
+        # Data rows for this severity
+        data_start_row = current_row
+        for idx, finding in enumerate(group_findings):
+            values = [
+                finding.get("Issue ID", finding.get("issue_id", "")),
+                finding.get("Area", finding.get("area", "")),
+                finding.get("Finding", finding.get("finding", "")),
+                finding.get("Impact", finding.get("impact", "")),
+                finding.get("Business impact", finding.get("business_impact", "")),
+                finding.get("Source", finding.get("source", "")),
+            ]
             
-            # Apply severity coloring
-            if col == 3 and value:  # Severity column
-                cell.font = Font(name="Calibri", size=11, bold=True, color=COLORS["white"])
-                cell.fill = _get_severity_fill(str(value))
-                cell.alignment = Alignment(horizontal="center", vertical="center")
-                
-                # Track rows for initial filtering
-                if str(value).lower() == "critical":
-                    critical_rows.append(row_idx)
-                else:
-                    non_critical_rows.append(row_idx)
+            alt_row = idx % 2 == 1
+            for col, value in enumerate(values, 1):
+                cell = ws.cell(row=current_row, column=col, value=str(value) if value else "")
+                _apply_data_style(cell, styles, alt_row)
+            
+            ws.row_dimensions[current_row].height = 60
+            current_row += 1
         
-        # Set row height for wrapped text
-        ws.row_dimensions[row_idx].height = 60
+        data_end_row = current_row - 1
+        group_ranges[severity] = (data_start_row, data_end_row)
+        
+        # Add blank row between groups
+        current_row += 1
     
-    # Add dropdown for severity column (C) with default options
-    if findings:
-        last_row = 3 + len(findings)
-        dv = DataValidation(type="list", formula1='"critical,high,medium"', allow_blank=False, showDropDown=True)
-        dv.errorTitle = "Invalid Severity"
-        dv.error = "Select one of: critical, high, medium."
-        dv.promptTitle = "Severity"
-        dv.prompt = "Choose severity (critical, high, medium)."
-        ws.add_data_validation(dv)
-        dv.add(f"C4:C{last_row}")
-        
-        # Apply an auto-filter with Severity defaulted to "critical"
-        ws.auto_filter.ref = f"A3:G{last_row}"
-        ws.auto_filter.add_filter_column(2, ["critical"])  # Column C (0-based index)
-        
-        # Hide non-critical rows to match default filtered view
-        for r in non_critical_rows:
-            ws.row_dimensions[r].hidden = True
-        for r in critical_rows:
-            ws.row_dimensions[r].hidden = False
+    # Apply Excel outline grouping (collapsible) for non-critical groups
+    # Critical stays expanded, others collapsed by default
+    ws.sheet_properties.outlinePr.summaryBelow = False
+    for severity, (start, end) in group_ranges.items():
+        if start <= end:
+            ws.row_dimensions.group(start, end, outline_level=1, hidden=(severity != "critical"))
     
     # Column widths
-    widths = [10, 20, 12, 50, 40, 40, 30]
+    widths = [10, 20, 50, 40, 40, 30]
     for col, width in enumerate(widths, 1):
         ws.column_dimensions[get_column_letter(col)].width = width
 
