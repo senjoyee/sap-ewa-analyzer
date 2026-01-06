@@ -326,6 +326,10 @@ def _write_key_findings_sheet(ws: Worksheet, data: Dict[str, Any], styles: Dict[
         dv.prompt = "Choose severity (critical, high, medium)."
         ws.add_data_validation(dv)
         dv.add(f"C4:C{last_row}")
+        
+        # Apply an auto-filter with Severity defaulted to "critical"
+        ws.auto_filter.ref = f"A3:G{last_row}"
+        ws.auto_filter.add_filter_column(2, ["critical"])  # Column C (0-based index)
     
     # Column widths
     widths = [10, 20, 12, 50, 40, 40, 30]
