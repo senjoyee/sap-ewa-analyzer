@@ -268,16 +268,26 @@ def _write_positive_findings_sheet(ws: Worksheet, data: Dict[str, Any], styles: 
     ws.column_dimensions["B"].width = 80
 
 
-def _write_key_findings_sheet(ws: Worksheet, data: Dict[str, Any], styles: Dict[str, NamedStyle]):
-    """Write the Key Findings sheet with findings grouped by severity."""
-    ws.title = "Key Findings"
+def _write_findings_and_recommendations_sheet(ws: Worksheet, data: Dict[str, Any], styles: Dict[str, NamedStyle]):
+    """Write combined Findings & Recommendations sheet grouped by severity."""
+    ws.title = "Findings & Actions"
     
     findings = data.get("Key Findings", data.get("key_findings", [])) or []
+    recs = data.get("Recommendations", data.get("recommendations", [])) or []
+    
+    # Build lookup of recommendations by linked issue ID
+    recs_by_issue = {}
+    for rec in recs:
+        linked_id = rec.get("Linked issue ID", rec.get("linked_issue_id", ""))
+        if linked_id:
+            if linked_id not in recs_by_issue:
+                recs_by_issue[linked_id] = []
+            recs_by_issue[linked_id].append(rec)
     
     # Title
-    ws["A1"] = "Key Findings"
+    ws["A1"] = "Findings & Recommended Actions"
     ws["A1"].font = Font(name="Calibri", size=16, bold=True, color=COLORS["sap_gold"])
-    ws.merge_cells("A1:G1")
+    ws.merge_cells("A1:I1")
     ws.row_dimensions[1].height = 25
     
     if not findings:
@@ -293,11 +303,14 @@ def _write_key_findings_sheet(ws: Worksheet, data: Dict[str, Any], styles: Dict[
             sev = "medium"
         grouped[sev].append(finding)
     
-    # Headers (without Severity column since we're grouping)
-    headers = ["Issue ID", "Area", "Finding", "Impact", "Business Impact", "Source"]
+    # Combined headers
+    headers = [
+        "Issue ID", "Area", "Finding", "Impact", "Business Impact", "Source",
+        "Action", "Preventative Action", "Effort"
+    ]
     
     current_row = 3
-    group_ranges = {}  # Track row ranges for each severity group
+    group_ranges = {}
     
     for severity in severity_order:
         group_findings = grouped[severity]
@@ -305,9 +318,8 @@ def _write_key_findings_sheet(ws: Worksheet, data: Dict[str, Any], styles: Dict[
             continue
         
         # Severity group header row
-        group_start_row = current_row
         ws.cell(row=current_row, column=1, value=f"{severity.upper()} ({len(group_findings)})")
-        ws.merge_cells(f"A{current_row}:F{current_row}")
+        ws.merge_cells(f"A{current_row}:I{current_row}")
         header_cell = ws[f"A{current_row}"]
         header_cell.font = Font(name="Calibri", size=12, bold=True, color=COLORS["white"])
         header_cell.fill = _get_severity_fill(severity)
@@ -324,13 +336,34 @@ def _write_key_findings_sheet(ws: Worksheet, data: Dict[str, Any], styles: Dict[
         # Data rows for this severity
         data_start_row = current_row
         for idx, finding in enumerate(group_findings):
+            issue_id = finding.get("Issue ID", finding.get("issue_id", ""))
+            
+            # Get linked recommendations
+            linked_recs = recs_by_issue.get(issue_id, [])
+            if linked_recs:
+                rec = linked_recs[0]  # Take first linked recommendation
+                effort = rec.get("Estimated Effort", rec.get("estimated_effort", {})) or {}
+                if isinstance(effort, str):
+                    effort_str = effort
+                else:
+                    effort_str = f"Analysis: {effort.get('analysis', 'N/A')}, Impl: {effort.get('implementation', 'N/A')}"
+                action = rec.get("Action", rec.get("action", ""))
+                preventative = rec.get("Preventative Action", rec.get("preventative_action", ""))
+            else:
+                action = ""
+                preventative = ""
+                effort_str = ""
+            
             values = [
-                finding.get("Issue ID", finding.get("issue_id", "")),
+                issue_id,
                 finding.get("Area", finding.get("area", "")),
                 finding.get("Finding", finding.get("finding", "")),
                 finding.get("Impact", finding.get("impact", "")),
                 finding.get("Business impact", finding.get("business_impact", "")),
                 finding.get("Source", finding.get("source", "")),
+                action,
+                preventative,
+                effort_str,
             ]
             
             alt_row = idx % 2 == 1
@@ -338,7 +371,7 @@ def _write_key_findings_sheet(ws: Worksheet, data: Dict[str, Any], styles: Dict[
                 cell = ws.cell(row=current_row, column=col, value=str(value) if value else "")
                 _apply_data_style(cell, styles, alt_row)
             
-            ws.row_dimensions[current_row].height = 60
+            ws.row_dimensions[current_row].height = 70
             current_row += 1
         
         data_end_row = current_row - 1
@@ -347,74 +380,14 @@ def _write_key_findings_sheet(ws: Worksheet, data: Dict[str, Any], styles: Dict[
         # Add blank row between groups
         current_row += 1
     
-    # Apply Excel outline grouping (collapsible) for non-critical groups
-    # Critical stays expanded, others collapsed by default
+    # Apply Excel outline grouping - Critical expanded, others collapsed
     ws.sheet_properties.outlinePr.summaryBelow = False
     for severity, (start, end) in group_ranges.items():
         if start <= end:
             ws.row_dimensions.group(start, end, outline_level=1, hidden=(severity != "critical"))
     
     # Column widths
-    widths = [10, 20, 50, 40, 40, 30]
-    for col, width in enumerate(widths, 1):
-        ws.column_dimensions[get_column_letter(col)].width = width
-
-
-def _write_recommendations_sheet(ws: Worksheet, data: Dict[str, Any], styles: Dict[str, NamedStyle]):
-    """Write the Recommendations sheet."""
-    ws.title = "Recommendations"
-    
-    recs = data.get("Recommendations", data.get("recommendations", [])) or []
-    
-    # Title
-    ws["A1"] = "Recommendations"
-    ws["A1"].font = Font(name="Calibri", size=16, bold=True, color=COLORS["sap_gold"])
-    ws.merge_cells("A1:G1")
-    ws.row_dimensions[1].height = 25
-    
-    if not recs:
-        ws["A3"] = "No recommendations recorded."
-        return
-    
-    # Headers
-    headers = [
-        "Rec ID", "Linked Issue", "Responsible Area", 
-        "Effort (Analysis)", "Effort (Impl)", "Action", "Preventative Action"
-    ]
-    for col, header in enumerate(headers, 1):
-        cell = ws.cell(row=3, column=col, value=header)
-        _apply_header_style(cell, styles)
-    
-    # Data rows
-    for row_idx, rec in enumerate(recs, 4):
-        effort = rec.get("Estimated Effort", rec.get("estimated_effort", {})) or {}
-        if isinstance(effort, str):
-            effort_analysis = effort
-            effort_impl = ""
-        else:
-            effort_analysis = effort.get("analysis", "")
-            effort_impl = effort.get("implementation", "")
-        
-        values = [
-            rec.get("Recommendation ID", rec.get("recommendation_id", "")),
-            rec.get("Linked issue ID", rec.get("linked_issue_id", "")),
-            rec.get("Responsible Area", rec.get("responsible_area", "")),
-            effort_analysis,
-            effort_impl,
-            rec.get("Action", rec.get("action", "")),
-            rec.get("Preventative Action", rec.get("preventative_action", "")),
-        ]
-        
-        alt_row = (row_idx - 4) % 2 == 1
-        for col, value in enumerate(values, 1):
-            cell = ws.cell(row=row_idx, column=col, value=str(value) if value else "")
-            _apply_data_style(cell, styles, alt_row)
-        
-        # Set row height for wrapped text
-        ws.row_dimensions[row_idx].height = 80
-    
-    # Column widths
-    widths = [10, 12, 25, 15, 15, 50, 50]
+    widths = [10, 18, 40, 30, 30, 25, 40, 40, 20]
     for col, width in enumerate(widths, 1):
         ws.column_dimensions[get_column_letter(col)].width = width
 
@@ -529,15 +502,11 @@ def json_to_excel(
     ws_positive = wb.create_sheet("Positive Findings")
     _write_positive_findings_sheet(ws_positive, json_data, styles)
     
-    # 3. Key Findings
-    ws_findings = wb.create_sheet("Key Findings")
-    _write_key_findings_sheet(ws_findings, json_data, styles)
+    # 3. Findings & Actions (combined Key Findings + Recommendations)
+    ws_findings = wb.create_sheet("Findings & Actions")
+    _write_findings_and_recommendations_sheet(ws_findings, json_data, styles)
     
-    # 4. Recommendations
-    ws_recs = wb.create_sheet("Recommendations")
-    _write_recommendations_sheet(ws_recs, json_data, styles)
-    
-    # 5. Capacity Outlook
+    # 4. Capacity Outlook
     ws_capacity = wb.create_sheet("Capacity Outlook")
     _write_capacity_sheet(ws_capacity, json_data, styles)
     
