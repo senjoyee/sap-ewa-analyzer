@@ -11,7 +11,7 @@
             <!-- Grey Background Container -->
             <ScrollContainer height="100%" width="100%" vertical="true" horizontal="false" class="appBackground">
                 <!-- White Centered Content -->
-                <VBox class="paperSheet fileListSheet">
+                <VBox class="paperSheet fileListSheet sapUiSizeCompact">
                 <!-- Upload Area -->
                 <Panel
                     headerText="{i18n>uploadTitle}"
@@ -92,7 +92,7 @@
                 <!-- File List Table -->
                 <Table
                     id="filesTable"
-                    class="sapUiMediumMarginTop"
+                    class="sapUiSmallMarginTop"
                     items="{
                         path: 'files>/',
                         sorter: [{

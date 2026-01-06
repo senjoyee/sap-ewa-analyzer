@@ -250,7 +250,7 @@ body {
 .uploadArea {
     border: 1px dashed #d0d0d0;
     border-radius: 6px;
-    padding: 1.5rem;
+    padding: 1rem;
     text-align: center;
     background-color: #fafbfc;
     transition: border-color 0.2s, background-color 0.2s;
@@ -398,7 +398,7 @@ body {
 /* File List specific - wider container to fit table content */
 .fileListSheet {
     max-width: 1300px;
-    padding: 2rem 2.5rem;
+    padding: 1rem 1.5rem;
     min-height: 0;
 }
 
@@ -413,13 +413,13 @@ body {
 .fileListSheet .sapMListTblHeader {
     background-color: #f8fafc !important;
     border-bottom: 2px solid #e2e8f0 !important;
-    height: 2.75rem !important; /* Slightly more compact header */
+    height: 2.25rem !important; /* Compact header */
 }
 
 .fileListSheet .sapMListTblHeader .sapMText {
-    font-size: 0.75rem !important; /* Smaller header text (12px) */
-    font-weight: 800 !important; /* Extra-bold to make header thicker */
-    color: #1e293b !important; /* Darker slate color */
+    font-size: 0.75rem !important;
+    font-weight: 800 !important;
+    color: #1e293b !important;
     letter-spacing: 0.06em !important;
     text-transform: uppercase;
     opacity: 1 !important;
@@ -429,6 +429,15 @@ body {
 .fileListSheet .sapMListTblCell {
     border-bottom: 1px solid #f1f5f9 !important;
     vertical-align: middle !important;
+    padding-top: 0.25rem !important; /* Compact vertical padding */
+    padding-bottom: 0.25rem !important;
+}
+
+/* Remove padding from the last cell (Actions) to allow full-height flex container for perfect centering */
+.fileListSheet .sapMListTblCell:last-child {
+    padding-top: 0 !important;
+    padding-bottom: 0 !important;
+    height: 1px; /* Trick to force cell to respect child height if needed */
 }
 
 .fileListSheet .sapMListTblRow:hover {
@@ -482,9 +491,12 @@ body {
 .fileListSheet .sapMGHLI {
     background-color: #f8fafc !important;
     border-bottom: 1px solid #cbd5e1 !important;
-    padding-top: 0.75rem !important;
+    padding-top: 0.25rem !important;
     padding-bottom: 0.25rem !important;
-    margin-top: 0.5rem !important;
+    margin-top: 0.25rem !important;
+    height: 2rem !important;
+    display: flex;
+    align-items: center;
 }
 
 .fileListSheet .sapMGHLI .sapMGroupTitle {
