@@ -45,7 +45,7 @@ PARAMETER_SCHEMA = {
                         "description": "The section/chapter in the document where this parameter was found"
                     }
                 },
-                "required": ["parameter_name", "area", "current_value", "recommended_value"],
+                "required": ["parameter_name", "area", "current_value", "recommended_value", "description", "source_section"],
                 "additionalProperties": False
             }
         },
@@ -54,7 +54,7 @@ PARAMETER_SCHEMA = {
             "description": "Any notes about the extraction process or data quality"
         }
     },
-    "required": ["parameters"],
+    "required": ["parameters", "extraction_notes"],
     "additionalProperties": False
 }
 
