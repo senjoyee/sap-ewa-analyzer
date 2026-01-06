@@ -21,17 +21,7 @@
                     <content>
                         <VBox class="uploadArea">
                             <HBox justifyContent="Center" alignItems="Center" wrap="Wrap">
-                                <Select id="customerSelect" width="300px" class="sapUiSmallMarginEnd" forceSelection="true">
-                                    <items>
-                                        <core:Item key="" text="Select customer"/>
-                                        <core:Item key="TBS" text="TBS"/>
-                                        <core:Item key="BSW" text="BSW"/>
-                                        <core:Item key="SHOOSMITHS" text="SHOOSMITHS"/>
-                                        <core:Item key="COREX" text="COREX"/>
-                                        <core:Item key="SONOCO" text="SONOCO"/>
-                                        <core:Item key="ASAHI" text="ASAHI"/>
-                                    </items>
-                                </Select>
+                                <!-- Customer select hidden - use per-file customer in queue table instead -->
                                 <u:FileUploader
                                     id="fileUploader"
                                     name="file"
@@ -148,11 +138,18 @@
                                     justifyContent="End"
                                     alignItems="Center"
                                     visible="{= ${files>status} ? ${files>status}.toLowerCase() !== 'processing' : true }">
+                                    <!-- Analysis view hidden but logic preserved -->
                                     <Button
                                         text="{i18n>viewAnalysis}"
                                         icon="sap-icon://show"
                                         type="Transparent"
                                         press=".onViewAnalysisPress"
+                                        visible="false"/>
+                                    <Button
+                                        tooltip="Chat with Document"
+                                        icon="sap-icon://discussion"
+                                        type="Transparent"
+                                        press=".onChatPress"
                                         visible="{= ${files>status} === 'Analyzed' || ${files>status} === 'completed' }"/>
                                     <Button
                                         tooltip="Download PDF Report"
@@ -166,12 +163,7 @@
                                         type="Transparent"
                                         press=".onDownloadExcelPress"
                                         visible="{= ${files>status} === 'Analyzed' || ${files>status} === 'completed' }"/>
-                                    <Button
-                                        text="{i18n>process}"
-                                        icon="sap-icon://activate"
-                                        type="Ghost"
-                                        press=".onProcessPress"
-                                        visible="{= ${files>status} ? ${files>status}.toLowerCase() !== 'processed' &amp;&amp; ${files>status}.toLowerCase() !== 'analyzed' &amp;&amp; ${files>status}.toLowerCase() !== 'completed' &amp;&amp; ${files>status}.toLowerCase() !== 'processing' : true }"/>
+                                    <!-- Inline Process button hidden - use batch Process button in toolbar instead -->
                                 </HBox>
                             </cells>
                         </ColumnListItem>

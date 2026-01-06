@@ -327,6 +327,35 @@ sap.ui.define([
             window.open(sUrl, "_blank");
         },
 
+        /**
+         * Open chat window for the selected document.
+         * Only one chat window can be open at a time - existing one will be closed.
+         */
+        onChatPress: function (oEvent) {
+            var oItem = oEvent.getSource().getBindingContext("files").getObject();
+            var sFileName = oItem.name;
+
+            // Close existing chat window if open
+            if (this._chatWindow && !this._chatWindow.closed) {
+                this._chatWindow.close();
+            }
+
+            // Build chat URL with document context
+            var sChatUrl = "chat.html?file=" + encodeURIComponent(sFileName);
+
+            // Open new chat window
+            this._chatWindow = window.open(
+                sChatUrl,
+                "EWA_Chat",
+                "width=500,height=700,resizable=yes,scrollbars=yes"
+            );
+
+            // Focus the window if it was already open
+            if (this._chatWindow) {
+                this._chatWindow.focus();
+            }
+        },
+
         onDeletePress: function (oEvent) {
             var oItem = oEvent.getSource().getBindingContext("files").getObject();
             var sBaseName = oItem.name.replace(".pdf", "");
