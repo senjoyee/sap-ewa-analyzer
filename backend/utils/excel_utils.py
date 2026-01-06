@@ -15,6 +15,7 @@ from openpyxl.styles import (
 )
 from openpyxl.utils import get_column_letter
 from openpyxl.worksheet.worksheet import Worksheet
+from openpyxl.worksheet.datavalidation import DataValidation
 
 
 # SAP-inspired color palette
@@ -59,7 +60,7 @@ def _create_styles() -> Dict[str, NamedStyle]:
     
     # Data cell style
     data_style = NamedStyle(name="data_style")
-    data_style.font = Font(name="Calibri", size=10)
+    data_style.font = Font(name="Calibri", size=11)
     data_style.border = Border(
         bottom=Side(style="thin", color=COLORS["border"]),
         left=Side(style="thin", color=COLORS["border"]),
@@ -70,13 +71,13 @@ def _create_styles() -> Dict[str, NamedStyle]:
     
     # Label style (for key-value pairs)
     label_style = NamedStyle(name="label_style")
-    label_style.font = Font(name="Calibri", size=10, bold=True, color=COLORS["sap_dark"])
+    label_style.font = Font(name="Calibri", size=11, bold=True, color=COLORS["sap_dark"])
     label_style.alignment = Alignment(horizontal="left", vertical="top")
     styles["label"] = label_style
     
     # Value style
     value_style = NamedStyle(name="value_style")
-    value_style.font = Font(name="Calibri", size=10)
+    value_style.font = Font(name="Calibri", size=11)
     value_style.alignment = Alignment(horizontal="left", vertical="top", wrap_text=True)
     styles["value"] = value_style
     
@@ -191,7 +192,8 @@ def _write_summary_sheet(ws: Worksheet, data: Dict[str, Any], styles: Dict[str, 
     row += 1
     
     health = data.get("System Health Overview", data.get("system_health_overview", {})) or {}
-    health_areas = ["Performance", "Security", "Stability", "configuration", "Configuration"]
+    # Deduplicate configuration entry
+    health_areas = ["Performance", "Security", "Stability", "Configuration"]
     
     for area in health_areas:
         status = health.get(area, health.get(area.lower()))
@@ -199,7 +201,7 @@ def _write_summary_sheet(ws: Worksheet, data: Dict[str, Any], styles: Dict[str, 
             ws[f"A{row}"] = area.title()
             ws[f"A{row}"].font = styles["label"].font
             ws[f"B{row}"] = str(status).upper()
-            ws[f"B{row}"].font = Font(name="Calibri", size=10, bold=True, color=COLORS["white"])
+            ws[f"B{row}"].font = Font(name="Calibri", size=11, bold=True, color=COLORS["white"])
             ws[f"B{row}"].fill = _get_status_fill(str(status))
             ws[f"B{row}"].alignment = Alignment(horizontal="center", vertical="center")
             row += 1
@@ -293,7 +295,7 @@ def _write_key_findings_sheet(ws: Worksheet, data: Dict[str, Any], styles: Dict[
         values = [
             finding.get("Issue ID", finding.get("issue_id", "")),
             finding.get("Area", finding.get("area", "")),
-            finding.get("Severity", finding.get("severity", "")),
+            finding.get("Severity", finding.get("severity", "")) or "critical",
             finding.get("Finding", finding.get("finding", "")),
             finding.get("Impact", finding.get("impact", "")),
             finding.get("Business impact", finding.get("business_impact", "")),
@@ -307,12 +309,23 @@ def _write_key_findings_sheet(ws: Worksheet, data: Dict[str, Any], styles: Dict[
             
             # Apply severity coloring
             if col == 3 and value:  # Severity column
-                cell.font = Font(name="Calibri", size=10, bold=True, color=COLORS["white"])
+                cell.font = Font(name="Calibri", size=11, bold=True, color=COLORS["white"])
                 cell.fill = _get_severity_fill(str(value))
                 cell.alignment = Alignment(horizontal="center", vertical="center")
         
         # Set row height for wrapped text
         ws.row_dimensions[row_idx].height = 60
+    
+    # Add dropdown for severity column (C) with default options
+    if findings:
+        last_row = 3 + len(findings)
+        dv = DataValidation(type="list", formula1='"critical,high,medium"', allow_blank=False, showDropDown=True)
+        dv.errorTitle = "Invalid Severity"
+        dv.error = "Select one of: critical, high, medium."
+        dv.promptTitle = "Severity"
+        dv.prompt = "Choose severity (critical, high, medium)."
+        ws.add_data_validation(dv)
+        dv.add(f"C4:C{last_row}")
     
     # Column widths
     widths = [10, 20, 12, 50, 40, 40, 30]
