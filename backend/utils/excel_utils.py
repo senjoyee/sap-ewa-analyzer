@@ -462,9 +462,9 @@ def _write_chapters_sheet(ws: Worksheet, data: Dict[str, Any], styles: Dict[str,
         ws["A3"] = "No chapters information available."
         return
     
-    # List chapters
+    # List chapters (no bullet prefix)
     for row_idx, chapter in enumerate(chapters, 3):
-        cell = ws.cell(row=row_idx, column=1, value=f"• {chapter}")
+        cell = ws.cell(row=row_idx, column=1, value=f"{chapter}")
         cell.font = styles["value"].font
     
     ws.column_dimensions["A"].width = 60
