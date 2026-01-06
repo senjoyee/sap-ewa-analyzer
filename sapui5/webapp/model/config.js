@@ -12,6 +12,7 @@ sap.ui.define([], function () {
             getAnalysis: "/api/download/", // + blobName (for .md or .json)
             exportPdf: "/api/export-pdf-v2", // New JSON-based PDF export
             exportPdfLegacy: "/api/export-pdf-enhanced", // Legacy MD-based export
+            exportExcel: "/api/export-excel", // Excel export
             chat: "/api/chat"
         },
 

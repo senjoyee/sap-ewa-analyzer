@@ -4,8 +4,7 @@ on:
   push:
     branches:
       - main
-      - fiori-migration
-      - anthropic
+      - excel_output
   workflow_dispatch:
 
 jobs:

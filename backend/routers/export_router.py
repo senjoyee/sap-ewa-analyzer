@@ -23,6 +23,7 @@ from core.azure_clients import (
 from services.storage_service import StorageService
 from utils.markdown_utils import json_to_markdown
 from utils.html_utils import json_to_html
+from utils.excel_utils import json_to_excel
 
 router = APIRouter(prefix="/api", tags=["export"])
 storage_service = StorageService()
@@ -1273,3 +1274,98 @@ async def export_json_to_pdf(
         import traceback
         traceback.print_exc()
         raise HTTPException(status_code=500, detail=f"Error exporting JSON to PDF: {str(e)}")
+
+
+@router.get("/export-excel")
+async def export_json_to_excel(
+    blob_name: str,
+):
+    """
+    Export EWA analysis to Excel (.xlsx) directly from JSON.
+    
+    Creates a professionally formatted Excel workbook with multiple sheets:
+    - Summary: System metadata, health overview, executive summary
+    - Positive Findings: Table of positive findings
+    - Key Findings: Detailed findings with severity indicators
+    - Recommendations: Action items with effort estimates
+    - Capacity Outlook: Resource utilization metrics
+    - Chapters Reviewed: List of analyzed sections
+    
+    Accepts either a .json or .md blob_name (will derive JSON name from MD).
+    """
+    if not blob_service_client:
+        raise HTTPException(status_code=500, detail="Azure Blob Service client not initialized")
+
+    try:
+        # Derive JSON blob name
+        base_name = os.path.splitext(blob_name)[0]
+        if blob_name.lower().endswith(".md"):
+            json_blob_name = f"{base_name}.json"
+        elif blob_name.lower().endswith(".json"):
+            json_blob_name = blob_name
+        else:
+            # Assume it's a base name, try _AI.json
+            json_blob_name = f"{base_name}_AI.json"
+        
+        print(f"[Excel Export] Looking for JSON: {json_blob_name}")
+        
+        try:
+            json_text = storage_service.get_text_content(json_blob_name)
+        except FileNotFoundError:
+            raise HTTPException(status_code=404, detail=f"JSON file {json_blob_name} not found") from None
+        
+        json_data = json.loads(json_text)
+        print(f"[Excel Export] JSON loaded, keys: {list(json_data.keys())}")
+        
+        # Fetch customer_name from original PDF blob metadata
+        customer_name = ""
+        try:
+            # Derive original PDF blob name from JSON blob name
+            if json_blob_name.endswith("_AI.json"):
+                original_blob_name = json_blob_name.replace("_AI.json", ".pdf")
+            else:
+                original_blob_name = base_name + ".pdf"
+            
+            original_blob_client = blob_service_client.get_blob_client(
+                container=AZURE_STORAGE_CONTAINER_NAME, blob=original_blob_name
+            )
+            if original_blob_client.exists():
+                blob_props = original_blob_client.get_blob_properties()
+                if blob_props.metadata:
+                    customer_name = blob_props.metadata.get('customer_name', '')
+                    print(f"[Excel Export] Customer name from metadata: {customer_name}")
+        except Exception as e:
+            print(f"[Excel Export] Error fetching customer metadata: {e}")
+        
+        # Convert JSON to Excel
+        excel_bytes = json_to_excel(json_data, customer_name=customer_name)
+        print(f"[Excel Export] Excel generated, size: {len(excel_bytes)} bytes")
+        
+        # Build filename: <SID>_<Customer>_<date>.xlsx
+        meta = json_data.get("System Metadata", json_data.get("system_metadata", {})) or {}
+        sid_raw = meta.get("System ID", meta.get("system_id", base_name))
+        customer_raw = customer_name if customer_name else meta.get("Customer", meta.get("customer", ""))
+        report_date_raw = meta.get("Report Date", meta.get("report_date", ""))
+
+        sid = _sanitize_filename_component(str(sid_raw))
+        customer = _sanitize_filename_component(str(customer_raw)) if customer_raw else "Customer"
+        date_str = _parse_date_for_filename(str(report_date_raw)) if report_date_raw else "nodate"
+
+        excel_filename = f"{sid}_{customer}_{date_str}.xlsx"
+        
+        return Response(
+            content=excel_bytes,
+            media_type="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+            headers={
+                "Content-Disposition": f'attachment; filename="{excel_filename}"',
+                "Cache-Control": "no-cache, no-store, must-revalidate",
+            },
+        )
+    except HTTPException:
+        raise
+    except json.JSONDecodeError as e:
+        raise HTTPException(status_code=400, detail=f"Invalid JSON: {str(e)}")
+    except Exception as e:
+        import traceback
+        traceback.print_exc()
+        raise HTTPException(status_code=500, detail=f"Error exporting JSON to Excel: {str(e)}")

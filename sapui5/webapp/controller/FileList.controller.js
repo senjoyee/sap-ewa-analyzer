@@ -313,6 +313,20 @@ sap.ui.define([
             window.open(sUrl, "_blank");
         },
 
+        onDownloadExcelPress: function (oEvent) {
+            var oItem = oEvent.getSource().getBindingContext("files").getObject();
+            // The backend expects the AI-generated JSON file
+            // Pattern: ERP_09_Nov_25.pdf -> ERP_09_Nov_25_AI.json
+            var sBaseName = oItem.name.replace(".pdf", "");
+            var sJsonName = sBaseName + "_AI.json";
+
+            // Construct the download URL
+            var sUrl = Config.getEndpoint("exportExcel") + "?blob_name=" + encodeURIComponent(sJsonName);
+
+            // Trigger download in new window/tab
+            window.open(sUrl, "_blank");
+        },
+
         onDeletePress: function (oEvent) {
             var oItem = oEvent.getSource().getBindingContext("files").getObject();
             var sBaseName = oItem.name.replace(".pdf", "");

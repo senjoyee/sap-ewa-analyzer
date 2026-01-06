@@ -156,9 +156,15 @@
                                         visible="{= ${files>status} === 'Analyzed' || ${files>status} === 'completed' }"/>
                                     <Button
                                         tooltip="Download PDF Report"
-                                        icon="sap-icon://download"
+                                        icon="sap-icon://pdf-attachment"
                                         type="Transparent"
                                         press=".onDownloadPress"
+                                        visible="{= ${files>status} === 'Analyzed' || ${files>status} === 'completed' }"/>
+                                    <Button
+                                        tooltip="Download Excel Report"
+                                        icon="sap-icon://excel-attachment"
+                                        type="Transparent"
+                                        press=".onDownloadExcelPress"
                                         visible="{= ${files>status} === 'Analyzed' || ${files>status} === 'completed' }"/>
                                     <Button
                                         text="{i18n>process}"
