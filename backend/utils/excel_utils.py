@@ -466,9 +466,151 @@ def _write_chapters_sheet(ws: Worksheet, data: Dict[str, Any], styles: Dict[str,
     ws.column_dimensions["A"].width = 60
 
 
+def _write_parameters_sheet(ws: Worksheet, parameters: List[Dict[str, Any]], styles: Dict[str, NamedStyle]):
+    """Write the Parameter Changes sheet with all recommended parameter modifications."""
+    ws.title = "Parameter Changes"
+    
+    # Title
+    ws["A1"] = "Recommended Parameter Changes"
+    ws["A1"].font = Font(name="Calibri", size=16, bold=True, color=COLORS["sap_gold"])
+    ws.merge_cells("A1:F1")
+    ws.row_dimensions[1].height = 25
+    
+    if not parameters:
+        ws["A3"] = "No parameter recommendations found in the report."
+        return
+    
+    # Group parameters by area
+    area_order = [
+        "SAP HANA", "Database", "SAP Kernel", "Profile Parameters",
+        "Application", "Memory/Buffer", "Operating System", "Network", "General"
+    ]
+    
+    grouped = {}
+    for param in parameters:
+        area = param.get("area", "General")
+        if area not in grouped:
+            grouped[area] = []
+        grouped[area].append(param)
+    
+    # Headers
+    headers = ["Parameter Name", "Area", "Current Value", "Recommended Value", "Description", "Section"]
+    
+    current_row = 3
+    
+    # Write parameters grouped by area
+    for area in area_order:
+        if area not in grouped:
+            continue
+        
+        area_params = grouped[area]
+        
+        # Area header row
+        ws.cell(row=current_row, column=1, value=f"{area} ({len(area_params)} parameters)")
+        ws.merge_cells(f"A{current_row}:F{current_row}")
+        area_cell = ws[f"A{current_row}"]
+        area_cell.font = Font(name="Calibri", size=12, bold=True, color=COLORS["white"])
+        area_cell.fill = PatternFill(start_color=COLORS["sap_dark"], end_color=COLORS["sap_dark"], fill_type="solid")
+        area_cell.alignment = Alignment(horizontal="left", vertical="center")
+        ws.row_dimensions[current_row].height = 22
+        current_row += 1
+        
+        # Column headers
+        for col, header in enumerate(headers, 1):
+            cell = ws.cell(row=current_row, column=col, value=header)
+            cell.font = Font(name="Calibri", size=11, bold=True, color=COLORS["sap_dark"])
+            cell.fill = PatternFill(start_color=COLORS["header_bg"], end_color=COLORS["header_bg"], fill_type="solid")
+            cell.border = Border(
+                bottom=Side(style="medium", color=COLORS["sap_dark"]),
+                left=Side(style="thin", color=COLORS["border"]),
+                right=Side(style="thin", color=COLORS["border"]),
+            )
+            cell.alignment = Alignment(horizontal="left", vertical="center", wrap_text=True)
+        ws.row_dimensions[current_row].height = 20
+        current_row += 1
+        
+        # Data rows
+        for idx, param in enumerate(area_params):
+            values = [
+                param.get("parameter_name", ""),
+                param.get("area", ""),
+                param.get("current_value", ""),
+                param.get("recommended_value", ""),
+                param.get("description", ""),
+                param.get("section", ""),
+            ]
+            
+            alt_row = idx % 2 == 1
+            for col, value in enumerate(values, 1):
+                cell = ws.cell(row=current_row, column=col, value=str(value) if value else "")
+                cell.font = Font(name="Calibri", size=11)
+                cell.border = Border(
+                    bottom=Side(style="thin", color=COLORS["border"]),
+                    left=Side(style="thin", color=COLORS["border"]),
+                    right=Side(style="thin", color=COLORS["border"]),
+                )
+                cell.alignment = Alignment(horizontal="left", vertical="top", wrap_text=True)
+                if alt_row:
+                    cell.fill = PatternFill(start_color=COLORS["light_gray"], end_color=COLORS["light_gray"], fill_type="solid")
+                
+                # Highlight recommended value column
+                if col == 4 and value:  # Recommended Value column
+                    cell.font = Font(name="Calibri", size=11, bold=True, color=COLORS["sap_dark"])
+            
+            ws.row_dimensions[current_row].height = 35
+            current_row += 1
+        
+        # Blank row between groups
+        current_row += 1
+    
+    # Handle any areas not in the predefined order
+    for area, area_params in grouped.items():
+        if area in area_order:
+            continue
+        
+        # Area header row
+        ws.cell(row=current_row, column=1, value=f"{area} ({len(area_params)} parameters)")
+        ws.merge_cells(f"A{current_row}:F{current_row}")
+        area_cell = ws[f"A{current_row}"]
+        area_cell.font = Font(name="Calibri", size=12, bold=True, color=COLORS["white"])
+        area_cell.fill = PatternFill(start_color=COLORS["sap_dark"], end_color=COLORS["sap_dark"], fill_type="solid")
+        current_row += 1
+        
+        # Column headers
+        for col, header in enumerate(headers, 1):
+            cell = ws.cell(row=current_row, column=col, value=header)
+            cell.font = Font(name="Calibri", size=11, bold=True)
+            cell.fill = PatternFill(start_color=COLORS["header_bg"], end_color=COLORS["header_bg"], fill_type="solid")
+        current_row += 1
+        
+        # Data rows
+        for param in area_params:
+            values = [
+                param.get("parameter_name", ""),
+                param.get("area", ""),
+                param.get("current_value", ""),
+                param.get("recommended_value", ""),
+                param.get("description", ""),
+                param.get("section", ""),
+            ]
+            for col, value in enumerate(values, 1):
+                cell = ws.cell(row=current_row, column=col, value=str(value) if value else "")
+                cell.font = Font(name="Calibri", size=11)
+                cell.alignment = Alignment(wrap_text=True)
+            current_row += 1
+        
+        current_row += 1
+    
+    # Column widths
+    widths = [35, 18, 20, 20, 45, 30]
+    for col, width in enumerate(widths, 1):
+        ws.column_dimensions[get_column_letter(col)].width = width
+
+
 def json_to_excel(
     json_data: Dict[str, Any],
     customer_name: str = "",
+    parameters: Optional[List[Dict[str, Any]]] = None,
 ) -> bytes:
     """
     Convert EWA analysis JSON to a formatted Excel workbook.
@@ -476,6 +618,7 @@ def json_to_excel(
     Args:
         json_data: The EWA analysis JSON data
         customer_name: Optional customer name for the report
+        parameters: Optional list of parameter recommendations extracted from markdown
         
     Returns:
         Excel file as bytes
@@ -506,7 +649,12 @@ def json_to_excel(
     ws_findings = wb.create_sheet("Findings & Actions")
     _write_findings_and_recommendations_sheet(ws_findings, json_data, styles)
     
-    # 4. Capacity Outlook
+    # 4. Parameter Recommendations (if available)
+    if parameters:
+        ws_params = wb.create_sheet("Parameter Changes")
+        _write_parameters_sheet(ws_params, parameters, styles)
+    
+    # 5. Capacity Outlook
     ws_capacity = wb.create_sheet("Capacity Outlook")
     _write_capacity_sheet(ws_capacity, json_data, styles)
     

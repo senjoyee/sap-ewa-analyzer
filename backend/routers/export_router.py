@@ -24,6 +24,7 @@ from services.storage_service import StorageService
 from utils.markdown_utils import json_to_markdown
 from utils.html_utils import json_to_html
 from utils.excel_utils import json_to_excel
+from utils.parameter_extractor import extract_parameters_from_markdown
 
 router = APIRouter(prefix="/api", tags=["export"])
 storage_service = StorageService()
@@ -1337,8 +1338,28 @@ async def export_json_to_excel(
         except Exception as e:
             print(f"[Excel Export] Error fetching customer metadata: {e}")
         
+        # Fetch markdown file and extract parameters
+        parameters = []
+        try:
+            # Derive markdown blob name
+            if json_blob_name.endswith("_AI.json"):
+                md_blob_name = json_blob_name.replace("_AI.json", ".md")
+            else:
+                md_blob_name = base_name + ".md"
+            
+            print(f"[Excel Export] Looking for markdown: {md_blob_name}")
+            md_content = storage_service.get_text_content(md_blob_name)
+            
+            if md_content:
+                parameters = extract_parameters_from_markdown(md_content)
+                print(f"[Excel Export] Extracted {len(parameters)} parameters from markdown")
+        except FileNotFoundError:
+            print(f"[Excel Export] Markdown file not found, skipping parameter extraction")
+        except Exception as e:
+            print(f"[Excel Export] Error extracting parameters: {e}")
+        
         # Convert JSON to Excel
-        excel_bytes = json_to_excel(json_data, customer_name=customer_name)
+        excel_bytes = json_to_excel(json_data, customer_name=customer_name, parameters=parameters)
         print(f"[Excel Export] Excel generated, size: {len(excel_bytes)} bytes")
         
         # Build filename: <SID>_<Customer>_<date>.xlsx
