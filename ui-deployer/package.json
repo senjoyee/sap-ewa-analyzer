@@ -1,5 +1,11 @@
 {
   "name": "ewa-analyzer-ui-deployer",
   "version": "1.0.0",
-  "description": "UI Deployer for SAP EWA Analyzer"
+  "description": "UI Deployer for SAP EWA Analyzer",
+  "devDependencies": {
+    "@sap/html5-app-deployer": "^2"
+  },
+  "scripts": {
+    "start": "node node_modules/@sap/html5-app-deployer/index.js"
+  }
 }

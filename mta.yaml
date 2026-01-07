@@ -35,38 +35,6 @@ modules:
           url: ${default-url}
 
   # ---------------------------------------------------------------------------
-  # UI Deployer (uploads webapp to HTML5 Repo)
-  # ---------------------------------------------------------------------------
-  - name: ewa-analyzer-ui-deployer
-    type: com.sap.application.content
-    path: ui-deployer
-    requires:
-      - name: ewaanalyzer-repo-host
-        parameters:
-          content-target: true
-    build-parameters:
-      build-result: resources
-      requires:
-        - name: ewa-analyzer-ui
-          artifacts:
-            - ewaanalyzer.zip
-          target-path: resources/
-
-  # ---------------------------------------------------------------------------
-  # UI Build Module (builds the SAPUI5 app)
-  # ---------------------------------------------------------------------------
-  - name: ewa-analyzer-ui
-    type: html5
-    path: sapui5
-    build-parameters:
-      build-result: dist
-      builder: custom
-      commands:
-        - npm install
-        - npm run build --if-present
-      supported-platforms: []
-
-  # ---------------------------------------------------------------------------
   # AppRouter (Entry point, Auth, Reverse Proxy)
   # ---------------------------------------------------------------------------
   - name: ewa-analyzer-approuter
@@ -102,7 +70,7 @@ resources:
       service-plan: application
       path: xs-security.json
       config:
-        xsappname: ewaanalyzer-${org}-${space}
+        xsappname: ewaanalyzer-${space}
         tenant-mode: dedicated
         oauth2-configuration:
           redirect-uris:
