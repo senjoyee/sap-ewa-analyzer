@@ -49,6 +49,9 @@
     "redirect-uris": [
       "https://*.cfapps.*.hana.ondemand.com/**",
       "https://*.hana.ondemand.com/**"
+    ],
+    "allowedproviders": [
+      "avhzbvk7s-platform"
     ]
   }
 }
