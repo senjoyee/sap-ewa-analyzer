@@ -81,12 +81,12 @@ modules:
       - name: ewaanalyzer-uaa
       - name: ewaanalyzer-repo-runtime
       - name: ewaanalyzer-dest
+      - name: backend-api
         group: destinations
         properties:
           name: backend-api
-          url: ~{backend-api/url}
+          url: ~{url}
           forwardAuthToken: true
-      - name: backend-api
 
 # =============================================================================
 # RESOURCES (Services)
