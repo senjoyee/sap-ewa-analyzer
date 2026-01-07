@@ -1,0 +1,139 @@
+_schema-version: "3.1"
+ID: ewa-analyzer
+version: 1.0.0
+description: SAP EWA Analyzer - AI-powered Early Watch Alert Analysis
+
+parameters:
+  enable-parallel-deployments: true
+
+# =============================================================================
+# MODULES (Applications)
+# =============================================================================
+modules:
+  # ---------------------------------------------------------------------------
+  # Backend API (Python)
+  # ---------------------------------------------------------------------------
+  - name: ewa-analyzer-backend
+    type: python
+    path: backend
+    parameters:
+      buildpack: python_buildpack
+      memory: 512M
+      disk-quota: 1G
+    properties:
+      # Azure credentials passed as environment variables (Phase 3, Option B)
+      AZURE_STORAGE_CONNECTION_STRING: "{{AZURE_STORAGE_CONNECTION_STRING}}"
+      AZURE_STORAGE_CONTAINER_NAME: "{{AZURE_STORAGE_CONTAINER_NAME}}"
+      AZURE_OPENAI_ENDPOINT: "{{AZURE_OPENAI_ENDPOINT}}"
+      AZURE_OPENAI_API_KEY: "{{AZURE_OPENAI_API_KEY}}"
+      AZURE_OPENAI_SUMMARY_MODEL: "{{AZURE_OPENAI_SUMMARY_MODEL}}"
+    requires:
+      - name: ewaanalyzer-uaa
+    provides:
+      - name: backend-api
+        properties:
+          url: ${default-url}
+
+  # ---------------------------------------------------------------------------
+  # UI Deployer (uploads webapp to HTML5 Repo)
+  # ---------------------------------------------------------------------------
+  - name: ewa-analyzer-ui-deployer
+    type: com.sap.application.content
+    path: ui-deployer
+    requires:
+      - name: ewaanalyzer-repo-host
+        parameters:
+          content-target: true
+    build-parameters:
+      build-result: resources
+      requires:
+        - name: ewa-analyzer-ui
+          artifacts:
+            - ewaanalyzer.zip
+          target-path: resources/
+
+  # ---------------------------------------------------------------------------
+  # UI Build Module (builds the SAPUI5 app)
+  # ---------------------------------------------------------------------------
+  - name: ewa-analyzer-ui
+    type: html5
+    path: sapui5
+    build-parameters:
+      build-result: dist
+      builder: custom
+      commands:
+        - npm install
+        - npm run build --if-present
+      supported-platforms: []
+
+  # ---------------------------------------------------------------------------
+  # AppRouter (Entry point, Auth, Reverse Proxy)
+  # ---------------------------------------------------------------------------
+  - name: ewa-analyzer-approuter
+    type: approuter.nodejs
+    path: approuter
+    parameters:
+      memory: 256M
+      disk-quota: 256M
+    properties:
+      TENANT_HOST_PATTERN: "^(.*)-${default-uri}"
+    requires:
+      - name: ewaanalyzer-uaa
+      - name: ewaanalyzer-repo-runtime
+      - name: ewaanalyzer-dest
+        group: destinations
+        properties:
+          name: backend-api
+          url: ~{backend-api/url}
+          forwardAuthToken: true
+      - name: backend-api
+
+# =============================================================================
+# RESOURCES (Services)
+# =============================================================================
+resources:
+  # ---------------------------------------------------------------------------
+  # XSUAA (Authentication & Authorization)
+  # ---------------------------------------------------------------------------
+  - name: ewaanalyzer-uaa
+    type: org.cloudfoundry.managed-service
+    parameters:
+      service: xsuaa
+      service-plan: application
+      path: xs-security.json
+      config:
+        xsappname: ewaanalyzer-${org}-${space}
+        tenant-mode: dedicated
+        oauth2-configuration:
+          redirect-uris:
+            - "https://*.cfapps.*.hana.ondemand.com/**"
+            - "https://*.hana.ondemand.com/**"
+
+  # ---------------------------------------------------------------------------
+  # HTML5 Application Repository - Host (for deploying UI content)
+  # ---------------------------------------------------------------------------
+  - name: ewaanalyzer-repo-host
+    type: org.cloudfoundry.managed-service
+    parameters:
+      service: html5-apps-repo
+      service-plan: app-host
+
+  # ---------------------------------------------------------------------------
+  # HTML5 Application Repository - Runtime (for serving UI content)
+  # ---------------------------------------------------------------------------
+  - name: ewaanalyzer-repo-runtime
+    type: org.cloudfoundry.managed-service
+    parameters:
+      service: html5-apps-repo
+      service-plan: app-runtime
+
+  # ---------------------------------------------------------------------------
+  # Destination Service (for routing to backend)
+  # ---------------------------------------------------------------------------
+  - name: ewaanalyzer-dest
+    type: org.cloudfoundry.managed-service
+    parameters:
+      service: destination
+      service-plan: lite
+      config:
+        HTML5Runtime_enabled: true

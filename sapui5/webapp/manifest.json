@@ -104,5 +104,9 @@
         }
       }
     }
+  },
+  "sap.cloud": {
+    "public": true,
+    "service": "ewaanalyzer"
   }
 }

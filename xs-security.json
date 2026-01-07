@@ -1,0 +1,54 @@
+{
+  "xsappname": "ewaanalyzer",
+  "tenant-mode": "dedicated",
+  "description": "SAP EWA Analyzer Security Configuration",
+  "scopes": [
+    {
+      "name": "$XSAPPNAME.viewer",
+      "description": "View EWA analysis reports"
+    },
+    {
+      "name": "$XSAPPNAME.admin",
+      "description": "Administer EWA Analyzer (upload, delete, reprocess)"
+    }
+  ],
+  "role-templates": [
+    {
+      "name": "Viewer",
+      "description": "View EWA analysis reports",
+      "scope-references": [
+        "$XSAPPNAME.viewer"
+      ]
+    },
+    {
+      "name": "Administrator",
+      "description": "Full access to EWA Analyzer",
+      "scope-references": [
+        "$XSAPPNAME.viewer",
+        "$XSAPPNAME.admin"
+      ]
+    }
+  ],
+  "role-collections": [
+    {
+      "name": "EWA Analyzer Viewer",
+      "description": "View EWA analysis reports",
+      "role-template-references": [
+        "$XSAPPNAME.Viewer"
+      ]
+    },
+    {
+      "name": "EWA Analyzer Administrator",
+      "description": "Full access to EWA Analyzer",
+      "role-template-references": [
+        "$XSAPPNAME.Administrator"
+      ]
+    }
+  ],
+  "oauth2-configuration": {
+    "redirect-uris": [
+      "https://*.cfapps.*.hana.ondemand.com/**",
+      "https://*.hana.ondemand.com/**"
+    ]
+  }
+}
