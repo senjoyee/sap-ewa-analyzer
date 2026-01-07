@@ -72,3 +72,10 @@ uv.lock
 *.docx
 *.pdf
 
+# MTA build artifacts
+mta_archives/
+*.mtar
+
+# MTA extension with credentials (NEVER commit with real values)
+mtaext.yaml
+
