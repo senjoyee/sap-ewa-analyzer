@@ -79,3 +79,6 @@ mta_archives/
 # MTA extension with credentials (NEVER commit with real values)
 mtaext.yaml
 
+# Environment credentials export
+env.json
+
