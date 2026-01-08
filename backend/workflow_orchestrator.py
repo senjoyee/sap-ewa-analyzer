@@ -27,6 +27,7 @@ from openai import AzureOpenAI
 from dotenv import load_dotenv
 from agent.openai_ewa_agent import OpenAIEWAAgent
 from agent.anthropic_ewa_agent import AnthropicEWAAgent
+from agent.parameter_extraction_agent import ParameterExtractionAgent
 from utils.markdown_utils import json_to_markdown
 from converters.document_converter import convert_document_to_markdown
 from services.storage_service import StorageService
@@ -96,6 +97,7 @@ class WorkflowState:
     markdown_content: str = ""
     summary_result: str = ""
     summary_json: dict = None
+    parameters_json: dict = None
     error: str = ""
 
 class EWAWorkflowOrchestrator:
@@ -104,6 +106,7 @@ class EWAWorkflowOrchestrator:
     def __init__(self):
         self.client = None
         self.blob_service_client = None
+        self.openai_client = None
         self.summary_model = AZURE_OPENAI_SUMMARY_MODEL
         self.azure_openai_endpoint = AZURE_OPENAI_ENDPOINT
         self.azure_openai_api_key = AZURE_OPENAI_API_KEY
@@ -118,6 +121,14 @@ class EWAWorkflowOrchestrator:
             self.blob_service_client = BlobServiceClient.from_connection_string(
                 AZURE_STORAGE_CONNECTION_STRING
             )
+
+            # Initialize OpenAI client (used for parameter extraction)
+            if self.azure_openai_endpoint and self.azure_openai_api_key and self.azure_openai_api_version:
+                self.openai_client = AzureOpenAI(
+                    api_version=self.azure_openai_api_version,
+                    azure_endpoint=self.azure_openai_endpoint,
+                    api_key=self.azure_openai_api_key,
+                )
             
             print("Successfully initialized Blob Storage client")
             
@@ -442,6 +453,20 @@ class EWAWorkflowOrchestrator:
             state.summary_json = self._fix_report_date_if_invalid(state.summary_json, state.blob_name)
             
             state.summary_result = json_to_markdown(state.summary_json)
+
+            # Step 2b: Extract parameters using fast model
+            try:
+                print(f"[STEP 2b] Extracting parameters for {state.blob_name}")
+                if not self.openai_client:
+                    raise RuntimeError("OpenAI client not initialized")
+                param_agent = ParameterExtractionAgent(self.openai_client)
+                state.parameters_json = await param_agent.extract(text_input)
+                param_count = len(state.parameters_json.get("parameters", []))
+                print(f"[STEP 2b] Extracted {param_count} parameters")
+            except Exception as param_e:
+                print(f"[STEP 2b] Parameter extraction failed (non-fatal): {param_e}")
+                state.parameters_json = {"parameters": [], "extraction_notes": f"Extraction failed: {str(param_e)}"}
+            
             return state
         except Exception as e:
             state.error = str(e)
@@ -490,6 +515,13 @@ class EWAWorkflowOrchestrator:
                     except Exception as meta_e:
                         # Non-fatal; continue even if metadata update fails
                         print(f"Warning: could not set report_date metadata for {state.blob_name}: {meta_e}")
+
+            # Save extracted parameters JSON
+            if state.parameters_json is not None:
+                params_blob_name = f"{base_name}_parameters.json"
+                await self.upload_to_blob(params_blob_name, json.dumps(state.parameters_json, indent=2), "application/json", original_metadata)
+                param_count = len(state.parameters_json.get("parameters", []))
+                print(f"Saved {param_count} parameters to {params_blob_name}")
             
             return state
         except Exception as e:
