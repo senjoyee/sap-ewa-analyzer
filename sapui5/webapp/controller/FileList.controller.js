@@ -169,14 +169,13 @@ sap.ui.define([
             }
 
             var aQueue = this.getView().getModel("uploadQueue").getProperty("/files") || [];
-            this._openCustomerDialog(aQueue, sFallbackCustomer)
-                .then((aUpdatedQueue) => {
-                    this.getView().getModel("uploadQueue").setData({ files: aUpdatedQueue });
-                    return this._performUploads(aFiles, aUpdatedQueue, sFallbackCustomer);
-                })
-                .catch(() => {
-                    // Dialog cancelled; do nothing
-                });
+            var aMissing = aQueue.filter(function (q) { return !q.customer; });
+            if (aMissing.length) {
+                MessageToast.show("Please select a customer for each file before uploading.");
+                return;
+            }
+
+            this._performUploads(aFiles, aQueue, sFallbackCustomer);
         },
 
         _performUploads: function (aFiles, aQueue, sFallbackCustomer) {
