@@ -266,6 +266,15 @@ body {
     font-family: "72", "72full", Arial, Helvetica, sans-serif !important;
 }
 
+.uploadArea .sapMSltText,
+.uploadArea .sapMSltLabel,
+.uploadArea .sapMSelectListItemText,
+.uploadArea .sapMSltArrow {
+    font-size: 0.8125rem !important;
+    font-weight: 500 !important;
+    color: #334155 !important;
+}
+
 .uploadArea:hover {
     border-color: #0a6ed1;
     background-color: #f5f8fc;
