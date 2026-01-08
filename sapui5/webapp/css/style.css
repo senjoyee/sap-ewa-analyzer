@@ -275,6 +275,16 @@ body {
     color: #334155 !important;
 }
 
+/* Dropdown popover list (when Select is expanded) */
+.sapMSltPicker-CTX .sapMSelectListItemText,
+.sapMSltPicker-CTX .sapMSelectListItemBase,
+.sapMSltPicker-CTX .sapMSLITitleOnly {
+    font-family: "72", "72full", Arial, Helvetica, sans-serif !important;
+    font-size: 0.8125rem !important;
+    font-weight: 500 !important;
+    color: #334155 !important;
+}
+
 .uploadArea:hover {
     border-color: #0a6ed1;
     background-color: #f5f8fc;
