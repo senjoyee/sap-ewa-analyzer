@@ -79,6 +79,7 @@ approuter/node_modules/
 approuter/package-lock.json
 ui-deployer/resources/
 sapui5/dist/
+ewaanalyzer-*/
 
 # MTA extension with credentials (NEVER commit with real values)
 mtaext.yaml

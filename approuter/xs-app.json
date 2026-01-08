@@ -1,19 +1,19 @@
 {
-  "welcomeFile": "/index.html",
-  "authenticationMethod": "route",
+  "welcomeFile": "/ewaanalyzer-1.0.0/index.html",
+  "authenticationMethod": "none",
   "routes": [
     {
       "source": "^/api/(.*)$",
       "target": "/api/$1",
       "destination": "backend-api",
-      "authenticationType": "xsuaa",
+      "authenticationType": "none",
       "csrfProtection": false
     },
     {
       "source": "^(.*)$",
-      "target": "$1",
+      "target": "/ewaanalyzer-1.0.0/$1",
       "service": "html5-apps-repo-rt",
-      "authenticationType": "xsuaa"
+      "authenticationType": "none"
     }
   ]
 }
