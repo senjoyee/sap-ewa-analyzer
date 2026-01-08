@@ -11,8 +11,13 @@ sap.ui.define([
     "sap/ui/model/json/JSONModel",
     "sap/m/MessageToast",
     "sap/m/MessageBox",
-    "sap/m/GroupHeaderListItem"
-], function (Controller, Panel, HTML, CustomListItem, ObjectStatus, Config, ToolbarSpacer, Select, Item, JSONModel, MessageToast, MessageBox, GroupHeaderListItem) {
+    "sap/m/GroupHeaderListItem",
+    "sap/m/Dialog",
+    "sap/m/Button",
+    "sap/m/List",
+    "sap/m/Text",
+    "sap/m/HBox"
+], function (Controller, Panel, HTML, CustomListItem, ObjectStatus, Config, ToolbarSpacer, Select, Item, JSONModel, MessageToast, MessageBox, GroupHeaderListItem, Dialog, Button, List, Text, HBox) {
     "use strict";
 
     return Controller.extend("ewa.analyzer.controller.FileList", {
@@ -165,17 +170,21 @@ sap.ui.define([
             }
 
             var aQueue = this.getView().getModel("uploadQueue").getProperty("/files") || [];
-            var aMissingCustomer = aQueue.filter(function (q) {
-                return !(q.customer || sFallbackCustomer);
-            });
-            if (aMissingCustomer.length) {
-                MessageToast.show("Please select a customer for each file.");
-                return;
-            }
+            this._openCustomerDialog(aQueue, sFallbackCustomer)
+                .then((aUpdatedQueue) => {
+                    this.getView().getModel("uploadQueue").setData({ files: aUpdatedQueue });
+                    return this._performUploads(aFiles, aUpdatedQueue, sFallbackCustomer);
+                })
+                .catch(() => {
+                    // Dialog cancelled; do nothing
+                });
+        },
 
+        _performUploads: function (aFiles, aQueue, sFallbackCustomer) {
+            var oFileUploader = this.byId("fileUploader");
             oFileUploader.setBusy(true);
 
-            Promise.allSettled(
+            return Promise.allSettled(
                 aFiles.map((oFile, idx) => {
                     var oQueueItem = aQueue.find(q => q.index === idx);
                     var sCustomer = oQueueItem && oQueueItem.customer ? oQueueItem.customer : sFallbackCustomer;
@@ -227,6 +236,89 @@ sap.ui.define([
                     oFileUploader.setValue("");
                     oFileUploader.setBusy(false);
                 });
+        },
+
+        _createCustomerItems: function () {
+            var aCustomers = (this.getView().getModel("customers").getProperty("/customers")) || [];
+            var aItems = [new Item({ key: "", text: "Select customer" })];
+            aCustomers.forEach(function (c) {
+                aItems.push(new Item({ key: c.key, text: c.text }));
+            });
+            return aItems;
+        },
+
+        _openCustomerDialog: function (aQueue, sFallbackCustomer) {
+            return new Promise((resolve, reject) => {
+                var aSelectItems = this._createCustomerItems();
+                var oList = new List({
+                    width: "100%",
+                    items: aQueue.map((q) => {
+                        var oSelect = new Select({
+                            width: "200px",
+                            forceSelection: true,
+                            selectedKey: q.customer || sFallbackCustomer || "",
+                            items: aSelectItems.map(function (oItem) {
+                                return oItem.clone();
+                            })
+                        });
+
+                        return new CustomListItem({
+                            content: new HBox({
+                                width: "100%",
+                                justifyContent: "SpaceBetween",
+                                alignItems: "Center",
+                                items: [
+                                    new Text({ text: q.name, wrapping: false }),
+                                    oSelect
+                                ]
+                            })
+                        });
+                    })
+                });
+
+                var oDialog = new Dialog({
+                    title: "Select customer for each file",
+                    contentWidth: "450px",
+                    horizontalScrolling: false,
+                    verticalScrolling: true,
+                    content: [oList],
+                    buttons: [
+                        new Button({
+                            text: "Cancel",
+                            press: () => {
+                                oDialog.close();
+                                oDialog.destroy();
+                                reject();
+                            }
+                        }),
+                        new Button({
+                            text: "Upload",
+                            type: "Emphasized",
+                            press: () => {
+                                var aItems = oList.getItems();
+                                var aUpdatedQueue = aQueue.map(function (q, idx) {
+                                    var oSelect = aItems[idx].getContent()[0].getItems()[1];
+                                    return Object.assign({}, q, { customer: oSelect.getSelectedKey() });
+                                });
+                                var bMissing = aUpdatedQueue.some(function (q) { return !q.customer; });
+                                if (bMissing) {
+                                    MessageToast.show("Please select a customer for each file.");
+                                    return;
+                                }
+                                oDialog.close();
+                                oDialog.destroy();
+                                resolve(aUpdatedQueue);
+                            }
+                        })
+                    ],
+                    afterClose: function () {
+                        oDialog.destroy();
+                    }
+                });
+
+                this.getView().addDependent(oDialog);
+                oDialog.open();
+            });
         },
 
         onUploadQueueCustomerChange: function (oEvent) {

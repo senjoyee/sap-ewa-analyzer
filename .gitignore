@@ -87,3 +87,5 @@ mtaext.yaml
 # Environment credentials export
 env.json
 
+scripts/deploy-local.ps1
+.gitignore
