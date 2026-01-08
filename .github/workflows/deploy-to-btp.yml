@@ -1,0 +1,67 @@
+name: Deploy to SAP BTP Cloud Foundry
+
+on:
+  push:
+    branches:
+      - btp-migration
+  workflow_dispatch:
+
+jobs:
+  build-and-deploy:
+    runs-on: ubuntu-latest
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+
+      - name: Install MBT (MTA Build Tool)
+        run: npm install -g mbt
+
+      - name: Install Cloud Foundry CLI
+        run: |
+          wget -q -O - https://packages.cloudfoundry.org/debian/cli.cloudfoundry.org.key | sudo gpg --dearmor -o /usr/share/keyrings/cloudfoundry-archive-keyring.gpg
+          echo "deb [signed-by=/usr/share/keyrings/cloudfoundry-archive-keyring.gpg] https://packages.cloudfoundry.org/debian stable main" | sudo tee /etc/apt/sources.list.d/cloudfoundry-cli.list
+          sudo apt-get update
+          sudo apt-get install -y cf8-cli
+
+      - name: Install CF MTA Plugin
+        run: cf install-plugin multiapps -f
+
+      - name: Create MTA Extension File
+        run: |
+          cat > mtaext.yaml << 'EOF'
+          _schema-version: "3.1"
+          ID: ewa-analyzer-credentials
+          extends: ewa-analyzer
+
+          modules:
+            - name: ewa-analyzer-backend
+              properties:
+                AZURE_STORAGE_CONNECTION_STRING: "${{ secrets.AZURE_STORAGE_CONNECTION_STRING }}"
+                AZURE_STORAGE_CONTAINER_NAME: "${{ secrets.AZURE_STORAGE_CONTAINER_NAME }}"
+                AZURE_OPENAI_ENDPOINT: "${{ secrets.AZURE_OPENAI_ENDPOINT }}"
+                AZURE_OPENAI_API_KEY: "${{ secrets.AZURE_OPENAI_API_KEY }}"
+                AZURE_OPENAI_SUMMARY_MODEL: "${{ secrets.AZURE_OPENAI_SUMMARY_MODEL }}"
+          EOF
+
+      - name: Build MTA Archive
+        run: mbt build -p=cf
+
+      - name: Login to Cloud Foundry
+        run: |
+          cf api ${{ secrets.CF_API_ENDPOINT }}
+          cf auth "${{ secrets.CF_USERNAME }}" "${{ secrets.CF_PASSWORD }}"
+          cf target -o "${{ secrets.CF_ORG }}" -s "${{ secrets.CF_SPACE }}"
+
+      - name: Deploy to BTP
+        run: |
+          cf deploy mta_archives/ewa-analyzer_1.0.0.mtar -e mtaext.yaml
+
+      - name: Cleanup
+        if: always()
+        run: rm -f mtaext.yaml
