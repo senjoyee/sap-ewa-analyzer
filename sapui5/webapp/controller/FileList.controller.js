@@ -146,13 +146,12 @@ sap.ui.define([
             // Cache actual File objects off-model to avoid serialization issues
             this._selectedFiles = aFiles;
 
-            var sDefaultCustomer = this.byId("customerSelect").getSelectedKey();
             var aQueue = aFiles.map(function (oFile, idx) {
                 return {
                     index: idx,
                     name: oFile.name,
                     size: oFile.size,
-                    customer: sDefaultCustomer || ""
+                    customer: ""
                 };
             });
 
@@ -161,7 +160,7 @@ sap.ui.define([
 
         onUploadPress: function () {
             var oFileUploader = this.byId("fileUploader");
-            var sFallbackCustomer = this.byId("customerSelect").getSelectedKey();
+            var sFallbackCustomer = "";
             var aFiles = this._selectedFiles || [];
 
             if (!aFiles.length) {
@@ -227,7 +226,6 @@ sap.ui.define([
                     this.getView().getModel("uploadPanel").setProperty("/expanded", false);
                     this.getView().getModel("uploadQueue").setData({ files: [] });
                     this._selectedFiles = [];
-                    this.byId("customerSelect").setSelectedKey("");
                 })
                 .catch(err => {
                     MessageBox.error("Upload failed: " + err.message);
