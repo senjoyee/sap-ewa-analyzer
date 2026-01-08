@@ -23,6 +23,8 @@ from core.azure_clients import (
 from services.storage_service import StorageService
 from utils.markdown_utils import json_to_markdown
 from utils.html_utils import json_to_html
+from utils.excel_utils import json_to_excel
+from utils.parameter_extractor import extract_parameters_from_markdown
 
 router = APIRouter(prefix="/api", tags=["export"])
 storage_service = StorageService()
@@ -640,6 +642,90 @@ def _post_process_html(
     )
     
     return html_content
+
+
+@router.get("/export-excel")
+async def export_json_to_excel(blob_name: str):
+    """
+    Export EWA analysis to Excel directly from JSON, with optional parameter recommendations.
+    
+    Attempts to load extracted parameters JSON first; if unavailable, falls back to extracting
+    parameters from the markdown report.
+    """
+    if not blob_service_client:
+        raise HTTPException(status_code=500, detail="Azure Blob Service client not initialized")
+
+    try:
+        try:
+            json_text = storage_service.get_text_content(blob_name)
+        except FileNotFoundError:
+            raise HTTPException(status_code=404, detail=f"JSON file {blob_name} not found") from None
+
+        try:
+            json_data = json.loads(json_text)
+        except json.JSONDecodeError as e:
+            raise HTTPException(status_code=400, detail=f"Invalid JSON: {str(e)}") from None
+
+        base_name = os.path.splitext(blob_name)[0]
+        original_base = base_name[:-3] if base_name.endswith("_AI") else base_name
+
+        # Fetch customer_name from original PDF metadata if available
+        customer_name = ""
+        try:
+            original_pdf_name = f"{original_base}.pdf"
+            original_blob_client = blob_service_client.get_blob_client(
+                container=AZURE_STORAGE_CONTAINER_NAME, blob=original_pdf_name
+            )
+            if original_blob_client.exists():
+                blob_props = original_blob_client.get_blob_properties()
+                if blob_props.metadata:
+                    customer_name = blob_props.metadata.get("customer_name", "")
+                    print(f"[Excel Export] Customer name from metadata: {customer_name}")
+        except Exception as meta_e:
+            print(f"[Excel Export] Error fetching customer metadata: {meta_e}")
+
+        # Load parameters from extracted JSON, fallback to markdown parsing
+        parameters: List[Dict[str, Any]] = []
+        params_blob_name = f"{original_base}_parameters.json"
+
+        try:
+            params_text = storage_service.get_text_content(params_blob_name)
+            params_json = json.loads(params_text)
+            parameters = params_json.get("parameters", [])
+            print(f"[Excel Export] Loaded {len(parameters)} parameters from {params_blob_name}")
+        except FileNotFoundError:
+            print(f"[Excel Export] Parameters file not found ({params_blob_name}), attempting markdown extraction")
+            try:
+                md_blob_name = f"{original_base}_AI.md"
+                md_text = storage_service.get_text_content(md_blob_name)
+                parameters = extract_parameters_from_markdown(md_text)
+                print(f"[Excel Export] Extracted {len(parameters)} parameters from markdown")
+            except FileNotFoundError:
+                print(f"[Excel Export] Markdown file not found ({md_blob_name}); continuing without parameters")
+            except Exception as md_e:
+                print(f"[Excel Export] Parameter extraction from markdown failed: {md_e}")
+        except Exception as params_e:
+            print(f"[Excel Export] Error loading parameters JSON: {params_e}")
+
+        excel_bytes = json_to_excel(json_data, customer_name=customer_name, parameters=parameters)
+
+        safe_customer = _sanitize_filename_component(customer_name) if customer_name else "Customer"
+        excel_filename = f"{original_base}_{safe_customer}.xlsx"
+
+        return Response(
+            content=excel_bytes,
+            media_type="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+            headers={
+                "Content-Disposition": f'attachment; filename="{excel_filename}"',
+                "Cache-Control": "no-cache, no-store, must-revalidate",
+            },
+        )
+    except HTTPException:
+        raise
+    except Exception as e:
+        import traceback
+        traceback.print_exc()
+        raise HTTPException(status_code=500, detail=f"Error exporting JSON to Excel: {str(e)}")
 
 
 @router.get("/export-pdf-enhanced", deprecated=True)

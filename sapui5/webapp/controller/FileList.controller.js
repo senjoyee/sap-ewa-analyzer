@@ -473,6 +473,20 @@ sap.ui.define([
             var oTable = oEvent.getSource();
             var iSelectedCount = oTable.getSelectedItems().length;
             this.getView().getModel("selectedFiles").setProperty("/count", iSelectedCount);
+        },
+
+        onDownloadExcelPress: function (oEvent) {
+            var oItem = oEvent.getSource().getBindingContext("files").getObject();
+            var sBaseName = oItem.name.replace(".pdf", "");
+            var sJsonName = sBaseName + "_AI.json";
+            var sUrl = Config.getEndpoint("exportExcel") + "?blob_name=" + encodeURIComponent(sJsonName);
+            window.open(sUrl, "_blank");
+        },
+
+        onChatPress: function (oEvent) {
+            var oItem = oEvent.getSource().getBindingContext("files").getObject();
+            var sUrl = window.location.origin + "/chat.html?fileName=" + encodeURIComponent(oItem.name);
+            window.open(sUrl, "_blank");
         }
     });
 });

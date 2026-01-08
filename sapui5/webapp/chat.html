@@ -1,0 +1,281 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>EWA Chat</title>
+  <style>
+    :root {
+      --bg: linear-gradient(135deg, #f0f4ff 0%, #e8edf7 50%, #f9fafc 100%);
+      --card: #ffffff;
+      --accent: #0a6ed1;
+      --accent-2: #ffb300;
+      --text: #0f172a;
+      --muted: #475569;
+      --border: #e2e8f0;
+    }
+    * { box-sizing: border-box; }
+    body {
+      margin: 0;
+      font-family: "Inter", "Segoe UI", system-ui, -apple-system, sans-serif;
+      background: var(--bg);
+      color: var(--text);
+      min-height: 100vh;
+      display: flex;
+      justify-content: center;
+      align-items: flex-start;
+      padding: 32px 16px;
+    }
+    .card {
+      background: var(--card);
+      width: min(960px, 100%);
+      min-height: 70vh;
+      border-radius: 18px;
+      box-shadow: 0 20px 60px rgba(15, 23, 42, 0.12);
+      overflow: hidden;
+      display: flex;
+      flex-direction: column;
+      border: 1px solid var(--border);
+    }
+    .card__header {
+      padding: 18px 20px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 12px;
+      border-bottom: 1px solid var(--border);
+      background: linear-gradient(120deg, rgba(10,110,209,0.08), rgba(255,179,0,0.08));
+    }
+    .title {
+      margin: 0;
+      font-size: 1.1rem;
+      font-weight: 700;
+      color: var(--text);
+    }
+    .subtitle {
+      margin: 2px 0 0;
+      font-size: 0.9rem;
+      color: var(--muted);
+      font-weight: 500;
+    }
+    .pill {
+      padding: 6px 10px;
+      border-radius: 999px;
+      background: #eef2ff;
+      color: #312e81;
+      font-weight: 600;
+      font-size: 0.85rem;
+      border: 1px solid #c7d2fe;
+    }
+    .chat {
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+      padding: 18px 20px 12px;
+      overflow-y: auto;
+      flex: 1;
+      background: linear-gradient(180deg, rgba(14, 116, 144, 0.02), rgba(10, 110, 209, 0.015));
+    }
+    .msg {
+      max-width: 80%;
+      padding: 12px 14px;
+      border-radius: 14px;
+      box-shadow: 0 8px 30px rgba(15, 23, 42, 0.1);
+      line-height: 1.5;
+      font-size: 0.96rem;
+      word-break: break-word;
+    }
+    .msg.user {
+      margin-left: auto;
+      background: linear-gradient(135deg, var(--accent) 0%, #0b5ab8 100%);
+      color: #fff;
+      border-top-right-radius: 6px;
+    }
+    .msg.bot {
+      margin-right: auto;
+      background: #fff;
+      color: var(--text);
+      border: 1px solid var(--border);
+      border-top-left-radius: 6px;
+    }
+    .msg.system {
+      margin: 0 auto;
+      background: #fff7ed;
+      color: #92400e;
+      border: 1px solid #fed7aa;
+      border-radius: 12px;
+    }
+    .input-bar {
+      padding: 14px 16px;
+      display: flex;
+      gap: 10px;
+      align-items: flex-end;
+      border-top: 1px solid var(--border);
+      background: #f8fafc;
+    }
+    textarea {
+      flex: 1;
+      resize: vertical;
+      min-height: 80px;
+      max-height: 200px;
+      border-radius: 12px;
+      border: 1px solid var(--border);
+      padding: 12px;
+      font-size: 0.96rem;
+      font-family: inherit;
+      color: var(--text);
+      background: #fff;
+    }
+    button {
+      background: var(--accent);
+      color: #fff;
+      border: none;
+      border-radius: 12px;
+      padding: 12px 16px;
+      font-size: 0.95rem;
+      font-weight: 700;
+      cursor: pointer;
+      box-shadow: 0 10px 25px rgba(10, 110, 209, 0.3);
+      transition: transform 120ms ease, box-shadow 120ms ease, background 120ms ease;
+      min-width: 110px;
+    }
+    button:hover { transform: translateY(-1px); }
+    button:active { transform: translateY(0); box-shadow: 0 6px 14px rgba(10, 110, 209, 0.25); }
+    button:disabled {
+      opacity: 0.65;
+      cursor: not-allowed;
+      box-shadow: none;
+    }
+    .status {
+      font-size: 0.88rem;
+      color: var(--muted);
+      margin: 0;
+    }
+    .footer-note {
+      padding: 8px 16px 16px;
+      font-size: 0.85rem;
+      color: var(--muted);
+      text-align: right;
+    }
+  </style>
+</head>
+<body>
+  <div class="card">
+    <div class="card__header">
+      <div>
+        <p class="title">Document Chat</p>
+        <p class="subtitle" id="fileLabel">Connecting…</p>
+      </div>
+      <span class="pill" id="statusPill">Idle</span>
+    </div>
+
+    <div class="chat" id="chat"></div>
+
+    <div class="input-bar">
+      <textarea id="input" placeholder="Ask a question about the report..." rows="3"></textarea>
+      <button id="sendBtn">Send</button>
+    </div>
+    <div class="footer-note">Powered by EWA Analyzer</div>
+  </div>
+
+  <script>
+    (function () {
+      const chatEl = document.getElementById('chat');
+      const inputEl = document.getElementById('input');
+      const sendBtn = document.getElementById('sendBtn');
+      const fileLabel = document.getElementById('fileLabel');
+      const statusPill = document.getElementById('statusPill');
+
+      const params = new URLSearchParams(window.location.search);
+      const fileName = params.get('fileName') || '';
+      fileLabel.textContent = fileName ? `Chatting about ${fileName}` : 'No file specified';
+
+      let busy = false;
+      const history = [];
+
+      function setBusy(val) {
+        busy = val;
+        sendBtn.disabled = val;
+        statusPill.textContent = val ? 'Thinking…' : 'Idle';
+        statusPill.style.background = val ? '#fff7ed' : '#eef2ff';
+        statusPill.style.color = val ? '#92400e' : '#312e81';
+        statusPill.style.borderColor = val ? '#fed7aa' : '#c7d2fe';
+      }
+
+      function addMessage(role, text) {
+        const div = document.createElement('div');
+        div.className = `msg ${role}`;
+        div.innerHTML = renderMarkdown(text);
+        chatEl.appendChild(div);
+        chatEl.scrollTo({ top: chatEl.scrollHeight, behavior: 'smooth' });
+      }
+
+      function renderMarkdown(md) {
+        if (!md) return '';
+        const esc = (s) => (s || '').replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+        const inline = (s) => esc(s)
+          .replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>')
+          .replace(/\*(.*?)\*/g, '<em>$1</em>')
+          .replace(/`([^`]+)`/g, '<code>$1</code>');
+        return md
+          .split(/\n{2,}/)
+          .map(block => `<p>${inline(block).replace(/\n/g, '<br>')}</p>`)
+          .join('');
+      }
+
+      async function sendMessage() {
+        if (busy) return;
+        const text = (inputEl.value || '').trim();
+        if (!text) return;
+
+        addMessage('user', text);
+        history.push({ isUser: true, text });
+        inputEl.value = '';
+        setBusy(true);
+
+        try {
+          const res = await fetch('/api/chat', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              message: text,
+              fileName,
+              documentContent: '',
+              chatHistory: history,
+            })
+          });
+
+          if (!res.ok) {
+            throw new Error(`Chat request failed (${res.status})`);
+          }
+          const data = await res.json();
+          const reply = data.response || data.message || 'No response';
+          history.push({ isUser: false, text: reply });
+          addMessage('bot', reply);
+        } catch (err) {
+          const msg = `Error: ${err.message || err}`;
+          history.push({ isUser: false, text: msg });
+          addMessage('system', msg);
+        } finally {
+          setBusy(false);
+        }
+      }
+
+      sendBtn.addEventListener('click', sendMessage);
+      inputEl.addEventListener('keydown', (e) => {
+        if (e.key === 'Enter' && !e.shiftKey) {
+          e.preventDefault();
+          sendMessage();
+        }
+      });
+
+      // Initial system message
+      if (fileName) {
+        addMessage('system', `You are now chatting about **${fileName}**. Ask anything related to this report.`);
+      } else {
+        addMessage('system', 'No file specified. Please reopen chat from a document row.');
+      }
+    })();
+  </script>
+</body>
+</html>
