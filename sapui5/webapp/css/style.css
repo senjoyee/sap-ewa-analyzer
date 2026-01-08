@@ -256,6 +256,16 @@ body {
     transition: border-color 0.2s, background-color 0.2s;
 }
 
+.uploadArea .sapMText,
+.uploadArea .sapMLabel,
+.uploadArea .sapMListTblCell .sapMText,
+.uploadArea .sapMSltText,
+.uploadArea .sapMSltLabel,
+.uploadArea .sapMInputBaseInner,
+.uploadArea .sapMComboBoxTextField .sapMInputBaseInner {
+    font-family: "72", "72full", Arial, Helvetica, sans-serif !important;
+}
+
 .uploadArea:hover {
     border-color: #0a6ed1;
     background-color: #f5f8fc;
