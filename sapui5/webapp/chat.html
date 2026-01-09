@@ -18,24 +18,24 @@
     body {
       margin: 0;
       font-family: "Inter", "Segoe UI", system-ui, -apple-system, sans-serif;
-      background: var(--bg);
+      background: #ffffff; /* inner container only */
       color: var(--text);
       min-height: 100vh;
       display: flex;
       justify-content: center;
-      align-items: flex-start;
-      padding: 32px 16px;
+      align-items: stretch;
     }
     .card {
       background: var(--card);
-      width: min(960px, 100%);
-      min-height: 70vh;
-      border-radius: 18px;
-      box-shadow: 0 20px 60px rgba(15, 23, 42, 0.12);
+      width: 100%;
+      min-height: 100vh;
+      height: 100vh;
+      border-radius: 0;
+      box-shadow: none;
       overflow: hidden;
       display: flex;
       flex-direction: column;
-      border: 1px solid var(--border);
+      border: none;
     }
     .card__header {
       padding: 18px 20px;
@@ -97,6 +97,7 @@
       color: var(--text);
       border: 1px solid var(--border);
       border-top-left-radius: 6px;
+      line-height: 1.6;
     }
     .msg.system {
       margin: 0 auto;
@@ -151,6 +152,18 @@
       color: var(--muted);
       margin: 0;
     }
+    /* Markdown styling inside bot/system messages */
+    .msg p { margin: 0 0 8px; }
+    .msg ul, .msg ol { margin: 4px 0 8px 20px; padding: 0; }
+    .msg li { margin: 2px 0; }
+    .msg code { background: #f1f5f9; padding: 2px 4px; border-radius: 4px; font-family: "JetBrains Mono", monospace; }
+    .msg pre { background: #f8fafc; padding: 10px; border-radius: 8px; overflow: auto; }
+    .msg .chatHeading { margin: 6px 0 4px; letter-spacing: 0.01em; }
+    .msg .chatHeading.h1 { font-size: 1.05rem; }
+    .msg .chatHeading.h2 { font-size: 1rem; }
+    .msg .chatHeading.h3 { font-size: 0.95rem; }
+    .msg .chatHeading.h4 { font-size: 0.92rem; }
+    .msg a { color: var(--accent); text-decoration: underline; }
     .footer-note {
       padding: 8px 16px 16px;
       font-size: 0.85rem;
@@ -227,14 +240,88 @@
       function renderMarkdown(md) {
         if (!md) return '';
         const esc = (s) => (s || '').replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
-        const inline = (s) => esc(s)
+        const renderInline = (s) => esc(s)
+          .replace(/`([^`]+)`/g, '<code>$1</code>')
           .replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>')
           .replace(/\*(.*?)\*/g, '<em>$1</em>')
-          .replace(/`([^`]+)`/g, '<code>$1</code>');
-        return md
-          .split(/\n{2,}/)
-          .map(block => `<p>${inline(block).replace(/\n/g, '<br>')}</p>`)
-          .join('');
+          .replace(/\[(.+?)\]\((https?:[^\s)]+)\)/g, '<a href="$2" target="_blank" rel="noopener">$1</a>');
+
+        const lines = (md || '').split('\n');
+        let html = '';
+        let inList = false;
+        let listTag = 'ul';
+        let inCode = false;
+        let codeLines = [];
+
+        const closeList = () => {
+          if (inList) {
+            html += `</${listTag}>`;
+            inList = false;
+          }
+        };
+
+        lines.forEach(lineRaw => {
+          const line = lineRaw || '';
+          const trimmed = line.trim();
+
+          // Code fences
+          if (trimmed.startsWith('```')) {
+            if (inCode) {
+              html += `<pre><code>${esc(codeLines.join('\n'))}</code></pre>`;
+              codeLines = [];
+              inCode = false;
+            } else {
+              closeList();
+              inCode = true;
+            }
+            return;
+          }
+          if (inCode) {
+            codeLines.push(line);
+            return;
+          }
+
+          // Headings
+          const headingMatch = trimmed.match(/^(#{1,6})\s+(.*)$/);
+          if (headingMatch) {
+            closeList();
+            const level = Math.min(headingMatch[1].length, 6);
+            const text = renderInline(headingMatch[2]);
+            html += `<p class="chatHeading h${level}"><strong>${text}</strong></p>`;
+            return;
+          }
+
+          // Lists
+          const isUl = trimmed.startsWith('- ') || trimmed.startsWith('* ');
+          const isOl = /^\d+\.\s+/.test(trimmed);
+          if (isUl || isOl) {
+            const desired = isOl ? 'ol' : 'ul';
+            if (!inList || listTag !== desired) {
+              closeList();
+              listTag = desired;
+              inList = true;
+              html += `<${listTag}>`;
+            }
+            const item = line.replace(/^(-\s+|\*\s+|\d+\.\s+)/, '');
+            html += `<li>${renderInline(item)}</li>`;
+            return;
+          }
+
+          // Blank line
+          if (trimmed.length === 0) {
+            closeList();
+            html += '<br>';
+            return;
+          }
+
+          // Paragraph
+          closeList();
+          html += `<p>${renderInline(line)}</p>`;
+        });
+
+        if (inList) html += `</${listTag}>`;
+        if (inCode) html += `<pre><code>${esc(codeLines.join('\n'))}</code></pre>`;
+        return html;
       }
 
       async function sendMessage() {
