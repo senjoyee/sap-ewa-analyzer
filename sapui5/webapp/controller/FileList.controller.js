@@ -486,7 +486,11 @@ sap.ui.define([
         onChatPress: function (oEvent) {
             var oItem = oEvent.getSource().getBindingContext("files").getObject();
             var sUrl = window.location.origin + "/chat.html?fileName=" + encodeURIComponent(oItem.name);
-            window.open(sUrl, "_blank");
+            var sFeatures = "width=900,height=720,resizable=yes,scrollbars=yes,status=no,toolbar=no,menubar=no,location=no";
+            var oWin = window.open(sUrl, "ewaChatWindow", sFeatures);
+            if (oWin && oWin.focus) {
+                oWin.focus();
+            }
         }
     });
 });
