@@ -14,3 +14,5 @@ uvicorn>=0.34.2
 markdown2>=2.4.13
 WeasyPrint>=62.0
 gunicorn>=21.0.0
+pyjwt>=2.8.0
+requests>=2.31.0

@@ -39,6 +39,10 @@ except Exception as exc:  # pragma: no cover – continue; routers handle None
 # ---------------------------------------------------------------------------
 app = FastAPI(title="SAP EWA Analyzer API")
 
+# Security Middleware (XSUAA)
+from core.xsuaa_middleware import XSUAAMiddleware
+app.add_middleware(XSUAAMiddleware)
+
 app.add_middleware(
     CORSMiddleware,
     allow_origins=["*"],  # Relaxed for dev; tighten in production
