@@ -186,6 +186,20 @@
       const fileLabel = document.getElementById('fileLabel');
       const statusPill = document.getElementById('statusPill');
 
+      // Environment-aware API base URL (aligns with UI5 config.js)
+      function detectApiBaseUrl() {
+        const host = window.location.hostname;
+        if (host === 'localhost' || host === '127.0.0.1') {
+          return 'http://localhost:8001';
+        }
+        if (host.indexOf('azurewebsites.net') !== -1) {
+          return 'https://sap-ewa-analyzer-backend.azurewebsites.net';
+        }
+        // On BTP/AppRouter or custom domain, use relative path
+        return '';
+      }
+      const apiBaseUrl = detectApiBaseUrl();
+
       const params = new URLSearchParams(window.location.search);
       const fileName = params.get('fileName') || '';
       fileLabel.textContent = fileName ? `Chatting about ${fileName}` : 'No file specified';
@@ -234,7 +248,7 @@
         setBusy(true);
 
         try {
-          const res = await fetch('/api/chat', {
+          const res = await fetch(`${apiBaseUrl}/api/chat`, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({
