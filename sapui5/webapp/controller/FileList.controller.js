@@ -61,6 +61,7 @@ sap.ui.define([
             this.getView().setModel(new JSONModel({ files: [] }), "uploadQueue");
             this.getView().setModel(new JSONModel({
                 customers: [
+                    { key: "ALL", text: "All Customers" },
                     { key: "TBS", text: "TBS" },
                     { key: "BSW", text: "BSW" },
                     { key: "SHOOSMITHS", text: "SHOOSMITHS" },
@@ -69,11 +70,27 @@ sap.ui.define([
                     { key: "ASAHI", text: "ASAHI" }
                 ]
             }), "customers");
+            this.getView().setModel(new JSONModel({ selectedCustomer: "ALL" }), "view");
             this.getView().setModel(new JSONModel({ expanded: false }), "uploadPanel");
             this._loadFiles();
 
             // Poll for updates every 10 seconds
             this._intervalId = setInterval(this._loadFiles.bind(this), 10000);
+        },
+
+        onCustomerFilterChange: function (oEvent) {
+            var sKey = oEvent.getParameter("selectedItem").getKey();
+            var oTable = this.byId("filesTable");
+            var oBinding = oTable.getBinding("items");
+            var aFilters = [];
+
+            if (sKey && sKey !== "ALL") {
+                // Filter by customer name
+                // Note: The 'customer' property in the file model contains the name (text), which matches our keys
+                aFilters.push(new sap.ui.model.Filter("customer", sap.ui.model.FilterOperator.EQ, sKey));
+            }
+            
+            oBinding.filter(aFilters);
         },
 
         onExit: function () {

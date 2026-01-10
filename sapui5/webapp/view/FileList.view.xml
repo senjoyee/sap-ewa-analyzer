@@ -99,6 +99,17 @@
                         <OverflowToolbar>
                             <Title text="Files ({= ${files>/}.length })" level="H2"/>
                             <ToolbarSpacer/>
+                            <Label text="Filter:" labelFor="customerFilter" class="sapUiTinyMarginEnd"/>
+                            <Select
+                                id="customerFilter"
+                                forceSelection="true"
+                                change=".onCustomerFilterChange"
+                                items="{customers>/customers}"
+                                selectedKey="{view>/selectedCustomer}"
+                                width="200px"
+                                class="sapUiSmallMarginEnd">
+                                <core:Item key="{customers>key}" text="{customers>text}"/>
+                            </Select>
                             <Button text="{i18n>process}" press="onBatchProcessPress" type="Accept" enabled="{= ${selectedFiles>/count} > 0 }"/>
                             <Button text="{i18n>delete}" press="onBatchDeletePress" type="Reject" icon="sap-icon://delete" enabled="{= ${selectedFiles>/count} > 0 }"/>
                             <Button icon="sap-icon://refresh" press="onRefreshFiles"/>
