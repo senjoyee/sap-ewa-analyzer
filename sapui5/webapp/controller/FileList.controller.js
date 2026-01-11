@@ -9,6 +9,8 @@ sap.ui.define([
     "sap/m/Select",
     "sap/ui/core/Item",
     "sap/ui/model/json/JSONModel",
+    "sap/ui/model/Filter",
+    "sap/ui/model/FilterOperator",
     "sap/m/MessageToast",
     "sap/m/MessageBox",
     "sap/m/GroupHeaderListItem",
@@ -17,7 +19,7 @@ sap.ui.define([
     "sap/m/List",
     "sap/m/Text",
     "sap/m/HBox"
-], function (Controller, Panel, HTML, CustomListItem, ObjectStatus, Config, ToolbarSpacer, Select, Item, JSONModel, MessageToast, MessageBox, GroupHeaderListItem, Dialog, Button, List, Text, HBox) {
+], function (Controller, Panel, HTML, CustomListItem, ObjectStatus, Config, ToolbarSpacer, Select, Item, JSONModel, Filter, FilterOperator, MessageToast, MessageBox, GroupHeaderListItem, Dialog, Button, List, Text, HBox) {
     "use strict";
 
     return Controller.extend("ewa.analyzer.controller.FileList", {
@@ -87,7 +89,7 @@ sap.ui.define([
             if (sKey && sKey !== "ALL") {
                 // Filter by customer name
                 // Note: The 'customer' property in the file model contains the name (text), which matches our keys
-                aFilters.push(new sap.ui.model.Filter("customer", sap.ui.model.FilterOperator.EQ, sKey));
+                aFilters.push(new Filter("customer", FilterOperator.EQ, sKey));
             }
             
             oBinding.filter(aFilters);
@@ -105,8 +107,7 @@ sap.ui.define([
                 sTitle = "Unknown Customer";
             }
             return new GroupHeaderListItem({
-                title: sTitle,
-                upperCase: false
+                title: sTitle
             });
         },
 
@@ -173,6 +174,14 @@ sap.ui.define([
             });
 
             this.getView().getModel("uploadQueue").setData({ files: aQueue });
+        },
+
+        onUploadComplete: function () {
+        },
+
+        handleTypeMissmatch: function (oEvent) {
+            var sFileName = oEvent.getParameter("fileName");
+            MessageToast.show("Only PDF files are supported" + (sFileName ? ": " + sFileName : ""));
         },
 
         onUploadPress: function () {

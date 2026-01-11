@@ -5,41 +5,44 @@
     xmlns:u="sap.ui.unified"
     xmlns:l="sap.ui.layout"
     xmlns:f="sap.f"
-    xmlns:core="sap.ui.core">
-    <Page title="{i18n>fileListTitle}">
+    xmlns:core="sap.ui.core"
+    core:require="{
+        DateType: 'sap/ui/model/type/Date'
+    }">
+    <Page title="{i18n>fileListTitle}" backgroundDesign="List">
         <content>
             <!-- Grey Background Container -->
-            <ScrollContainer height="100%" width="100%" vertical="true" horizontal="false" class="appBackground">
-                <!-- White Centered Content -->
-                <VBox class="paperSheet fileListSheet sapUiSizeCompact">
-                <!-- Upload Area -->
-                <Panel
-                    headerText="{i18n>uploadTitle}"
-                    expandable="true"
-                    expanded="{uploadPanel>/expanded}"
-                    width="auto">
+            <!-- White Centered Content -->
+            <VBox class="paperSheet fileListSheet sapUiSizeCompact">
+            <!-- Upload Area -->
+            <Panel
+                headerText="{i18n>uploadTitle}"
+                expandable="true"
+                expanded="{uploadPanel>/expanded}"
+                width="auto">
                     <content>
                         <VBox class="uploadArea">
-                            <HBox justifyContent="Center" alignItems="Center" wrap="Wrap">
+                            <HBox justifyContent="SpaceBetween" alignItems="Center" wrap="Wrap" width="100%" class="sapUiTinyMarginBottom">
                                 <u:FileUploader
                                     id="fileUploader"
                                     name="file"
                                     multiple="true"
                                     tooltip="Upload your file to the local server"
-                                    uploadComplete="onUploadComplete"
-                                    change="onFileChange"
-                                    typeMissmatch="handleTypeMissmatch"
+                                    uploadComplete=".onUploadComplete"
+                                    change=".onFileChange"
+                                    typeMissmatch=".handleTypeMissmatch"
                                     style="Emphasized"
                                     fileType="pdf"
+                                    width="22rem"
                                     placeholder="Choose PDF file..."
                                     class="sapUiSmallMarginEnd"/>
-                                <Button text="{i18n>uploadButton}" type="Emphasized" press="onUploadPress" icon="sap-icon://upload"/>
+                                <Button text="{i18n>uploadButton}" type="Emphasized" press=".onUploadPress" icon="sap-icon://upload"/>
                             </HBox>
                             <Table
                                 id="uploadQueueTable"
                                 items="{uploadQueue>/files}"
                                 visible="{= ${uploadQueue>/files}.length > 0 }"
-                                width="auto">
+                                width="100%">
                                 <headerToolbar>
                                     <OverflowToolbar>
                                         <Title text="Selected files (set customer per file)" level="H3"/>
@@ -93,8 +96,9 @@
                     mode="MultiSelect"
                     growing="true"
                     growingThreshold="20"
-                    width="auto"
-                    selectionChange="onSelectionChange">
+                    width="100%"
+                    sticky="HeaderToolbar,ColumnHeaders"
+                    selectionChange=".onSelectionChange">
                     <headerToolbar>
                         <OverflowToolbar>
                             <Title text="Files ({= ${files>/}.length })" level="H2"/>
@@ -110,9 +114,9 @@
                                 class="sapUiSmallMarginEnd">
                                 <core:Item key="{customers>key}" text="{customers>text}"/>
                             </Select>
-                            <Button text="{i18n>process}" press="onBatchProcessPress" type="Accept" enabled="{= ${selectedFiles>/count} > 0 }"/>
-                            <Button text="{i18n>delete}" press="onBatchDeletePress" type="Reject" icon="sap-icon://delete" enabled="{= ${selectedFiles>/count} > 0 }"/>
-                            <Button icon="sap-icon://refresh" press="onRefreshFiles"/>
+                            <Button text="{i18n>process}" press=".onBatchProcessPress" type="Accept" enabled="{= ${selectedFiles>/count} > 0 }"/>
+                            <Button text="{i18n>delete}" press=".onBatchDeletePress" type="Reject" icon="sap-icon://delete" enabled="{= ${selectedFiles>/count} > 0 }"/>
+                            <Button icon="sap-icon://refresh" press=".onRefreshFiles"/>
                         </OverflowToolbar>
                     </headerToolbar>
                     <columns>
@@ -140,8 +144,8 @@
                                     text="{files>status}"
                                     state="{path: 'files>status', formatter: '.formatter.statusState'}"
                                     icon="{path: 'files>status', formatter: '.formatter.statusIcon'}"/>
-                                <Text text="{path: 'files>uploadDate', type: 'sap.ui.model.type.Date', formatOptions: { style: 'medium' }}"/>
-                                <Text text="{path: 'files>reportDate', type: 'sap.ui.model.type.Date', formatOptions: { style: 'medium' }}"/>
+                                <Text text="{path: 'files>uploadDate', type: 'DateType', formatOptions: { style: 'medium' }}"/>
+                                <Text text="{path: 'files>reportDate', type: 'DateType', formatOptions: { style: 'medium' }}"/>
                                 <HBox
                                     class="actionsContainer"
                                     height="100%"
@@ -183,8 +187,7 @@
                         </ColumnListItem>
                     </items>
                 </Table>
-                </VBox>
-            </ScrollContainer>
+            </VBox>
         </content>
     </Page>
 </mvc:View>

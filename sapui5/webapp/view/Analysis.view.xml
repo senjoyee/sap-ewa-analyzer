@@ -4,21 +4,19 @@
     xmlns="sap.m"
     xmlns:layout="sap.ui.layout"
     xmlns:core="sap.ui.core">
-    <Page id="analysisPage" title="{i18n>analysisTitle}" showNavButton="true" navButtonPress=".onNavBack" class="sapUiSizeCompact">
+    <Page id="analysisPage" title="{i18n>analysisTitle}" showNavButton="true" navButtonPress=".onNavBack" backgroundDesign="List" class="sapUiSizeCompact">
         <headerContent>
             <Button icon="sap-icon://discussion" text="Chat with PDF" press=".onChatPress" type="Emphasized"/>
         </headerContent>
         <content>
             <!-- Main Scroll Container with Grey Background -->
-            <ScrollContainer id="mainScroll" height="100%" width="100%" vertical="true" horizontal="false" class="appBackground">
-                
-                <!-- Centered Paper Sheet -->
-                <VBox class="paperSheet">
-                    <!-- Dynamic Report Content -->
-                    <VBox id="reportContainer" width="100%"/>
-                </VBox>
-                
-            </ScrollContainer>
+            
+            <!-- Centered Paper Sheet -->
+            <VBox class="paperSheet">
+                <!-- Dynamic Report Content -->
+                <VBox id="reportContainer" width="100%"/>
+            </VBox>
+            
         </content>
     </Page>
 </mvc:View>
