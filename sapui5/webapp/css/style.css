@@ -316,15 +316,17 @@ body {
 .uploadArea .sapMSelectListItemText,
 .uploadArea .sapMSltArrow {
     font-size: 0.8125rem !important;
-    font-weight: 500 !important;
-    color: #334155 !important;
+    font-weight: 600 !important;
+    color: #0f172a !important;
+    /* Darkened from #334155 */
 }
 
 /* Specific overrides for FileUploader input text */
 .uploadArea .sapMInputBaseInner,
 .uploadArea .sapMInputBasePlaceholder {
     font-size: 0.8125rem !important;
-    font-weight: 500 !important;
+    font-weight: 600 !important;
+    color: #0f172a !important;
 }
 
 /* Ensure Upload Queue Table headers match File List Table headers */
@@ -341,8 +343,9 @@ body {
 .uploadArea .sapMListTblCell .sapMText,
 .uploadArea .sapMObjectIdentifierTitle .sapMText {
     font-size: 0.8125rem !important;
-    font-weight: 500 !important;
-    color: #334155 !important;
+    font-weight: 600 !important;
+    color: #0f172a !important;
+    /* Darkened from #334155 */
 }
 
 /* Dropdown popover list (when Select is expanded) */
@@ -351,8 +354,9 @@ body {
 .sapMSltPicker-CTX .sapMSLITitleOnly {
     font-family: "72", "72full", Arial, Helvetica, sans-serif !important;
     font-size: 0.8125rem !important;
-    font-weight: 500 !important;
-    color: #334155 !important;
+    font-weight: 600 !important;
+    color: #0f172a !important;
+    /* Darkened from #334155 */
 }
 
 /* Panel refinements inside content container */
@@ -572,8 +576,8 @@ body {
 .fileListSheet .sapMObjectIdentifierTitle .sapMText {
     font-size: 0.8125rem !important;
     /* Match date text size for visual consistency */
-    font-weight: 500 !important;
-    /* Regular-ish weight so file names are not bold */
+    font-weight: 600 !important;
+    /* Increased weight to stand out on high-res monitors */
     color: #0f172a !important;
     /* Slate 900 */
 }
