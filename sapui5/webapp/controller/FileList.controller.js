@@ -36,6 +36,8 @@ sap.ui.define([
                     case "Failed":
                     case "error":
                         return "Error";
+                    case "New":
+                        return "Information";
                     default:
                         return "None";
                 }
@@ -91,7 +93,7 @@ sap.ui.define([
                 // Note: The 'customer' property in the file model contains the name (text), which matches our keys
                 aFilters.push(new Filter("customer", FilterOperator.EQ, sKey));
             }
-            
+
             oBinding.filter(aFilters);
         },
 

@@ -144,6 +144,7 @@
                                 <ObjectIdentifier title="{files>name}"/>
                                 <ObjectStatus
                                     text="{files>status}"
+                                    inverted="true"
                                     state="{path: 'files>status', formatter: '.formatter.statusState'}"
                                     icon="{path: 'files>status', formatter: '.formatter.statusIcon'}"/>
                                 <Text text="{path: 'files>uploadDate', type: 'DateType', formatOptions: { style: 'medium' }}"/>
@@ -162,27 +163,31 @@
                                         visible="false"/>
                                     <Button
                                         tooltip="{i18n>chatTitle}"
-                                        icon="sap-icon://discussion"
+                                        icon="sap-icon://response"
                                         type="Transparent"
                                         press=".onChatPress"
+                                        class="sapUiTinyMarginBegin"
                                         visible="{= ${files>status} === 'Analyzed' || ${files>status} === 'completed' }"/>
                                     <Button
                                         tooltip="Download PDF Report"
                                         icon="sap-icon://pdf-attachment"
                                         type="Transparent"
                                         press=".onDownloadPress"
+                                        class="sapUiTinyMarginBegin"
                                         visible="{= ${files>status} === 'Analyzed' || ${files>status} === 'completed' }"/>
                                     <Button
                                         tooltip="Download Excel Report"
                                         icon="sap-icon://excel-attachment"
                                         type="Transparent"
                                         press=".onDownloadExcelPress"
+                                        class="sapUiTinyMarginBegin"
                                         visible="{= ${files>status} === 'Analyzed' || ${files>status} === 'completed' }"/>
                                     <Button
                                         tooltip="{i18n>process}"
                                         icon="sap-icon://activate"
                                         type="Transparent"
                                         press=".onProcessPress"
+                                        class="sapUiTinyMarginBegin"
                                         visible="{= ${files>status} ? ${files>status}.toLowerCase() !== 'processed' &amp;&amp; ${files>status}.toLowerCase() !== 'analyzed' &amp;&amp; ${files>status}.toLowerCase() !== 'completed' &amp;&amp; ${files>status}.toLowerCase() !== 'processing' : true }"/>
                                 </HBox>
                             </cells>
