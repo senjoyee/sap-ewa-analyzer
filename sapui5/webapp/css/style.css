@@ -256,6 +256,40 @@ body {
     transition: border-color 0.2s, background-color 0.2s;
 }
 
+.uploadArea:hover {
+    border-color: #0a6ed1;
+    background-color: #f5f8fc;
+}
+
+.uploadPanel.sapMPanel {
+    border: 1px solid #e2e8f0;
+    border-radius: 8px;
+}
+
+.uploadPanel .sapMPanelWrappingDivTb,
+.uploadPanel .sapMPanelHdr {
+    background-color: #f8fafc;
+}
+
+.uploadPanel .sapMPanelHdr {
+    color: #0f172a;
+    font-weight: 600;
+}
+
+.uploadPanel > .sapMPanelContent {
+    padding-top: 0.75rem;
+}
+
+.uploadQueueToolbar.sapMTB {
+    border-bottom: 1px solid #e2e8f0;
+    padding-left: 0.25rem;
+    padding-right: 0.25rem;
+}
+
+.uploadQueueToolbar .sapMTitle {
+    font-weight: 600;
+}
+
 .uploadArea .sapMText,
 .uploadArea .sapMLabel,
 .uploadArea .sapMListTblCell .sapMText,
@@ -283,11 +317,6 @@ body {
     font-size: 0.8125rem !important;
     font-weight: 500 !important;
     color: #334155 !important;
-}
-
-.uploadArea:hover {
-    border-color: #0a6ed1;
-    background-color: #f5f8fc;
 }
 
 /* Panel refinements inside content container */
@@ -429,6 +458,21 @@ body {
     max-width: 1300px;
     padding: 1rem 1.5rem;
     min-height: 0;
+}
+
+.fileListSheet .fileListToolbar.sapMTB {
+    border-bottom: 1px solid #e2e8f0;
+    padding-left: 0.25rem;
+    padding-right: 0.25rem;
+}
+
+.fileListSheet .fileListToolbar .sapMTitle {
+    font-weight: 600;
+}
+
+.fileListSheet .fileListToolbar .sapMTBSeparator {
+    margin-left: 0.5rem;
+    margin-right: 0.5rem;
 }
 
 /* 

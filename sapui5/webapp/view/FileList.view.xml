@@ -19,6 +19,7 @@
                 headerText="{i18n>uploadTitle}"
                 expandable="true"
                 expanded="{uploadPanel>/expanded}"
+                class="uploadPanel"
                 width="auto">
                     <content>
                         <VBox class="uploadArea">
@@ -44,7 +45,7 @@
                                 visible="{= ${uploadQueue>/files}.length > 0 }"
                                 width="100%">
                                 <headerToolbar>
-                                    <OverflowToolbar>
+                                    <OverflowToolbar class="uploadQueueToolbar" design="Transparent">
                                         <Title text="Selected files (set customer per file)" level="H3"/>
                                     </OverflowToolbar>
                                 </headerToolbar>
@@ -100,7 +101,7 @@
                     sticky="HeaderToolbar,ColumnHeaders"
                     selectionChange=".onSelectionChange">
                     <headerToolbar>
-                        <OverflowToolbar>
+                        <OverflowToolbar class="fileListToolbar" design="Transparent">
                             <Title text="Files ({= ${files>/}.length })" level="H2"/>
                             <ToolbarSpacer/>
                             <Label text="Filter:" labelFor="customerFilter" class="sapUiTinyMarginEnd"/>
@@ -114,9 +115,10 @@
                                 class="sapUiSmallMarginEnd">
                                 <core:Item key="{customers>key}" text="{customers>text}"/>
                             </Select>
-                            <Button text="{i18n>process}" press=".onBatchProcessPress" type="Accept" enabled="{= ${selectedFiles>/count} > 0 }"/>
+                            <ToolbarSeparator/>
+                            <Button text="{i18n>process}" icon="sap-icon://activate" press=".onBatchProcessPress" type="Accept" enabled="{= ${selectedFiles>/count} > 0 }"/>
                             <Button text="{i18n>delete}" press=".onBatchDeletePress" type="Reject" icon="sap-icon://delete" enabled="{= ${selectedFiles>/count} > 0 }"/>
-                            <Button icon="sap-icon://refresh" press=".onRefreshFiles"/>
+                            <Button icon="sap-icon://refresh" tooltip="Refresh" type="Transparent" press=".onRefreshFiles"/>
                         </OverflowToolbar>
                     </headerToolbar>
                     <columns>
@@ -159,11 +161,11 @@
                                         press=".onViewAnalysisPress"
                                         visible="false"/>
                                     <Button
-        tooltip="Chat with PDF"
-        icon="sap-icon://discussion"
-        type="Transparent"
-        press=".onChatPress"
-        visible="{= ${files>status} === 'Analyzed' || ${files>status} === 'completed' }"/>
+                                        tooltip="{i18n>chatTitle}"
+                                        icon="sap-icon://discussion"
+                                        type="Transparent"
+                                        press=".onChatPress"
+                                        visible="{= ${files>status} === 'Analyzed' || ${files>status} === 'completed' }"/>
                                     <Button
                                         tooltip="Download PDF Report"
                                         icon="sap-icon://pdf-attachment"
@@ -171,15 +173,15 @@
                                         press=".onDownloadPress"
                                         visible="{= ${files>status} === 'Analyzed' || ${files>status} === 'completed' }"/>
                                     <Button
-        tooltip="Download Excel Report"
-        icon="sap-icon://excel-attachment"
-        type="Transparent"
-        press=".onDownloadExcelPress"
-        visible="{= ${files>status} === 'Analyzed' || ${files>status} === 'completed' }"/>
+                                        tooltip="Download Excel Report"
+                                        icon="sap-icon://excel-attachment"
+                                        type="Transparent"
+                                        press=".onDownloadExcelPress"
+                                        visible="{= ${files>status} === 'Analyzed' || ${files>status} === 'completed' }"/>
                                     <Button
-                                        text="{i18n>process}"
+                                        tooltip="{i18n>process}"
                                         icon="sap-icon://activate"
-                                        type="Ghost"
+                                        type="Transparent"
                                         press=".onProcessPress"
                                         visible="{= ${files>status} ? ${files>status}.toLowerCase() !== 'processed' &amp;&amp; ${files>status}.toLowerCase() !== 'analyzed' &amp;&amp; ${files>status}.toLowerCase() !== 'completed' &amp;&amp; ${files>status}.toLowerCase() !== 'processing' : true }"/>
                                 </HBox>
