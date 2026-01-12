@@ -9,10 +9,10 @@
 
 body {
     font-family: "72", "72full", Arial, Helvetica, sans-serif !important;
-    color: #32363a;
-    /* SAP Standard Text Color */
-    -webkit-font-smoothing: antialiased;
-    -moz-osx-font-smoothing: grayscale;
+    color: #0f172a;
+    /* Much darker slate (almost black) */
+    /* REMOVED smoothing to prevent text thinning */
+    font-weight: 500;
 }
 
 /* Override standard SAP fonts */
@@ -226,9 +226,9 @@ body {
 .markdown-content p {
     margin-bottom: 1rem;
     line-height: 1.7;
-    font-size: 0.9375rem;
-    font-weight: 400;
-    color: #454a50;
+    font-size: 0.95rem;
+    font-weight: 500;
+    color: #1a1a1a;
     letter-spacing: 0.01em;
 }
 
@@ -240,19 +240,19 @@ body {
 
 .markdown-content li {
     margin-bottom: 0.625rem;
-    color: #454a50;
+    color: #1a1a1a;
     line-height: 1.65;
-    font-size: 0.9375rem;
-    font-weight: 400;
+    font-size: 0.95rem;
+    font-weight: 500;
 }
 
 /* Normalize tables (System Health, Positive Findings) to match Executive Summary body font */
 .analysis-table .sapMText,
 .analysis-table .sapMLabel {
     font-family: "72", "72full", Arial, Helvetica, sans-serif !important;
-    font-size: 0.9375rem !important;
-    font-weight: 400 !important;
-    color: #454a50 !important;
+    font-size: 0.95rem !important;
+    font-weight: 500 !important;
+    color: #1a1a1a !important;
     line-height: 1.65;
     letter-spacing: 0.01em;
 }
@@ -563,9 +563,10 @@ body {
 .fileListSheet .sapMObjectStatusText {
     font-size: 0.8125rem !important;
     /* 13px */
-    font-weight: 500 !important;
-    color: #334155 !important;
-    /* Slate 700 */
+    font-weight: 600 !important;
+    /* Semi-bold */
+    color: #0f172a !important;
+    /* Slate 900 */
 }
 
 .fileListSheet .sapMObjectIdentifierTitle .sapMText {
@@ -1012,27 +1013,31 @@ body {
 /* For Full HD Monitors (1920px wide) */
 @media (min-width: 1600px) {
     .paperSheet {
-        max-width: 1500px; /* Increase from 1200px */
+        max-width: 1500px;
+        /* Increase from 1200px */
     }
-    
+
     .fileListSheet {
-        max-width: 1600px; /* Increase from 1300px */
+        max-width: 1600px;
+        /* Increase from 1300px */
     }
 }
 
 /* For 2K/4K Monitors (2560px+) */
 @media (min-width: 2200px) {
     .paperSheet {
-        max-width: 2000px; /* Significant increase for 4K */
-        padding: 4rem;     /* Add more whitespace inside to balance */
+        max-width: 2000px;
+        /* Significant increase for 4K */
+        padding: 4rem;
+        /* Add more whitespace inside to balance */
     }
-    
+
     .fileListSheet {
         max-width: 2200px;
     }
 
     /* Optional: Scale up font slightly on massive 4K screens */
     html {
-        font-size: 18px; 
+        font-size: 18px;
     }
 }
