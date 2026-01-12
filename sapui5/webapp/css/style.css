@@ -94,7 +94,7 @@ body {
     margin: 0;
 }
 
-.chatFormattedText p + p {
+.chatFormattedText p+p {
     margin-top: 0.5rem;
 }
 
@@ -129,10 +129,21 @@ body {
     letter-spacing: 0.01em;
 }
 
-.chatFormattedText .chatHeading.h1 { font-size: 1.1rem; }
-.chatFormattedText .chatHeading.h2 { font-size: 1.05rem; }
-.chatFormattedText .chatHeading.h3 { font-size: 1rem; }
-.chatFormattedText .chatHeading.h4 { font-size: 0.95rem; }
+.chatFormattedText .chatHeading.h1 {
+    font-size: 1.1rem;
+}
+
+.chatFormattedText .chatHeading.h2 {
+    font-size: 1.05rem;
+}
+
+.chatFormattedText .chatHeading.h3 {
+    font-size: 1rem;
+}
+
+.chatFormattedText .chatHeading.h4 {
+    font-size: 0.95rem;
+}
 
 .chatFormattedText code {
     font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace;
@@ -276,7 +287,7 @@ body {
     font-weight: 600;
 }
 
-.uploadPanel > .sapMPanelContent {
+.uploadPanel>.sapMPanelContent {
     padding-top: 0.75rem;
 }
 
@@ -304,6 +315,31 @@ body {
 .uploadArea .sapMSltLabel,
 .uploadArea .sapMSelectListItemText,
 .uploadArea .sapMSltArrow {
+    font-size: 0.8125rem !important;
+    font-weight: 500 !important;
+    color: #334155 !important;
+}
+
+/* Specific overrides for FileUploader input text */
+.uploadArea .sapMInputBaseInner,
+.uploadArea .sapMInputBasePlaceholder {
+    font-size: 0.8125rem !important;
+    font-weight: 500 !important;
+}
+
+/* Ensure Upload Queue Table headers match File List Table headers */
+.uploadArea .sapMListTblHeader .sapMText {
+    font-size: 0.75rem !important;
+    font-weight: 800 !important;
+    color: #1e293b !important;
+    letter-spacing: 0.06em !important;
+    text-transform: uppercase !important;
+    opacity: 1 !important;
+}
+
+/* Ensure Upload Queue Table row content matches File List Table row content */
+.uploadArea .sapMListTblCell .sapMText,
+.uploadArea .sapMObjectIdentifierTitle .sapMText {
     font-size: 0.8125rem !important;
     font-weight: 500 !important;
     color: #334155 !important;
@@ -486,7 +522,8 @@ body {
 .fileListSheet .sapMListTblHeader {
     background-color: #f8fafc !important;
     border-bottom: 2px solid #e2e8f0 !important;
-    height: 2.25rem !important; /* Compact header */
+    height: 2.25rem !important;
+    /* Compact header */
 }
 
 .fileListSheet .sapMListTblHeader .sapMText {
@@ -502,7 +539,8 @@ body {
 .fileListSheet .sapMListTblCell {
     border-bottom: 1px solid #f1f5f9 !important;
     vertical-align: middle !important;
-    padding-top: 0.25rem !important; /* Compact vertical padding */
+    padding-top: 0.25rem !important;
+    /* Compact vertical padding */
     padding-bottom: 0.25rem !important;
 }
 
@@ -510,26 +548,33 @@ body {
 .fileListSheet .sapMListTblCell:last-child {
     padding-top: 0 !important;
     padding-bottom: 0 !important;
-    height: 1px; /* Trick to force cell to respect child height if needed */
+    height: 1px;
+    /* Trick to force cell to respect child height if needed */
 }
 
 .fileListSheet .sapMListTblRow:hover {
-    background-color: #f1f5f9 !important; /* Subtle slate hover */
+    background-color: #f1f5f9 !important;
+    /* Subtle slate hover */
 }
 
 /* Cell Content Typography - Smaller & Cleaner */
 .fileListSheet .sapMListTblCell .sapMText,
 .fileListSheet .sapMObjectStatus,
 .fileListSheet .sapMObjectStatusText {
-    font-size: 0.8125rem !important; /* 13px */
+    font-size: 0.8125rem !important;
+    /* 13px */
     font-weight: 500 !important;
-    color: #334155 !important; /* Slate 700 */
+    color: #334155 !important;
+    /* Slate 700 */
 }
 
 .fileListSheet .sapMObjectIdentifierTitle .sapMText {
-    font-size: 0.8125rem !important; /* Match date text size for visual consistency */
-    font-weight: 500 !important; /* Regular-ish weight so file names are not bold */
-    color: #0f172a !important; /* Slate 900 */
+    font-size: 0.8125rem !important;
+    /* Match date text size for visual consistency */
+    font-weight: 500 !important;
+    /* Regular-ish weight so file names are not bold */
+    color: #0f172a !important;
+    /* Slate 900 */
 }
 
 /* Status Icons - Adjust size to match text */
@@ -543,6 +588,7 @@ body {
     margin: 0 !important;
     vertical-align: middle;
 }
+
 .fileListSheet .sapMListTblCell .sapMBtnInner {
     font-size: 0.8125rem !important;
 }
@@ -595,7 +641,7 @@ body {
         max-width: calc(100% - 1.5rem);
         border-radius: 6px;
     }
-    
+
     /* Slightly smaller table text on mobile */
     .fileListSheet .sapMListTblCell .sapMText,
     .fileListSheet .sapMObjLTitle {
@@ -955,6 +1001,6 @@ body {
 }
 
 /* Severity group content padding */
-.severityGroupPanel > .sapMPanelContent {
+.severityGroupPanel>.sapMPanelContent {
     padding: 0.5rem 1rem 1rem 1rem;
 }
