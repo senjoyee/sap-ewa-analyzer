@@ -1004,3 +1004,35 @@ body {
 .severityGroupPanel>.sapMPanelContent {
     padding: 0.5rem 1rem 1rem 1rem;
 }
+
+/* =========================================
+   RESPONSIVE OVERRIDES FOR LARGE SCREENS
+   ========================================= */
+
+/* For Full HD Monitors (1920px wide) */
+@media (min-width: 1600px) {
+    .paperSheet {
+        max-width: 1500px; /* Increase from 1200px */
+    }
+    
+    .fileListSheet {
+        max-width: 1600px; /* Increase from 1300px */
+    }
+}
+
+/* For 2K/4K Monitors (2560px+) */
+@media (min-width: 2200px) {
+    .paperSheet {
+        max-width: 2000px; /* Significant increase for 4K */
+        padding: 4rem;     /* Add more whitespace inside to balance */
+    }
+    
+    .fileListSheet {
+        max-width: 2200px;
+    }
+
+    /* Optional: Scale up font slightly on massive 4K screens */
+    html {
+        font-size: 18px; 
+    }
+}
