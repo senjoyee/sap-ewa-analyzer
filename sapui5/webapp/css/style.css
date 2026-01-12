@@ -27,6 +27,14 @@ body {
 .sapUiTableCell,
 .sapMTitle {
     font-family: "72", "72full", Arial, Helvetica, sans-serif !important;
+    color: #1a1a1a !important;
+    /* Darker secondary text globally */
+}
+
+/* Global label weighting */
+.sapMLabel {
+    font-weight: 600 !important;
+    color: #0f172a !important;
 }
 
 /* Chat Bubbles */
@@ -314,11 +322,12 @@ body {
 .uploadArea .sapMSltText,
 .uploadArea .sapMSltLabel,
 .uploadArea .sapMSelectListItemText,
-.uploadArea .sapMSltArrow {
+.uploadArea .sapMSltArrow,
+.sapMSltText,
+.sapMSltLabel {
     font-size: 0.8125rem !important;
     font-weight: 600 !important;
     color: #0f172a !important;
-    /* Darkened from #334155 */
 }
 
 /* Specific overrides for FileUploader input text */
@@ -513,6 +522,13 @@ body {
 .fileListSheet .fileListToolbar .sapMTBSeparator {
     margin-left: 0.5rem;
     margin-right: 0.5rem;
+}
+
+/* Toolbar Labels & Dropdowns */
+.fileListSheet .fileListToolbar .sapMLabel {
+    color: #0f172a !important;
+    font-weight: 600 !important;
+    font-size: 0.875rem !important;
 }
 
 /* 
