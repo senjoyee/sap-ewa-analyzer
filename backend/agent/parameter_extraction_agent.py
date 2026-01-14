@@ -58,39 +58,135 @@ PARAMETER_SCHEMA = {
     "additionalProperties": False
 }
 
-EXTRACTION_PROMPT = """You are an expert SAP Basis consultant. Your task is to extract ALL recommended parameter changes from this SAP EarlyWatch Alert (EWA) report.
+EXTRACTION_PROMPT = """You are an expert SAP Basis consultant specializing in EarlyWatch Alert analysis. Your task is to perform an EXHAUSTIVE extraction of ALL parameter-related information from this SAP EarlyWatch Alert (EWA) report.
 
-IMPORTANT INSTRUCTIONS:
-1. Extract ONLY actual SAP parameters - technical configuration settings with specific names like:
-   - Profile parameters: rdisp/wp_no_dia, abap/heap_area_dia, icm/server_port_0
-   - HANA parameters: global_allocation_limit, parallel_merge_threads
-   - Database parameters: max_connections, shared_pool_size
-   - Kernel parameters: em/initial_size_MB, rdisp/tm_max_no
+## EXTRACTION SCOPE - Extract parameters from ALL these sections:
 
-2. DO NOT extract:
-   - General recommendations that are not parameter changes
-   - Findings or issues without specific parameter values
-   - Section headers or table labels
-   - Narrative text that mentions parameters without recommending changes
+### 1. SYSTEM CONFIGURATION PARAMETERS
+- Instance profile parameters (DEFAULT.PFL, instance profiles)
+- Start profile parameters
+- Operation mode parameters
+- Logon group configurations
 
-3. For each parameter found, extract:
-   - parameter_name: The exact technical parameter name
-   - area: Categorize as SAP HANA, Database, SAP Kernel, Profile Parameters, Application, Memory/Buffer, Operating System, Network, or General
-   - current_value: The current value if mentioned (empty string if not specified)
-   - recommended_value: The target/recommended value
-   - description: Brief description of the parameter's purpose
-   - source_section: Which section of the report this came from
+### 2. SAP HANA PARAMETERS (if applicable)
+- global.ini settings
+- indexserver.ini parameters
+- nameserver.ini parameters
+- daemon.ini parameters
+- Memory allocation parameters (global_allocation_limit, statement_memory_limit)
+- Thread/parallelism parameters (parallel_merge_threads, max_concurrency)
+- Table preload parameters
+- Persistence parameters
+- SQL optimizer parameters
 
-4. Look for parameters in:
-   - Tables with columns like "Parameter", "Current", "Recommended", "Target"
-   - Sections about configuration, tuning, optimization
-   - HANA alerts and recommendations
-   - Profile parameter recommendations
-   - Memory and buffer settings
+### 3. DATABASE PARAMETERS (for any DB type)
+- Oracle: SGA, PGA, shared_pool_size, db_cache_size, processes, sessions
+- SQL Server: max server memory, max degree of parallelism
+- DB2: buffer pools, sort heap, package cache
+- MaxDB: cache sizes, data/log volumes
+- ASE: memory pools, procedure cache
 
-5. If no valid parameters are found, return an empty array.
+### 4. SAP KERNEL/WORK PROCESS PARAMETERS
+- rdisp/* parameters (wp_no_dia, wp_no_btc, wp_no_spo, wp_no_enq, wp_no_vb, wp_no_vb2)
+- em/* parameters (initial_size_MB, blocksize_KB, global_area_MB)
+- abap/* parameters (heap_area_dia, heap_area_nondia, heap_area_total)
+- rfc/* parameters (max_comm_entries, max_own_used_wp)
+- icm/* parameters (server_port, max_conn, keep_alive_timeout)
+- ms/* parameters (message server settings)
 
-Analyze the following EWA report and extract all parameter recommendations:
+### 5. MEMORY MANAGEMENT PARAMETERS
+- Extended Memory settings
+- Roll area/buffer settings
+- Paging area settings
+- Buffer pool sizes (nametab, program, CUA, screen, calendar)
+- Table buffer parameters (zcsa/table_buffer_area)
+
+### 6. PERFORMANCE-RELATED PARAMETERS
+- Enqueue parameters
+- Update parameters
+- Spool parameters
+- Background processing parameters
+- Lock management parameters
+
+### 7. SECURITY PARAMETERS
+- login/* parameters
+- auth/* parameters
+- ssl/* parameters
+- snc/* parameters
+- icf/* parameters
+
+### 8. NETWORK/COMMUNICATION PARAMETERS
+- sapgw/* parameters
+- gw/* parameters (gateway settings)
+- rfc/* parameters
+- http/* parameters
+
+### 9. JAVA STACK PARAMETERS (if applicable)
+- JVM heap settings (-Xmx, -Xms, -XX parameters)
+- Server node parameters
+- ICM parameters for Java
+- SDM parameters
+
+### 10. OPERATING SYSTEM LEVEL RECOMMENDATIONS
+- Kernel parameters (Linux: shmmax, shmall, sem, file-max)
+- Swap space recommendations
+- File system parameters
+- Network kernel parameters
+
+## EXTRACTION RULES:
+
+1. **Be INCLUSIVE**: Extract ANY mention of a parameter, even if:
+   - Only the current value is shown (no recommendation)
+   - It appears in a status table showing "OK" or "Warning"
+   - It's mentioned in narrative text
+   - It's part of a comparison or trend analysis
+
+2. **Parameter identification patterns - Look for**:
+   - Explicit parameter tables with Current/Recommended columns
+   - Alert sections with parameter references
+   - Configuration check results
+   - Trend analysis showing parameter changes over time
+   - "Should be" or "must be" statements with parameter names
+   - SAP Notes references that mention parameter changes
+   - Red/Yellow/Green status indicators with parameters
+
+3. **Section-by-section scanning** - Thoroughly check these EWA report sections:
+   - Executive Summary
+   - Service Summary / Recommendations Overview
+   - Hardware Configuration Analysis
+   - SAP HANA Database Analysis (memory, disk, CPU, alerts)
+   - Database Performance Analysis
+   - SAP Memory Configuration
+   - Work Process Configuration
+   - Buffer Analysis
+   - Application Performance
+   - Background Processing
+   - Update Processing
+   - Spool Analysis
+   - Security Recommendations
+   - SAP Notes Recommendations
+   - Configuration Validation
+   - Appendices and Detailed Tables
+
+4. **Area classification**:
+   - "SAP HANA" - All HANA-specific parameters
+   - "Database" - Non-HANA database parameters (Oracle, SQL Server, DB2, etc.)
+   - "SAP Kernel" - Kernel and dispatcher parameters
+   - "Profile Parameters" - Instance/default profile settings
+   - "Application" - Application-layer settings
+   - "Memory/Buffer" - Memory management and buffer configurations
+   - "Operating System" - OS-level kernel parameters
+   - "Network" - Gateway, RFC, ICM network settings
+   - "General" - Parameters that don't fit other categories
+
+## CRITICAL REQUIREMENTS:
+- Use empty string for current_value if not specified in the report
+- Scan EVERY section including appendices and detailed tables
+- Include parameters even from "informational" or "OK status" sections
+- Capture parameters from embedded SAP Note recommendations
+- In extraction_notes, summarize sections analyzed and any data quality observations
+
+Analyze the following EWA report completely and extract ALL parameters:
 
 """
 
