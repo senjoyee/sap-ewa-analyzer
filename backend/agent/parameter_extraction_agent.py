@@ -260,10 +260,10 @@ class ParameterExtractionAgent:
     async def _call_api(self, markdown_content: str) -> Dict[str, Any]:
         """Call the OpenAI API with structured output."""
         
-        # Truncate content if too long (keep first ~100k chars to stay within token limits)
-        max_chars = 100000
-        if len(markdown_content) > max_chars:
-            markdown_content = markdown_content[:max_chars] + "\n\n[Content truncated...]"
+        # No strict character limit, allow full content to be sent
+        # max_chars = 100000
+        # if len(markdown_content) > max_chars:
+        #    markdown_content = markdown_content[:max_chars] + "\n\n[Content truncated...]"
         
         user_message = f"{self.prompt}\n\n{markdown_content}"
         
