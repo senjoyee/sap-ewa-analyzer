@@ -23,4 +23,6 @@ dependencies = [
     "WeasyPrint>=62.0",
     "anthropic>=0.74.0",
     "gunicorn>=21.0.0",
+    "pyjwt>=2.8.0",
+    "requests>=2.31.0",
 ]
