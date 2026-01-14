@@ -9,13 +9,24 @@ import json
 import asyncio
 from typing import Dict, Any, List, Optional
 
+# Action status values for parameter classification
+ACTION_STATUS_CHANGE_REQUIRED = "Change Required"
+ACTION_STATUS_VERIFY = "Verify"
+ACTION_STATUS_NO_ACTION = "No Action"
+ACTION_STATUS_MONITOR = "Monitor"
+
+# Priority levels
+PRIORITY_HIGH = "High"
+PRIORITY_MEDIUM = "Medium"
+PRIORITY_LOW = "Low"
+
 # Schema for parameter extraction
 PARAMETER_SCHEMA = {
     "type": "object",
     "properties": {
         "parameters": {
             "type": "array",
-            "description": "List of all recommended parameter changes found in the document",
+            "description": "List of all parameter information found in the document",
             "items": {
                 "type": "object",
                 "properties": {
@@ -34,7 +45,17 @@ PARAMETER_SCHEMA = {
                     },
                     "recommended_value": {
                         "type": "string",
-                        "description": "The SAP recommended or target value"
+                        "description": "The SAP recommended or target value (empty string if no recommendation)"
+                    },
+                    "action_status": {
+                        "type": "string",
+                        "enum": ["Change Required", "Verify", "No Action", "Monitor"],
+                        "description": "Action status: 'Change Required' if current differs from recommended, 'Verify' if values match but need verification, 'No Action' if informational only, 'Monitor' if OK but needs monitoring"
+                    },
+                    "priority": {
+                        "type": "string",
+                        "enum": ["High", "Medium", "Low"],
+                        "description": "Priority: 'High' for critical/red status, 'Medium' for warnings/yellow, 'Low' for informational"
                     },
                     "description": {
                         "type": "string",
@@ -45,7 +66,7 @@ PARAMETER_SCHEMA = {
                         "description": "The section/chapter in the document where this parameter was found"
                     }
                 },
-                "required": ["parameter_name", "area", "current_value", "recommended_value", "description", "source_section"],
+                "required": ["parameter_name", "area", "current_value", "recommended_value", "action_status", "priority", "description", "source_section"],
                 "additionalProperties": False
             }
         },
@@ -133,11 +154,44 @@ EXTRACTION_PROMPT = """You are an expert SAP Basis consultant specializing in Ea
 - File system parameters
 - Network kernel parameters
 
+## ACTION STATUS CLASSIFICATION (CRITICAL):
+
+For EACH parameter, you MUST determine the action_status and priority:
+
+### action_status values:
+1. **"Change Required"** - Use when:
+   - Current value differs from recommended value
+   - Report explicitly states a change is needed
+   - Red status indicator with specific target value
+   - SAP Note recommends a different value
+
+2. **"Verify"** - Use when:
+   - Recommended value matches current value (already compliant)
+   - Report shows parameter was recently changed and needs verification
+   - Yellow status indicating review needed
+
+3. **"No Action"** - Use when:
+   - Parameter is displayed for INFORMATION ONLY (no recommended value)
+   - Current configuration stats (e.g., OS limits, file descriptors, memory stats)
+   - Parameter appears in "OK" status tables with no recommendation
+   - Historical/trend data without action items
+   - Empty recommended_value field
+
+4. **"Monitor"** - Use when:
+   - Status is OK but flagged for ongoing monitoring
+   - Parameter is within acceptable range but trending toward limits
+   - Periodic review recommended
+
+### priority values:
+- **"High"** - Red status, critical alerts, security vulnerabilities, performance degradation
+- **"Medium"** - Yellow/warning status, optimization opportunities, best practice deviations
+- **"Low"** - Informational, green/OK status, no immediate action needed
+
 ## EXTRACTION RULES:
 
 1. **Be INCLUSIVE**: Extract ANY mention of a parameter, even if:
-   - Only the current value is shown (no recommendation)
-   - It appears in a status table showing "OK" or "Warning"
+   - Only the current value is shown (no recommendation) → mark as "No Action"
+   - It appears in a status table showing "OK" → mark as "No Action" or "Monitor"
    - It's mentioned in narrative text
    - It's part of a comparison or trend analysis
 
@@ -181,6 +235,9 @@ EXTRACTION_PROMPT = """You are an expert SAP Basis consultant specializing in Ea
 
 ## CRITICAL REQUIREMENTS:
 - Use empty string for current_value if not specified in the report
+- Use empty string for recommended_value if no recommendation exists
+- ALWAYS set action_status based on the classification rules above
+- Parameters with empty recommended_value should be "No Action" with "Low" priority
 - Scan EVERY section including appendices and detailed tables
 - Include parameters even from "informational" or "OK status" sections
 - Capture parameters from embedded SAP Note recommendations
@@ -216,46 +273,142 @@ class ParameterExtractionAgent:
             markdown_content: The EWA report markdown content
             
         Returns:
-            Dictionary with 'parameters' list and optional 'extraction_notes'
+            Dictionary with 'parameters' list, 'extraction_notes', and 'summary'
         """
         if not markdown_content or not markdown_content.strip():
-            return {"parameters": [], "extraction_notes": "Empty input content"}
+            return {"parameters": [], "extraction_notes": "Empty input content", "summary": self.get_summary_stats([])}
         
         try:
             result = await self._call_api(markdown_content)
             
             # Validate result structure
             if not isinstance(result, dict):
-                return {"parameters": [], "extraction_notes": "Invalid response format"}
+                return {"parameters": [], "extraction_notes": "Invalid response format", "summary": self.get_summary_stats([])}
             
             parameters = result.get("parameters", [])
             if not isinstance(parameters, list):
                 parameters = []
             
-            # Filter out invalid entries
+            # Filter out invalid entries and apply post-processing
             valid_params = []
             for param in parameters:
                 if isinstance(param, dict) and param.get("parameter_name"):
-                    # Ensure required fields exist
+                    recommended_value = str(param.get("recommended_value", ""))
+                    action_status = str(param.get("action_status", ""))
+                    priority = str(param.get("priority", ""))
+                    
+                    # Auto-classify if action_status is missing or recommended_value is empty
+                    if not recommended_value.strip():
+                        action_status = ACTION_STATUS_NO_ACTION
+                        priority = PRIORITY_LOW
+                    elif not action_status:
+                        # Default to Change Required if has recommendation but no status
+                        action_status = ACTION_STATUS_CHANGE_REQUIRED
+                        priority = priority or PRIORITY_MEDIUM
+                    
+                    # Ensure valid enum values
+                    if action_status not in [ACTION_STATUS_CHANGE_REQUIRED, ACTION_STATUS_VERIFY, 
+                                              ACTION_STATUS_NO_ACTION, ACTION_STATUS_MONITOR]:
+                        action_status = ACTION_STATUS_NO_ACTION
+                    
+                    if priority not in [PRIORITY_HIGH, PRIORITY_MEDIUM, PRIORITY_LOW]:
+                        priority = PRIORITY_LOW
+                    
                     valid_params.append({
                         "parameter_name": str(param.get("parameter_name", "")),
                         "area": str(param.get("area", "General")),
                         "current_value": str(param.get("current_value", "")),
-                        "recommended_value": str(param.get("recommended_value", "")),
+                        "recommended_value": recommended_value,
+                        "action_status": action_status,
+                        "priority": priority,
                         "description": str(param.get("description", "")),
                         "source_section": str(param.get("source_section", "")),
                     })
             
+            summary = self.get_summary_stats(valid_params)
             print(f"[ParameterExtractionAgent] Extracted {len(valid_params)} valid parameters")
+            print(f"[ParameterExtractionAgent] Summary: {summary}")
             
             return {
                 "parameters": valid_params,
-                "extraction_notes": result.get("extraction_notes", "")
+                "extraction_notes": result.get("extraction_notes", ""),
+                "summary": summary
             }
             
         except Exception as e:
             print(f"[ParameterExtractionAgent] Error during extraction: {e}")
-            return {"parameters": [], "extraction_notes": f"Extraction error: {str(e)}"}
+            return {"parameters": [], "extraction_notes": f"Extraction error: {str(e)}", "summary": self.get_summary_stats([])}
+    
+    @staticmethod
+    def filter_by_action(parameters: List[Dict[str, Any]], statuses: List[str]) -> List[Dict[str, Any]]:
+        """
+        Filter parameters by action status.
+        
+        Args:
+            parameters: List of parameter dictionaries
+            statuses: List of action_status values to include (e.g., ["Change Required", "Verify"])
+            
+        Returns:
+            Filtered list of parameters matching any of the specified statuses
+        """
+        if not statuses:
+            return parameters
+        return [p for p in parameters if p.get("action_status") in statuses]
+    
+    @staticmethod
+    def filter_by_priority(parameters: List[Dict[str, Any]], priorities: List[str]) -> List[Dict[str, Any]]:
+        """
+        Filter parameters by priority.
+        
+        Args:
+            parameters: List of parameter dictionaries
+            priorities: List of priority values to include (e.g., ["High", "Medium"])
+            
+        Returns:
+            Filtered list of parameters matching any of the specified priorities
+        """
+        if not priorities:
+            return parameters
+        return [p for p in parameters if p.get("priority") in priorities]
+    
+    @staticmethod
+    def get_summary_stats(parameters: List[Dict[str, Any]]) -> Dict[str, Any]:
+        """
+        Get summary statistics for parameters by action status and priority.
+        
+        Args:
+            parameters: List of parameter dictionaries
+            
+        Returns:
+            Dictionary with counts by action_status and priority
+        """
+        by_action = {
+            ACTION_STATUS_CHANGE_REQUIRED: 0,
+            ACTION_STATUS_VERIFY: 0,
+            ACTION_STATUS_NO_ACTION: 0,
+            ACTION_STATUS_MONITOR: 0,
+        }
+        by_priority = {
+            PRIORITY_HIGH: 0,
+            PRIORITY_MEDIUM: 0,
+            PRIORITY_LOW: 0,
+        }
+        
+        for param in parameters:
+            action = param.get("action_status", ACTION_STATUS_NO_ACTION)
+            priority = param.get("priority", PRIORITY_LOW)
+            
+            if action in by_action:
+                by_action[action] += 1
+            if priority in by_priority:
+                by_priority[priority] += 1
+        
+        return {
+            "total": len(parameters),
+            "by_action_status": by_action,
+            "by_priority": by_priority,
+            "actionable": by_action[ACTION_STATUS_CHANGE_REQUIRED] + by_action[ACTION_STATUS_VERIFY],
+        }
     
     async def _call_api(self, markdown_content: str) -> Dict[str, Any]:
         """Call the OpenAI API with structured output."""
