@@ -242,7 +242,7 @@ class ParameterExtractionAgent:
                 model=self.model,
                 input=messages,
                 text=text_format,
-                reasoning={"effort": "medium"},
+                reasoning={"effort": "none"},
                 max_output_tokens=16384,
             )
         )
