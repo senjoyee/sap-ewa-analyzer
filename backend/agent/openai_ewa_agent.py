@@ -123,12 +123,13 @@ class OpenAIEWAAgent:
             if file_id:
                 user_content.append({"type": "input_file", "file_id": file_id})
                 user_content.append({"type": "input_text", "text": "Please analyze the attached EWA PDF and produce the structured JSON."})
+                # If file was attached, include instructions as separate text to steer the function call
+                user_content.append({"type": "input_text", "text": instruction_text})
             else:
-                # Use markdown input
-                user_content.append({"type": "input_text", "text": f"{instruction_text}\n\nAnalyze this EWA markdown document:\n\n{markdown}"})
-
-            # If file was attached, include instructions as separate text to steer the function call
-            if file_id:
+                # Use markdown input with Prompt Caching strategy:
+                # 1. Document content first (large static prefix)
+                # 2. Instructions second
+                user_content.append({"type": "input_text", "text": markdown})
                 user_content.append({"type": "input_text", "text": instruction_text})
 
             # Prepare a STRICT schema for Structured Outputs by forcing additionalProperties: false on all objects

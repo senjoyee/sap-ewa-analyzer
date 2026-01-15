@@ -91,3 +91,4 @@ scripts/deploy-local.ps1
 .gitignore
 .agent/rules/git-commit.md
 
+extraction_prompt_optimized

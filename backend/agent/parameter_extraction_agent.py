@@ -21,235 +21,15 @@ PRIORITY_MEDIUM = "Medium"
 PRIORITY_LOW = "Low"
 
 # Schema for parameter extraction
-PARAMETER_SCHEMA = {
-    "type": "object",
-    "properties": {
-        "parameters": {
-            "type": "array",
-            "description": "List of all parameter information found in the document",
-            "items": {
-                "type": "object",
-                "properties": {
-                    "parameter_name": {
-                        "type": "string",
-                        "description": "The exact parameter name (e.g., rdisp/wp_no_dia, global_allocation_limit)"
-                    },
-                    "area": {
-                        "type": "string",
-                        "enum": ["SAP HANA", "Database", "SAP Kernel", "Profile Parameters", "Application", "Memory/Buffer", "Operating System", "Network", "General"],
-                        "description": "The category/layer this parameter belongs to"
-                    },
-                    "current_value": {
-                        "type": "string",
-                        "description": "The current configured value (empty string if not specified)"
-                    },
-                    "recommended_value": {
-                        "type": "string",
-                        "description": "The SAP recommended or target value (empty string if no recommendation)"
-                    },
-                    "action_status": {
-                        "type": "string",
-                        "enum": ["Change Required", "Verify", "No Action", "Monitor"],
-                        "description": "Action status: 'Change Required' if current differs from recommended, 'Verify' if values match but need verification, 'No Action' if informational only, 'Monitor' if OK but needs monitoring"
-                    },
-                    "priority": {
-                        "type": "string",
-                        "enum": ["High", "Medium", "Low"],
-                        "description": "Priority: 'High' for critical/red status, 'Medium' for warnings/yellow, 'Low' for informational"
-                    },
-                    "description": {
-                        "type": "string",
-                        "description": "Brief description of what this parameter controls"
-                    },
-                    "source_section": {
-                        "type": "string",
-                        "description": "The section/chapter in the document where this parameter was found"
-                    }
-                },
-                "required": ["parameter_name", "area", "current_value", "recommended_value", "action_status", "priority", "description", "source_section"],
-                "additionalProperties": False
-            }
-        },
-        "extraction_notes": {
-            "type": "string",
-            "description": "Any notes about the extraction process or data quality"
-        }
-    },
-    "required": ["parameters", "extraction_notes"],
-    "additionalProperties": False
-}
+# Schema file path
+SCHEMA_PATH = os.path.join(os.path.dirname(os.path.abspath(__file__)), "..", "schemas", "parameter_extraction_schema.json")
 
-EXTRACTION_PROMPT = """You are an expert SAP Basis consultant specializing in EarlyWatch Alert analysis. Your task is to perform an EXHAUSTIVE extraction of ALL parameter-related information from this SAP EarlyWatch Alert (EWA) report.
-
-## EXTRACTION SCOPE - Extract parameters from ALL these sections:
-
-### 1. SYSTEM CONFIGURATION PARAMETERS
-- Instance profile parameters (DEFAULT.PFL, instance profiles)
-- Start profile parameters
-- Operation mode parameters
-- Logon group configurations
-
-### 2. SAP HANA PARAMETERS (if applicable)
-- global.ini settings
-- indexserver.ini parameters
-- nameserver.ini parameters
-- daemon.ini parameters
-- Memory allocation parameters (global_allocation_limit, statement_memory_limit)
-- Thread/parallelism parameters (parallel_merge_threads, max_concurrency)
-- Table preload parameters
-- Persistence parameters
-- SQL optimizer parameters
-
-### 3. DATABASE PARAMETERS (for any DB type)
-- Oracle: SGA, PGA, shared_pool_size, db_cache_size, processes, sessions
-- SQL Server: max server memory, max degree of parallelism
-- DB2: buffer pools, sort heap, package cache
-- MaxDB: cache sizes, data/log volumes
-- ASE: memory pools, procedure cache
-
-### 4. SAP KERNEL/WORK PROCESS PARAMETERS
-- rdisp/* parameters (wp_no_dia, wp_no_btc, wp_no_spo, wp_no_enq, wp_no_vb, wp_no_vb2)
-- em/* parameters (initial_size_MB, blocksize_KB, global_area_MB)
-- abap/* parameters (heap_area_dia, heap_area_nondia, heap_area_total)
-- rfc/* parameters (max_comm_entries, max_own_used_wp)
-- icm/* parameters (server_port, max_conn, keep_alive_timeout)
-- ms/* parameters (message server settings)
-
-### 5. MEMORY MANAGEMENT PARAMETERS
-- Extended Memory settings
-- Roll area/buffer settings
-- Paging area settings
-- Buffer pool sizes (nametab, program, CUA, screen, calendar)
-- Table buffer parameters (zcsa/table_buffer_area)
-
-### 6. PERFORMANCE-RELATED PARAMETERS
-- Enqueue parameters
-- Update parameters
-- Spool parameters
-- Background processing parameters
-- Lock management parameters
-
-### 7. SECURITY PARAMETERS
-- login/* parameters
-- auth/* parameters
-- ssl/* parameters
-- snc/* parameters
-- icf/* parameters
-
-### 8. NETWORK/COMMUNICATION PARAMETERS
-- sapgw/* parameters
-- gw/* parameters (gateway settings)
-- rfc/* parameters
-- http/* parameters
-
-### 9. JAVA STACK PARAMETERS (if applicable)
-- JVM heap settings (-Xmx, -Xms, -XX parameters)
-- Server node parameters
-- ICM parameters for Java
-- SDM parameters
-
-### 10. OPERATING SYSTEM LEVEL RECOMMENDATIONS
-- Kernel parameters (Linux: shmmax, shmall, sem, file-max)
-- Swap space recommendations
-- File system parameters
-- Network kernel parameters
-
-## ACTION STATUS CLASSIFICATION (CRITICAL):
-
-For EACH parameter, you MUST determine the action_status and priority:
-
-### action_status values:
-1. **"Change Required"** - Use when:
-   - Current value differs from recommended value
-   - Report explicitly states a change is needed
-   - Red status indicator with specific target value
-   - SAP Note recommends a different value
-
-2. **"Verify"** - Use when:
-   - Recommended value matches current value (already compliant)
-   - Report shows parameter was recently changed and needs verification
-   - Yellow status indicating review needed
-
-3. **"No Action"** - Use when:
-   - Parameter is displayed for INFORMATION ONLY (no recommended value)
-   - Current configuration stats (e.g., OS limits, file descriptors, memory stats)
-   - Parameter appears in "OK" status tables with no recommendation
-   - Historical/trend data without action items
-   - Empty recommended_value field
-
-4. **"Monitor"** - Use when:
-   - Status is OK but flagged for ongoing monitoring
-   - Parameter is within acceptable range but trending toward limits
-   - Periodic review recommended
-
-### priority values:
-- **"High"** - Red status, critical alerts, security vulnerabilities, performance degradation
-- **"Medium"** - Yellow/warning status, optimization opportunities, best practice deviations
-- **"Low"** - Informational, green/OK status, no immediate action needed
-
-## EXTRACTION RULES:
-
-1. **Be INCLUSIVE**: Extract ANY mention of a parameter, even if:
-   - Only the current value is shown (no recommendation) → mark as "No Action"
-   - It appears in a status table showing "OK" → mark as "No Action" or "Monitor"
-   - It's mentioned in narrative text
-   - It's part of a comparison or trend analysis
-
-2. **Parameter identification patterns - Look for**:
-   - Explicit parameter tables with Current/Recommended columns
-   - Alert sections with parameter references
-   - Configuration check results
-   - Trend analysis showing parameter changes over time
-   - "Should be" or "must be" statements with parameter names
-   - SAP Notes references that mention parameter changes
-   - Red/Yellow/Green status indicators with parameters
-
-3. **Section-by-section scanning** - Thoroughly check these EWA report sections:
-   - Executive Summary
-   - Service Summary / Recommendations Overview
-   - Hardware Configuration Analysis
-   - SAP HANA Database Analysis (memory, disk, CPU, alerts)
-   - Database Performance Analysis
-   - SAP Memory Configuration
-   - Work Process Configuration
-   - Buffer Analysis
-   - Application Performance
-   - Background Processing
-   - Update Processing
-   - Spool Analysis
-   - Security Recommendations
-   - SAP Notes Recommendations
-   - Configuration Validation
-   - Appendices and Detailed Tables
-
-4. **Area classification**:
-   - "SAP HANA" - All HANA-specific parameters
-   - "Database" - Non-HANA database parameters (Oracle, SQL Server, DB2, etc.)
-   - "SAP Kernel" - Kernel and dispatcher parameters
-   - "Profile Parameters" - Instance/default profile settings
-   - "Application" - Application-layer settings
-   - "Memory/Buffer" - Memory management and buffer configurations
-   - "Operating System" - OS-level kernel parameters
-   - "Network" - Gateway, RFC, ICM network settings
-   - "General" - Parameters that don't fit other categories
-
-## CRITICAL REQUIREMENTS:
-- Use empty string for current_value if not specified in the report
-- Use empty string for recommended_value if no recommendation exists
-- ALWAYS set action_status based on the classification rules above
-- Parameters with empty recommended_value should be "No Action" with "Low" priority
-- Scan EVERY section including appendices and detailed tables
-- Include parameters even from "informational" or "OK status" sections
-- Capture parameters from embedded SAP Note recommendations
-- In extraction_notes, summarize sections analyzed and any data quality observations
-
-Analyze the following EWA report completely and extract ALL parameters:
-
-"""
+# Prompt file path
+PROMPT_PATH = os.path.join(os.path.dirname(os.path.abspath(__file__)), "..", "prompts", "parameter_extraction_prompt.md")
 
 
 class ParameterExtractionAgent:
-    """Agent for extracting parameter recommendations using GPT-5-mini."""
+    """Agent for extracting parameter recommendations using GPT-5.1."""
     
     def __init__(self, client, model: str = None):
         """
@@ -257,13 +37,25 @@ class ParameterExtractionAgent:
         
         Args:
             client: Azure OpenAI client instance
-            model: Model deployment name (defaults to AZURE_OPENAI_FAST_MODEL or gpt-4.1-mini)
+            model: Model deployment name (defaults to AZURE_OPENAI_PARAM_MODEL or gpt-5.1)
         """
         self.client = client
-        # Use gpt-5-mini specifically for parameter extraction
-        self.model = model or os.getenv("AZURE_OPENAI_PARAM_MODEL", "gpt-5-mini")
-        self.schema = PARAMETER_SCHEMA
-        self.prompt = EXTRACTION_PROMPT
+        # Use gpt-5.1 specifically for parameter extraction
+        self.model = model or os.getenv("AZURE_OPENAI_PARAM_MODEL", "gpt-5.1")
+        
+        # Load schema
+        with open(SCHEMA_PATH, "r", encoding="utf-8") as f:
+            self.schema = json.load(f)
+            
+        # Load prompt
+        if os.path.exists(PROMPT_PATH):
+            with open(PROMPT_PATH, "r", encoding="utf-8") as f:
+                self.prompt = f.read()
+        else:
+             # Fallback if file not found (though it should be there)
+            self.prompt = "Error: Parameter extraction prompt file not found."
+            print(f"[ParameterExtractionAgent] Warning: Prompt file not found at {PROMPT_PATH}")
+
     
     async def extract(self, markdown_content: str) -> Dict[str, Any]:
         """
@@ -413,13 +205,6 @@ class ParameterExtractionAgent:
     async def _call_api(self, markdown_content: str) -> Dict[str, Any]:
         """Call the OpenAI API with structured output."""
         
-        # No strict character limit, allow full content to be sent
-        # max_chars = 100000
-        # if len(markdown_content) > max_chars:
-        #    markdown_content = markdown_content[:max_chars] + "\n\n[Content truncated...]"
-        
-        user_message = f"{self.prompt}\n\n{markdown_content}"
-        
         # Prepare strict schema for structured outputs
         strict_schema = self._make_strict_schema(self.schema)
         
@@ -431,12 +216,31 @@ class ParameterExtractionAgent:
                 "strict": True,
             }
         }
+
+        # Construct message content for Prompt Caching:
+        # 1. Document content first (large static prefix)
+        # 2. Instructions second
+        messages = [
+            {
+                "role": "user",
+                "content": [
+                    {
+                        "type": "input_text", 
+                        "text": markdown_content
+                    },
+                    {
+                        "type": "input_text", 
+                        "text": self.prompt
+                    }
+                ]
+            }
+        ]
         
         # Call API using responses endpoint with medium reasoning effort
         response = await asyncio.to_thread(
             lambda: self.client.responses.create(
                 model=self.model,
-                input=[{"role": "user", "content": [{"type": "input_text", "text": user_message}]}],
+                input=messages,
                 text=text_format,
                 reasoning={"effort": "medium"},
                 max_output_tokens=16384,

@@ -1,0 +1,88 @@
+{
+    "type": "object",
+    "properties": {
+        "parameters": {
+            "type": "array",
+            "description": "List of all parameter information found in the document",
+            "items": {
+                "type": "object",
+                "properties": {
+                    "parameter_name": {
+                        "type": "string",
+                        "description": "The exact parameter name (e.g., rdisp/wp_no_dia, global_allocation_limit)"
+                    },
+                    "area": {
+                        "type": "string",
+                        "enum": [
+                            "SAP HANA",
+                            "Database",
+                            "SAP Kernel",
+                            "Profile Parameters",
+                            "Application",
+                            "Memory/Buffer",
+                            "Operating System",
+                            "Network",
+                            "General"
+                        ],
+                        "description": "The category/layer this parameter belongs to"
+                    },
+                    "current_value": {
+                        "type": "string",
+                        "description": "The current configured value (empty string if not specified)"
+                    },
+                    "recommended_value": {
+                        "type": "string",
+                        "description": "The SAP recommended or target value (empty string if no recommendation)"
+                    },
+                    "action_status": {
+                        "type": "string",
+                        "enum": [
+                            "Change Required",
+                            "Verify",
+                            "No Action",
+                            "Monitor"
+                        ],
+                        "description": "Action status: 'Change Required' if current differs from recommended, 'Verify' if values match but need verification, 'No Action' if informational only, 'Monitor' if OK but needs monitoring"
+                    },
+                    "priority": {
+                        "type": "string",
+                        "enum": [
+                            "High",
+                            "Medium",
+                            "Low"
+                        ],
+                        "description": "Priority: 'High' for critical/red status, 'Medium' for warnings/yellow, 'Low' for informational"
+                    },
+                    "description": {
+                        "type": "string",
+                        "description": "Brief description of what this parameter controls"
+                    },
+                    "source_section": {
+                        "type": "string",
+                        "description": "The section/chapter in the document where this parameter was found"
+                    }
+                },
+                "required": [
+                    "parameter_name",
+                    "area",
+                    "current_value",
+                    "recommended_value",
+                    "action_status",
+                    "priority",
+                    "description",
+                    "source_section"
+                ],
+                "additionalProperties": false
+            }
+        },
+        "extraction_notes": {
+            "type": "string",
+            "description": "Any notes about the extraction process or data quality"
+        }
+    },
+    "required": [
+        "parameters",
+        "extraction_notes"
+    ],
+    "additionalProperties": false
+}
