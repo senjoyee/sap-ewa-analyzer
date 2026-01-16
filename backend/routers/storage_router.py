@@ -29,6 +29,10 @@ from workflow_orchestrator import EWAWorkflowOrchestrator
 
 logger = logging.getLogger(__name__)
 
+FILENAME_YEAR_CUTOFF = 30
+FILENAME_YEAR_2000_OFFSET = 2000
+FILENAME_YEAR_1900_OFFSET = 1900
+
 # ---------------------------------------------------------------------------
 # Filename validation and metadata extraction
 # ---------------------------------------------------------------------------
@@ -122,10 +126,10 @@ def validate_filename_and_extract_metadata(filename: str) -> Dict[str, Any]:
         year = int(date_str[4:6])
         
         # Assume years 00-30 are 2000s, 31-99 are 1900s
-        if year <= 30:
-            year += 2000
+        if year <= FILENAME_YEAR_CUTOFF:
+            year += FILENAME_YEAR_2000_OFFSET
         else:
-            year += 1900
+            year += FILENAME_YEAR_1900_OFFSET
             
         report_date = datetime(year, month, day)
         report_date_str = report_date.strftime("%d.%m.%Y")

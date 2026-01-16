@@ -28,6 +28,10 @@ def _format_table(headers: List[str], rows: List[List[str]]) -> List[str]:
     return md
 
 
+VALID_YEAR_MIN = 2000
+VALID_YEAR_MAX = 2100
+
+
 def _parse_date_any(s: str) -> datetime | None:
     """Best-effort parse for a variety of common date formats. Returns None if unparseable."""
     if not s or not isinstance(s, str):
@@ -42,7 +46,7 @@ def _parse_date_any(s: str) -> datetime | None:
         try:
             dt = datetime.strptime(s_clean, p)
             # Accept only reasonable years to avoid malformed tokens like "0405-05-04"
-            if 2000 <= dt.year <= 2100:
+            if VALID_YEAR_MIN <= dt.year <= VALID_YEAR_MAX:
                 return dt
         except Exception:
             pass
@@ -53,7 +57,7 @@ def _parse_date_any(s: str) -> datetime | None:
         for p in patterns:
             try:
                 dt = datetime.strptime(token, p)
-                if 2000 <= dt.year <= 2100:
+                if VALID_YEAR_MIN <= dt.year <= VALID_YEAR_MAX:
                     return dt
             except Exception:
                 pass

@@ -10,6 +10,7 @@ import logging
 from typing import Dict, Any, Union
 from jsonschema import validate, ValidationError
 from utils.json_repair import JSONRepair
+from core.runtime_config import SUMMARY_MAX_OUTPUT_TOKENS
 
 # Note: LLM-based JSON repair has been removed.
 # OpenAIEWAAgent uses local deterministic repair via utils.json_repair.JSONRepair.
@@ -155,7 +156,7 @@ class OpenAIEWAAgent:
                     model=self.model,
                     input=[{"role": "user", "content": user_content}],
                     text=text_format,
-                    max_output_tokens=32768,
+                    max_output_tokens=SUMMARY_MAX_OUTPUT_TOKENS,
                     # reasoning={"effort": "medium"},  # use default reasoning effort
                 )
             )

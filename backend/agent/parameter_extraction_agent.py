@@ -9,6 +9,7 @@ import json
 import asyncio
 import logging
 from typing import Dict, Any, List, Optional
+from core.runtime_config import PARAM_MAX_OUTPUT_TOKENS
 
 # Action status values for parameter classification
 ACTION_STATUS_CHANGE_REQUIRED = "Change Required"
@@ -246,7 +247,7 @@ class ParameterExtractionAgent:
                 input=messages,
                 text=text_format,
                 reasoning={"effort": "none"},
-                max_output_tokens=16384,
+                max_output_tokens=PARAM_MAX_OUTPUT_TOKENS,
             )
         )
         

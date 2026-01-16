@@ -13,6 +13,7 @@ from openai import AsyncAzureOpenAI
 import fitz  # PyMuPDF
 
 from fastapi import HTTPException
+from core.runtime_config import PDF_METADATA_TEXT_LIMIT, PDF_METADATA_MAX_TOKENS
 
 logger = logging.getLogger(__name__)
 
@@ -161,9 +162,9 @@ async def extract_metadata_with_ai(pdf_bytes: bytes) -> Dict[str, Any]:
             model=AZURE_OPENAI_FAST_MODEL,
             messages=[
                 {"role": "system", "content": _get_extraction_prompt()},
-                {"role": "user", "content": text[:4000]}  # Limit text to 4000 chars
+                {"role": "user", "content": text[:PDF_METADATA_TEXT_LIMIT]}  # Limit text size
             ],
-            max_completion_tokens=100,
+            max_completion_tokens=PDF_METADATA_MAX_TOKENS,
             reasoning_effort="minimal",
         )
         

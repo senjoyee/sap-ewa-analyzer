@@ -34,6 +34,11 @@ from services.storage_service import StorageService
 # Dictionary to track the status of document conversion jobs
 # Structure: {blob_name: {"status": "pending|processing|completed|failed", "start_time": timestamp, "end_time": timestamp, "message": "message", "progress": progress_percentage}}
 conversion_status_tracker = {}
+PROGRESS_START = 0
+PROGRESS_DOWNLOAD = 10
+PROGRESS_CONVERT = 30
+PROGRESS_UPLOAD = 70
+PROGRESS_JSON = 90
 logger = logging.getLogger(__name__)
 storage_service = StorageService()
 
@@ -60,13 +65,13 @@ def convert_pdf_to_markdown(blob_name: str) -> dict:
     conversion_status_tracker[blob_name] = {
         "status": "processing",
         "start_time": start_time.isoformat(),
-        "progress": 0,
+        "progress": PROGRESS_START,
         "message": "Started PDF to markdown conversion"
     }
     
     try:
         # Download the PDF from blob storage
-        conversion_status_tracker[blob_name]["progress"] = 10
+        conversion_status_tracker[blob_name]["progress"] = PROGRESS_DOWNLOAD
         conversion_status_tracker[blob_name]["message"] = "Downloading PDF from blob storage"
         
         pdf_content = storage_service.get_bytes(blob_name)
@@ -79,7 +84,7 @@ def convert_pdf_to_markdown(blob_name: str) -> dict:
             temp_file.write(pdf_content)
             temp_pdf_path = temp_file.name
         
-        conversion_status_tracker[blob_name]["progress"] = 30
+        conversion_status_tracker[blob_name]["progress"] = PROGRESS_CONVERT
         conversion_status_tracker[blob_name]["message"] = "Converting PDF to markdown"
         
         # Use pymupdf4llm to convert PDF to markdown; fallback to plain text on failure
@@ -97,7 +102,7 @@ def convert_pdf_to_markdown(blob_name: str) -> dict:
             doc.close()
             md_text = "\n\n".join(pages_text)
         
-        conversion_status_tracker[blob_name]["progress"] = 70
+        conversion_status_tracker[blob_name]["progress"] = PROGRESS_UPLOAD
         conversion_status_tracker[blob_name]["message"] = "Uploading markdown to blob storage"
         
         # Create markdown blob name (same as original but with .md extension)
@@ -114,7 +119,7 @@ def convert_pdf_to_markdown(blob_name: str) -> dict:
         
         # Also create a JSON blob to maintain compatibility with existing system
         # The JSON contains minimal info to indicate processing is complete
-        conversion_status_tracker[blob_name]["progress"] = 90
+        conversion_status_tracker[blob_name]["progress"] = PROGRESS_JSON
         conversion_status_tracker[blob_name]["message"] = "Creating JSON status file"
         
         json_blob_name = os.path.splitext(blob_name)[0] + ".json"
@@ -159,7 +164,7 @@ def convert_pdf_to_markdown(blob_name: str) -> dict:
         conversion_status_tracker[blob_name].update({
             "status": "failed",
             "end_time": end_time.isoformat(),
-            "progress": 0,
+            "progress": PROGRESS_START,
             "message": error_message
         })
         

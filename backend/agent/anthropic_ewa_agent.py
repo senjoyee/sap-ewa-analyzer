@@ -9,6 +9,7 @@ import logging
 from typing import Dict, Any
 from jsonschema import validate, ValidationError
 from utils.json_repair import JSONRepair
+from core.runtime_config import ANTHROPIC_MAX_OUTPUT_TOKENS
 
 # Directory containing prompt templates
 _PROMPT_DIR = os.path.join(os.path.dirname(os.path.abspath(__file__)), "..", "prompts")
@@ -115,7 +116,7 @@ EWA Document:
                 # Use stream=True parameter for SSE streaming
                 stream = self.client.messages.create(
                     model=self.model,
-                    max_tokens=32768,
+                    max_tokens=ANTHROPIC_MAX_OUTPUT_TOKENS,
                     system=self.summary_prompt,
                     messages=[
                         {"role": "user", "content": user_content}

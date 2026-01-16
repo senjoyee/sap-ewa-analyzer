@@ -32,6 +32,7 @@ from agent.parameter_extraction_agent import ParameterExtractionAgent
 from utils.markdown_utils import json_to_markdown
 from converters.document_converter import convert_document_to_markdown
 from services.storage_service import StorageService
+from core.runtime_config import ANTHROPIC_TIMEOUT_SECONDS, ANTHROPIC_CONNECT_TIMEOUT_SECONDS
 
 logger = logging.getLogger(__name__)
 
@@ -169,11 +170,14 @@ class EWAWorkflowOrchestrator:
         from anthropic import AnthropicFoundry
         import httpx
         
-        # Configure extended timeout (30 min) for long-running requests
+        # Configure extended timeout for long-running requests
         client = AnthropicFoundry(
             api_key=AZURE_ANTHROPIC_API_KEY,
             base_url=AZURE_ANTHROPIC_ENDPOINT,
-            timeout=httpx.Timeout(timeout=1800.0, connect=30.0),  # 30 min read timeout
+            timeout=httpx.Timeout(
+                timeout=float(ANTHROPIC_TIMEOUT_SECONDS),
+                connect=float(ANTHROPIC_CONNECT_TIMEOUT_SECONDS),
+            ),
         )
         return AnthropicEWAAgent(client=client, model=model_name, summary_prompt=summary_prompt)
     
@@ -186,6 +190,9 @@ class EWAWorkflowOrchestrator:
             "sep": "09", "oct": "10", "nov": "11", "dec": "12",
         }
         
+        VALID_REPORT_YEAR_MIN = 2020
+        VALID_REPORT_YEAR_MAX = 2039
+
         def is_valid_date(d: str) -> bool:
             if not d:
                 return False
@@ -193,11 +200,11 @@ class EWAWorkflowOrchestrator:
             m = re.match(r"^(\d{2})\.(\d{2})\.(\d{4})$", d)
             if m:
                 year = int(m.group(3))
-                return 2020 <= year <= 2039
+                return VALID_REPORT_YEAR_MIN <= year <= VALID_REPORT_YEAR_MAX
             m = re.match(r"^(\d{4})-(\d{2})-(\d{2})$", d)
             if m:
                 year = int(m.group(1))
-                return 2020 <= year <= 2039
+                return VALID_REPORT_YEAR_MIN <= year <= VALID_REPORT_YEAR_MAX
             return False
         
         def extract_date_from_filename(fname: str) -> str | None:

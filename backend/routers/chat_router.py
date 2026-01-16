@@ -17,6 +17,7 @@ from pydantic import BaseModel
 from dotenv import load_dotenv
 
 from services.storage_service import StorageService
+from core.runtime_config import CHAT_HISTORY_LIMIT, CHAT_MAX_OUTPUT_TOKENS
 
 # Lazy import AzureOpenAI only when needed to avoid cost at module load
 
@@ -104,7 +105,11 @@ async def chat_with_document(request: ChatRequest):
         })
 
         # Include recent chat history (text only)
-        recent_history = request.chatHistory[-10:] if len(request.chatHistory) > 10 else request.chatHistory
+        recent_history = (
+            request.chatHistory[-CHAT_HISTORY_LIMIT:]
+            if len(request.chatHistory) > CHAT_HISTORY_LIMIT
+            else request.chatHistory
+        )
         for msg in recent_history:
             role = "user" if msg.get("isUser") else "assistant"
             text = msg.get("text", "")
@@ -128,7 +133,7 @@ async def chat_with_document(request: ChatRequest):
                 lambda: client.responses.create(
                     model=model_name,
                     input=responses_messages,
-                    max_output_tokens=4096,
+                    max_output_tokens=CHAT_MAX_OUTPUT_TOKENS,
                     reasoning={"effort": "medium"},
                     text={"verbosity": "low"},
                 )

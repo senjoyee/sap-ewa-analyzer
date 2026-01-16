@@ -27,6 +27,9 @@ from utils.html_utils import json_to_html
 from utils.excel_utils import json_to_excel
 from utils.parameter_extractor import extract_parameters_from_markdown
 
+FILENAME_DATE_YEAR_MIN = 2000
+FILENAME_DATE_YEAR_MAX = 2100
+
 logger = logging.getLogger(__name__)
 
 router = APIRouter(prefix="/api", tags=["export"])
@@ -51,7 +54,7 @@ def _parse_date_for_filename(raw_date: str) -> str:
     for p in patterns:
         try:
             dt = datetime.strptime(raw, p)
-            if 2000 <= dt.year <= 2100:
+            if FILENAME_DATE_YEAR_MIN <= dt.year <= FILENAME_DATE_YEAR_MAX:
                 return dt.strftime("%Y%m%d")
         except Exception:
             continue
