@@ -13,6 +13,7 @@ from __future__ import annotations
 import os
 import re
 import json
+import logging
 from typing import Dict, Any, List
 from datetime import datetime
 
@@ -25,6 +26,8 @@ from core.azure_clients import (
 )
 from services.storage_service import StorageService
 from workflow_orchestrator import EWAWorkflowOrchestrator
+
+logger = logging.getLogger(__name__)
 
 # ---------------------------------------------------------------------------
 # Filename validation and metadata extraction
@@ -78,11 +81,11 @@ def generate_standardized_filename(file_metadata: Dict[str, Any], original_filen
         
         new_filename = f"{system_id}_{day}_{month}_{year}{ext}"
         
-        print(f"Generated standardized filename: {original_filename} -> {new_filename}")
+        logger.info("Generated standardized filename: %s -> %s", original_filename, new_filename)
         return new_filename
         
     except Exception as e:
-        print(f"Error generating standardized filename: {e}. Using original filename.")
+        logger.warning("Error generating standardized filename: %s. Using original filename.", e)
         return original_filename
 
 def validate_filename_and_extract_metadata(filename: str) -> Dict[str, Any]:
@@ -162,13 +165,24 @@ async def upload_file(file: UploadFile = File(...), customer_name: str = Form(..
         try:
             from utils.pdf_metadata_extractor import extract_metadata_with_ai
             file_metadata = await extract_metadata_with_ai(contents)
-            print(f"AI extraction successful - System ID: {file_metadata['system_id']}, Report Date: {file_metadata['report_date_str']}")
+            logger.info(
+                "AI extraction successful - System ID: %s, Report Date: %s",
+                file_metadata["system_id"],
+                file_metadata["report_date_str"],
+            )
         except Exception as ai_error:
             # If AI extraction fails, fall back to filename validation
-            print(f"AI extraction failed, falling back to filename validation: {str(ai_error)}")
+            logger.warning(
+                "AI extraction failed, falling back to filename validation: %s",
+                ai_error,
+            )
             try:
                 file_metadata = validate_filename_and_extract_metadata(file.filename)
-                print(f"Filename validation successful - System ID: {file_metadata['system_id']}, Report Date: {file_metadata['report_date_str']}")
+                logger.info(
+                    "Filename validation successful - System ID: %s, Report Date: %s",
+                    file_metadata["system_id"],
+                    file_metadata["report_date_str"],
+                )
             except ValueError as filename_error:
                 raise HTTPException(
                     status_code=400,
@@ -185,11 +199,17 @@ async def upload_file(file: UploadFile = File(...), customer_name: str = Form(..
             container=AZURE_STORAGE_CONTAINER_NAME, blob=blob_name
         )
 
-        print(
-            f"Uploading {file.filename} to Azure Blob Storage in container {AZURE_STORAGE_CONTAINER_NAME} as blob {blob_name}..."
+        logger.info(
+            "Uploading %s to Azure Blob Storage in container %s as blob %s",
+            file.filename,
+            AZURE_STORAGE_CONTAINER_NAME,
+            blob_name,
         )
-        print(
-            f"Extracted metadata - System ID: {file_metadata['system_id']}, Report Date: {file_metadata['report_date_str']}, Customer: {customer_name}"
+        logger.info(
+            "Extracted metadata - System ID: %s, Report Date: %s, Customer: %s",
+            file_metadata["system_id"],
+            file_metadata["report_date_str"],
+            customer_name,
         )
 
         # Create comprehensive metadata
@@ -217,8 +237,11 @@ async def upload_file(file: UploadFile = File(...), customer_name: str = Form(..
 
         blob_client.upload_blob(contents, overwrite=True, metadata=metadata)
 
-        print(
-            f"Successfully uploaded {file.filename} to {blob_name} with metadata: {metadata}"
+        logger.info(
+            "Successfully uploaded %s to %s with metadata: %s",
+            file.filename,
+            blob_name,
+            metadata,
         )
         return {
             "filename": blob_name,  # Return the new standardized filename
@@ -233,7 +256,7 @@ async def upload_file(file: UploadFile = File(...), customer_name: str = Form(..
         # Re-raise HTTP exceptions
         raise
     except Exception as e:
-        print(f"Error uploading file {file.filename}: {e}")
+        logger.exception("Error uploading file %s: %s", file.filename, e)
         raise HTTPException(status_code=500, detail=f"Could not upload file: {str(e)}")
 
 
@@ -250,7 +273,7 @@ async def list_files():
         container_client = blob_service_client.get_container_client(AZURE_STORAGE_CONTAINER_NAME)
         blob_list = list(container_client.list_blobs())
 
-        print(f"Found {len(blob_list)} total blobs in container")
+        logger.info("Found %s total blobs in container", len(blob_list))
 
         json_files: Dict[str, bool] = {}
         md_files: Dict[str, bool] = {}
@@ -342,13 +365,17 @@ async def list_files():
             file_info['files_in_group'] = len(group_files)
             file_info['unprocessed_in_group'] = len(unprocessed_in_group)
 
-        print(f"Returning {len(files)} files with {len(sequential_groups)} sequential processing opportunities")
+        logger.info(
+            "Returning %s files with %s sequential processing opportunities",
+            len(files),
+            len(sequential_groups),
+        )
         return {
             "files": files,
             "sequential_groups": sequential_groups
         }
     except Exception as e:
-        print(f"Error listing files: {e}")
+        logger.exception("Error listing files: %s", e)
         raise HTTPException(status_code=500, detail=f"Could not list files: {str(e)}")
 
 
@@ -402,7 +429,11 @@ async def delete_analysis(request_data: DeleteAnalysisRequest):
         }
         
     except Exception as e:
-        print(f"Error deleting analysis for {request_data.get('fileName', 'unknown file')}: {e}")
+        logger.exception(
+            "Error deleting analysis for %s: %s",
+            request_data.get("fileName", "unknown file"),
+            e,
+        )
         raise HTTPException(status_code=500, detail=f"Could not delete analysis files: {str(e)}")
 
 
@@ -455,5 +486,5 @@ async def download_file(blob_name: str):
         raise
     except Exception as e:
         error_message = f"Error downloading file {blob_name}: {str(e)}"
-        print(error_message)
+        logger.exception(error_message)
         raise HTTPException(status_code=500, detail=error_message)

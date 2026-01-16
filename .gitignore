@@ -92,3 +92,4 @@ scripts/deploy-local.ps1
 .agent/rules/git-commit.md
 
 extraction_prompt_optimized
+.github/copilot-instructions.md

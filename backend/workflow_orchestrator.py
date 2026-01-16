@@ -18,7 +18,8 @@ The orchestrator ensures a cohesive end-to-end analysis process for SAP EWA repo
 import os
 import json
 import asyncio
-import traceback # Added for exception logging
+import traceback  # Added for exception logging
+import logging
 from datetime import datetime
 from typing import Dict, Any
 from dataclasses import dataclass
@@ -31,6 +32,8 @@ from agent.parameter_extraction_agent import ParameterExtractionAgent
 from utils.markdown_utils import json_to_markdown
 from converters.document_converter import convert_document_to_markdown
 from services.storage_service import StorageService
+
+logger = logging.getLogger(__name__)
 
 # Load environment variables
 load_dotenv()
@@ -77,12 +80,12 @@ def load_summary_prompt() -> str | None:
         if os.path.exists(path):
             try:
                 with open(path, "r", encoding="utf-8") as f:
-                    print(f"Loaded summary prompt from {path}")
+                    logger.info("Loaded summary prompt from %s", path)
                     return f.read()
             except Exception as e:
-                print(f"Warning: Could not read prompt file {path}: {e}")
+                logger.warning("Could not read prompt file %s: %s", path, e)
     # No prompt files found – return None so that downstream logic can fall back
-    print("No summary prompt files found; EWAAgent will use its internal default prompts.")
+    logger.warning("No summary prompt files found; EWAAgent will use its internal default prompts.")
     return None
 
 SUMMARY_PROMPT: str | None = load_summary_prompt()
@@ -130,15 +133,15 @@ class EWAWorkflowOrchestrator:
                     api_key=self.azure_openai_api_key,
                 )
             
-            print("Successfully initialized Blob Storage client")
+            logger.info("Successfully initialized Blob Storage client")
             
         except Exception as e:
-            print(f"Error initializing clients: {str(e)}")
+            logger.exception("Error initializing clients: %s", e)
             raise
     
     def _create_agent(self, model: str | None = None, summary_prompt: str | None = None) -> OpenAIEWAAgent:
         model_name = model or self.summary_model
-        print(f"Creating OpenAIEWAAgent with model: {model_name}")
+        logger.info("Creating OpenAIEWAAgent with model: %s", model_name)
         if not self.azure_openai_endpoint:
             raise ValueError("AZURE_OPENAI_ENDPOINT environment variable is required")
         if not self.azure_openai_api_key:
@@ -155,7 +158,7 @@ class EWAWorkflowOrchestrator:
     def _create_anthropic_agent(self, model: str | None = None, summary_prompt: str | None = None) -> AnthropicEWAAgent:
         """Create an AnthropicEWAAgent for Azure AI Foundry (Claude) models."""
         model_name = model or ANTHROPIC_SUMMARY_MODEL
-        print(f"Creating AnthropicEWAAgent with model: {model_name}")
+        logger.info("Creating AnthropicEWAAgent with model: %s", model_name)
         
         if not AZURE_ANTHROPIC_ENDPOINT:
             raise ValueError("AZURE_ANTHROPIC_ENDPOINT environment variable is required for PROVIDER=anthropic")
@@ -218,7 +221,11 @@ class EWAWorkflowOrchestrator:
         # Attempt extraction from filename
         fallback = extract_date_from_filename(blob_name)
         if fallback:
-            print(f"[_fix_report_date_if_invalid] Invalid date '{report_date}'; using filename fallback '{fallback}'")
+            logger.warning(
+                "[_fix_report_date_if_invalid] Invalid date '%s'; using filename fallback '%s'",
+                report_date,
+                fallback,
+            )
             # Update in-place
             if "System Metadata" in summary_json and isinstance(summary_json["System Metadata"], dict):
                 summary_json["System Metadata"]["Report Date"] = fallback
@@ -228,7 +235,10 @@ class EWAWorkflowOrchestrator:
                 # Create System Metadata if missing
                 summary_json["System Metadata"] = {"Report Date": fallback}
         else:
-            print(f"[_fix_report_date_if_invalid] Invalid date '{report_date}' and no filename fallback available")
+            logger.warning(
+                "[_fix_report_date_if_invalid] Invalid date '%s' and no filename fallback available",
+                report_date,
+            )
         
         return summary_json
     
@@ -239,28 +249,28 @@ class EWAWorkflowOrchestrator:
             base_name = os.path.splitext(blob_name)[0]
             md_blob_name = f"{base_name}.md"
             
-            print(f"Downloading markdown content from {md_blob_name}")
+            logger.info("Downloading markdown content from %s", md_blob_name)
             content = await asyncio.to_thread(self.storage_service.get_text_content, md_blob_name)
             
-            print(f"Successfully downloaded {len(content)} characters of markdown content")
+            logger.info("Successfully downloaded %s characters of markdown content", len(content))
             return content
             
         except Exception as e:
             error_message = f"Error downloading markdown from blob storage: {str(e)}"
-            print(error_message)
+            logger.exception(error_message)
             raise Exception(error_message)
     
     async def download_pdf_from_blob(self, blob_name: str) -> bytes:
         """Download original PDF content from Azure Blob Storage for multimodal analysis"""
         try:
-            print(f"Downloading PDF content from {blob_name}")
+            logger.info("Downloading PDF content from %s", blob_name)
             content = await asyncio.to_thread(self.storage_service.get_bytes, blob_name)
-            print(f"Successfully downloaded {len(content)} bytes of PDF content")
+            logger.info("Successfully downloaded %s bytes of PDF content", len(content))
             return content
             
         except Exception as e:
             error_message = f"Error downloading PDF from blob storage: {str(e)}"
-            print(error_message)
+            logger.exception(error_message)
             raise Exception(error_message)
     
     async def upload_to_blob(self, blob_name: str, content: str, content_type: str = "text/markdown", metadata: dict = None) -> str:
@@ -281,17 +291,17 @@ class EWAWorkflowOrchestrator:
             # Add metadata if provided
             if metadata:
                 upload_params["metadata"] = metadata
-                print(f"Uploading {blob_name} with metadata: {metadata}")
+                logger.info("Uploading %s with metadata: %s", blob_name, metadata)
             
             # Offload blocking upload to a thread
             await asyncio.to_thread(lambda: blob_client.upload_blob(**upload_params))
             
-            print(f"Successfully uploaded content to {blob_name}")
+            logger.info("Successfully uploaded content to %s", blob_name)
             return blob_name
             
         except Exception as e:
             error_message = f"Error uploading to blob storage: {str(e)}"
-            print(error_message)
+            logger.exception(error_message)
             raise Exception(error_message)
     
     async def get_blob_metadata(self, blob_name: str) -> dict:
@@ -306,7 +316,7 @@ class EWAWorkflowOrchestrator:
             return properties.metadata or {}
             
         except Exception as e:
-            print(f"Error retrieving metadata for {blob_name}: {str(e)}")
+            logger.warning("Error retrieving metadata for %s: %s", blob_name, e)
             return {}
 
     async def set_processing_flag(self, blob_name: str, is_processing: bool) -> bool:
@@ -339,7 +349,7 @@ class EWAWorkflowOrchestrator:
             return True
         except Exception as e:
             state = "set" if is_processing else "clear"
-            print(f"Warning: could not {state} processing metadata for {blob_name}: {e}")
+            logger.warning("Could not %s processing metadata for %s: %s", state, blob_name, e)
             return False
 
     async def _set_metadata_field(self, blob_name: str, key: str, value: str | None) -> bool:
@@ -360,7 +370,7 @@ class EWAWorkflowOrchestrator:
             return True
         except Exception as e:
             action = "set" if value is not None else "clear"
-            print(f"Warning: could not {action} metadata '{key}' for {blob_name}: {e}")
+            logger.warning("Could not %s metadata '%s' for %s: %s", action, key, blob_name, e)
             return False
 
     async def _set_last_status(self, blob_name: str, status: str | None) -> bool:
@@ -375,7 +385,7 @@ class EWAWorkflowOrchestrator:
         (callers already handled conversion), so we surface the original error instead.
         """
         try:
-            print(f"[STEP 1] Downloading content for {state.blob_name}")
+            logger.info("[STEP 1] Downloading content for %s", state.blob_name)
             state.markdown_content = await self.download_markdown_from_blob(state.blob_name)
             return state
         except Exception as e:
@@ -392,7 +402,10 @@ class EWAWorkflowOrchestrator:
                 return state
             # Attempt to generate markdown via converter when missing
             try:
-                print(f"[STEP 1] Markdown not found for {state.blob_name}; attempting conversion to markdown")
+                logger.info(
+                    "[STEP 1] Markdown not found for %s; attempting conversion to markdown",
+                    state.blob_name,
+                )
                 result = await asyncio.to_thread(convert_document_to_markdown, state.blob_name)
                 if isinstance(result, dict) and not result.get("error") and result.get("status") == "completed":
                     # Re-download newly created markdown
@@ -410,7 +423,7 @@ class EWAWorkflowOrchestrator:
     async def run_analysis_step(self, state: WorkflowState) -> WorkflowState:
         """Step 2: Generate comprehensive EWA analysis; then extract KPIs via image agent"""
         try:
-            print(f"[STEP 2] Running EWA analysis for {state.blob_name}")
+            logger.info("[STEP 2] Running EWA analysis for %s", state.blob_name)
             
             # Get metadata from original blob for KPI management
             original_metadata = await self.get_blob_metadata(state.blob_name)
@@ -418,7 +431,12 @@ class EWAWorkflowOrchestrator:
             system_id = original_metadata.get('system_id', '')
             report_date_str = original_metadata.get('report_date_str', '')
             
-            print(f"Analysis - Customer: {customer_name}, System: {system_id}, Report Date: {report_date_str}")
+            logger.info(
+                "Analysis - Customer: %s, System: %s, Report Date: %s",
+                customer_name,
+                system_id,
+                report_date_str,
+            )
             
             # Step 1: Run AI analysis for all other sections (excluding KPIs)
             # Update prompt to exclude KPI extraction since we handle it separately
@@ -436,7 +454,11 @@ class EWAWorkflowOrchestrator:
             if not text_input:
                 raise ValueError("Markdown content is empty; conversion must succeed before analysis.")
 
-            print(f"[ANALYSIS] Using PROVIDER={PROVIDER}, markdown input ({len(text_input)} chars)")
+            logger.info(
+                "[ANALYSIS] Using PROVIDER=%s, markdown input (%s chars)",
+                PROVIDER,
+                len(text_input),
+            )
             
             if PROVIDER == "anthropic":
                 # Use Claude via Azure AI Foundry
@@ -456,34 +478,33 @@ class EWAWorkflowOrchestrator:
 
             # Step 2b: Extract parameters using fast model
             try:
-                print(f"[STEP 2b] Extracting parameters for {state.blob_name}")
+                logger.info("[STEP 2b] Extracting parameters for %s", state.blob_name)
                 if not self.openai_client:
                     raise RuntimeError("OpenAI client not initialized")
                 param_agent = ParameterExtractionAgent(self.openai_client)
                 state.parameters_json = await param_agent.extract(text_input)
                 param_count = len(state.parameters_json.get("parameters", []))
-                print(f"[STEP 2b] Extracted {param_count} parameters")
+                logger.info("[STEP 2b] Extracted %s parameters", param_count)
             except Exception as param_e:
-                print(f"[STEP 2b] Parameter extraction failed (non-fatal): {param_e}")
+                logger.warning("[STEP 2b] Parameter extraction failed (non-fatal): %s", param_e)
                 state.parameters_json = {"parameters": [], "extraction_notes": f"Extraction failed: {str(param_e)}"}
             
             return state
         except Exception as e:
             state.error = str(e)
-            print(f"Error in run_analysis_step: {str(e)}")
-            traceback.print_exc()
+            logger.exception("Error in run_analysis_step: %s", e)
             return state
 
     
     async def save_results_step(self, state: WorkflowState) -> WorkflowState:
         """Step 5: Save all results to blob storage with metadata propagation"""
         try:
-            print(f"[STEP 5] Saving results for {state.blob_name}")
+            logger.info("[STEP 5] Saving results for %s", state.blob_name)
             base_name = os.path.splitext(state.blob_name)[0]
             
             # Retrieve metadata from original blob
             original_metadata = await self.get_blob_metadata(state.blob_name)
-            print(f"Retrieved original metadata: {original_metadata}")
+            logger.debug("Retrieved original metadata: %s", original_metadata)
             
             # Save summary markdown with metadata
             summary_blob_name = f"{base_name}_AI.md"
@@ -511,17 +532,25 @@ class EWAWorkflowOrchestrator:
                         existing_metadata["report_date"] = report_date
                         # Offload setting metadata to a thread
                         await asyncio.to_thread(orig_blob_client.set_blob_metadata, existing_metadata)
-                        print(f"Set report_date metadata ({report_date}) on {state.blob_name}")
+                        logger.info(
+                            "Set report_date metadata (%s) on %s",
+                            report_date,
+                            state.blob_name,
+                        )
                     except Exception as meta_e:
                         # Non-fatal; continue even if metadata update fails
-                        print(f"Warning: could not set report_date metadata for {state.blob_name}: {meta_e}")
+                        logger.warning(
+                            "Could not set report_date metadata for %s: %s",
+                            state.blob_name,
+                            meta_e,
+                        )
 
             # Save extracted parameters JSON
             if state.parameters_json is not None:
                 params_blob_name = f"{base_name}_parameters.json"
                 await self.upload_to_blob(params_blob_name, json.dumps(state.parameters_json, indent=2), "application/json", original_metadata)
                 param_count = len(state.parameters_json.get("parameters", []))
-                print(f"Saved {param_count} parameters to {params_blob_name}")
+                logger.info("Saved %s parameters to %s", param_count, params_blob_name)
             
             return state
         except Exception as e:
@@ -540,10 +569,10 @@ class EWAWorkflowOrchestrator:
         try:
             processing_flag_set = await self.set_processing_flag(blob_name, True)
         except Exception as flag_err:
-            print(f"Warning: unable to mark {blob_name} as processing: {flag_err}")
+            logger.warning("Unable to mark %s as processing: %s", blob_name, flag_err)
 
         try:
-            print(f"Starting workflow for {blob_name}")
+            logger.info("Starting workflow for %s", blob_name)
             
             # Initialize state
             state = WorkflowState(blob_name=blob_name)
@@ -584,7 +613,7 @@ class EWAWorkflowOrchestrator:
             
         except Exception as e:
             error_message = f"Workflow error: {str(e)}"
-            print(error_message)
+            logger.exception(error_message)
             return {
                 "success": False,
                 "error": True,

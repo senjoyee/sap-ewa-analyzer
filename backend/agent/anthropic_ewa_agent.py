@@ -5,6 +5,7 @@ import os
 import json
 import asyncio
 import copy
+import logging
 from typing import Dict, Any
 from jsonschema import validate, ValidationError
 from utils.json_repair import JSONRepair
@@ -12,6 +13,8 @@ from utils.json_repair import JSONRepair
 # Directory containing prompt templates
 _PROMPT_DIR = os.path.join(os.path.dirname(os.path.abspath(__file__)), "..", "prompts")
 _ANTHROPIC_PROMPT_PATH = os.path.join(_PROMPT_DIR, "ewa_summary_prompt_anthropic.md")
+
+logger = logging.getLogger(__name__)
 
 # Default prompt fallback
 DEFAULT_PROMPT = """You are a highly experienced SAP Basis Architect. Analyze the SAP EarlyWatch Alert (EWA) report and produce a precise JSON output that strictly follows the provided schema."""
@@ -36,10 +39,10 @@ class AnthropicEWAAgent:
         elif os.path.exists(_ANTHROPIC_PROMPT_PATH):
             with open(_ANTHROPIC_PROMPT_PATH, "r", encoding="utf-8") as f:
                 self.summary_prompt = f.read()
-                print(f"[AnthropicEWAAgent] Loaded prompt from {_ANTHROPIC_PROMPT_PATH}")
+                logger.info("Loaded prompt from %s", _ANTHROPIC_PROMPT_PATH)
         else:
             self.summary_prompt = DEFAULT_PROMPT
-            print("[AnthropicEWAAgent] Using default prompt")
+            logger.warning("Using default prompt")
 
         # Load schema
         if schema_path is None:
@@ -61,18 +64,18 @@ class AnthropicEWAAgent:
         summary_json = await self._call_anthropic(markdown)
         
         if self._is_valid(summary_json):
-            print("[AnthropicEWAAgent.run] Initial JSON valid; skipping repair")
+            logger.info("Initial JSON valid; skipping repair")
             return summary_json
 
         # Try local repair
-        print("[AnthropicEWAAgent.run] Initial JSON invalid; invoking local JSON repair")
+        logger.warning("Initial JSON invalid; invoking local JSON repair")
         summary_json = self._repair_local(summary_json)
         
         try:
             is_valid_after = self._is_valid(summary_json)
-            print(f"[AnthropicEWAAgent.run] Local repair completed; valid={is_valid_after}")
+            logger.info("Local repair completed; valid=%s", is_valid_after)
         except Exception:
-            print("[AnthropicEWAAgent.run] Repair completed; validity check raised an exception")
+            logger.exception("Repair completed; validity check raised an exception")
         
         return summary_json
 
@@ -141,17 +144,21 @@ EWA Document:
             
             # Offload streaming call to a thread
             text, in_tokens, out_tokens = await asyncio.to_thread(_call_messages_streaming)
-            print(f"[AnthropicEWAAgent._call_anthropic] Token usage: input_tokens={in_tokens}, output_tokens={out_tokens}")
+            logger.info(
+                "Token usage: input_tokens=%s, output_tokens=%s",
+                in_tokens,
+                out_tokens,
+            )
 
             if not text:
-                print("[AnthropicEWAAgent._call_anthropic] No text content in response")
+                logger.warning("No text content in response")
                 return {"_parse_error": "No text content in response", "raw_arguments": ""}
 
             # Parse JSON from response
             return self._parse_json_from_text(text)
 
         except Exception as e:
-            print(f"[AnthropicEWAAgent._call_anthropic] Error: {e}")
+            logger.exception("Error calling Anthropic API: %s", e)
             return {"_parse_error": str(e), "raw_arguments": ""}
 
     def _parse_json_from_text(self, text: str) -> Dict[str, Any]:
@@ -204,7 +211,7 @@ EWA Document:
             if rr.success and isinstance(rr.data, dict):
                 return rr.data
         except Exception as e:
-            print(f"[AnthropicEWAAgent._repair_local] Exception: {e}")
+            logger.exception("Exception during local repair: %s", e)
         
         return previous_json
 

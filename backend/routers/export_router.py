@@ -9,6 +9,7 @@ import os
 import re
 import json
 import html
+import logging
 from typing import Dict, Any, List
 from datetime import datetime
 
@@ -25,6 +26,8 @@ from utils.markdown_utils import json_to_markdown
 from utils.html_utils import json_to_html
 from utils.excel_utils import json_to_excel
 from utils.parameter_extractor import extract_parameters_from_markdown
+
+logger = logging.getLogger(__name__)
 
 router = APIRouter(prefix="/api", tags=["export"])
 storage_service = StorageService()
@@ -63,34 +66,32 @@ def _get_pdf_optimized_markdown(blob_name: str, markdown_text: str) -> str:
     This ensures that JSON card sections are rendered as tables in PDF exports
     and KPI sections are excluded.
     """
-    print(f"[PDF Export] _get_pdf_optimized_markdown called with blob_name={blob_name}")
-    print(f"[PDF Export] Original markdown length: {len(markdown_text)}")
+    logger.info("[PDF Export] _get_pdf_optimized_markdown called with blob_name=%s", blob_name)
+    logger.debug("[PDF Export] Original markdown length: %s", len(markdown_text))
     
     try:
         # Derive the JSON blob name from the markdown blob name
         # Pattern: filename_AI.md -> filename_AI.json
         base_name = os.path.splitext(blob_name)[0]
         json_blob_name = f"{base_name}.json"
-        print(f"[PDF Export] Looking for JSON: {json_blob_name}")
+        logger.info("[PDF Export] Looking for JSON: %s", json_blob_name)
         
         # Try to download the JSON file
         json_text = storage_service.get_text_content(json_blob_name)
         json_data = json.loads(json_text)
-        print(f"[PDF Export] JSON loaded successfully, keys: {list(json_data.keys())}")
+        logger.debug("[PDF Export] JSON loaded successfully, keys: %s", list(json_data.keys()))
         
         # Regenerate markdown with pdf_export=True
-        print(f"[PDF Export] Regenerating markdown from JSON with pdf_export=True")
+        logger.info("[PDF Export] Regenerating markdown from JSON with pdf_export=True")
         regenerated = json_to_markdown(json_data, pdf_export=True)
-        print(f"[PDF Export] Regenerated markdown length: {len(regenerated)}")
+        logger.debug("[PDF Export] Regenerated markdown length: %s", len(regenerated))
         return regenerated
             
     except FileNotFoundError:
-        print(f"[PDF Export] JSON not found ({json_blob_name}), using original markdown")
+        logger.info("[PDF Export] JSON not found (%s), using original markdown", json_blob_name)
         return markdown_text
     except Exception as e:
-        print(f"[PDF Export] Error loading JSON for PDF optimization: {e}")
-        import traceback
-        traceback.print_exc()
+        logger.exception("[PDF Export] Error loading JSON for PDF optimization: %s", e)
         return markdown_text
 
 
@@ -680,9 +681,9 @@ async def export_json_to_excel(blob_name: str):
                 blob_props = original_blob_client.get_blob_properties()
                 if blob_props.metadata:
                     customer_name = blob_props.metadata.get("customer_name", "")
-                    print(f"[Excel Export] Customer name from metadata: {customer_name}")
+                    logger.info("[Excel Export] Customer name from metadata: %s", customer_name)
         except Exception as meta_e:
-            print(f"[Excel Export] Error fetching customer metadata: {meta_e}")
+            logger.warning("[Excel Export] Error fetching customer metadata: %s", meta_e)
 
         # Load parameters from extracted JSON, fallback to markdown parsing
         parameters: List[Dict[str, Any]] = []
@@ -692,20 +693,20 @@ async def export_json_to_excel(blob_name: str):
             params_text = storage_service.get_text_content(params_blob_name)
             params_json = json.loads(params_text)
             parameters = params_json.get("parameters", [])
-            print(f"[Excel Export] Loaded {len(parameters)} parameters from {params_blob_name}")
+            logger.info("[Excel Export] Loaded %s parameters from %s", len(parameters), params_blob_name)
         except FileNotFoundError:
-            print(f"[Excel Export] Parameters file not found ({params_blob_name}), attempting markdown extraction")
+            logger.info("[Excel Export] Parameters file not found (%s), attempting markdown extraction", params_blob_name)
             try:
                 md_blob_name = f"{original_base}_AI.md"
                 md_text = storage_service.get_text_content(md_blob_name)
                 parameters = extract_parameters_from_markdown(md_text)
-                print(f"[Excel Export] Extracted {len(parameters)} parameters from markdown")
+                logger.info("[Excel Export] Extracted %s parameters from markdown", len(parameters))
             except FileNotFoundError:
-                print(f"[Excel Export] Markdown file not found ({md_blob_name}); continuing without parameters")
+                logger.warning("[Excel Export] Markdown file not found (%s); continuing without parameters", md_blob_name)
             except Exception as md_e:
-                print(f"[Excel Export] Parameter extraction from markdown failed: {md_e}")
+                logger.warning("[Excel Export] Parameter extraction from markdown failed: %s", md_e)
         except Exception as params_e:
-            print(f"[Excel Export] Error loading parameters JSON: {params_e}")
+            logger.warning("[Excel Export] Error loading parameters JSON: %s", params_e)
 
         excel_bytes = json_to_excel(json_data, customer_name=customer_name, parameters=parameters)
 
@@ -747,7 +748,7 @@ async def export_markdown_to_pdf_enhanced(
         DeprecationWarning,
         stacklevel=2
     )
-    print("[DEPRECATED] /api/export-pdf-enhanced called. Use /api/export-pdf-v2 instead.")
+    logger.warning("[DEPRECATED] /api/export-pdf-enhanced called. Use /api/export-pdf-v2 instead.")
     if not blob_service_client:
         raise HTTPException(status_code=500, detail="Azure Blob Service client not initialized")
 
@@ -764,11 +765,11 @@ async def export_markdown_to_pdf_enhanced(
         # Regenerate markdown from JSON for PDF export (converts JSON cards to tables, removes KPIs)
         # Re-enabled to ensure Key Findings are processed correctly
         markdown_text = _get_pdf_optimized_markdown(blob_name, markdown_text)
-        print(f"[PDF Export] Regenerated markdown length: {len(markdown_text)}")
+        logger.debug("[PDF Export] Regenerated markdown length: %s", len(markdown_text))
 
         # Get enhanced CSS and HTML
         enhanced_css, body_html = _enhanced_markdown_to_html(markdown_text)
-        print(f"[PDF Export] Body HTML length: {len(body_html)}")
+        logger.debug("[PDF Export] Body HTML length: %s", len(body_html))
         
         # Post-process HTML for additional styling (skip extra page break and risk replacements for cards)
         body_html = _post_process_html(
@@ -804,7 +805,7 @@ async def export_markdown_to_pdf_enhanced(
                 # If report date is in metadata, use it
                 report_date = blob_props.metadata.get('report_date', report_date)
         except Exception as e:
-            print(f"[PDF Export] Error fetching blob metadata: {e}")
+            logger.warning("[PDF Export] Error fetching blob metadata: %s", e)
 
         # 2. Fallback: Try to extract from markdown content if still unknown
         if sid == "Unknown":
@@ -844,7 +845,7 @@ async def export_markdown_to_pdf_enhanced(
                 suffix = "th" if 11 <= day <= 13 else {1: "st", 2: "nd", 3: "rd"}.get(day % 10, "th")
                 report_date = f"{day}{suffix} {dt.strftime('%B, %Y')}"
         except Exception as e:
-            print(f"[PDF Export] Date formatting error: {e}")
+            logger.warning("[PDF Export] Date formatting error: %s", e)
 
         full_html = f"""
         <!DOCTYPE html>
@@ -1012,7 +1013,7 @@ async def export_markdown_to_pdf(
         DeprecationWarning,
         stacklevel=2
     )
-    print("[DEPRECATED] /api/export-pdf called. Use /api/export-pdf-v2 instead.")
+    logger.warning("[DEPRECATED] /api/export-pdf called. Use /api/export-pdf-v2 instead.")
     if not blob_service_client:
         raise HTTPException(status_code=500, detail="Azure Blob Service client not initialized")
 
@@ -1284,7 +1285,7 @@ async def export_json_to_pdf(
             # Assume it's a base name, try _AI.json
             json_blob_name = f"{base_name}_AI.json"
         
-        print(f"[PDF Export V2] Looking for JSON: {json_blob_name}")
+        logger.info("[PDF Export V2] Looking for JSON: %s", json_blob_name)
         
         try:
             json_text = storage_service.get_text_content(json_blob_name)
@@ -1292,7 +1293,7 @@ async def export_json_to_pdf(
             raise HTTPException(status_code=404, detail=f"JSON file {json_blob_name} not found") from None
         
         json_data = json.loads(json_text)
-        print(f"[PDF Export V2] JSON loaded, keys: {list(json_data.keys())}")
+        logger.debug("[PDF Export V2] JSON loaded, keys: %s", list(json_data.keys()))
         
         # Fetch customer_name from original PDF blob metadata
         customer_name = ""
@@ -1311,9 +1312,9 @@ async def export_json_to_pdf(
                 blob_props = original_blob_client.get_blob_properties()
                 if blob_props.metadata:
                     customer_name = blob_props.metadata.get('customer_name', '')
-                    print(f"[PDF Export V2] Customer name from metadata: {customer_name}")
+                    logger.info("[PDF Export V2] Customer name from metadata: %s", customer_name)
         except Exception as e:
-            print(f"[PDF Export V2] Error fetching customer metadata: {e}")
+            logger.warning("[PDF Export V2] Error fetching customer metadata: %s", e)
         
         # Convert JSON directly to HTML
         full_html = json_to_html(
@@ -1324,7 +1325,7 @@ async def export_json_to_pdf(
             landscape=landscape,
             customer_name=customer_name,
         )
-        print(f"[PDF Export V2] HTML generated, length: {len(full_html)}")
+        logger.debug("[PDF Export V2] HTML generated, length: %s", len(full_html))
         
         # Generate PDF
         pdf_bytes = HTML(string=full_html, base_url=".").write_pdf(

@@ -8,17 +8,21 @@ registration. All endpoint logic now resides in dedicated router modules.
 from __future__ import annotations
 
 import os
+import logging
 
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from dotenv import load_dotenv
 from azure.storage.blob import BlobServiceClient
+from core.logging_config import setup_logging
 import uvicorn
 
 # ---------------------------------------------------------------------------
 # Environment & shared clients
 # ---------------------------------------------------------------------------
 load_dotenv()
+setup_logging()
+logger = logging.getLogger(__name__)
 AZURE_STORAGE_CONNECTION_STRING = os.getenv("AZURE_STORAGE_CONNECTION_STRING")
 AZURE_STORAGE_CONTAINER_NAME = os.getenv("AZURE_STORAGE_CONTAINER_NAME")
 
@@ -31,7 +35,7 @@ try:
         AZURE_STORAGE_CONNECTION_STRING
     )
 except Exception as exc:  # pragma: no cover – continue; routers handle None
-    print(f"[WARN] Unable to initialise BlobServiceClient: {exc}")
+    logger.warning("Unable to initialise BlobServiceClient: %s", exc)
     blob_service_client = None
 
 # ---------------------------------------------------------------------------

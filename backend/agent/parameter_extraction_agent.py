@@ -7,6 +7,7 @@ from __future__ import annotations
 import os
 import json
 import asyncio
+import logging
 from typing import Dict, Any, List, Optional
 
 # Action status values for parameter classification
@@ -26,6 +27,8 @@ SCHEMA_PATH = os.path.join(os.path.dirname(os.path.abspath(__file__)), "..", "sc
 
 # Prompt file path
 PROMPT_PATH = os.path.join(os.path.dirname(os.path.abspath(__file__)), "..", "prompts", "parameter_extraction_prompt.md")
+
+logger = logging.getLogger(__name__)
 
 
 class ParameterExtractionAgent:
@@ -54,7 +57,7 @@ class ParameterExtractionAgent:
         else:
              # Fallback if file not found (though it should be there)
             self.prompt = "Error: Parameter extraction prompt file not found."
-            print(f"[ParameterExtractionAgent] Warning: Prompt file not found at {PROMPT_PATH}")
+            logger.warning("Prompt file not found at %s", PROMPT_PATH)
 
     
     async def extract(self, markdown_content: str) -> Dict[str, Any]:
@@ -118,8 +121,8 @@ class ParameterExtractionAgent:
                     })
             
             summary = self.get_summary_stats(valid_params)
-            print(f"[ParameterExtractionAgent] Extracted {len(valid_params)} valid parameters")
-            print(f"[ParameterExtractionAgent] Summary: {summary}")
+            logger.info("Extracted %s valid parameters", len(valid_params))
+            logger.debug("Summary: %s", summary)
             
             return {
                 "parameters": valid_params,
@@ -128,7 +131,7 @@ class ParameterExtractionAgent:
             }
             
         except Exception as e:
-            print(f"[ParameterExtractionAgent] Error during extraction: {e}")
+            logger.exception("Error during extraction: %s", e)
             return {"parameters": [], "extraction_notes": f"Extraction error: {str(e)}", "summary": self.get_summary_stats([])}
     
     @staticmethod
@@ -253,9 +256,9 @@ class ParameterExtractionAgent:
             if usage:
                 in_tok = getattr(usage, "input_tokens", None)
                 out_tok = getattr(usage, "output_tokens", None)
-                print(f"[ParameterExtractionAgent] Token usage: input={in_tok}, output={out_tok}")
+                logger.info("Token usage: input=%s, output=%s", in_tok, out_tok)
         except Exception:
-            pass
+            logger.exception("Failed to read token usage")
         
         # Extract structured output
         try:

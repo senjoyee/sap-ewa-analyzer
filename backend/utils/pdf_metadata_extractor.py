@@ -1,7 +1,8 @@
 """Utility functions for extracting metadata from PDF files using AI."""
 
-import os
+import json
 import re
+import logging
 import io
 from datetime import datetime
 from typing import Dict, Any
@@ -12,6 +13,8 @@ from openai import AsyncAzureOpenAI
 import fitz  # PyMuPDF
 
 from fastapi import HTTPException
+
+logger = logging.getLogger(__name__)
 
 
 # AI extraction prompt
@@ -214,7 +217,7 @@ async def extract_metadata_with_ai(pdf_bytes: bytes) -> Dict[str, Any]:
             
     except Exception as e:
         # If AI fails, continue to fallback
-        print(f"AI extraction failed: {str(e)}")
+        logger.warning("AI extraction failed: %s", e)
         pass
     
     # Fallback to regex extraction
@@ -232,7 +235,7 @@ async def extract_metadata_with_ai(pdf_bytes: bytes) -> Dict[str, Any]:
             except ValueError:
                 pass
     except Exception as e:
-        print(f"Regex fallback failed: {str(e)}")
+        logger.warning("Regex fallback failed: %s", e)
         pass
     
     # If both methods fail, raise an error

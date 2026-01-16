@@ -18,6 +18,7 @@ of documents during conversion for better analysis by AI systems.
 
 import os
 import tempfile
+import logging
 from datetime import datetime
 
 from azure.storage.blob import ContentSettings
@@ -33,6 +34,7 @@ from services.storage_service import StorageService
 # Dictionary to track the status of document conversion jobs
 # Structure: {blob_name: {"status": "pending|processing|completed|failed", "start_time": timestamp, "end_time": timestamp, "message": "message", "progress": progress_percentage}}
 conversion_status_tracker = {}
+logger = logging.getLogger(__name__)
 storage_service = StorageService()
 
 def convert_pdf_to_markdown(blob_name: str) -> dict:
@@ -161,7 +163,7 @@ def convert_pdf_to_markdown(blob_name: str) -> dict:
             "message": error_message
         })
         
-        print(error_message)
+        logger.exception(error_message)
         return {
             "error": True,
             "status": "failed",
@@ -218,8 +220,8 @@ def get_conversion_status(blob_name: str) -> dict:
 if __name__ == "__main__":
     try:
         test_file_path = r"path/to/test.pdf"  # Change this to a valid PDF path
-        print(f"Starting conversion of {test_file_path}")
+        logger.info("Starting conversion of %s", test_file_path)
         result = convert_pdf_to_markdown(test_file_path)
-        print(f"Conversion result: {result}")
+        logger.info("Conversion result: %s", result)
     except Exception as e:
-        print(f"Error in main: {e}")
+        logger.exception("Error in main: %s", e)

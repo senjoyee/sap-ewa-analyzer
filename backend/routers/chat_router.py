@@ -8,6 +8,7 @@ from __future__ import annotations
 
 import os
 import traceback
+import logging
 from typing import List, Dict, Any
 import asyncio
 
@@ -18,6 +19,8 @@ from dotenv import load_dotenv
 from services.storage_service import StorageService
 
 # Lazy import AzureOpenAI only when needed to avoid cost at module load
+
+logger = logging.getLogger(__name__)
 
 router = APIRouter(prefix="/api", tags=["chat"])
 
@@ -40,11 +43,17 @@ class ChatRequest(BaseModel):
 async def chat_with_document(request: ChatRequest):
     """Chat with a processed EWA Markdown document using Azure OpenAI GPT models."""
     # DEBUG: Log incoming request summary
-    print("----- /api/chat CALL -----")
+    logger.info("----- /api/chat CALL -----")
     try:
-        print(f"file={request.fileName}, message_len={len(request.message)}, content_len={len(request.documentContent)}, history_len={len(request.chatHistory)}")
+        logger.info(
+            "file=%s, message_len=%s, content_len=%s, history_len=%s",
+            request.fileName,
+            len(request.message),
+            len(request.documentContent),
+            len(request.chatHistory),
+        )
     except Exception as _logerr:
-        print("Logging error:", _logerr)
+        logger.warning("Logging error: %s", _logerr)
     try:
         load_dotenv()
         api_key = os.getenv("AZURE_OPENAI_API_KEY")
@@ -56,7 +65,7 @@ async def chat_with_document(request: ChatRequest):
             or os.getenv("AZURE_OPENAI_FAST_MODEL")
             or os.getenv("AZURE_OPENAI_DEPLOYMENT_NAME", "gpt-4.1")
         )
-        print(f"Azure endpoint set: {bool(azure_endpoint)}, model: {model_name}")
+        logger.info("Azure endpoint set: %s, model: %s", bool(azure_endpoint), model_name)
 
         if not api_key or not azure_endpoint:
             raise HTTPException(status_code=500, detail="Azure OpenAI environment variables missing.")
@@ -80,7 +89,7 @@ async def chat_with_document(request: ChatRequest):
                 if fetched_content:
                     doc_content = fetched_content.strip()
         except Exception as e:
-            print(f"Storage fetch failed (using fallback): {e}")
+            logger.warning("Storage fetch failed (using fallback): %s", e)
 
         if not doc_content:
             raise HTTPException(status_code=400, detail="Document content is missing. Please process the document first.")
@@ -130,7 +139,7 @@ async def chat_with_document(request: ChatRequest):
                 if usage is not None:
                     in_tok = getattr(usage, "input_tokens", None) if hasattr(usage, "input_tokens") else (usage.get("input_tokens") if isinstance(usage, dict) else None)
                     out_tok = getattr(usage, "output_tokens", None) if hasattr(usage, "output_tokens") else (usage.get("output_tokens") if isinstance(usage, dict) else None)
-                    print(f"[Chat] Token usage: input_tokens={in_tok}, output_tokens={out_tok}")
+                    logger.info("Token usage: input_tokens=%s, output_tokens=%s", in_tok, out_tok)
             except Exception:
                 pass
 
@@ -143,16 +152,14 @@ async def chat_with_document(request: ChatRequest):
                     ai_response = ""
             return {"response": ai_response}
         except Exception as api_err:
-            print("OpenAI API error:", api_err)
-            print(traceback.format_exc())
+            logger.exception("OpenAI API error: %s", api_err)
             err_text = _humanize_openai_error(api_err, model_name)
             return {"response": f"Error: {err_text}", "error": True}
 
     except HTTPException:
         raise
     except Exception as e:
-        tb = traceback.format_exc()
-        print("Chat endpoint error", tb)
+        logger.exception("Chat endpoint error: %s", e)
         raise HTTPException(status_code=500, detail="Unexpected server error in chat endpoint.")
 
 

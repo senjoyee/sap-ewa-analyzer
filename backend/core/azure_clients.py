@@ -9,10 +9,13 @@ initializing their own clients.
 from __future__ import annotations
 
 import os
+import logging
 from typing import Optional
 
 from azure.storage.blob import BlobServiceClient
 from dotenv import load_dotenv
+
+logger = logging.getLogger(__name__)
 
 # Load environment variables once
 load_dotenv()
@@ -38,7 +41,7 @@ blob_service_client: Optional[BlobServiceClient] = None
 try:
     blob_service_client = BlobServiceClient.from_connection_string(AZURE_STORAGE_CONNECTION_STRING)
 except Exception as e:
-    print(f"[WARN] Unable to initialize BlobServiceClient: {e}")
+    logger.warning("Unable to initialize BlobServiceClient: %s", e)
     blob_service_client = None
 
 
