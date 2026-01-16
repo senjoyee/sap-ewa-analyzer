@@ -102,6 +102,7 @@ class WorkflowState:
     summary_result: str = ""
     summary_json: dict = None
     parameters_json: dict = None
+    alert_index: dict = None  # Vision-extracted alerts from PDF
     error: str = ""
 
 class EWAWorkflowOrchestrator:
@@ -426,6 +427,32 @@ class EWAWorkflowOrchestrator:
                 state.error = str(conv_e)
                 return state
     
+    async def extract_alerts_step(self, state: WorkflowState) -> WorkflowState:
+        """Step 1.5: Extract alert list from PDF using vision."""
+        try:
+            logger.info("[STEP 1.5] Extracting alerts from PDF via vision for %s", state.blob_name)
+            from utils.alert_vision_extractor import extract_alerts_with_vision
+            
+            # Download PDF bytes
+            pdf_bytes = await self.download_pdf_from_blob(state.blob_name)
+            
+            # Extract alerts using vision
+            state.alert_index = await extract_alerts_with_vision(
+                pdf_bytes,
+                client=self.openai_client,
+                model=self.summary_model,
+            )
+            
+            alert_count = len(state.alert_index.get("alerts", []))
+            logger.info("[STEP 1.5] Extracted %d alerts via vision", alert_count)
+            
+            return state
+        except Exception as e:
+            # Non-fatal: log warning and continue without alert index
+            logger.warning("[STEP 1.5] Alert extraction failed (non-fatal): %s", e)
+            state.alert_index = {"alerts": [], "extraction_notes": f"Extraction failed: {str(e)}"}
+            return state
+    
 
     async def run_analysis_step(self, state: WorkflowState) -> WorkflowState:
         """Step 2: Generate comprehensive EWA analysis; then extract KPIs via image agent"""
@@ -460,6 +487,20 @@ class EWAWorkflowOrchestrator:
             text_input = (state.markdown_content or "").strip()
             if not text_input:
                 raise ValueError("Markdown content is empty; conversion must succeed before analysis.")
+
+            # Inject vision-extracted alert index if available
+            if state.alert_index and state.alert_index.get("alerts"):
+                alert_json = json.dumps(state.alert_index, indent=2)
+                alert_prefix = (
+                    "## Pre-Extracted Alert Index (Vision-Based)\n"
+                    "The following alerts were extracted from the PDF using vision analysis of the 'Alert Overview' section.\n"
+                    "Use this as the **authoritative source** for Key Findings. Each alert MUST become a Key Finding.\n"
+                    "The 'severity' field is derived from the visual icon colors (red=critical/high, yellow=medium).\n\n"
+                    f"```json\n{alert_json}\n```\n\n"
+                    "---\n\n"
+                )
+                text_input = alert_prefix + text_input
+                logger.info("[ANALYSIS] Injected %d vision-extracted alerts into prompt", len(state.alert_index["alerts"]))
 
             logger.info(
                 "[ANALYSIS] Using PROVIDER=%s, markdown input (%s chars)",
@@ -588,6 +629,9 @@ class EWAWorkflowOrchestrator:
             state = await self.download_content_step(state, skip_conversion=skip_markdown)
             if state.error:
                 raise Exception(state.error)
+            
+            # Step 1.5: Extract alerts from PDF using vision (non-fatal if fails)
+            state = await self.extract_alerts_step(state)
             
             # Run the EWA analysis using single enhanced agent
             summary_state = await self.run_analysis_step(state)
