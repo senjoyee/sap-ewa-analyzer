@@ -84,7 +84,7 @@ Important:
 
 def find_alert_pages(pdf_bytes: bytes) -> List[int]:
     """
-    Find page numbers containing "Alert Overview" or "Alerts Decisive" sections.
+    Find page numbers containing "Service Summary" chapter with alerts.
     
     Args:
         pdf_bytes: PDF file content as bytes
@@ -98,31 +98,48 @@ def find_alert_pages(pdf_bytes: bytes) -> List[int]:
         pdf_stream = io.BytesIO(pdf_bytes)
         doc = fitz.open(stream=pdf_stream, filetype="pdf")
         
-        # Keywords to search for
-        keywords = [
-            "alerts decisive for red report",
-            "alert overview",
-            "alerts overview",
-            "decisive for red",
-        ]
-        
+        # Strategy 1: Find "Service Summary" chapter (most reliable)
+        # This is typically where "Alerts Decisive for Red Report" and "Alert Overview" appear
         for page_num in range(len(doc)):
             page = doc[page_num]
-            text = page.get_text().lower()
+            text = page.get_text()
             
-            for keyword in keywords:
-                if keyword in text:
-                    if page_num not in alert_pages:
-                        alert_pages.append(page_num)
-                        logger.info("Found alert content on page %d (keyword: '%s')", page_num + 1, keyword)
-                    break
+            # Look for "Service Summary" as a chapter heading (often styled as "1 Service Summary")
+            # Use case-insensitive search
+            if re.search(r'\b\d+\s+service\s+summary\b', text, re.IGNORECASE):
+                logger.info("Found 'Service Summary' chapter on page %d", page_num + 1)
+                alert_pages.append(page_num)
+                # Also include the next page as alerts often continue there
+                if page_num + 1 < len(doc):
+                    alert_pages.append(page_num + 1)
+                    logger.info("Including continuation page %d", page_num + 2)
+                break  # Found the Service Summary, no need to continue
         
-        doc.close()
+        # Strategy 2: If Service Summary not found, fall back to keyword search
+        if not alert_pages:
+            logger.warning("'Service Summary' chapter not found, using keyword fallback")
+            keywords = [
+                "alerts decisive for red report",
+                "alert overview",
+            ]
+            
+            for page_num in range(len(doc)):
+                page = doc[page_num]
+                text = page.get_text().lower()
+                
+                for keyword in keywords:
+                    if keyword in text:
+                        if page_num not in alert_pages:
+                            alert_pages.append(page_num)
+                            logger.info("Found alert content on page %d (keyword: '%s')", page_num + 1, keyword)
+                        break
         
-        # If no pages found via keywords, try first 5 pages as fallback
+        # Strategy 3: If still no pages found, try first 5 pages as last resort
         if not alert_pages:
             logger.warning("No alert sections found via keywords, checking first 5 pages")
             alert_pages = list(range(min(5, len(doc))))
+        
+        doc.close()
         
         return alert_pages
         
