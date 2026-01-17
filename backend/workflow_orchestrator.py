@@ -102,7 +102,7 @@ class WorkflowState:
     summary_result: str = ""
     summary_json: dict = None
     parameters_json: dict = None
-    alert_index: dict = None  # Vision-extracted alerts from PDF
+    check_overview_index: dict = None  # Vision-extracted Check Overview rows from PDF
     error: str = ""
 
 class EWAWorkflowOrchestrator:
@@ -427,30 +427,30 @@ class EWAWorkflowOrchestrator:
                 state.error = str(conv_e)
                 return state
     
-    async def extract_alerts_step(self, state: WorkflowState) -> WorkflowState:
-        """Step 1.5: Extract alert list from PDF using vision."""
+    async def extract_check_overview_step(self, state: WorkflowState) -> WorkflowState:
+        """Step 1.5: Extract Check Overview table from PDF using vision."""
         try:
-            logger.info("[STEP 1.5] Extracting alerts from PDF via vision for %s", state.blob_name)
-            from utils.alert_vision_extractor import extract_alerts_with_vision
+            logger.info("[STEP 1.5] Extracting Check Overview from PDF via vision for %s", state.blob_name)
+            from utils.check_overview_vision_extractor import extract_check_overview_with_vision
             
             # Download PDF bytes
             pdf_bytes = await self.download_pdf_from_blob(state.blob_name)
             
-            # Extract alerts using vision
-            state.alert_index = await extract_alerts_with_vision(
+            # Extract Check Overview using vision
+            state.check_overview_index = await extract_check_overview_with_vision(
                 pdf_bytes,
                 client=self.openai_client,
                 model=self.summary_model,
             )
             
-            alert_count = len(state.alert_index.get("alerts", []))
-            logger.info("[STEP 1.5] Extracted %d alerts via vision", alert_count)
+            row_count = len(state.check_overview_index.get("rows", []))
+            logger.info("[STEP 1.5] Extracted %d Check Overview rows via vision", row_count)
             
             return state
         except Exception as e:
-            # Non-fatal: log warning and continue without alert index
-            logger.warning("[STEP 1.5] Alert extraction failed (non-fatal): %s", e)
-            state.alert_index = {"alerts": [], "extraction_notes": f"Extraction failed: {str(e)}"}
+            # Non-fatal: log warning and continue without Check Overview index
+            logger.warning("[STEP 1.5] Check Overview extraction failed (non-fatal): %s", e)
+            state.check_overview_index = {"rows": [], "extraction_notes": f"Extraction failed: {str(e)}"}
             return state
     
 
@@ -488,19 +488,26 @@ class EWAWorkflowOrchestrator:
             if not text_input:
                 raise ValueError("Markdown content is empty; conversion must succeed before analysis.")
 
-            # Inject vision-extracted alert index if available
-            if state.alert_index and state.alert_index.get("alerts"):
-                alert_json = json.dumps(state.alert_index, indent=2)
-                alert_prefix = (
-                    "## Pre-Extracted Alert Index (Vision-Based)\n"
-                    "The following alerts were extracted from the PDF using vision analysis of the 'Alert Overview' section.\n"
-                    "Use this as the **authoritative source** for Key Findings. Each alert MUST become a Key Finding.\n"
-                    "The 'severity' field is derived from the visual icon colors (red=critical/high, yellow=medium).\n\n"
-                    f"```json\n{alert_json}\n```\n\n"
+            # Inject vision-extracted Check Overview table if available
+            if state.check_overview_index and state.check_overview_index.get("rows"):
+                check_json = json.dumps(state.check_overview_index, indent=2)
+                check_prefix = (
+                    "## Pre-Extracted Check Overview Table (Vision-Based)\n"
+                    "The following rows were extracted from the PDF's 'Check Overview' table using vision.\n"
+                    "Use this as the **authoritative source** for findings.\n\n"
+                    "Mapping rules:\n"
+                    "- Each row has Topic, Subtopic Rating, Subtopic.\n"
+                    "- Area MUST equal Topic.\n"
+                    "- Finding/Description MUST equal Subtopic.\n"
+                    "- Green ticks (Subtopic Rating = green) become **Positive Findings** (Area + Description).\n"
+                    "- Red becomes **high** severity Key Findings; Yellow becomes **medium** severity Key Findings.\n"
+                    "- Do NOT create critical severities.\n"
+                    "- If Subtopic Rating is unknown, treat as medium severity unless the document clearly indicates otherwise.\n\n"
+                    f"```json\n{check_json}\n```\n\n"
                     "---\n\n"
                 )
-                text_input = alert_prefix + text_input
-                logger.info("[ANALYSIS] Injected %d vision-extracted alerts into prompt", len(state.alert_index["alerts"]))
+                text_input = check_prefix + text_input
+                logger.info("[ANALYSIS] Injected %d Check Overview rows into prompt", len(state.check_overview_index["rows"]))
 
             logger.info(
                 "[ANALYSIS] Using PROVIDER=%s, markdown input (%s chars)",
@@ -630,8 +637,8 @@ class EWAWorkflowOrchestrator:
             if state.error:
                 raise Exception(state.error)
             
-            # Step 1.5: Extract alerts from PDF using vision (non-fatal if fails)
-            state = await self.extract_alerts_step(state)
+            # Step 1.5: Extract Check Overview from PDF using vision (non-fatal if fails)
+            state = await self.extract_check_overview_step(state)
             
             # Run the EWA analysis using single enhanced agent
             summary_state = await self.run_analysis_step(state)

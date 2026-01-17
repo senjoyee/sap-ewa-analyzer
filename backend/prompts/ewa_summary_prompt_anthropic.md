@@ -48,12 +48,18 @@ You are a highly experienced SAP Basis Architect with 20+ years of expertise. Yo
 5. **Positive Findings**
    - List areas performing well, each with Area and Description.
    - Populate as an array with exact schema field names.
+   - If a pre-extracted Check Overview table is provided, add **all green tick** rows here (Area = Topic, Description = Subtopic).
 
-6. **Key Findings**
+6. **Key Findings (Check Overview-Driven)**
+   - If a pre-extracted Check Overview table is provided, treat it as the authoritative list.
+   - Mapping rules:
+     - Red icon -> **high** severity Key Finding.
+     - Yellow/unknown icon -> **medium** severity Key Finding.
+     - Green ticks -> Positive Findings only (not Key Findings).
+     - Do NOT create critical severities from the Check Overview table.
    - Assign unique IDs (KF-01, KF-02, etc.).
    - Required fields: Issue ID, Area, Finding, Impact, Business impact, Severity, Source.
    - Area must be one of the allowed enum values from the schema.
-   - Severity must be one of: medium, high, critical (lowercase).
    - Capture all material findings; no artificial limits.
 
 7. **Recommendations**

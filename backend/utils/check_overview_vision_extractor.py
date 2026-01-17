@@ -1,9 +1,8 @@
 """
-Alert Vision Extractor
+Check Overview Vision Extractor
 
-Extracts alert information from EWA PDF pages using vision capabilities.
-Specifically targets "Alerts Decisive for Red Report" and "Alert Overview" sections
-to identify alert headlines and their severity based on visual icon colors (Red/Yellow).
+Extracts Check Overview table rows from EWA PDF pages using vision capabilities.
+Targets the "Check Overview" table to capture Topic, Subtopic Rating, and Subtopic.
 """
 
 import io
@@ -19,36 +18,30 @@ import fitz  # PyMuPDF
 logger = logging.getLogger(__name__)
 
 # Schema for structured output
-ALERT_EXTRACTION_SCHEMA = {
+CHECK_OVERVIEW_SCHEMA = {
     "type": "object",
     "properties": {
-        "alerts": {
+        "rows": {
             "type": "array",
-            "description": "List of all alerts found in the image",
+            "description": "List of Check Overview table rows",
             "items": {
                 "type": "object",
                 "properties": {
-                    "headline": {
+                    "Topic": {
                         "type": "string",
-                        "description": "The exact alert text/headline as shown in the document"
+                        "description": "Topic column value (may repeat for multiple subtopics)"
                     },
-                    "icon_color": {
+                    "Subtopic Rating": {
                         "type": "string",
                         "enum": ["red", "yellow", "green", "unknown"],
-                        "description": "Color of the icon/indicator next to the alert"
+                        "description": "Icon color in the Subtopic Rating column"
                     },
-                    "severity": {
+                    "Subtopic": {
                         "type": "string",
-                        "enum": ["critical", "high", "medium", "low"],
-                        "description": "Severity based on icon: red->critical/high, yellow->medium, green->low"
-                    },
-                    "section": {
-                        "type": "string",
-                        "enum": ["decisive_for_red", "alert_overview", "other"],
-                        "description": "Which section this alert was found in"
+                        "description": "Subtopic column value"
                     }
                 },
-                "required": ["headline", "icon_color", "severity", "section"],
+                "required": ["Topic", "Subtopic Rating", "Subtopic"],
                 "additionalProperties": False
             }
         },
@@ -57,70 +50,65 @@ ALERT_EXTRACTION_SCHEMA = {
             "description": "Any notes about the extraction quality or issues"
         }
     },
-    "required": ["alerts", "extraction_notes"],
+    "required": ["rows", "extraction_notes"],
     "additionalProperties": False
 }
 
 VISION_PROMPT = """You are an expert at analyzing SAP EarlyWatch Alert (EWA) report pages.
 
-Analyze this image from an EWA report and extract ALL alerts visible in the "Alerts Decisive for Red Report" and "Alert Overview" sections.
+Analyze this image from an EWA report and extract ALL rows from the "Check Overview" table.
 
-For each alert, identify:
-1. **headline**: The exact text of the alert
-2. **icon_color**: The color of the icon/indicator (red flash/exclamation = "red", yellow exclamation = "yellow", green = "green")
-3. **severity**: Map icon colors as follows:
-   - Red icons (especially in "Decisive for Red" section) -> "critical" 
-   - Red icons in "Alert Overview" -> "high"
-   - Yellow icons -> "medium"
-   - Green icons -> "low"
-4. **section**: Which section contains the alert ("decisive_for_red" or "alert_overview")
+The table has four columns: "Topic Rating", "Topic", "Subtopic Rating", "Subtopic".
+Return one JSON object per row with:
+1. **Topic**: The Topic column text (repeat the last seen Topic when the cell is blank).
+2. **Subtopic Rating**: The icon color in the Subtopic Rating column (red/yellow/green).
+3. **Subtopic**: The Subtopic column text.
 
 Important:
-- Extract EVERY alert visible, do not skip any
-- Pay close attention to the icon colors - this is crucial for severity classification
-- If you cannot determine the icon color clearly, mark as "unknown" with severity "medium"
+- Ignore the "Topic Rating" column entirely.
+- Extract EVERY row that has a Subtopic Rating icon; if the Subtopic Rating icon is missing, skip the row.
+- Pay close attention to the Subtopic Rating icon colors.
+- If you cannot determine the icon color clearly, use "unknown".
 """
 
 
-def find_alert_pages(pdf_bytes: bytes) -> List[int]:
+def find_check_overview_pages(pdf_bytes: bytes) -> List[int]:
     """
-    Find page numbers containing "Service Summary" chapter with alerts.
+    Find page numbers containing the "Check Overview" table.
     
     Args:
         pdf_bytes: PDF file content as bytes
         
     Returns:
-        List of 0-indexed page numbers containing alert sections
+        List of 0-indexed page numbers containing Check Overview sections
     """
-    alert_pages = []
+    check_pages = []
     
     try:
         pdf_stream = io.BytesIO(pdf_bytes)
         doc = fitz.open(stream=pdf_stream, filetype="pdf")
         
-        # Strategy 1: Find "Service Summary" chapter (most reliable)
-        # This is typically where "Alerts Decisive for Red Report" and "Alert Overview" appear
+        # Strategy 1: Find "Check Overview" heading
         for page_num in range(len(doc)):
             page = doc[page_num]
             text = page.get_text()
             
-            # Look for "Service Summary" as a chapter heading (often styled as "1 Service Summary")
-            # Use case-insensitive search
-            if re.search(r'\b\d+\s+service\s+summary\b', text, re.IGNORECASE):
-                logger.info("Found 'Service Summary' chapter on page %d", page_num + 1)
-                alert_pages.append(page_num)
-                # Also include the next page as alerts often continue there
-                if page_num + 1 < len(doc):
-                    alert_pages.append(page_num + 1)
-                    logger.info("Including continuation page %d", page_num + 2)
-                break  # Found the Service Summary, no need to continue
+            if re.search(r'\bcheck\s+overview\b', text, re.IGNORECASE):
+                logger.info("Found 'Check Overview' table on page %d", page_num + 1)
+                check_pages.append(page_num)
+                # Include the next two pages as the table usually continues
+                for offset in (1, 2):
+                    next_page = page_num + offset
+                    if next_page < len(doc):
+                        check_pages.append(next_page)
+                        logger.info("Including continuation page %d", next_page + 1)
+                break  # Found the table, no need to continue
         
-        # Strategy 2: If Service Summary not found, fall back to keyword search
-        if not alert_pages:
-            logger.warning("'Service Summary' chapter not found, using keyword fallback")
+        # Strategy 2: If Check Overview not found, fall back to keyword search
+        if not check_pages:
+            logger.warning("'Check Overview' not found, using keyword fallback")
             keywords = [
-                "alerts decisive for red report",
-                "alert overview",
+                "check overview",
             ]
             
             for page_num in range(len(doc)):
@@ -129,22 +117,22 @@ def find_alert_pages(pdf_bytes: bytes) -> List[int]:
                 
                 for keyword in keywords:
                     if keyword in text:
-                        if page_num not in alert_pages:
-                            alert_pages.append(page_num)
-                            logger.info("Found alert content on page %d (keyword: '%s')", page_num + 1, keyword)
+                        if page_num not in check_pages:
+                            check_pages.append(page_num)
+                            logger.info("Found Check Overview on page %d (keyword: '%s')", page_num + 1, keyword)
                         break
         
         # Strategy 3: If still no pages found, try first 5 pages as last resort
-        if not alert_pages:
-            logger.warning("No alert sections found via keywords, checking first 5 pages")
-            alert_pages = list(range(min(5, len(doc))))
+        if not check_pages:
+            logger.warning("No Check Overview found via keywords, checking first 5 pages")
+            check_pages = list(range(min(5, len(doc))))
         
         doc.close()
         
-        return alert_pages
+        return check_pages
         
     except Exception as e:
-        logger.exception("Error finding alert pages: %s", e)
+        logger.exception("Error finding Check Overview pages: %s", e)
         return []
 
 
@@ -199,10 +187,10 @@ async def call_vision_api(
         images: List of (page_number, png_bytes) tuples
         
     Returns:
-        Structured alert extraction result
+        Structured Check Overview extraction result
     """
     if not images:
-        return {"alerts": [], "extraction_notes": "No images provided"}
+        return {"rows": [], "extraction_notes": "No images provided"}
     
     # Build message content with images
     content = [{"type": "input_text", "text": VISION_PROMPT}]
@@ -223,8 +211,8 @@ async def call_vision_api(
     text_format = {
         "format": {
             "type": "json_schema",
-            "name": "extract_alerts",
-            "schema": ALERT_EXTRACTION_SCHEMA,
+            "name": "extract_check_overview",
+            "schema": CHECK_OVERVIEW_SCHEMA,
             "strict": True,
         }
     }
@@ -266,20 +254,20 @@ async def call_vision_api(
             except json.JSONDecodeError:
                 pass
         
-        return {"alerts": [], "extraction_notes": "Failed to parse vision API response"}
+        return {"rows": [], "extraction_notes": "Failed to parse vision API response"}
         
     except Exception as e:
         logger.exception("Vision API call failed: %s", e)
-        return {"alerts": [], "extraction_notes": f"Vision API error: {str(e)}"}
+        return {"rows": [], "extraction_notes": f"Vision API error: {str(e)}"}
 
 
-async def extract_alerts_with_vision(
+async def extract_check_overview_with_vision(
     pdf_bytes: bytes,
     client=None,
     model: str = None,
 ) -> Dict[str, Any]:
     """
-    Main entry point: Extract alerts from PDF using vision.
+    Main entry point: Extract Check Overview table from PDF using vision.
     
     Args:
         pdf_bytes: PDF file content as bytes
@@ -287,7 +275,7 @@ async def extract_alerts_with_vision(
         model: Optional model name (defaults to gpt-4.1 which supports vision)
         
     Returns:
-        Dictionary with 'alerts' list and 'extraction_notes'
+        Dictionary with 'rows' list and 'extraction_notes'
     """
     import os
     from openai import AzureOpenAI
@@ -303,7 +291,7 @@ async def extract_alerts_with_vision(
         api_version = os.getenv("AZURE_OPENAI_API_VERSION")
         
         if not endpoint or not api_key or not api_version:
-            return {"alerts": [], "extraction_notes": "Azure OpenAI configuration missing"}
+            return {"rows": [], "extraction_notes": "Azure OpenAI configuration missing"}
         
         client = AzureOpenAI(
             api_version=api_version,
@@ -311,37 +299,40 @@ async def extract_alerts_with_vision(
             api_key=api_key,
         )
     
-    # Step 1: Find pages with alert content
-    logger.info("Searching for alert pages in PDF...")
-    alert_pages = find_alert_pages(pdf_bytes)
+    # Step 1: Find pages with Check Overview content
+    logger.info("Searching for Check Overview pages in PDF...")
+    check_pages = find_check_overview_pages(pdf_bytes)
     
-    if not alert_pages:
-        return {"alerts": [], "extraction_notes": "No alert sections found in PDF"}
+    if not check_pages:
+        return {"rows": [], "extraction_notes": "No Check Overview sections found in PDF"}
     
-    logger.info("Found %d pages with alert content: %s", len(alert_pages), [p + 1 for p in alert_pages])
+    logger.info("Found %d pages with Check Overview content: %s", len(check_pages), [p + 1 for p in check_pages])
     
     # Step 2: Render pages as images (limit to first 3 pages to control costs)
-    pages_to_render = alert_pages[:3]
+    pages_to_render = check_pages[:3]
     logger.info("Rendering %d pages as images...", len(pages_to_render))
     images = render_pages_to_images(pdf_bytes, pages_to_render)
     
     if not images:
-        return {"alerts": [], "extraction_notes": "Failed to render PDF pages as images"}
+        return {"rows": [], "extraction_notes": "Failed to render PDF pages as images"}
     
     # Step 3: Call vision API
     logger.info("Calling vision API with %d images...", len(images))
     result = await call_vision_api(client, model, images)
     
-    # Post-process: deduplicate alerts by headline
+    # Post-process: deduplicate rows by (Topic, Subtopic Rating, Subtopic)
     seen = set()
-    unique_alerts = []
-    for alert in result.get("alerts", []):
-        headline = alert.get("headline", "").strip()
-        if headline and headline not in seen:
-            seen.add(headline)
-            unique_alerts.append(alert)
+    unique_rows = []
+    for row in result.get("rows", []):
+        topic = (row.get("Topic") or "").strip()
+        rating = (row.get("Subtopic Rating") or "").strip()
+        subtopic = (row.get("Subtopic") or "").strip()
+        key = (topic, rating, subtopic)
+        if topic and subtopic and key not in seen:
+            seen.add(key)
+            unique_rows.append(row)
     
-    result["alerts"] = unique_alerts
-    logger.info("Extracted %d unique alerts via vision", len(unique_alerts))
+    result["rows"] = unique_rows
+    logger.info("Extracted %d unique Check Overview rows via vision", len(unique_rows))
     
     return result

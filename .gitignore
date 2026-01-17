@@ -86,6 +86,7 @@ mtaext.yaml
 
 # Environment credentials export
 env.json
+backend/azure_webapp_env.json
 
 scripts/deploy-local.ps1
 .gitignore
