@@ -77,26 +77,11 @@
             "pattern": "^KF-[0-9]{2}$",
             "description": "Unique key finding identifier."
           },
-          "Area":            { "type": "string", "enum": [
-              "Hardware",
-              "Operating System",
-              "Database",
-              "SAP Kernel / Basis",
-              "ABAP Stack",
-              "Java Stack",
-              "SAP HANA",
-              "Performance & Workload",
-              "Security & Compliance",
-              "Configuration & House-keeping",
-              "Interfaces / Connectivity",
-              "Backup & Recovery",
-              "Upgrade / Patch Management",
-              "Capacity & Sizing"
-            ] },
+          "Area":            { "type": "string", "description": "Exact Topic text from Check Overview." },
           "Finding":         { "type": "string" },
           "Impact":          { "type": "string", "description": "Potential technical impact." },
           "Business impact": { "type": "string", "description": "Translated business risk." },
-          "Severity":        { "type": "string", "enum": ["medium", "high", "critical"] },
+          "Severity":        { "type": "string", "enum": ["medium", "high"] },
           "Source":          { "type": "string", "description": "Report section or evidence supporting the finding." }
         }
       }
@@ -171,7 +156,7 @@
 
     "Overall Risk": {
       "type": "string",
-      "enum": ["low", "medium", "high", "critical"]
+      "enum": ["low", "medium", "high"]
     }
   },
 
