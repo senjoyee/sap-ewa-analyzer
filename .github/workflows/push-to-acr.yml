@@ -6,6 +6,7 @@ on:
       - main
       - fiori-migration
       - anthropic
+      - alert-driven-workflow
   workflow_dispatch:
 
 jobs:
