@@ -146,10 +146,10 @@ async def reprocess_document_with_ai(request: BlobNameRequest):
         logger.warning("[REPROCESS] Error deleting old AI blobs: %s", e)
         # Proceed anyway
 
-    # Run analysis again (skip conversion, use existing .md)
+    # Run analysis again (allow markdown generation if missing)
     logger.info("[REPROCESS] Starting workflow execution for %s", original_blob_name)
     try:
-        result = await ewa_orchestrator.execute_workflow(original_blob_name, skip_markdown=True)
+        result = await ewa_orchestrator.execute_workflow(original_blob_name, skip_markdown=False)
         logger.info("[REPROCESS] Workflow completed with result: %s", result)
         
         # Clear processing flag after completion (success or failure)
