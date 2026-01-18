@@ -263,6 +263,9 @@ class EWAWorkflowOrchestrator:
             logger.info("Successfully downloaded %s characters of markdown content", len(content))
             return content
             
+        except FileNotFoundError as e:
+            logger.warning("Markdown blob missing: %s", e)
+            raise
         except Exception as e:
             error_message = f"Error downloading markdown from blob storage: {str(e)}"
             logger.exception(error_message)
@@ -405,6 +408,8 @@ class EWAWorkflowOrchestrator:
                 or "blobnotfound" in error_text
                 or "does not exist" in error_text
             )
+            if missing_md:
+                logger.warning("[STEP 1] Markdown missing for %s; attempting conversion", state.blob_name)
             if skip_conversion and not missing_md:
                 state.error = error_text
                 return state
