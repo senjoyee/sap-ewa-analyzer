@@ -94,3 +94,4 @@ scripts/deploy-local.ps1
 
 extraction_prompt_optimized
 .github/copilot-instructions.md
+test_pymupdf_layout.py

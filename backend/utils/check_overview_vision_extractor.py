@@ -224,6 +224,7 @@ async def call_vision_api(
                 model=model,
                 input=[{"role": "user", "content": content}],
                 text=text_format,
+                reasoning={"effort": "high"},
                 max_output_tokens=4096,
             )
         )
