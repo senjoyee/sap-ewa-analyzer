@@ -17,6 +17,49 @@ import fitz  # PyMuPDF
 
 logger = logging.getLogger(__name__)
 
+
+def _normalize_subtopic(text: str) -> str:
+    normalized = re.sub(r"\s+", " ", text).strip().lower()
+    return re.sub(r"[^a-z0-9\s]+", "", normalized)
+
+
+def _extract_json_from_text(text: str) -> str:
+    cleaned = text.strip()
+    if cleaned.startswith("```"):
+        cleaned = re.sub(r"^```(?:json)?\s*", "", cleaned, flags=re.IGNORECASE)
+        cleaned = re.sub(r"\s*```$", "", cleaned)
+    start = cleaned.find("{")
+    end = cleaned.rfind("}")
+    if start == -1 or end == -1 or end <= start:
+        return ""
+    return cleaned[start : end + 1]
+
+
+def _extract_text_from_response_output(output_items) -> str:
+    if not output_items:
+        return ""
+    chunks: List[str] = []
+    for item in output_items:
+        if isinstance(item, dict):
+            content = item.get("content") or []
+        else:
+            content = getattr(item, "content", None) or []
+        if isinstance(content, str):
+            chunks.append(content)
+            continue
+        for part in content:
+            if isinstance(part, dict):
+                part_type = part.get("type")
+                text_value = part.get("text")
+            else:
+                part_type = getattr(part, "type", None)
+                text_value = getattr(part, "text", None)
+            if isinstance(text_value, dict):
+                text_value = text_value.get("value") or text_value.get("text")
+            if part_type in {"output_text", "text"} and text_value:
+                chunks.append(text_value)
+    return "\n".join(chunks)
+
 # Schema for structured output
 CHECK_OVERVIEW_SCHEMA = {
     "type": "object",
@@ -54,21 +97,37 @@ CHECK_OVERVIEW_SCHEMA = {
     "additionalProperties": False
 }
 
-VISION_PROMPT = """You are an expert at analyzing SAP EarlyWatch Alert (EWA) report pages.
+VISION_PROMPT = """You are an expert technical analyst. 
+Your goal is to extract specific findings from the "Check Overview" table by validating text against visual markers.
 
-Analyze this image from an EWA report and extract ALL rows from the "Check Overview" table.
+### 1. THE STRATEGY: "VERIFY LEFT"
+Instead of looking for icons first, you must scan the **Text Description Column** (Column 4) and validate each entry.
 
-The table has four columns: "Topic Rating", "Topic", "Subtopic Rating", "Subtopic".
-Return one JSON object per row with:
-1. **Topic**: The Topic column text (repeat the last seen Topic when the cell is blank).
-2. **Subtopic Rating**: The icon color in the Subtopic Rating column (red/yellow/green).
-3. **Subtopic**: The Subtopic column text.
+**Step 1: Identify Text Blocks**
+- Scan down the right-most column (Column 4). Identify every distinct block of text.
 
-Important:
-- Ignore the "Topic Rating" column entirely.
-- Extract EVERY row that has a Subtopic Rating icon; if the Subtopic Rating icon is missing, skip the row.
-- Pay close attention to the Subtopic Rating icon colors.
-- If you cannot determine the icon color clearly, use "unknown".
+**Step 2: The "Look Left" Test (CRITICAL)**
+- For each text block, look at the cell **immediately to its left** (Column 3).
+- **IS THERE A RATING ICON IN COLUMN 3?** (Checkmark, Square, Triangle, Circle).
+    - **YES:** This is a valid finding. Extract the Text, the Icon Color, and the Main Topic (from Col 2).
+    - **NO:** This is a **SECTION HEADER** or a continuation line. **IGNORE IT COMPLETELY.**
+
+### 2. SPECIFIC CONSTRAINTS
+- **Headers are NOT Findings:** Text like "Workload Distribution SHP" or "Management of SHP" usually appears in Col 4 but has **NO icon** in Col 3 (the icon is far left in Col 1). You must **SKIP** these.
+- **Strict Association:** Never associate a text block with an icon that sits *above* or *below* it. The icon must be on the **same horizontal row** to the left.
+- **Topic Inheritance:** Once you find a valid row, if the Topic Name (Col 2) is blank, use the last seen Topic Name from above.
+
+### 3. OUTPUT FORMAT
+Return a JSON list. Each object must contain:
+- `Topic`: The Topic Name (Col 2).
+- `Subtopic_Rating`: The color of the icon in Col 3 (red, yellow, green).
+- `Subtopic`: The Text from Col 4.
+
+**Processing Logic:**
+1. Find Text.
+2. Look Left -> Icon?
+3. If Icon exists -> Output Row.
+4. If No Icon -> Skip.
 """
 
 
@@ -136,14 +195,14 @@ def find_check_overview_pages(pdf_bytes: bytes) -> List[int]:
         return []
 
 
-def render_pages_to_images(pdf_bytes: bytes, page_numbers: List[int], dpi: int = 150) -> List[Tuple[int, bytes]]:
+def render_pages_to_images(pdf_bytes: bytes, page_numbers: List[int], dpi: int = 300) -> List[Tuple[int, bytes]]:
     """
     Render specific PDF pages as PNG images.
     
     Args:
         pdf_bytes: PDF file content as bytes
         page_numbers: List of 0-indexed page numbers to render
-        dpi: Resolution for rendering (default 150 for good quality/size balance)
+        dpi: Resolution for rendering (default 300 for higher fidelity)
         
     Returns:
         List of tuples (page_number, png_bytes)
@@ -171,6 +230,18 @@ def render_pages_to_images(pdf_bytes: bytes, page_numbers: List[int], dpi: int =
         logger.exception("Error rendering pages to images: %s", e)
     
     return images
+
+
+def _get_total_pages(pdf_bytes: bytes) -> int:
+    try:
+        pdf_stream = io.BytesIO(pdf_bytes)
+        doc = fitz.open(stream=pdf_stream, filetype="pdf")
+        total_pages = len(doc)
+        doc.close()
+        return total_pages
+    except Exception as e:
+        logger.exception("Error counting PDF pages: %s", e)
+        return 0
 
 
 async def call_vision_api(
@@ -207,7 +278,14 @@ async def call_vision_api(
             "text": f"[Page {page_num + 1}]"
         })
     
-    # Prepare structured output format
+    response_format = {
+        "type": "json_schema",
+        "json_schema": {
+            "name": "extract_check_overview",
+            "schema": CHECK_OVERVIEW_SCHEMA,
+            "strict": True,
+        },
+    }
     text_format = {
         "format": {
             "type": "json_schema",
@@ -219,15 +297,26 @@ async def call_vision_api(
     
     try:
         # Call API using responses endpoint
-        response = await asyncio.to_thread(
-            lambda: client.responses.create(
-                model=model,
-                input=[{"role": "user", "content": content}],
-                text=text_format,
-                reasoning={"effort": "high"},
-                max_output_tokens=4096,
+        try:
+            response = await asyncio.to_thread(
+                lambda: client.responses.create(
+                    model=model,
+                    input=[{"role": "user", "content": content}],
+                    response_format=response_format,
+                    reasoning={"effort": "none"},
+                    max_output_tokens=8192,
+                )
             )
-        )
+        except TypeError:
+            response = await asyncio.to_thread(
+                lambda: client.responses.create(
+                    model=model,
+                    input=[{"role": "user", "content": content}],
+                    text=text_format,
+                    reasoning={"effort": "none"},
+                    max_output_tokens=8192,
+                )
+            )
         
         # Log token usage
         try:
@@ -242,18 +331,34 @@ async def call_vision_api(
         # Extract structured output
         parsed = getattr(response, "output_parsed", None)
         if parsed is not None:
+            if hasattr(parsed, "model_dump"):
+                return parsed.model_dump()
             if isinstance(parsed, dict):
                 return parsed
             if isinstance(parsed, list) and len(parsed) == 1 and isinstance(parsed[0], dict):
                 return parsed[0]
+            if isinstance(parsed, list) and len(parsed) == 1 and hasattr(parsed[0], "model_dump"):
+                return parsed[0].model_dump()
         
         # Fallback to output_text
         text = getattr(response, "output_text", None)
+        if not text:
+            text = _extract_text_from_response_output(getattr(response, "output", None))
         if text:
+            logger.debug("Vision API raw output_text: %s", text)
             try:
                 return json.loads(text)
-            except json.JSONDecodeError:
-                pass
+            except json.JSONDecodeError as json_err:
+                logger.warning("Failed to parse vision output_text as JSON: %s", json_err)
+                logger.debug("Vision API output_text snippet: %s", text[:500])
+                candidate = _extract_json_from_text(text)
+                if candidate:
+                    try:
+                        return json.loads(candidate)
+                    except json.JSONDecodeError as candidate_err:
+                        logger.warning("Failed to parse extracted JSON content: %s", candidate_err)
+        else:
+            logger.debug("Vision API response output (no text extracted): %s", repr(getattr(response, "output", None))[:1000])
         
         return {"rows": [], "extraction_notes": "Failed to parse vision API response"}
         
@@ -300,18 +405,17 @@ async def extract_check_overview_with_vision(
             api_key=api_key,
         )
     
-    # Step 1: Find pages with Check Overview content
-    logger.info("Searching for Check Overview pages in PDF...")
-    check_pages = find_check_overview_pages(pdf_bytes)
-    
-    if not check_pages:
-        return {"rows": [], "extraction_notes": "No Check Overview sections found in PDF"}
-    
-    logger.info("Found %d pages with Check Overview content: %s", len(check_pages), [p + 1 for p in check_pages])
-    
-    # Step 2: Render pages as images (limit to first 3 pages to control costs)
-    pages_to_render = check_pages[:3]
-    logger.info("Rendering %d pages as images...", len(pages_to_render))
+    # Step 1: Always render the first 5 pages (assume Check Overview spans at least 2 pages)
+    total_pages = _get_total_pages(pdf_bytes)
+    if total_pages <= 0:
+        return {"rows": [], "extraction_notes": "Unable to determine PDF page count"}
+
+    pages_to_render = list(range(min(5, total_pages)))
+    logger.info(
+        "Rendering first %d pages as images for Check Overview extraction: %s",
+        len(pages_to_render),
+        [p + 1 for p in pages_to_render],
+    )
     images = render_pages_to_images(pdf_bytes, pages_to_render)
     
     if not images:
@@ -320,20 +424,21 @@ async def extract_check_overview_with_vision(
     # Step 3: Call vision API
     logger.info("Calling vision API with %d images...", len(images))
     result = await call_vision_api(client, model, images)
-    
-    # Post-process: deduplicate rows by (Topic, Subtopic Rating, Subtopic)
-    seen = set()
-    unique_rows = []
+
+    cleaned_rows = []
     for row in result.get("rows", []):
-        topic = (row.get("Topic") or "").strip()
-        rating = (row.get("Subtopic Rating") or "").strip()
-        subtopic = (row.get("Subtopic") or "").strip()
-        key = (topic, rating, subtopic)
-        if topic and subtopic and key not in seen:
-            seen.add(key)
-            unique_rows.append(row)
-    
-    result["rows"] = unique_rows
-    logger.info("Extracted %d unique Check Overview rows via vision", len(unique_rows))
-    
+        subtopic = row.get("Subtopic")
+        if isinstance(subtopic, str):
+            row["Subtopic"] = re.sub(r"\s*\*+$", "", subtopic).strip()
+
+        topic = row.get("Topic")
+        if isinstance(topic, str) and isinstance(row.get("Subtopic"), str):
+            if topic.strip().lower() == row["Subtopic"].strip().lower():
+                continue
+
+        cleaned_rows.append(row)
+
+    result["rows"] = cleaned_rows
+    logger.info("Extracted %d Check Overview rows via vision", len(result.get("rows", [])))
+
     return result
