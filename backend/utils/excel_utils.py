@@ -6,6 +6,7 @@ Generates professionally formatted Excel workbooks from EWA JSON.
 from __future__ import annotations
 
 import io
+import re
 from typing import Any, Dict, List, Optional
 from datetime import datetime
 
