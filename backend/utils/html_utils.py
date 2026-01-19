@@ -82,6 +82,14 @@ def get_pdf_css() -> str:
         li {
             margin-bottom: 6px;
         }
+
+        .positive-summary {
+            margin: 6px 0 12px 0;
+        }
+
+        .positive-summary ul {
+            margin-top: 8px;
+        }
         
         /* Enhanced tables */
         table {
@@ -470,6 +478,55 @@ def _text_to_bullet_html(text: str) -> str:
     return _escape(text)
 
 
+def _group_positive_findings(findings: List[Dict[str, Any]]) -> List[tuple[str, List[str]]]:
+    """Group positive findings by area while preserving order."""
+    groups: Dict[str, Dict[str, Any]] = {}
+    order: List[str] = []
+    for item in findings:
+        area_raw = item.get("Area", item.get("area")) or "General"
+        area = str(area_raw).strip() or "General"
+        key = area.lower()
+        if key not in groups:
+            groups[key] = {"label": area, "items": [], "seen": set()}
+            order.append(key)
+
+        desc_raw = item.get("Description", item.get("description")) or ""
+        desc = str(desc_raw).strip()
+        if desc:
+            normalized = re.sub(r"\s+", " ", desc).strip().lower()
+            if normalized and normalized not in groups[key]["seen"]:
+                groups[key]["items"].append(desc)
+                groups[key]["seen"].add(normalized)
+
+    return [(groups[k]["label"], groups[k]["items"]) for k in order]
+
+
+def _render_positive_findings_summary(findings: List[Dict[str, Any]]) -> str:
+    """Render a grouped summary of positive findings by area."""
+    groups = _group_positive_findings(findings)
+    if not groups:
+        return ""
+
+    items: List[str] = []
+    for area, descs in groups:
+        if not descs:
+            continue
+        bullets = "".join(f"<li>{_escape(desc)}</li>" for desc in descs)
+        items.append(
+            f"<li><strong>{_escape(area)}</strong><ul>{bullets}</ul></li>"
+        )
+
+    if not items:
+        return ""
+
+    return (
+        "<div class=\"positive-summary\">"
+        "<p><strong>Summary by Area</strong></p>"
+        f"<ul>{''.join(items)}</ul>"
+        "</div>"
+    )
+
+
 def _render_table(headers: List[str], rows: List[List[str]]) -> str:
     """Render an HTML table."""
     html_parts = ['<table>']
@@ -655,19 +712,12 @@ def _render_positive_findings(data: Dict[str, Any]) -> str:
     findings = data.get("Positive Findings", data.get("positive_findings", []))
     if not findings:
         return '<h2>Positive Findings</h2><p>No positive findings provided.</p><hr>'
-    
-    # Get headers from first item
-    if findings:
-        headers = list(findings[0].keys())
-        rows = []
-        for item in findings:
-            row = [_escape(str(item.get(h, "N/A"))) for h in headers]
-            rows.append(row)
-        table = _render_table(headers, rows)
-    else:
-        table = "<p>No positive findings provided.</p>"
-    
-    return f'<h2>Positive Findings</h2>{table}<hr>'
+
+    summary_html = _render_positive_findings_summary(findings)
+    if not summary_html:
+        return '<h2>Positive Findings</h2><p>No positive findings provided.</p><hr>'
+
+    return f'<h2>Positive Findings</h2>{summary_html}<hr>'
 
 
 def _render_findings_and_recommendations(data: Dict[str, Any]) -> str:

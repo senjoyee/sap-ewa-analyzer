@@ -245,27 +245,55 @@ def _write_positive_findings_sheet(ws: Worksheet, data: Dict[str, Any], styles: 
         ws["A3"] = "No positive findings recorded."
         return
     
-    # Headers
-    headers = ["Area", "Description"]
-    for col, header in enumerate(headers, 1):
-        cell = ws.cell(row=3, column=col, value=header)
-        _apply_header_style(cell, styles)
-    
-    # Data rows
-    for row_idx, finding in enumerate(findings, 4):
-        area = finding.get("Area", finding.get("area", ""))
-        desc = finding.get("Description", finding.get("description", ""))
-        
-        cell_a = ws.cell(row=row_idx, column=1, value=area)
-        cell_b = ws.cell(row=row_idx, column=2, value=desc)
-        
-        alt_row = (row_idx - 4) % 2 == 1
-        _apply_data_style(cell_a, styles, alt_row)
-        _apply_data_style(cell_b, styles, alt_row)
+    summary_groups = _group_positive_findings(findings)
+    current_row = 3
+
+    if summary_groups:
+        ws[f"A{current_row}"] = "Summary by Area"
+        ws[f"A{current_row}"].font = Font(name="Calibri", size=12, bold=True, color=COLORS["sap_dark"])
+        ws.merge_cells(f"A{current_row}:B{current_row}")
+        current_row += 1
+
+        for area, descriptions in summary_groups:
+            summary_text = "\n".join(f"- {desc}" for desc in descriptions)
+            cell_a = ws.cell(row=current_row, column=1, value=area)
+            cell_b = ws.cell(row=current_row, column=2, value=summary_text)
+
+            cell_a.font = styles["label"].font
+            _apply_data_style(cell_b, styles)
+            cell_b.alignment = Alignment(horizontal="left", vertical="top", wrap_text=True)
+            current_row += 1
+    else:
+        ws[f"A{current_row}"] = "No positive findings recorded."
+        ws[f"A{current_row}"].font = styles["value"].font
+        ws.merge_cells(f"A{current_row}:B{current_row}")
     
     # Column widths
     ws.column_dimensions["A"].width = 25
     ws.column_dimensions["B"].width = 80
+
+
+def _group_positive_findings(findings: List[Dict[str, Any]]) -> List[tuple[str, List[str]]]:
+    """Group positive findings by area while preserving order."""
+    groups: Dict[str, Dict[str, Any]] = {}
+    order: List[str] = []
+    for item in findings:
+        area_raw = item.get("Area", item.get("area", "")) or "General"
+        area = str(area_raw).strip() or "General"
+        key = area.lower()
+        if key not in groups:
+            groups[key] = {"label": area, "items": [], "seen": set()}
+            order.append(key)
+
+        desc_raw = item.get("Description", item.get("description", "")) or ""
+        desc = str(desc_raw).strip()
+        if desc:
+            normalized = re.sub(r"\s+", " ", desc).strip().lower()
+            if normalized and normalized not in groups[key]["seen"]:
+                groups[key]["items"].append(desc)
+                groups[key]["seen"].add(normalized)
+
+    return [(groups[k]["label"], groups[k]["items"]) for k in order]
 
 
 def _write_findings_and_recommendations_sheet(ws: Worksheet, data: Dict[str, Any], styles: Dict[str, NamedStyle]):
