@@ -108,12 +108,32 @@
                             <Select
                                 id="customerFilter"
                                 forceSelection="true"
-                                change=".onCustomerFilterChange"
+                                change=".onFilterChange"
                                 items="{customers>/customers}"
                                 selectedKey="{view>/selectedCustomer}"
                                 width="200px"
                                 class="sapUiSmallMarginEnd">
                                 <core:Item key="{customers>key}" text="{customers>text}"/>
+                            </Select>
+                            <Select
+                                id="yearFilter"
+                                forceSelection="true"
+                                change=".onFilterChange"
+                                items="{years>/years}"
+                                selectedKey="{view>/selectedYear}"
+                                width="150px"
+                                class="sapUiSmallMarginEnd">
+                                <core:Item key="{years>key}" text="{years>text}"/>
+                            </Select>
+                            <Select
+                                id="monthFilter"
+                                forceSelection="true"
+                                change=".onFilterChange"
+                                items="{months>/months}"
+                                selectedKey="{view>/selectedMonth}"
+                                width="150px"
+                                class="sapUiSmallMarginEnd">
+                                <core:Item key="{months>key}" text="{months>text}"/>
                             </Select>
                             <ToolbarSeparator/>
                             <Button text="{i18n>process}" icon="sap-icon://activate" press=".onBatchProcessPress" type="Accept" enabled="{= ${selectedFiles>/count} > 0 }"/>

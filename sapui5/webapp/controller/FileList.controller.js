@@ -74,7 +74,30 @@ sap.ui.define([
                     { key: "ASAHI", text: "ASAHI" }
                 ]
             }), "customers");
-            this.getView().setModel(new JSONModel({ selectedCustomer: "ALL" }), "view");
+
+            this.getView().setModel(new JSONModel({ selectedCustomer: "ALL", selectedYear: "ALL", selectedMonth: "ALL" }), "view");
+
+            this.getView().setModel(new JSONModel({
+                years: [{ key: "ALL", text: "All Years" }]
+            }), "years");
+
+            this.getView().setModel(new JSONModel({
+                months: [
+                    { key: "ALL", text: "All Months" },
+                    { key: "0", text: "January" },
+                    { key: "1", text: "February" },
+                    { key: "2", text: "March" },
+                    { key: "3", text: "April" },
+                    { key: "4", text: "May" },
+                    { key: "5", text: "June" },
+                    { key: "6", text: "July" },
+                    { key: "7", text: "August" },
+                    { key: "8", text: "September" },
+                    { key: "9", text: "October" },
+                    { key: "10", text: "November" },
+                    { key: "11", text: "December" }
+                ]
+            }), "months");
             this.getView().setModel(new JSONModel({ expanded: false }), "uploadPanel");
             this._loadFiles();
 
@@ -82,18 +105,28 @@ sap.ui.define([
             this._intervalId = setInterval(this._loadFiles.bind(this), 10000);
         },
 
-        onCustomerFilterChange: function (oEvent) {
-            var sKey = oEvent.getParameter("selectedItem").getKey();
-            var oTable = this.byId("filesTable");
-            var oBinding = oTable.getBinding("items");
+        onFilterChange: function () {
+            var oView = this.getView().getModel("view");
+            var sCustomer = oView.getProperty("/selectedCustomer");
+            var sYear = oView.getProperty("/selectedYear");
+            var sMonth = oView.getProperty("/selectedMonth");
+
             var aFilters = [];
 
-            if (sKey && sKey !== "ALL") {
-                // Filter by customer name
-                // Note: The 'customer' property in the file model contains the name (text), which matches our keys
-                aFilters.push(new Filter("customer", FilterOperator.EQ, sKey));
+            if (sCustomer && sCustomer !== "ALL") {
+                aFilters.push(new Filter("customer", FilterOperator.EQ, sCustomer));
             }
 
+            if (sYear && sYear !== "ALL") {
+                aFilters.push(new Filter("reportYear", FilterOperator.EQ, parseInt(sYear)));
+            }
+
+            if (sMonth !== null && sMonth !== undefined && sMonth !== "ALL") {
+                aFilters.push(new Filter("reportMonth", FilterOperator.EQ, parseInt(sMonth)));
+            }
+
+            var oTable = this.byId("filesTable");
+            var oBinding = oTable.getBinding("items");
             oBinding.filter(aFilters);
         },
 
@@ -135,7 +168,9 @@ sap.ui.define([
                             customer: oFile.customer_name,
                             status: sStatus, // "Analyzed", "Processing", "New"
                             uploadDate: oFile.last_modified ? new Date(oFile.last_modified) : null,
-                            reportDate: oFile.report_date ? new Date(oFile.report_date) : null
+                            reportDate: oFile.report_date ? new Date(oFile.report_date) : null,
+                            reportYear: oFile.report_date ? new Date(oFile.report_date).getFullYear() : null,
+                            reportMonth: oFile.report_date ? new Date(oFile.report_date).getMonth() : null
                         };
                     });
                     // Sort by customer then upload date desc for stable grouping
@@ -149,6 +184,20 @@ sap.ui.define([
                         return timeB - timeA;
                     });
                     this.getView().getModel("files").setData(aFiles);
+
+                    // Extract unique years for filter
+                    var oYearsSet = new Set();
+                    aFiles.forEach(function (f) {
+                        if (f.reportYear) {
+                            oYearsSet.add(f.reportYear);
+                        }
+                    });
+
+                    var aYearItems = [{ key: "ALL", text: "All Years" }];
+                    Array.from(oYearsSet).sort().reverse().forEach(function (y) {
+                        aYearItems.push({ key: y.toString(), text: y.toString() });
+                    });
+                    this.getView().getModel("years").setData({ years: aYearItems });
                 })
                 .catch(err => console.error("Failed to load files", err));
         },

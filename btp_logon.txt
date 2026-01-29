@@ -1,0 +1,1 @@
+cf8 login -a https://api.cf.eu10-004.hana.ondemand.com --sso
