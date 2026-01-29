@@ -6,19 +6,25 @@ $ErrorActionPreference = "Stop"
 
 Write-Host "--- 1. Cleaning up old artifacts ---" -ForegroundColor Cyan
 if (Test-Path "mta_archives") { Remove-Item -Recurse -Force "mta_archives" }
-if (Test-Path "ewaanalyzer-1.0.0") { Remove-Item -Recurse -Force "ewaanalyzer-1.0.0" }
+if (Test-Path "sapui5/dist") { Remove-Item -Recurse -Force "sapui5/dist" }
+if (Test-Path "ui-deployer/resources") { Remove-Item -Recurse -Force "ui-deployer/resources" }
 
 Write-Host "--- 2. Building MTA Archive (this may take a few minutes) ---" -ForegroundColor Cyan
-mbt build -p=cf
+# We specify the mtar name to avoid versioning issues in the deployment step
+mbt build -t ./mta_archives --mtar ewa_analyzer.mtar
 
 Write-Host "--- 3. Deploying to SAP BTP ---" -ForegroundColor Cyan
 # If you have a local mtaext.yaml for credentials, it will be used.
+$params = @("deploy", "mta_archives/ewa_analyzer.mtar", "-f")
 if (Test-Path "mtaext.yaml") {
     Write-Host "Using local mtaext.yaml for deployment..." -ForegroundColor Yellow
-    cf8 deploy mta_archives/ewa-analyzer_1.0.0.mtar -e mtaext.yaml
+    $params += "-e"
+    $params += "mtaext.yaml"
 } else {
     Write-Host "No mtaext.yaml found. Deploying with default configuration..." -ForegroundColor Yellow
-    cf8 deploy mta_archives/ewa-analyzer_1.0.0.mtar
 }
+
+Write-Host "Executing: cf8 $params" -ForegroundColor DarkGray
+cf8 $params
 
 Write-Host "--- Deployment Complete! ---" -ForegroundColor Green

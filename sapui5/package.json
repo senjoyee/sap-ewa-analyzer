@@ -4,9 +4,10 @@
   "description": "SAP EWA Analyzer UI5 Application",
   "scripts": {
     "start": "ui5 serve -o index.html",
-    "build": "ui5 build --clean-dest --dest dist"
+    "build": "ui5 build --clean-dest --dest dist && node zip-build.js"
   },
   "devDependencies": {
-    "@ui5/cli": "^3.0.0"
+    "@ui5/cli": "^3.0.0",
+    "adm-zip": "^0.5.10"
   }
 }

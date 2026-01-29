@@ -65,21 +65,21 @@ sap.ui.define([
             this.getView().setBusy(true);
 
             fetch(sUrl)
-                .then(function(response) {
+                .then(function (response) {
                     if (!response.ok) throw new Error("Analysis JSON not found");
                     return response.json();
                 })
-                .then(function(data) {
+                .then(function (data) {
                     that._oAnalysisData = data;
                     that._renderFromJson(data);
                     that._extractMetadataFromJson(data);
                     // Also load MD for chat context (non-blocking)
                     that._loadMdForChat();
                 })
-                .catch(function(err) {
+                .catch(function (err) {
                     MessageBox.error("Failed to load analysis: " + err.message);
                 })
-                .finally(function() {
+                .finally(function () {
                     that.getView().setBusy(false);
                 });
         },
@@ -88,14 +88,14 @@ sap.ui.define([
             var sUrl = Config.getDownloadUrl(this._sMdName);
             var that = this;
             fetch(sUrl)
-                .then(function(response) {
+                .then(function (response) {
                     if (response.ok) return response.text();
                     return "";
                 })
-                .then(function(text) {
+                .then(function (text) {
                     that._sDocumentContent = text;
                 })
-                .catch(function() {
+                .catch(function () {
                     // Fallback: stringify JSON for chat
                     that._sDocumentContent = JSON.stringify(that._oAnalysisData, null, 2);
                 });
@@ -104,14 +104,14 @@ sap.ui.define([
         _extractMetadataFromJson: function (data) {
             var oModel = this.getView().getModel("analysis");
             var meta = data["System Metadata"] || data.system_metadata || {};
-            
+
             oModel.setProperty("/title", meta["System ID"] || meta.system_id || this._sBaseName.replace(/_/g, " "));
             oModel.setProperty("/reportDate", meta["Report Date"] || meta.report_date || new Date().toLocaleDateString());
             oModel.setProperty("/analysisPeriod", meta["Analysis Period"] || meta.analysis_period || "");
             oModel.setProperty("/customer", meta["Customer"] || meta.customer || "");
 
             var sRisk = (data["Overall Risk"] || data.overall_risk || "low").toLowerCase();
-            
+
             if (sRisk === "critical") {
                 oModel.setProperty("/overallRisk", "Critical");
                 oModel.setProperty("/riskState", "Error");
@@ -446,7 +446,7 @@ sap.ui.define([
 
             // Build content
             var htmlContent = "";
-            
+
             if (findingText) {
                 htmlContent += "<div class='field-group'><strong>Finding:</strong><div>" + this._textToHtml(findingText) + "</div></div>";
             }
@@ -471,7 +471,7 @@ sap.ui.define([
                     htmlContent += "<div class='field-group'><strong>Preventative Action:</strong><div>" + this._textToHtml(preventative) + "</div></div>";
                 }
                 if (effort) {
-                    var effortText = typeof effort === "object" 
+                    var effortText = typeof effort === "object"
                         ? "Analysis: " + (effort.analysis || "N/A") + ", Implementation: " + (effort.implementation || "N/A")
                         : effort;
                     htmlContent += "<div class='field-group'><strong>Estimated Effort:</strong> " + effortText + "</div>";
@@ -516,7 +516,7 @@ sap.ui.define([
 
             // Build content
             var htmlContent = "";
-            
+
             if (findingText) {
                 htmlContent += "<div class='field-group'><strong>Finding:</strong><div>" + this._textToHtml(findingText) + "</div></div>";
             }
@@ -541,7 +541,7 @@ sap.ui.define([
                     htmlContent += "<div class='field-group'><strong>Preventative Action:</strong><div>" + this._textToHtml(preventative) + "</div></div>";
                 }
                 if (effort) {
-                    var effortText = typeof effort === "object" 
+                    var effortText = typeof effort === "object"
                         ? "Analysis: " + (effort.analysis || "N/A") + ", Implementation: " + (effort.implementation || "N/A")
                         : effort;
                     htmlContent += "<div class='field-group'><strong>Estimated Effort:</strong> " + effortText + "</div>";
@@ -1001,8 +1001,9 @@ sap.ui.define([
                                     items: [
                                         new VBox({
                                             items: [
-                                                new FormattedText({
-                                                    htmlText: "{analysis>html}"
+                                                new HTML({
+                                                    content: "{analysis>html}",
+                                                    sanitizeContent: false
                                                 }).addStyleClass("chatFormattedText")
                                             ]
                                         }).addStyleClass("chatBubbleUser")
@@ -1015,8 +1016,9 @@ sap.ui.define([
                                     items: [
                                         new VBox({
                                             items: [
-                                                new FormattedText({
-                                                    htmlText: "{analysis>html}"
+                                                new HTML({
+                                                    content: "{analysis>html}",
+                                                    sanitizeContent: false
                                                 }).addStyleClass("chatFormattedText")
                                             ]
                                         }).addStyleClass("chatBubbleBot")
@@ -1029,8 +1031,9 @@ sap.ui.define([
                                     items: [
                                         new VBox({
                                             items: [
-                                                new FormattedText({
-                                                    htmlText: "{analysis>html}"
+                                                new HTML({
+                                                    content: "{analysis>html}",
+                                                    sanitizeContent: false
                                                 }).addStyleClass("chatFormattedText")
                                             ]
                                         }).addStyleClass("chatBubbleSystem")

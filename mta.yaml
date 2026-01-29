@@ -35,6 +35,41 @@ modules:
           url: ${default-url}
 
   # ---------------------------------------------------------------------------
+  # UI Application (SAPUI5)
+  # ---------------------------------------------------------------------------
+  - name: ewa-analyzer-ui
+    type: html5
+    path: sapui5
+    parameters:
+      buildpack: nodejs_buildpack
+      memory: 256M
+    build-parameters:
+      builder: custom
+      commands:
+        - npm install
+        - npm run build
+      supported-platforms: []
+      build-result: dist
+
+  # ---------------------------------------------------------------------------
+  # UI Deployer (Deploys UI to HTML5 Repo)
+  # ---------------------------------------------------------------------------
+  - name: ewa-analyzer-ui-deployer
+    type: com.sap.application.content
+    path: ui-deployer
+    requires:
+      - name: ewaanalyzer-repo-host
+        parameters:
+          content-target: true
+    build-parameters:
+      build-result: resources
+      requires:
+        - name: ewa-analyzer-ui
+          artifacts:
+            - 'ewa-analyzer-ui.zip'
+          target-path: resources/
+
+  # ---------------------------------------------------------------------------
   # AppRouter (Entry point, Auth, Reverse Proxy)
   # ---------------------------------------------------------------------------
   - name: ewa-analyzer-approuter
