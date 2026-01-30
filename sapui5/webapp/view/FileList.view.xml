@@ -183,7 +183,7 @@
                                         visible="false"/>
                                     <Button
                                         tooltip="{i18n>chatTitle}"
-                                        icon="sap-icon://response"
+                                        icon="sap-icon://discussion"
                                         type="Transparent"
                                         press=".onChatPress"
                                         class="sapUiTinyMarginBegin"

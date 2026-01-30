@@ -57,7 +57,7 @@ body {
 
 /* No Data Text - Increased Weight and Visibility */
 .sapMListNoDataText {
-    font-weight: 600 !important;
+    font-weight: 700 !important;
     font-size: 0.9375rem !important;
     color: #4b5563 !important;
 }
