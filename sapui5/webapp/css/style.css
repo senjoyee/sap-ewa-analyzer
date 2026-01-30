@@ -2,7 +2,7 @@
 @font-face {
     font-family: "72";
     src: url("https://sapui5.hana.ondemand.com/resources/sap/ui/core/themes/base/fonts/72-Regular.woff2") format("woff2"),
-         url("https://sapui5.hana.ondemand.com/resources/sap/ui/core/themes/base/fonts/72-Regular.woff") format("woff");
+        url("https://sapui5.hana.ondemand.com/resources/sap/ui/core/themes/base/fonts/72-Regular.woff") format("woff");
     font-weight: 400;
     font-style: normal;
 }
@@ -10,7 +10,7 @@
 @font-face {
     font-family: "72";
     src: url("https://sapui5.hana.ondemand.com/resources/sap/ui/core/themes/base/fonts/72-Bold.woff2") format("woff2"),
-         url("https://sapui5.hana.ondemand.com/resources/sap/ui/core/themes/base/fonts/72-Bold.woff") format("woff");
+        url("https://sapui5.hana.ondemand.com/resources/sap/ui/core/themes/base/fonts/72-Bold.woff") format("woff");
     font-weight: 700;
     font-style: normal;
 }
@@ -18,7 +18,7 @@
 @font-face {
     font-family: "72";
     src: url("https://sapui5.hana.ondemand.com/resources/sap/ui/core/themes/base/fonts/72-Light.woff2") format("woff2"),
-         url("https://sapui5.hana.ondemand.com/resources/sap/ui/core/themes/base/fonts/72-Light.woff") format("woff");
+        url("https://sapui5.hana.ondemand.com/resources/sap/ui/core/themes/base/fonts/72-Light.woff") format("woff");
     font-weight: 300;
     font-style: normal;
 }
@@ -44,7 +44,22 @@ body {
 .sapMTitle {
     font-family: "72", "72full", Arial, Helvetica, sans-serif !important;
     color: #1a1a1a !important;
+    color: #1a1a1a !important;
     /* Darker secondary text globally */
+}
+
+/* Page Header Title - Increased Weight */
+.sapMPageHeader .sapMTitle {
+    font-weight: 700 !important;
+    font-size: 1.15rem !important;
+    color: #0f172a !important;
+}
+
+/* No Data Text - Increased Weight and Visibility */
+.sapMListNoDataText {
+    font-weight: 600 !important;
+    font-size: 0.9375rem !important;
+    color: #4b5563 !important;
 }
 
 /* Global label weighting */
