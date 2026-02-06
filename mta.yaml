@@ -80,6 +80,7 @@ modules:
       disk-quota: 256M
     properties:
       TENANT_HOST_PATTERN: "^(.*)-${default-uri}"
+      HTTP_TIMEOUT: 600000
     requires:
       - name: ewaanalyzer-uaa
       - name: ewaanalyzer-repo-runtime
@@ -90,6 +91,7 @@ modules:
           name: backend-api
           url: ~{url}
           forwardAuthToken: true
+          timeout: 600000
 
 # =============================================================================
 # RESOURCES (Services)
