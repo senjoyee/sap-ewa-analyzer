@@ -29,6 +29,7 @@ from dotenv import load_dotenv
 from agent.openai_ewa_agent import OpenAIEWAAgent
 from agent.anthropic_ewa_agent import AnthropicEWAAgent
 from agent.parameter_extraction_agent import ParameterExtractionAgent
+from utils.analysis_pack import build_analysis_pack
 from utils.markdown_utils import json_to_markdown
 from converters.document_converter import convert_document_to_markdown
 from services.storage_service import StorageService
@@ -91,9 +92,6 @@ def load_summary_prompt() -> str | None:
 
 SUMMARY_PROMPT: str | None = load_summary_prompt()
 
-
-
-
 @dataclass
 class WorkflowState:
     """State object for workflow execution"""
@@ -102,6 +100,7 @@ class WorkflowState:
     summary_result: str = ""
     summary_json: dict = None
     parameters_json: dict = None
+    analysis_pack: dict = None
     check_overview_index: dict = None  # Vision-extracted Check Overview rows from PDF
     error: str = ""
 
@@ -458,7 +457,27 @@ class EWAWorkflowOrchestrator:
             state.check_overview_index = {"rows": [], "extraction_notes": f"Extraction failed: {str(e)}"}
             return state
     
-
+    async def build_analysis_pack_step(self, state: WorkflowState) -> WorkflowState:
+        try:
+            logger.info("[STEP 1.6] Building AnalysisPack for %s", state.blob_name)
+            original_metadata = await self.get_blob_metadata(state.blob_name)
+            state.analysis_pack = build_analysis_pack(
+                blob_name=state.blob_name,
+                markdown_content=state.markdown_content,
+                metadata=original_metadata,
+                check_overview_index=state.check_overview_index,
+            )
+            logger.info(
+                "[STEP 1.6] Built AnalysisPack with %s sections (%s parameter sections)",
+                len(state.analysis_pack.get("sections", [])),
+                len(state.analysis_pack.get("parameter_sections", [])),
+            )
+            return state
+        except Exception as e:
+            state.error = str(e)
+            logger.exception("Error in build_analysis_pack_step: %s", e)
+            return state
+    
     async def run_analysis_step(self, state: WorkflowState) -> WorkflowState:
         """Step 2: Generate comprehensive EWA analysis; then extract KPIs via image agent"""
         try:
@@ -492,6 +511,9 @@ class EWAWorkflowOrchestrator:
             text_input = (state.markdown_content or "").strip()
             if not text_input:
                 raise ValueError("Markdown content is empty; conversion must succeed before analysis.")
+            
+            if not state.analysis_pack:
+                raise ValueError("AnalysisPack missing; build step must complete before analysis.")
 
             # Inject vision-extracted Check Overview table if available
             if state.check_overview_index and state.check_overview_index.get("rows"):
@@ -527,34 +549,43 @@ class EWAWorkflowOrchestrator:
                 # Default: Use OpenAI via Azure OpenAI
                 agent = self._create_agent(AZURE_OPENAI_SUMMARY_MODEL, ai_prompt)
             
-            ai_result = await agent.run(text_input, pdf_data=None)
+            if PROVIDER == "anthropic":
+                ai_result = await agent.run(text_input, pdf_data=None)
+            else:
+                ai_result = await agent.run(text_input, pdf_data=None, analysis_pack=state.analysis_pack)
             
             state.summary_json = ai_result if ai_result else {}
             
             # Validate and fix report_date if obviously wrong (fallback to filename)
             state.summary_json = self._fix_report_date_if_invalid(state.summary_json, state.blob_name)
             
-            state.summary_result = json_to_markdown(state.summary_json)
-
             # Step 2b: Extract parameters using fast model
             try:
                 logger.info("[STEP 2b] Extracting parameters for %s", state.blob_name)
                 if not self.openai_client:
                     raise RuntimeError("OpenAI client not initialized")
                 param_agent = ParameterExtractionAgent(self.openai_client)
-                state.parameters_json = await param_agent.extract(text_input)
+                parameter_focus_markdown = (state.analysis_pack.get("parameter_focus_markdown") or "").strip()
+                parameter_input = parameter_focus_markdown or text_input
+                state.parameters_json = await param_agent.extract(parameter_input)
                 param_count = len(state.parameters_json.get("parameters", []))
-                logger.info("[STEP 2b] Extracted %s parameters", param_count)
+                logger.info(
+                    "[STEP 2b] Extracted %s parameters using %s chars of focused content",
+                    param_count,
+                    len(parameter_input),
+                )
             except Exception as param_e:
                 logger.warning("[STEP 2b] Parameter extraction failed (non-fatal): %s", param_e)
                 state.parameters_json = {"parameters": [], "extraction_notes": f"Extraction failed: {str(param_e)}"}
+            
+            state.summary_json["Parameter Recommendations"] = state.parameters_json
+            state.summary_result = json_to_markdown(state.summary_json)
             
             return state
         except Exception as e:
             state.error = str(e)
             logger.exception("Error in run_analysis_step: %s", e)
             return state
-
     
     async def save_results_step(self, state: WorkflowState) -> WorkflowState:
         """Step 5: Save all results to blob storage with metadata propagation"""
@@ -579,6 +610,8 @@ class EWAWorkflowOrchestrator:
                 report_date = state.summary_json.get("report_date")
                 if report_date is None:
                     report_date = state.summary_json.get("system_metadata", {}).get("report_date")
+                if report_date is None:
+                    report_date = state.summary_json.get("System Metadata", {}).get("Report Date")
                 if report_date:
                     try:
                         orig_blob_client = self.blob_service_client.get_blob_client(
@@ -612,12 +645,20 @@ class EWAWorkflowOrchestrator:
                 param_count = len(state.parameters_json.get("parameters", []))
                 logger.info("Saved %s parameters to %s", param_count, params_blob_name)
             
+            if state.analysis_pack is not None:
+                analysis_pack_blob_name = f"{base_name}_analysis_pack.json"
+                await self.upload_to_blob(
+                    analysis_pack_blob_name,
+                    json.dumps(state.analysis_pack, indent=2),
+                    "application/json",
+                    original_metadata,
+                )
+
             return state
         except Exception as e:
             state.error = str(e)
             return state
     
-
     async def execute_workflow(self, blob_name: str, skip_markdown: bool = False) -> Dict[str, Any]:
         """Execute the complete workflow.
 
@@ -645,6 +686,11 @@ class EWAWorkflowOrchestrator:
             # Step 1.5: Extract Check Overview from PDF using vision (non-fatal if fails)
             state = await self.extract_check_overview_step(state)
             
+            # Step 1.6: Build AnalysisPack
+            state = await self.build_analysis_pack_step(state)
+            if state.error:
+                raise Exception(state.error)
+            
             # Run the EWA analysis using single enhanced agent
             summary_state = await self.run_analysis_step(state)
             
@@ -656,6 +702,8 @@ class EWAWorkflowOrchestrator:
             # Store the summary results
             state.summary_result = summary_state.summary_result
             state.summary_json = summary_state.summary_json
+            state.parameters_json = summary_state.parameters_json
+            state.analysis_pack = summary_state.analysis_pack
             
             # Save all results
             state = await self.save_results_step(state)
@@ -670,6 +718,7 @@ class EWAWorkflowOrchestrator:
                 "original_file": blob_name,
                 "summary_file": f"{base_name}_AI.md",
                 "summary_json_file": f"{base_name}_AI.json",
+                "analysis_pack_file": f"{base_name}_analysis_pack.json",
                 "summary_data": state.summary_result,
                 "summary_preview": state.summary_result[:500] + "..." if len(state.summary_result) > 500 else state.summary_result
             }

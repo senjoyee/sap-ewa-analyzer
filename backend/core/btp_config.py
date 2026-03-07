@@ -47,7 +47,9 @@ def get_azure_config() -> dict:
         "container_name": os.getenv("AZURE_STORAGE_CONTAINER_NAME"),
         "openai_endpoint": os.getenv("AZURE_OPENAI_ENDPOINT"),
         "openai_api_key": os.getenv("AZURE_OPENAI_API_KEY"),
+        "openai_api_version": os.getenv("AZURE_OPENAI_API_VERSION"),
         "openai_model": os.getenv("AZURE_OPENAI_SUMMARY_MODEL"),
+        "openai_fast_model": os.getenv("AZURE_OPENAI_FAST_MODEL"),
     }
 
 
@@ -59,6 +61,13 @@ def validate_azure_config() -> tuple[bool, list[str]]:
         Tuple of (is_valid, list_of_missing_keys)
     """
     config = get_azure_config()
-    required = ["connection_string", "container_name"]
+    required = [
+        "connection_string",
+        "container_name",
+        "openai_endpoint",
+        "openai_api_key",
+        "openai_api_version",
+        "openai_model",
+    ]
     missing = [k for k in required if not config.get(k)]
     return len(missing) == 0, missing

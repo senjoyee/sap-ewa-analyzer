@@ -698,16 +698,21 @@ async def export_json_to_excel(blob_name: str):
             parameters = params_json.get("parameters", [])
             logger.info("[Excel Export] Loaded %s parameters from %s", len(parameters), params_blob_name)
         except FileNotFoundError:
-            logger.info("[Excel Export] Parameters file not found (%s), attempting markdown extraction", params_blob_name)
-            try:
-                md_blob_name = f"{original_base}_AI.md"
-                md_text = storage_service.get_text_content(md_blob_name)
-                parameters = extract_parameters_from_markdown(md_text)
-                logger.info("[Excel Export] Extracted %s parameters from markdown", len(parameters))
-            except FileNotFoundError:
-                logger.warning("[Excel Export] Markdown file not found (%s); continuing without parameters", md_blob_name)
-            except Exception as md_e:
-                logger.warning("[Excel Export] Parameter extraction from markdown failed: %s", md_e)
+            embedded_parameters = json_data.get("Parameter Recommendations", {}).get("parameters", [])
+            if embedded_parameters:
+                parameters = embedded_parameters
+                logger.info("[Excel Export] Loaded %s embedded parameters from canonical JSON", len(parameters))
+            else:
+                logger.info("[Excel Export] Parameters file not found (%s), attempting markdown extraction", params_blob_name)
+                try:
+                    md_blob_name = f"{original_base}_AI.md"
+                    md_text = storage_service.get_text_content(md_blob_name)
+                    parameters = extract_parameters_from_markdown(md_text)
+                    logger.info("[Excel Export] Extracted %s parameters from markdown", len(parameters))
+                except FileNotFoundError:
+                    logger.warning("[Excel Export] Markdown file not found (%s); continuing without parameters", md_blob_name)
+                except Exception as md_e:
+                    logger.warning("[Excel Export] Parameter extraction from markdown failed: %s", md_e)
         except Exception as params_e:
             logger.warning("[Excel Export] Error loading parameters JSON: %s", params_e)
 

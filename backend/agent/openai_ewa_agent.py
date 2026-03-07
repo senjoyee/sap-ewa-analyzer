@@ -7,9 +7,17 @@ import asyncio
 import tempfile
 import copy
 import logging
-from typing import Dict, Any, Union
+from typing import Dict, Any, Union, List
 from jsonschema import validate, ValidationError
 from utils.json_repair import JSONRepair
+from utils.analysis_pack import (
+    get_analysis_pack_summary,
+    list_sections,
+    get_section,
+    search_sections,
+    get_parameter_sections,
+    get_check_overview_rows,
+)
 from core.runtime_config import SUMMARY_MAX_OUTPUT_TOKENS
 
 # Note: LLM-based JSON repair has been removed.
@@ -66,13 +74,17 @@ class OpenAIEWAAgent:
         
         # Local JSON repair utility (non-LLM)
         self.json_repair = JSONRepair()
+        self.analysis_pack_tools = self._build_analysis_pack_tools()
 
     # ----------------------------- Public API ----------------------------- #
-    async def run(self, markdown: str, pdf_data: bytes = None) -> Dict[str, Any]:
+    async def run(self, markdown: str, pdf_data: bytes = None, analysis_pack: Dict[str, Any] | None = None) -> Dict[str, Any]:
         """Return a validated summary JSON object.
         Attempts a single local (non-LLM) repair if initial output is invalid.
         """
-        summary_json = await self._call_openai_responses(markdown, pdf_data)
+        if analysis_pack:
+            summary_json = await self._call_openai_with_analysis_pack(analysis_pack)
+        else:
+            summary_json = await self._call_openai_responses(markdown, pdf_data)
         if self._is_valid(summary_json):
             logger.info("Initial JSON valid; skipping repair")
             return summary_json
@@ -230,6 +242,243 @@ class OpenAIEWAAgent:
                     os.remove(temp_path)
                 except Exception:
                     pass
+
+    async def _call_openai_with_analysis_pack(self, analysis_pack: Dict[str, Any]) -> Dict[str, Any]:
+        pack_summary = get_analysis_pack_summary(analysis_pack)
+        strict_schema = self._make_strict_schema_for_structured_outputs(self.schema)
+        instruction_text = (
+            f"{self.summary_prompt}\n\n"
+            "You are analyzing an SAP EarlyWatch Alert report using internal retrieval tools backed by an analysis pack. "
+            "You MUST retrieve evidence before producing the final JSON. At minimum, inspect the analysis pack summary, relevant sections, and Check Overview rows when available. "
+            "Use parameter-focused tools when reasoning about configuration recommendations. "
+            "Return ONLY a valid JSON object that strictly conforms to the provided JSON schema. "
+            "Do not include any text outside of the JSON. Use double-quoted keys and strings, no trailing commas, and no comments. "
+            "Emit ONLY keys defined by the schema and do not add extra properties anywhere."
+        )
+
+        text_format = {
+            "format": {
+                "type": "json_schema",
+                "name": self.function_def["name"],
+                "schema": strict_schema,
+                "strict": True,
+            }
+        }
+
+        response = await asyncio.to_thread(
+            lambda: self.client.responses.create(
+                model=self.model,
+                input=[
+                    {
+                        "role": "user",
+                        "content": [
+                            {
+                                "type": "input_text",
+                                "text": json.dumps(pack_summary, indent=2, ensure_ascii=False),
+                            },
+                            {
+                                "type": "input_text",
+                                "text": instruction_text,
+                            },
+                        ],
+                    }
+                ],
+                text=text_format,
+                tools=self.analysis_pack_tools,
+                tool_choice="auto",
+                parallel_tool_calls=True,
+                reasoning={"effort": "medium"},
+                max_output_tokens=SUMMARY_MAX_OUTPUT_TOKENS,
+            )
+        )
+        self._log_token_usage(response)
+
+        for _ in range(8):
+            tool_calls = self._extract_tool_calls(response)
+            if not tool_calls:
+                return self._parse_structured_response(response)
+
+            tool_outputs = []
+            for tool_call in tool_calls:
+                arguments = self._parse_json_arguments(getattr(tool_call, "arguments", "{}"))
+                tool_outputs.append(
+                    {
+                        "type": "function_call_output",
+                        "call_id": getattr(tool_call, "call_id"),
+                        "output": json.dumps(
+                            self._execute_analysis_pack_tool(getattr(tool_call, "name", ""), arguments, analysis_pack),
+                            ensure_ascii=False,
+                        ),
+                    }
+                )
+
+            response = await asyncio.to_thread(
+                lambda: self.client.responses.create(
+                    model=self.model,
+                    previous_response_id=getattr(response, "id", None),
+                    input=tool_outputs,
+                    text=text_format,
+                    tools=self.analysis_pack_tools,
+                    tool_choice="auto",
+                    parallel_tool_calls=True,
+                    reasoning={"effort": "medium"},
+                    max_output_tokens=SUMMARY_MAX_OUTPUT_TOKENS,
+                )
+            )
+            self._log_token_usage(response)
+
+        return {
+            "_parse_error": "Exceeded maximum tool iterations before final JSON output",
+            "raw_arguments": "",
+        }
+
+    def _build_analysis_pack_tools(self) -> List[Dict[str, Any]]:
+        return [
+            {
+                "type": "function",
+                "name": "get_analysis_pack_summary",
+                "description": "Return high-level document metadata, statistics, and summary for the analysis pack.",
+                "strict": True,
+                "parameters": {
+                    "type": "object",
+                    "properties": {},
+                    "additionalProperties": False,
+                },
+            },
+            {
+                "type": "function",
+                "name": "list_sections",
+                "description": "List document sections with ids, titles, previews, and parameter flags.",
+                "strict": True,
+                "parameters": {
+                    "type": "object",
+                    "properties": {},
+                    "additionalProperties": False,
+                },
+            },
+            {
+                "type": "function",
+                "name": "get_section",
+                "description": "Fetch the full content and metadata for a single document section by section id.",
+                "strict": True,
+                "parameters": {
+                    "type": "object",
+                    "properties": {
+                        "section_id": {"type": "string"}
+                    },
+                    "required": ["section_id"],
+                    "additionalProperties": False,
+                },
+            },
+            {
+                "type": "function",
+                "name": "search_document",
+                "description": "Search document sections for relevant evidence using a natural-language query.",
+                "strict": True,
+                "parameters": {
+                    "type": "object",
+                    "properties": {
+                        "query": {"type": "string"},
+                        "limit": {"type": "integer", "minimum": 1, "maximum": 12}
+                    },
+                    "required": ["query"],
+                    "additionalProperties": False,
+                },
+            },
+            {
+                "type": "function",
+                "name": "get_parameter_sections",
+                "description": "Return parameter-focused sections, condensed markdown, and deterministic parameter candidates.",
+                "strict": True,
+                "parameters": {
+                    "type": "object",
+                    "properties": {},
+                    "additionalProperties": False,
+                },
+            },
+            {
+                "type": "function",
+                "name": "get_check_overview_rows",
+                "description": "Return the vision-extracted Check Overview rows that ground key findings when available.",
+                "strict": True,
+                "parameters": {
+                    "type": "object",
+                    "properties": {},
+                    "additionalProperties": False,
+                },
+            },
+        ]
+
+    def _extract_tool_calls(self, response: Any) -> List[Any]:
+        tool_calls: List[Any] = []
+        for item in getattr(response, "output", []) or []:
+            if getattr(item, "type", None) == "function_call":
+                tool_calls.append(item)
+        return tool_calls
+
+    def _execute_analysis_pack_tool(self, tool_name: str, arguments: Dict[str, Any], analysis_pack: Dict[str, Any]) -> Dict[str, Any]:
+        try:
+            if tool_name == "get_analysis_pack_summary":
+                return get_analysis_pack_summary(analysis_pack)
+            if tool_name == "list_sections":
+                return {"sections": list_sections(analysis_pack)}
+            if tool_name == "get_section":
+                return get_section(analysis_pack, str(arguments.get("section_id", "")))
+            if tool_name == "search_document":
+                limit = int(arguments.get("limit", 8) or 8)
+                return {"results": search_sections(analysis_pack, str(arguments.get("query", "")), limit=limit)}
+            if tool_name == "get_parameter_sections":
+                return get_parameter_sections(analysis_pack)
+            if tool_name == "get_check_overview_rows":
+                return get_check_overview_rows(analysis_pack)
+            return {"error": f"Unsupported tool: {tool_name}"}
+        except Exception as exc:
+            logger.warning("AnalysisPack tool %s failed: %s", tool_name, exc)
+            return {"error": str(exc), "tool": tool_name}
+
+    def _log_token_usage(self, response: Any) -> None:
+        try:
+            usage = getattr(response, "usage", None)
+            in_tok = out_tok = None
+            if usage is not None:
+                in_tok = getattr(usage, "input_tokens", None) if hasattr(usage, "input_tokens") else (usage.get("input_tokens") if isinstance(usage, dict) else None)
+                out_tok = getattr(usage, "output_tokens", None) if hasattr(usage, "output_tokens") else (usage.get("output_tokens") if isinstance(usage, dict) else None)
+            if in_tok is None or out_tok is None:
+                response_dict = response.model_dump() if hasattr(response, "model_dump") else None
+                if isinstance(response_dict, dict):
+                    usage_dict = response_dict.get("usage", {})
+                    in_tok = usage_dict.get("input_tokens", in_tok)
+                    out_tok = usage_dict.get("output_tokens", out_tok)
+            logger.info("Token usage: input_tokens=%s, output_tokens=%s", in_tok, out_tok)
+        except Exception:
+            logger.exception("Failed to read token usage")
+
+    def _parse_structured_response(self, response: Any) -> Dict[str, Any]:
+        try:
+            parsed = getattr(response, "output_parsed", None)
+            if parsed is not None:
+                if isinstance(parsed, dict):
+                    return parsed
+                if isinstance(parsed, list) and len(parsed) == 1 and isinstance(parsed[0], dict):
+                    return parsed[0]
+        except Exception:
+            pass
+
+        text = getattr(response, "output_text", None)
+        if text:
+            try:
+                return json.loads(text)
+            except Exception:
+                try:
+                    rr = self.json_repair.repair(text)
+                    if rr.success and isinstance(rr.data, dict):
+                        return rr.data
+                except Exception:
+                    pass
+                return {"_parse_error": "Failed to parse structured output", "raw_arguments": text[:50000]}
+
+        logger.warning("No output_parsed or output_text available in structured response")
+        return {"_parse_error": "No output returned", "raw_arguments": ""}
 
     def _make_strict_schema_for_structured_outputs(self, schema: Dict[str, Any]) -> Dict[str, Any]:
         """Return a deep-copied schema where every object has additionalProperties set to False.

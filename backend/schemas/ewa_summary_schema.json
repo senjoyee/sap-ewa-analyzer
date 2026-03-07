@@ -139,6 +139,69 @@
       }
     },
 
+    "Parameter Recommendations": {
+      "type": "object",
+      "properties": {
+        "parameters": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "required": [
+              "parameter_name",
+              "area",
+              "current_value",
+              "recommended_value",
+              "action_status",
+              "priority",
+              "description",
+              "source_section"
+            ],
+            "properties": {
+              "parameter_name": { "type": "string" },
+              "area": { "type": "string" },
+              "current_value": { "type": "string" },
+              "recommended_value": { "type": "string" },
+              "action_status": { "type": "string" },
+              "priority": { "type": "string" },
+              "description": { "type": "string" },
+              "source_section": { "type": "string" }
+            }
+          }
+        },
+        "extraction_notes": {
+          "type": "string"
+        },
+        "summary": {
+          "type": "object",
+          "properties": {
+            "total": { "type": "integer" },
+            "by_action_status": {
+              "type": "object",
+              "properties": {
+                "Change Required": { "type": "integer" },
+                "Verify": { "type": "integer" },
+                "No Action": { "type": "integer" },
+                "Monitor": { "type": "integer" }
+              },
+              "required": ["Change Required", "Verify", "No Action", "Monitor"]
+            },
+            "by_priority": {
+              "type": "object",
+              "properties": {
+                "High": { "type": "integer" },
+                "Medium": { "type": "integer" },
+                "Low": { "type": "integer" }
+              },
+              "required": ["High", "Medium", "Low"]
+            },
+            "actionable": { "type": "integer" }
+          },
+          "required": ["total", "by_action_status", "by_priority", "actionable"]
+        }
+      },
+      "required": ["parameters", "extraction_notes", "summary"]
+    },
+
 
 
 

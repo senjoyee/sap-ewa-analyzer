@@ -381,6 +381,19 @@ def json_to_markdown(data: Dict[str, Any], pdf_export: bool = False) -> str:
         )
     md.append("\n---\n")
 
+    params_payload = data.get("Parameter Recommendations", data.get("parameter_recommendations", {}))
+    parameters = params_payload.get("parameters", []) if isinstance(params_payload, dict) else []
+    if parameters:
+        md.append("<div style='page-break-before: always;'></div>")
+        md.append("")
+        summary = params_payload.get("summary", {}) if isinstance(params_payload, dict) else {}
+        md.append("## Parameter Recommendations")
+        md.append(f"**Total Parameters Identified:** {summary.get('total', len(parameters))}")
+        md.append(f"**Actionable Parameters:** {summary.get('actionable', 'N/A')}")
+        md.append("")
+        md.extend(_array_to_markdown_table(parameters, None))
+        md.append("\n---\n")
+
 
     # ── Capacity Outlook ──────────────────────────────────────────────────────
     md.append("<div style='page-break-before: always;'></div>")

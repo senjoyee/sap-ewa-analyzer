@@ -885,6 +885,48 @@ def _render_capacity_outlook(data: Dict[str, Any]) -> str:
     return ''.join(html_parts)
 
 
+def _render_parameter_recommendations(data: Dict[str, Any]) -> str:
+    payload = data.get("Parameter Recommendations", data.get("parameter_recommendations", {}))
+    if not isinstance(payload, dict):
+        return ""
+
+    parameters = payload.get("parameters", [])
+    if not parameters:
+        return ""
+
+    summary = payload.get("summary", {}) if isinstance(payload.get("summary"), dict) else {}
+    rows: List[List[str]] = []
+    headers = [
+        "Parameter",
+        "Area",
+        "Current Value",
+        "Recommended Value",
+        "Action Status",
+        "Priority",
+        "Description",
+        "Source Section",
+    ]
+    for param in parameters:
+        rows.append(
+            [
+                _escape(str(param.get("parameter_name", ""))),
+                _escape(str(param.get("area", ""))),
+                _escape(str(param.get("current_value", ""))),
+                _escape(str(param.get("recommended_value", ""))),
+                _escape(str(param.get("action_status", ""))),
+                _escape(str(param.get("priority", ""))),
+                _escape(str(param.get("description", ""))),
+                _escape(str(param.get("source_section", ""))),
+            ]
+        )
+
+    summary_html = (
+        f'<p><strong>Total Parameters Identified:</strong> {_escape(str(summary.get("total", len(parameters))))}<br>'
+        f'<strong>Actionable Parameters:</strong> {_escape(str(summary.get("actionable", "N/A")))}</p>'
+    )
+    return f'<h2>Parameter Recommendations</h2>{summary_html}{_render_table(headers, rows)}<hr>'
+
+
 # ────────────────────────────────────────────────────────────────────────────────
 # Public API
 # ────────────────────────────────────────────────────────────────────────────────
@@ -925,6 +967,7 @@ def json_to_html(
     body_parts.append(_render_executive_summary(data))
     body_parts.append(_render_positive_findings(data))
     body_parts.append(_render_findings_and_recommendations(data))
+    body_parts.append(_render_parameter_recommendations(data))
     body_parts.append(_render_capacity_outlook(data))
     body_parts.append('</div>')
     
