@@ -342,6 +342,7 @@ class OpenAIEWAAgent:
                 "parameters": {
                     "type": "object",
                     "properties": {},
+                    "required": [],
                     "additionalProperties": False,
                 },
             },
@@ -353,6 +354,7 @@ class OpenAIEWAAgent:
                 "parameters": {
                     "type": "object",
                     "properties": {},
+                    "required": [],
                     "additionalProperties": False,
                 },
             },
@@ -381,7 +383,7 @@ class OpenAIEWAAgent:
                         "query": {"type": "string"},
                         "limit": {"type": "integer", "minimum": 1, "maximum": 12}
                     },
-                    "required": ["query"],
+                    "required": ["query", "limit"],
                     "additionalProperties": False,
                 },
             },
@@ -393,6 +395,7 @@ class OpenAIEWAAgent:
                 "parameters": {
                     "type": "object",
                     "properties": {},
+                    "required": [],
                     "additionalProperties": False,
                 },
             },
@@ -404,6 +407,7 @@ class OpenAIEWAAgent:
                 "parameters": {
                     "type": "object",
                     "properties": {},
+                    "required": [],
                     "additionalProperties": False,
                 },
             },
