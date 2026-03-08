@@ -271,7 +271,7 @@ async def upload_file(
                 "original_filename": file.filename,  # Include original for reference
                 "customer_name": customer_name,
                 "system_id": file_metadata["system_id"],
-                "report_date": report_date_str,
+                "report_date": file_metadata["report_date_str"],
                 "message": "File processed and uploaded successfully to Azure Blob Storage.",
             }
 
