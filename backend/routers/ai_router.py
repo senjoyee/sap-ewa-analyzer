@@ -16,7 +16,7 @@ from typing import Dict, Any
 from fastapi import APIRouter, HTTPException
 from models import BlobNameRequest
 from models.request_models import ProcessAnalyzeRequest
-from converters.document_converter import convert_document_to_markdown
+from models.request_models import ProcessAnalyzeRequest
 
 from core.azure_clients import (
     blob_service_client,
@@ -56,20 +56,17 @@ async def _run_processing_flow(original_blob_name: str) -> Dict[str, Any]:
         except Exception as e:
             logger.warning("[PROCESS] Error deleting derived blobs: %s", e)
 
-        # Ensure markdown exists; if missing, convert the PDF to markdown
+        # Ensure markdown exists; in the new workflow, it MUST be created during upload
         try:
             markdown_client = container_client.get_blob_client(markdown_blob_name)
             if not markdown_client.exists():
-                logger.info("[PROCESS] Markdown missing for %s; converting PDF", original_blob_name)
-                conversion_result = await asyncio.to_thread(convert_document_to_markdown, original_blob_name)
-                if not conversion_result or conversion_result.get("status") != "completed":
-                    error_msg = conversion_result.get("message") if isinstance(conversion_result, dict) else "Unknown conversion error"
-                    raise HTTPException(status_code=500, detail=f"Markdown conversion failed: {error_msg}")
+                logger.error("[PROCESS] Markdown missing for %s", original_blob_name)
+                raise HTTPException(status_code=404, detail=f"Markdown file {markdown_blob_name} not found. Please re-upload the zip.")
         except HTTPException:
             raise
         except Exception as e:
-            logger.exception("[PROCESS] Markdown conversion failed: %s", e)
-            raise HTTPException(status_code=500, detail=f"Markdown conversion failed: {str(e)}")
+            logger.exception("[PROCESS] Missing markdown file: %s", e)
+            raise HTTPException(status_code=500, detail=f"Error accessing markdown file: {str(e)}")
 
         # Run analysis (markdown guaranteed to exist)
         logger.info("[PROCESS] Starting workflow execution for %s", original_blob_name)

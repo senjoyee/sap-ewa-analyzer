@@ -247,7 +247,7 @@ sap.ui.define([
 
         handleTypeMissmatch: function (oEvent) {
             var sFileName = oEvent.getParameter("fileName");
-            MessageToast.show("Only PDF files are supported" + (sFileName ? ": " + sFileName : ""));
+            MessageToast.show("Only ZIP files are supported" + (sFileName ? ": " + sFileName : ""));
         },
 
         onUploadPress: function () {
@@ -472,7 +472,7 @@ sap.ui.define([
 
         onViewAnalysisPress: function (oEvent) {
             var oItem = oEvent.getSource().getBindingContext("files").getObject();
-            var sBaseName = oItem.name.replace(".pdf", "");
+            var sBaseName = oItem.name.replace(/\.(pdf|zip|md)$/i, "");
 
             this.getOwnerComponent().getRouter().navTo("Preview", {
                 baseName: sBaseName
@@ -483,7 +483,7 @@ sap.ui.define([
             var oItem = oEvent.getSource().getBindingContext("files").getObject();
             // The backend expects the AI-generated markdown file, not the original
             // Pattern: ERP_09_Nov_25.pdf -> ERP_09_Nov_25_AI.md
-            var sBaseName = oItem.name.replace(".pdf", "");
+            var sBaseName = oItem.name.replace(/\.(pdf|zip|md)$/i, "");
             var sMdName = sBaseName + "_AI.md";
 
             // Construct the download URL
@@ -496,7 +496,7 @@ sap.ui.define([
 
         onDeletePress: function (oEvent) {
             var oItem = oEvent.getSource().getBindingContext("files").getObject();
-            var sBaseName = oItem.name.replace(".pdf", "");
+            var sBaseName = oItem.name.replace(/\.(pdf|zip|md)$/i, "");
 
             MessageBox.confirm("Are you sure you want to delete " + oItem.name + "?", {
                 onClose: (oAction) => {
@@ -548,7 +548,7 @@ sap.ui.define([
                         aSelectedContexts.forEach(context => {
                             var oFile = context.getObject();
                             // Reuse delete logic (simplified for batch here)
-                            var sBaseName = oFile.name.replace(".pdf", "");
+                            var sBaseName = oFile.name.replace(/\.(pdf|zip|md)$/i, "");
                             fetch(Config.getEndpoint("deleteAnalysis"), {
                                 method: "DELETE",
                                 headers: { "Content-Type": "application/json" },
@@ -569,7 +569,7 @@ sap.ui.define([
 
         onDownloadExcelPress: function (oEvent) {
             var oItem = oEvent.getSource().getBindingContext("files").getObject();
-            var sBaseName = oItem.name.replace(".pdf", "");
+            var sBaseName = oItem.name.replace(/\.(pdf|zip|md)$/i, "");
             var sJsonName = sBaseName + "_AI.json";
             var sUrl = Config.getEndpoint("exportExcel") + "?blob_name=" + encodeURIComponent(sJsonName);
             window.open(sUrl, "_blank");

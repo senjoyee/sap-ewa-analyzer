@@ -153,7 +153,7 @@ storage_service = StorageService()
 
 @router.post("/upload")
 async def upload_file(file: UploadFile = File(...), customer_name: str = Form(...)):
-    """Upload a document file to Azure Blob Storage with AI-based metadata extraction."""
+    """Upload a ZIP file, convert contained HTML to Markdown, extract metadata, and store in Azure Blob."""
 
     if not blob_service_client:
         raise HTTPException(status_code=500, detail="Azure Blob Service client not initialized. Check server logs and .env configuration.")
@@ -161,107 +161,153 @@ async def upload_file(file: UploadFile = File(...), customer_name: str = Form(..
         raise HTTPException(status_code=400, detail="No file sent.")
     if not file.filename:
         raise HTTPException(status_code=400, detail="Filename is required.")
+        
+    if not file.filename.lower().endswith(".zip"):
+        raise HTTPException(status_code=400, detail="Only .zip files containing HTML exports are supported.")
 
     try:
+        import tempfile
+        import zipfile
+        import asyncio
+        from converters.html_markdown_converter import convert_html_to_markdown
+        
         contents = await file.read()
         
-        # Try AI-based metadata extraction first
-        try:
-            from utils.pdf_metadata_extractor import extract_metadata_with_ai
-            file_metadata = await extract_metadata_with_ai(contents)
-            logger.info(
-                "AI extraction successful - System ID: %s, Report Date: %s",
-                file_metadata["system_id"],
-                file_metadata["report_date_str"],
-            )
-        except Exception as ai_error:
-            # If AI extraction fails, fall back to filename validation
-            logger.warning(
-                "AI extraction failed, falling back to filename validation: %s",
-                ai_error,
-            )
+        with tempfile.TemporaryDirectory() as temp_dir:
+            zip_path = os.path.join(temp_dir, "upload.zip")
+            with open(zip_path, "wb") as f:
+                f.write(contents)
+                
             try:
-                file_metadata = validate_filename_and_extract_metadata(file.filename)
+                with zipfile.ZipFile(zip_path, 'r') as zip_ref:
+                    zip_ref.extractall(temp_dir)
+            except zipfile.BadZipFile:
+                raise HTTPException(status_code=400, detail="Uploaded file is not a valid ZIP archive.")
+            
+            # Find the .htm or .html file
+            html_file_path = None
+            for root, dirs, extracted_files in os.walk(temp_dir):
+                for extracted_file in extracted_files:
+                    if extracted_file.lower().endswith(('.htm', '.html')):
+                        html_file_path = os.path.join(root, extracted_file)
+                        break
+                if html_file_path:
+                    break
+                    
+            if not html_file_path:
+                raise HTTPException(status_code=400, detail="No .htm or .html file found in the uploaded zip.")
+                
+            logger.info("Found HTML file in zip: %s", html_file_path)
+            
+            # Convert HTML to Markdown
+            markdown_content = await asyncio.to_thread(convert_html_to_markdown, html_file_path)
+            
+            if not markdown_content:
+                raise HTTPException(status_code=500, detail="Failed to convert HTML to Markdown.")
+                
+            logger.info("Successfully converted HTML to Markdown (%d bytes)", len(markdown_content))
+        
+            # Try AI-based metadata extraction first (using Markdown text)
+            try:
+                from utils.pdf_metadata_extractor import extract_metadata_with_ai
+                # Pass the first 2000 chars for metadata extraction to save tokens/time
+                file_metadata = await extract_metadata_with_ai(markdown_content[:2000])
                 logger.info(
-                    "Filename validation successful - System ID: %s, Report Date: %s",
+                    "AI extraction successful - System ID: %s, Report Date: %s",
                     file_metadata["system_id"],
                     file_metadata["report_date_str"],
                 )
-            except ValueError as filename_error:
-                raise HTTPException(
-                    status_code=400,
-                    detail=(
-                        "Filename validation failed: Ensure the file follows the expected naming convention "
-                        "or provide a readable PDF so AI extraction can succeed."
-                    ),
-                ) from filename_error
+            except Exception as ai_error:
+                # If AI extraction fails, fall back to filename validation
+                logger.warning(
+                    "AI extraction failed, falling back to filename validation: %s",
+                    ai_error,
+                )
+                try:
+                    file_metadata = validate_filename_and_extract_metadata(file.filename)
+                    logger.info(
+                        "Filename validation successful - System ID: %s, Report Date: %s",
+                        file_metadata["system_id"],
+                        file_metadata["report_date_str"],
+                    )
+                except ValueError as filename_error:
+                    raise HTTPException(
+                        status_code=400,
+                        detail=(
+                            "Filename validation failed: Ensure the zip file follows the expected naming convention "
+                            "<SID>_ddmmyy.zip (e.g., ERP_090625.zip) or provide an HTML file with readable header metadata."
+                        ),
+                    ) from filename_error
+                
+            # Generate new filename based on extracted metadata.
+            # It returns .zip extension since the original file was .zip.
+            # We want to save the markdown as .md, so we adjust the filename.
+            new_filename = generate_standardized_filename(file_metadata, file.filename)
+            # Replace .zip with .md
+            blob_name = re.sub(r'\.zip$', '.md', new_filename, flags=re.IGNORECASE)
             
-        # Generate new filename based on extracted metadata
-        new_filename = generate_standardized_filename(file_metadata, file.filename)
-        blob_name = new_filename
-        blob_client = blob_service_client.get_blob_client(
-            container=AZURE_STORAGE_CONTAINER_NAME, blob=blob_name
-        )
+            blob_client = blob_service_client.get_blob_client(
+                container=AZURE_STORAGE_CONTAINER_NAME, blob=blob_name
+            )
 
-        logger.info(
-            "Uploading %s to Azure Blob Storage in container %s as blob %s",
-            file.filename,
-            AZURE_STORAGE_CONTAINER_NAME,
-            blob_name,
-        )
-        logger.info(
-            "Extracted metadata - System ID: %s, Report Date: %s, Customer: %s",
-            file_metadata["system_id"],
-            file_metadata["report_date_str"],
-            customer_name,
-        )
+            logger.info(
+                "Uploading markdown to Azure Blob Storage in container %s as blob %s",
+                AZURE_STORAGE_CONTAINER_NAME,
+                blob_name,
+            )
+            logger.info(
+                "Extracted metadata - System ID: %s, Report Date: %s, Customer: %s",
+                file_metadata["system_id"],
+                file_metadata["report_date_str"],
+                customer_name,
+            )
 
-        # Create comprehensive metadata
-        # Handle both AI extraction (datetime object) and filename validation (already parsed) results
-        if isinstance(file_metadata["report_date"], datetime):
-            report_date_iso = file_metadata["report_date"].isoformat()
-            report_date_str = file_metadata["report_date_str"]
-        else:
-            # AI extraction returns string dates
-            try:
-                dt = datetime.strptime(file_metadata["report_date"], "%d.%m.%Y")
-                report_date_iso = dt.isoformat()
-                report_date_str = file_metadata["report_date"]
-            except ValueError:
-                # Fallback
-                report_date_iso = datetime.now().isoformat()
-                report_date_str = file_metadata.get("report_date_str", "Unknown")
+            # Create comprehensive metadata
+            # Handle both AI extraction (datetime object) and filename validation (already parsed) results
+            if isinstance(file_metadata["report_date"], datetime):
+                report_date_iso = file_metadata["report_date"].isoformat()
+                report_date_str = file_metadata["report_date_str"]
+            else:
+                # AI extraction returns string dates
+                try:
+                    dt = datetime.strptime(file_metadata["report_date"], "%d.%m.%Y")
+                    report_date_iso = dt.isoformat()
+                    report_date_str = file_metadata["report_date"]
+                except ValueError:
+                    # Fallback
+                    report_date_iso = datetime.now().isoformat()
+                    report_date_str = file_metadata.get("report_date_str", "Unknown")
 
-        metadata: Dict[str, Any] = {
-            "customer_name": customer_name,
-            "system_id": file_metadata["system_id"],
-            "report_date": report_date_iso,
-            "report_date_str": report_date_str
-        }
+            metadata: Dict[str, Any] = {
+                "customer_name": customer_name,
+                "system_id": file_metadata["system_id"],
+                "report_date": report_date_iso,
+                "report_date_str": report_date_str
+            }
 
-        blob_client.upload_blob(contents, overwrite=True, metadata=metadata)
+            blob_client.upload_blob(markdown_content.encode('utf-8'), overwrite=True, metadata=metadata, content_type="text/markdown")
 
-        logger.info(
-            "Successfully uploaded %s to %s with metadata: %s",
-            file.filename,
-            blob_name,
-            metadata,
-        )
-        return {
-            "filename": blob_name,  # Return the new standardized filename
-            "original_filename": file.filename,  # Include original for reference
-            "customer_name": customer_name,
-            "system_id": file_metadata["system_id"],
-            "report_date": report_date_str,
-            "message": "File uploaded successfully to Azure Blob Storage with extracted metadata and standardized filename.",
-        }
+            logger.info(
+                "Successfully uploaded %s to %s with metadata: %s",
+                file.filename,
+                blob_name,
+                metadata,
+            )
+            return {
+                "filename": blob_name,  # Return the new standardized filename ending in .md
+                "original_filename": file.filename,  # Include original for reference
+                "customer_name": customer_name,
+                "system_id": file_metadata["system_id"],
+                "report_date": report_date_str,
+                "message": "File processed and uploaded successfully to Azure Blob Storage.",
+            }
 
     except HTTPException:
         # Re-raise HTTP exceptions
         raise
     except Exception as e:
-        logger.exception("Error uploading file %s: %s", file.filename, e)
-        raise HTTPException(status_code=500, detail=f"Could not upload file: {str(e)}")
+        logger.exception("Error processing file %s: %s", file.filename, e)
+        raise HTTPException(status_code=500, detail=f"Could not process and upload file: {str(e)}")
 
 
 # ------------------------- List endpoint ------------------------- #
@@ -299,10 +345,20 @@ async def list_files():
         files: list[dict[str, Any]] = []
         file_groups: dict[str, list[dict[str, Any]]] = {}  # Group by customer+SID
         
+        pdf_zips = {os.path.splitext(b.name)[0] for b in blob_list if b.name.lower().endswith(('.pdf', '.zip'))}
+        
         for blob in blob_list:
             name_low = blob.name.lower()
-            if name_low.endswith((".json", ".md")):
+            base_name, _ = os.path.splitext(blob.name)
+            
+            # Skip AI analysis artifacts
+            if name_low.endswith(".json") or name_low.endswith("_ai.md"):
                 continue  # skip auxiliary files in main listing
+                
+            # If it's a regular .md file from the old workflow, it has a corresponding .pdf
+            # Skip it so we don't show duplicates. For new zip uploads, only the .md exists.
+            if name_low.endswith(".md") and base_name in pdf_zips:
+                continue
 
             blob_client = container_client.get_blob_client(blob.name)
             properties = blob_client.get_blob_properties()

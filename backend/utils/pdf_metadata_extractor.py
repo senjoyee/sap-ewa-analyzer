@@ -10,7 +10,6 @@ import asyncio
 import json
 
 from openai import AsyncAzureOpenAI
-import fitz  # PyMuPDF
 
 from fastapi import HTTPException
 from core.runtime_config import PDF_METADATA_TEXT_LIMIT, PDF_METADATA_MAX_TOKENS
@@ -35,26 +34,6 @@ Example output:
 Text to analyze:
 """
 
-
-def extract_text_from_first_page(pdf_bytes: bytes) -> str:
-    """Extract text from the first page of a PDF file."""
-    try:
-        # Create a BytesIO object from the PDF bytes
-        pdf_stream = io.BytesIO(pdf_bytes)
-        
-        # Open the PDF with PyMuPDF
-        doc = fitz.open(stream=pdf_stream, filetype="pdf")
-        
-        # Extract text from the first page
-        first_page = doc[0]
-        text = first_page.get_text()
-        
-        # Close the document
-        doc.close()
-        
-        return text.strip()
-    except Exception as e:
-        raise ValueError(f"Failed to extract text from PDF: {str(e)}")
 
 
 def _normalize_date_format(date_str: str) -> str:
@@ -127,17 +106,10 @@ def _parse_regex_fallback(text: str) -> Dict[str, str]:
     }
 
 
-async def extract_metadata_with_ai(pdf_bytes: bytes) -> Dict[str, Any]:
-    """Extract system ID and report date from PDF using AI with fallback to regex."""
-    # First try to extract text from the first page
-    try:
-        text = extract_text_from_first_page(pdf_bytes)
-    except ValueError as e:
-        raise HTTPException(status_code=400, detail=f"Could not extract text from PDF: {str(e)}")
-    
+async def extract_metadata_with_ai(text: str) -> Dict[str, Any]:
+    """Extract system ID and report date from text using AI with fallback to regex."""
     if not text:
-        # If no text, fall back to regex on filename
-        raise ValueError("No text found in first page of PDF")
+        raise ValueError("No text provided for metadata extraction")
     
     # Try AI extraction first
     try:
