@@ -59,6 +59,15 @@
                                     <Column hAlign="Begin">
                                         <Text text="Customer"/>
                                     </Column>
+                                    <Column hAlign="Begin" width="100px">
+                                        <Text text="SID"/>
+                                    </Column>
+                                    <Column hAlign="Begin" width="150px">
+                                        <Text text="Start Date"/>
+                                    </Column>
+                                    <Column hAlign="Begin" width="150px">
+                                        <Text text="End Date"/>
+                                    </Column>
                                 </columns>
                                 <items>
                                     <ColumnListItem vAlign="Middle">
@@ -68,12 +77,38 @@
                                             <Select
                                                 selectedKey="{uploadQueue>customer}"
                                                 change=".onUploadQueueCustomerChange"
-                                                width="200px"
+                                                width="150px"
                                                 forceSelection="true"
                                                 items="{customers>/customers}">
                                                 <core:Item key="" text="Select customer"/>
                                                 <core:Item key="{customers>key}" text="{customers>text}"/>
                                             </Select>
+                                            <Input 
+                                                value="{uploadQueue>sid}" 
+                                                maxLength="3" 
+                                                placeholder="SID"
+                                                liveChange=".onSIDLiveChange"
+                                                width="100%"/>
+                                            <DatePicker
+                                                value="{
+                                                    path: 'uploadQueue>startDate',
+                                                    type: 'sap.ui.model.type.Date',
+                                                    formatOptions: {pattern: 'yyyy-MM-dd', strictParsing: true}
+                                                }"
+                                                valueFormat="yyyy-MM-dd"
+                                                displayFormat="yyyy-MM-dd"
+                                                placeholder="Start Date"
+                                                width="100%"/>
+                                            <DatePicker
+                                                value="{
+                                                    path: 'uploadQueue>endDate',
+                                                    type: 'sap.ui.model.type.Date',
+                                                    formatOptions: {pattern: 'yyyy-MM-dd', strictParsing: true}
+                                                }"
+                                                valueFormat="yyyy-MM-dd"
+                                                displayFormat="yyyy-MM-dd"
+                                                placeholder="End Date"
+                                                width="100%"/>
                                         </cells>
                                     </ColumnListItem>
                                 </items>

@@ -235,7 +235,10 @@ sap.ui.define([
                     index: idx,
                     name: oFile.name,
                     size: oFile.size,
-                    customer: ""
+                    customer: "",
+                    sid: "",
+                    startDate: null,
+                    endDate: null
                 };
             });
 
@@ -243,6 +246,16 @@ sap.ui.define([
         },
 
         onUploadComplete: function () {
+        },
+
+        onSIDLiveChange: function (oEvent) {
+            var oInput = oEvent.getSource();
+            var sValue = oEvent.getParameter("value");
+            // Enforce uppercase
+            var sUpper = sValue.toUpperCase();
+            if (sValue !== sUpper) {
+                oInput.setValue(sUpper);
+            }
         },
 
         handleTypeMissmatch: function (oEvent) {
@@ -261,9 +274,16 @@ sap.ui.define([
             }
 
             var aQueue = this.getView().getModel("uploadQueue").getProperty("/files") || [];
-            var aMissing = aQueue.filter(function (q) { return !q.customer; });
-            if (aMissing.length) {
+
+            var aMissingCustomer = aQueue.filter(function (q) { return !q.customer; });
+            if (aMissingCustomer.length) {
                 MessageToast.show("Please select a customer for each file before uploading.");
+                return;
+            }
+
+            var aMissingMetadata = aQueue.filter(function (q) { return !q.sid || !q.startDate || !q.endDate; });
+            if (aMissingMetadata.length) {
+                MessageToast.show("Please provide SID, Start Date, and End Date for each file before uploading.");
                 return;
             }
 
@@ -278,10 +298,19 @@ sap.ui.define([
                 aFiles.map((oFile, idx) => {
                     var oQueueItem = aQueue.find(q => q.index === idx);
                     var sCustomer = oQueueItem && oQueueItem.customer ? oQueueItem.customer : sFallbackCustomer;
+                    var sSid = oQueueItem && oQueueItem.sid ? oQueueItem.sid : "";
+
+                    // Format dates to strictly YYYY-MM-DD strings for backend parsing
+                    var oFormat = sap.ui.core.format.DateFormat.getDateInstance({ pattern: "yyyy-MM-dd" });
+                    var sStartDate = oQueueItem && oQueueItem.startDate ? oFormat.format(oQueueItem.startDate) : "";
+                    var sEndDate = oQueueItem && oQueueItem.endDate ? oFormat.format(oQueueItem.endDate) : "";
 
                     var formData = new FormData();
                     formData.append("file", oFile);
                     formData.append("customer_name", sCustomer);
+                    formData.append("system_id", sSid);
+                    formData.append("start_date", sStartDate);
+                    formData.append("end_date", sEndDate);
 
                     return fetch(Config.getEndpoint("upload"), {
                         method: "POST",

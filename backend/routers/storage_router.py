@@ -152,8 +152,14 @@ storage_service = StorageService()
 # ------------------------- Upload endpoint ------------------------- #
 
 @router.post("/upload")
-async def upload_file(file: UploadFile = File(...), customer_name: str = Form(...)):
-    """Upload a ZIP file, convert contained HTML to Markdown, extract metadata, and store in Azure Blob."""
+async def upload_file(
+    file: UploadFile = File(...), 
+    customer_name: str = Form(...),
+    system_id: str = Form(...),
+    start_date: str = Form(...),
+    end_date: str = Form(...)
+):
+    """Upload a ZIP file, convert contained HTML to Markdown, and store in Azure Blob with provided metadata."""
 
     if not blob_service_client:
         raise HTTPException(status_code=500, detail="Azure Blob Service client not initialized. Check server logs and .env configuration.")
@@ -207,37 +213,18 @@ async def upload_file(file: UploadFile = File(...), customer_name: str = Form(..
                 
             logger.info("Successfully converted HTML to Markdown (%d bytes)", len(markdown_content))
         
-            # Try AI-based metadata extraction first (using Markdown text)
+            # Format dates (from YYYY-MM-DD input from frontend)
             try:
-                from utils.metadata_extractor import extract_metadata_with_ai
-                # Pass the first 2000 chars for metadata extraction to save tokens/time
-                file_metadata = await extract_metadata_with_ai(markdown_content[:2000])
-                logger.info(
-                    "AI extraction successful - System ID: %s, Report Date: %s",
-                    file_metadata["system_id"],
-                    file_metadata["report_date_str"],
-                )
-            except Exception as ai_error:
-                # If AI extraction fails, fall back to filename validation
-                logger.warning(
-                    "AI extraction failed, falling back to filename validation: %s",
-                    ai_error,
-                )
-                try:
-                    file_metadata = validate_filename_and_extract_metadata(file.filename)
-                    logger.info(
-                        "Filename validation successful - System ID: %s, Report Date: %s",
-                        file_metadata["system_id"],
-                        file_metadata["report_date_str"],
-                    )
-                except ValueError as filename_error:
-                    raise HTTPException(
-                        status_code=400,
-                        detail=(
-                            "Filename validation failed: Ensure the zip file follows the expected naming convention "
-                            "<SID>_ddmmyy.zip (e.g., ERP_090625.zip) or provide an HTML file with readable header metadata."
-                        ),
-                    ) from filename_error
+                report_date = datetime.strptime(end_date, "%Y-%m-%d")
+                start_date_obj = datetime.strptime(start_date, "%Y-%m-%d")
+            except ValueError:
+                raise HTTPException(status_code=400, detail="Invalid date format provided. Expected YYYY-MM-DD.")
+            
+            file_metadata = {
+                "system_id": system_id.upper(),
+                "report_date": report_date,
+                "report_date_str": report_date.strftime("%d.%m.%Y")
+            }
                 
             # Generate new filename based on extracted metadata.
             # It returns .zip extension since the original file was .zip.
@@ -262,27 +249,13 @@ async def upload_file(file: UploadFile = File(...), customer_name: str = Form(..
                 customer_name,
             )
 
-            # Create comprehensive metadata
-            # Handle both AI extraction (datetime object) and filename validation (already parsed) results
-            if isinstance(file_metadata["report_date"], datetime):
-                report_date_iso = file_metadata["report_date"].isoformat()
-                report_date_str = file_metadata["report_date_str"]
-            else:
-                # AI extraction returns string dates
-                try:
-                    dt = datetime.strptime(file_metadata["report_date"], "%d.%m.%Y")
-                    report_date_iso = dt.isoformat()
-                    report_date_str = file_metadata["report_date"]
-                except ValueError:
-                    # Fallback
-                    report_date_iso = datetime.now().isoformat()
-                    report_date_str = file_metadata.get("report_date_str", "Unknown")
-
             metadata: Dict[str, Any] = {
                 "customer_name": customer_name,
                 "system_id": file_metadata["system_id"],
-                "report_date": report_date_iso,
-                "report_date_str": report_date_str
+                "report_date": report_date.isoformat(),
+                "report_date_str": file_metadata["report_date_str"],
+                "start_date": start_date_obj.isoformat(),
+                "start_date_str": start_date_obj.strftime("%d.%m.%Y")
             }
 
             blob_client.upload_blob(markdown_content.encode('utf-8'), overwrite=True, metadata=metadata, content_type="text/markdown")
