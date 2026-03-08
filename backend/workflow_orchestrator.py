@@ -31,7 +31,6 @@ from agent.openai_ewa_agent import OpenAIEWAAgent
 from agent.anthropic_ewa_agent import AnthropicEWAAgent
 from agent.parameter_extraction_agent import ParameterExtractionAgent
 from utils.markdown_utils import json_to_markdown
-from converters.document_converter import convert_document_to_markdown
 from services.storage_service import StorageService
 from core.runtime_config import ANTHROPIC_TIMEOUT_SECONDS, ANTHROPIC_CONNECT_TIMEOUT_SECONDS
 
@@ -590,28 +589,12 @@ class EWAWorkflowOrchestrator:
                 or "does not exist" in error_text
             )
             if missing_md:
-                logger.warning("[STEP 1] Markdown missing for %s; attempting conversion", state.blob_name)
-            if skip_conversion and not missing_md:
-                state.error = error_text
+                logger.error("[STEP 1] Markdown missing for %s. It should have been created during upload.", state.blob_name)
+                state.error = f"Markdown file not found: {e}"
                 return state
-            # Attempt to generate markdown via converter when missing
-            try:
-                logger.info(
-                    "[STEP 1] Markdown not found for %s; attempting conversion to markdown",
-                    state.blob_name,
-                )
-                result = await asyncio.to_thread(convert_document_to_markdown, state.blob_name)
-                if isinstance(result, dict) and not result.get("error") and result.get("status") == "completed":
-                    # Re-download newly created markdown
-                    state.markdown_content = await self.download_markdown_from_blob(state.blob_name)
-                    return state
-                else:
-                    msg = result.get("message") if isinstance(result, dict) else None
-                    state.error = msg or str(e)
-                    return state
-            except Exception as conv_e:
-                state.error = str(conv_e)
-                return state
+                
+            state.error = error_text
+            return state
     
 
     async def run_analysis_step(self, state: WorkflowState) -> WorkflowState:
