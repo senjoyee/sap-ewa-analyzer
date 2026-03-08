@@ -163,7 +163,8 @@
                             <cells>
                                 <ObjectIdentifier title="{files>name}"/>
                                 <ObjectStatus
-                                    text="{files>status}"
+                                    text="{files>statusText}"
+                                    tooltip="{= ${files>statusMessage} || ${files>statusHint} || ${files>statusText} }"
                                     inverted="true"
                                     state="{path: 'files>status', formatter: '.formatter.statusState'}"
                                     icon="{path: 'files>status', formatter: '.formatter.statusIcon'}"/>

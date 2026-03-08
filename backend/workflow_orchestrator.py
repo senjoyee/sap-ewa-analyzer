@@ -18,6 +18,7 @@ The orchestrator ensures a cohesive end-to-end analysis process for SAP EWA repo
 import os
 import json
 import asyncio
+import re
 import traceback  # Added for exception logging
 import logging
 from datetime import datetime
@@ -163,6 +164,38 @@ class EWAWorkflowOrchestrator:
             if normalized == key or normalized.startswith(f"{key}-"):
                 return key
         return None
+
+    def _extract_error_status_code(self, error_message: str | None) -> int:
+        if not error_message:
+            return 500
+        match = re.search(r"Error code:\s*(\d{3})", error_message)
+        if match:
+            return int(match.group(1))
+        lowered = error_message.lower()
+        if "timeout" in lowered:
+            return 504
+        return 500
+
+    def _build_error_hint(self, error_message: str | None) -> str:
+        code = self._extract_error_status_code(error_message)
+        lowered = (error_message or "").lower()
+        if code == 429 or "too_many_requests" in lowered or "no_capacity" in lowered:
+            return "429: Too many requests"
+        if code == 504 or "timeout" in lowered:
+            return "504: Timeout"
+        if "context length" in lowered or "maximum context length" in lowered or "too many tokens" in lowered:
+            return "500: Context length exceeded"
+        if code == 500:
+            return "500: Analysis failed"
+        return f"{code}: Analysis failed"
+
+    def _truncate_metadata_value(self, value: str | None, max_length: int = 240) -> str | None:
+        if value is None:
+            return None
+        text = str(value).strip()
+        if len(text) <= max_length:
+            return text
+        return text[: max_length - 3].rstrip() + "..."
 
     def _calculate_usage_cost(self, usage: dict | None) -> dict | None:
         if not usage:
@@ -472,6 +505,9 @@ class EWAWorkflowOrchestrator:
                 if metadata.get("last_status") != "processing":
                     metadata["last_status"] = "processing"
                     updated = True
+                for key in ["last_error_status_code", "last_error_hint", "last_error_message"]:
+                    if metadata.pop(key, None) is not None:
+                        updated = True
             else:
                 if metadata.pop("processing", None) is not None:
                     updated = True
@@ -510,6 +546,41 @@ class EWAWorkflowOrchestrator:
     async def _set_last_status(self, blob_name: str, status: str | None) -> bool:
         normalized = status.lower() if isinstance(status, str) else None
         return await self._set_metadata_field(blob_name, "last_status", normalized)
+
+    async def _set_workflow_status_metadata(
+        self,
+        blob_name: str,
+        status: str | None,
+        error_message: str | None = None,
+    ) -> bool:
+        try:
+            blob_client = self.blob_service_client.get_blob_client(
+                container=AZURE_STORAGE_CONTAINER_NAME,
+                blob=blob_name,
+            )
+            properties = await asyncio.to_thread(blob_client.get_blob_properties)
+            metadata = (properties.metadata or {}).copy()
+
+            if status is None:
+                metadata.pop("last_status", None)
+            else:
+                metadata["last_status"] = status.lower()
+
+            if status and status.lower() == "failed":
+                status_code = str(self._extract_error_status_code(error_message))
+                metadata["last_error_status_code"] = status_code
+                metadata["last_error_hint"] = self._truncate_metadata_value(self._build_error_hint(error_message), 120) or "500: Analysis failed"
+                metadata["last_error_message"] = self._truncate_metadata_value(error_message, 240) or "Analysis failed"
+            else:
+                metadata.pop("last_error_status_code", None)
+                metadata.pop("last_error_hint", None)
+                metadata.pop("last_error_message", None)
+
+            await asyncio.to_thread(blob_client.set_blob_metadata, metadata)
+            return True
+        except Exception as e:
+            logger.warning("Could not update workflow status metadata for %s: %s", blob_name, e)
+            return False
 
     # Workflow step functions
     async def download_content_step(self, state: WorkflowState, skip_conversion: bool = False) -> WorkflowState:
@@ -792,6 +863,8 @@ class EWAWorkflowOrchestrator:
             state = await self.save_results_step(state)
             if state.error:
                 raise Exception(state.error)
+
+            await self._set_workflow_status_metadata(blob_name, "completed")
             
             # Return success response
             base_name = os.path.splitext(blob_name)[0]
@@ -808,9 +881,13 @@ class EWAWorkflowOrchestrator:
         except Exception as e:
             error_message = f"Workflow error: {str(e)}"
             logger.exception(error_message)
+            status_code = self._extract_error_status_code(error_message)
+            await self._set_workflow_status_metadata(blob_name, "failed", error_message)
             return {
                 "success": False,
                 "error": True,
+                "status_code": status_code,
+                "error_hint": self._build_error_hint(error_message),
                 "message": error_message,
                 "original_file": blob_name
             }

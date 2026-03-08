@@ -153,20 +153,35 @@ sap.ui.define([
                     // Transform data to match UI model
                     var aFiles = (data.files || []).map(function (oFile) {
                         var sStatus = "New";
+                        var sStatusText = "New";
+                        var sStatusHint = oFile.last_error_hint || "";
+                        var sStatusMessage = oFile.last_error_message || "";
 
                         // Check processing flag first (takes priority)
                         if (oFile.processing) {
                             sStatus = "Processing";
+                            sStatusText = "Processing";
+                        } else if (oFile.last_status === "failed") {
+                            sStatus = "Failed";
+                            sStatusText = sStatusHint ? "Failed (" + sStatusHint + ")" : "Failed";
                         } else if (oFile.ai_analyzed) {
                             sStatus = "Analyzed";
+                            sStatusText = "Analyzed";
+                        } else if (oFile.last_status === "completed") {
+                            sStatus = "Analyzed";
+                            sStatusText = "Analyzed";
                         } else if (oFile.processed) {
                             sStatus = "Processing";
+                            sStatusText = "Processing";
                         }
 
                         return {
                             name: oFile.name,
                             customer: oFile.customer_name,
                             status: sStatus, // "Analyzed", "Processing", "New"
+                            statusText: sStatusText,
+                            statusHint: sStatusHint,
+                            statusMessage: sStatusMessage,
                             uploadDate: oFile.last_modified ? new Date(oFile.last_modified) : null,
                             reportDate: oFile.report_date ? new Date(oFile.report_date) : null,
                             reportYear: oFile.report_date ? new Date(oFile.report_date).getFullYear() : null,

@@ -316,6 +316,7 @@ async def list_files():
             
             # Check for processing flag in metadata
             is_processing = metadata.get("processing", "").lower() == "true"
+            last_status = (metadata.get("last_status") or "").lower()
             
             file_info = {
                 "name": blob.name,
@@ -328,6 +329,10 @@ async def list_files():
                 "processed": processed,
                 "ai_analyzed": ai_analyzed,
                 "processing": is_processing,  # Add processing flag
+                "last_status": last_status,
+                "last_error_status_code": metadata.get("last_error_status_code"),
+                "last_error_hint": metadata.get("last_error_hint"),
+                "last_error_message": metadata.get("last_error_message"),
             }
             
             files.append(file_info)

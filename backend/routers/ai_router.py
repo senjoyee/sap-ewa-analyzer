@@ -33,17 +33,10 @@ async def _run_processing_flow(original_blob_name: str) -> Dict[str, Any]:
     base_name, _ = os.path.splitext(original_blob_name)
     markdown_blob_name = f"{base_name}.md"
     container_client = blob_service_client.get_container_client(AZURE_STORAGE_CONTAINER_NAME)
-    orig_blob_client = blob_service_client.get_blob_client(
-        container=AZURE_STORAGE_CONTAINER_NAME,
-        blob=original_blob_name,
-    )
 
     # Set processing flag in metadata
     try:
-        existing_properties = orig_blob_client.get_blob_properties()
-        existing_metadata = (existing_properties.metadata or {}).copy()
-        existing_metadata["processing"] = "true"
-        orig_blob_client.set_blob_metadata(existing_metadata)
+        await ewa_orchestrator.set_processing_flag(original_blob_name, True)
         logger.info("[PROCESS] Set processing=true metadata on %s", original_blob_name)
     except Exception as meta_err:
         logger.warning("[PROCESS] Could not set processing metadata: %s", meta_err)
@@ -83,13 +76,24 @@ async def _run_processing_flow(original_blob_name: str) -> Dict[str, Any]:
         result = await ewa_orchestrator.execute_workflow(original_blob_name, skip_markdown=True)
         logger.info("[PROCESS] Workflow completed with result: %s", result)
         return result
+    except HTTPException as http_err:
+        await ewa_orchestrator._set_workflow_status_metadata(
+            original_blob_name,
+            "failed",
+            str(getattr(http_err, "detail", http_err)),
+        )
+        raise
+    except Exception as exc:
+        await ewa_orchestrator._set_workflow_status_metadata(
+            original_blob_name,
+            "failed",
+            str(exc),
+        )
+        raise
     finally:
         # Clear processing flag after completion (success or failure)
         try:
-            existing_properties = orig_blob_client.get_blob_properties()
-            existing_metadata = (existing_properties.metadata or {}).copy()
-            existing_metadata.pop("processing", None)
-            orig_blob_client.set_blob_metadata(existing_metadata)
+            await ewa_orchestrator.set_processing_flag(original_blob_name, False)
             logger.info("[PROCESS] Cleared processing metadata on %s", original_blob_name)
         except Exception as meta_err:
             logger.warning("[PROCESS] Could not clear processing metadata: %s", meta_err)
@@ -108,7 +112,10 @@ async def process_and_analyze_document_endpoint(request: ProcessAnalyzeRequest):
     try:
         result = await _run_processing_flow(request.blob_name)
         if not result.get("success", False):
-            raise HTTPException(status_code=result.get("status_code", 500), detail=result.get("message", "Workflow failed"))
+            raise HTTPException(
+                status_code=result.get("status_code", 500),
+                detail=result.get("error_hint") or result.get("message", "Workflow failed"),
+            )
         return result
     except HTTPException:
         raise
@@ -139,7 +146,10 @@ async def analyze_document_with_ai_endpoint(request: BlobNameRequest):
     try:
         result = await ewa_orchestrator.execute_workflow(markdown_file)
         if not result.get("success", False):
-            raise HTTPException(status_code=500, detail=f"Analysis failed: {result.get('message', 'Unknown error')}")
+            raise HTTPException(
+                status_code=result.get("status_code", 500),
+                detail=result.get("error_hint") or result.get("message", "Analysis failed"),
+            )
         return {
             "success": True,
             "message": "Analysis completed successfully with structured JSON output",
@@ -169,9 +179,9 @@ async def reprocess_document_with_ai(request: BlobNameRequest):
     try:
         result = await _run_processing_flow(original_blob_name)
         if not result.get("success", False):
-            error_msg = result.get("message", "Unknown error")
+            error_msg = result.get("error_hint") or result.get("message", "Unknown error")
             logger.warning("[REPROCESS] Workflow failed: %s", error_msg)
-            raise HTTPException(status_code=500, detail=f"Re-analysis failed: {error_msg}")
+            raise HTTPException(status_code=result.get("status_code", 500), detail=error_msg)
 
         logger.info("[REPROCESS] Re-analysis completed successfully for %s", original_blob_name)
         return {
