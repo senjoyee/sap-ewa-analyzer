@@ -15,6 +15,7 @@ Key Features:
 
 import os
 import re
+import hashlib
 import logging
 from pathlib import Path
 from typing import Optional
@@ -35,6 +36,81 @@ _BAR_VERT_WIDTH = 41
 
 # Minimum non-background pixel count to consider an image non-trivial
 _MIN_COLOR_PIXELS = 5
+
+# Pre-computed icon pixel-hash table (MD5 of RGBA pixel data).
+# Covers all known EWA rating icons so classification works without
+# runtime pixel analysis for recognised icons.
+# Generated from sample EWA report: SHP_20474620_850648038_2026-03-02_R_EWA
+_KNOWN_ICON_HASHES: dict[str, str] = {
+    # BLUE (16x14)
+    "d7d279bb48a8d71c85d42d5f43003be2": "[BLUE]",
+    "30de9c8658582bd738b675b0037bd7d7": "[BLUE]",
+    "3965494858d3faeae6b307cddd5cbdc7": "[BLUE]",
+    # GRAY (16x14)
+    "2c3c964fa29df911943e6006c15eab06": "[GRAY]",
+    "e1b96877094368da9e37f4932e728534": "[GRAY]",
+    "7f217c88c5c04f24f88c71cf493fca41": "[GRAY]",
+    "f99b403e8a06fc5f9aa8bb8bfe4aa90b": "[GRAY]",
+    "2ab2293e5d0e5249e9a4de7fc05b221a": "[GRAY]",
+    "74fa9460acfd3927de758b4f048d6d4f": "[GRAY]",
+    # GRAY_BAR (32x15)
+    "2b1afc2199f9a582a105a78a32767454": "[GRAY_BAR]",
+    "c96cfb4e2f7430b1fcc72033f3eab189": "[GRAY_BAR]",
+    "b45dc0d3a603bee9776759ae11439b9b": "[GRAY_BAR]",
+    # GREEN (16x14)
+    "6e21cb214337562288a80e7e5a43b7b1": "[GREEN]",
+    "ae6d4835c58c4f2ea0b08dc0582ef785": "[GREEN]",
+    "a4746d0befe413daa879df446913fa86": "[GREEN]",
+    "6b61822904f7eda0bb13a5d859be794c": "[GREEN]",
+    "3e8e0805dfb3b5ef239ea8efb237e7a6": "[GREEN]",
+    "32b1da78d539893900610b5adadcfafb": "[GREEN]",
+    "0e3cc76c7d6cfc20f77f12521296e79e": "[GREEN]",
+    "dda2cec40dca5d0ca0c7afb9041d2f72": "[GREEN]",
+    "ea6de01a481241168d7880494344c7db": "[GREEN]",
+    "ea6d7ea285f0754007d4d753306df8cb": "[GREEN]",
+    "537ea033b8b1b1f797e2ce9ab59fb473": "[GREEN]",
+    # GREEN_BAR (32x15 / 41x100)
+    "3246c1d94713d64f42e9258aa648599c": "[GREEN_BAR]",
+    "46882c7f941acb354df7a66a7fd71785": "[GREEN_BAR]",
+    "1c634918d5d042b683c06d07a276e5c4": "[GREEN_BAR]",
+    "04586bc109d86c64a3b44001694080be": "[GREEN_BAR]",
+    "c55e8c5e75f305c58b4f3a5f6bc5641e": "[GREEN_BAR]",
+    "4bccdc1eeaa1f0c31ca5f22b584276e1": "[GREEN_BAR]",
+    "9f2ee22b943a41f856c1476295d40016": "[GREEN_BAR]",
+    # NOT_RATED (16x14 / 16x16)
+    "423b0448e5a27a9c5b40a3581b034cce": "[NOT_RATED]",
+    "54ee8b9f5e84d049112e327cb1532a04": "[NOT_RATED]",
+    "eee9cc45a2ad0128e0c4224f20254b2d": "[NOT_RATED]",
+    "17b4ebb1dc8381d26be3c4a9e5e033d1": "[NOT_RATED]",
+    # RED (16x14)
+    "59d85d6ff36d8d22cc171a4be6b4dab4": "[RED]",
+    "0dcb043d93362db34e18e43973a4dbe1": "[RED]",
+    "dc3022b77b8645a56fd7b187bdbd5d34": "[RED]",
+    "3bdf0d49a7602e32279f886df405da9d": "[RED]",
+    "4bfca9ff9e6b2e1ceb55ed42c6c7122b": "[RED]",
+    "4f892c34e4678233f406174667f0288e": "[RED]",
+    # RED_BAR (32x15 / 41x100)
+    "f28580d67f0b2bbd42c42ae43cb30518": "[RED_BAR]",
+    "9a31964d762fb4a9b3e9c1fff98a7d2d": "[RED_BAR]",
+    "53f5fdfb8fcc2208659fe6dc5d66c28c": "[RED_BAR]",
+    # YELLOW (16x14)
+    "40e0e93b8137ce3fd6a141f6d54820b5": "[YELLOW]",
+    "40f3550a8c89a140f6778ed483bd6364": "[YELLOW]",
+    "6fb6ddacd322bff285eec76f056389da": "[YELLOW]",
+    "3e8048b4ad9aa0bcdb594299007f9e77": "[YELLOW]",
+    "f57a970ec12e8559b1725dc34a1eafbd": "[YELLOW]",
+    "cdf2b795a9435e8168dfa9829f6a1472": "[YELLOW]",
+    "01e11723d2e469c058ff784a3ab60e14": "[YELLOW]",
+    "6da615e518feadce1c3a1a88ff9bd6f5": "[YELLOW]",
+    "2f68b97fb71eb5864bad46f1ac28c8d9": "[YELLOW]",
+    "bd58e5727cc4d9de2b128453d6e072c5": "[YELLOW]",
+    "82d74b2fb7e669f039120330126330b6": "[YELLOW]",
+    "0573e7bccba7e3bf979769519f430d7d": "[YELLOW]",
+    # YELLOW_BAR (41x100)
+    "94293253a4f8cb8c7c2900440a811555": "[YELLOW_BAR]",
+    "f5fdc0e0f155a1906b8e2793e0052feb": "[YELLOW_BAR]",
+    "bb78b1c845e571253b2218b9e737625c": "[YELLOW_BAR]",
+}
 
 
 def _avg_color(image_path: str) -> tuple[Optional[tuple[int, int, int]], int, int]:
@@ -93,13 +169,28 @@ def _classify_bar(image_path: str) -> str:
     return "[GRAY_BAR]"
 
 
+def _pixel_hash(image_path: str) -> Optional[str]:
+    """Compute MD5 hash of RGBA pixel data for an image file."""
+    try:
+        img = Image.open(image_path).convert("RGBA")
+        return hashlib.md5(img.tobytes()).hexdigest()
+    except Exception:
+        return None
+
+
 def classify_icon(image_path: str) -> str:
     """
     Classify an icon GIF by its dominant pixel color.
 
-    Returns a text label such as [GREEN], [YELLOW], [RED], [BLUE],
-    [GRAY], [NOT_RATED], [GREEN_BAR], etc.
+    Uses a pre-computed hash table for instant lookup of known icons.
+    Falls back to runtime pixel analysis for unrecognised images.
     """
+    # Fast path: check pre-computed hash table first
+    ph = _pixel_hash(image_path)
+    if ph and ph in _KNOWN_ICON_HASHES:
+        return _KNOWN_ICON_HASHES[ph]
+
+    # Slow path: runtime pixel analysis for unknown icons
     avg, w, h = _avg_color(image_path)
 
     # Large images are charts / decorations
