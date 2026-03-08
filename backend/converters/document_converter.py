@@ -1,8 +1,8 @@
 """
 Document Conversion Orchestrator Module (PDF-only)
 
-This module is the single entry point for converting PDF files to markdown.
-Legacy DOC/DOCX support has been removed; non-PDF inputs will return an error.
+This module is the single entry point for converting documents to markdown.
+Supports PDF and HTML (from Word filtered HTML export) inputs.
 """
 
 import os
@@ -10,6 +10,7 @@ from datetime import datetime
 
 from converters import pdf_markdown_converter
 from converters.pdf_markdown_converter import convert_pdf_to_markdown
+from converters.html_markdown_converter import convert_html_to_markdown
 
 # Dictionary to track the status of document conversion jobs across all file types
 # This is a global tracker for the unified converter
@@ -38,12 +39,20 @@ def convert_document_to_markdown(blob_name: str) -> dict:
     # Determine file type and use appropriate converter
     if blob_name.lower().endswith('.pdf'):
         result = convert_pdf_to_markdown(blob_name)
+    elif blob_name.lower().endswith(('.htm', '.html')):
+        result = {
+            "status": "completed",
+            "message": "HTML converted to markdown successfully",
+            "markdown_content": convert_html_to_markdown(blob_name),
+            "start_time": start_time.isoformat(),
+            "end_time": datetime.now().isoformat(),
+        }
     else:
         # Unsupported file type
         result = {
             "error": True,
             "status": "failed",
-            "message": f"Unsupported file type: {os.path.splitext(blob_name)[1]}. Supported types: .pdf",
+            "message": f"Unsupported file type: {os.path.splitext(blob_name)[1]}. Supported types: .pdf, .htm, .html",
             "start_time": start_time.isoformat(),
             "end_time": datetime.now().isoformat()
         }
