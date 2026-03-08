@@ -102,8 +102,22 @@ class WorkflowState:
     summary_result: str = ""
     summary_json: dict = None
     parameters_json: dict = None
+    summary_usage: dict = None
+    parameter_usage: dict = None
+    usage_report: dict = None
     check_overview_index: dict = None  # Vision-extracted Check Overview rows from PDF
     error: str = ""
+
+
+MODEL_PRICING_USD_PER_1M = {
+    "gpt-5.4": {"input": 2.5, "cached_input": 0.625, "output": 20.0},
+    "gpt-5.2": {"input": 1.75, "cached_input": 0.175, "output": 14.0},
+    "gpt-5.1": {"input": 1.25, "cached_input": 0.125, "output": 10.0},
+    "gpt-5": {"input": 1.25, "cached_input": 0.125, "output": 10.0},
+    "gpt-5-mini": {"input": 0.25, "cached_input": 0.025, "output": 2.0},
+}
+
+OPENAI_PRICING_SOURCE_URL = "https://openai.com/api/pricing/"
 
 class EWAWorkflowOrchestrator:
     """Custom orchestrator for EWA analysis workflows"""
@@ -140,6 +154,115 @@ class EWAWorkflowOrchestrator:
         except Exception as e:
             logger.exception("Error initializing clients: %s", e)
             raise
+
+    def _normalize_model_key(self, model_name: str | None) -> str | None:
+        if not model_name:
+            return None
+        normalized = model_name.strip().lower()
+        for key in MODEL_PRICING_USD_PER_1M:
+            if normalized == key or normalized.startswith(f"{key}-"):
+                return key
+        return None
+
+    def _calculate_usage_cost(self, usage: dict | None) -> dict | None:
+        if not usage:
+            return None
+        model_name = usage.get("model")
+        model_key = self._normalize_model_key(model_name)
+        pricing = MODEL_PRICING_USD_PER_1M.get(model_key)
+        input_tokens = int(usage.get("input_tokens") or 0)
+        cached_input_tokens = int(usage.get("cached_input_tokens") or 0)
+        output_tokens = int(usage.get("output_tokens") or 0)
+        reasoning_tokens = int(usage.get("reasoning_tokens") or 0)
+        total_tokens = int(usage.get("total_tokens") or (input_tokens + output_tokens))
+        non_cached_input_tokens = max(input_tokens - cached_input_tokens, 0)
+
+        cost_breakdown = {
+            "input_non_cached_usd": None,
+            "input_cached_usd": None,
+            "output_usd": None,
+            "total_usd": None,
+        }
+
+        if pricing:
+            cost_breakdown["input_non_cached_usd"] = round((non_cached_input_tokens / 1_000_000) * pricing["input"], 6)
+            cost_breakdown["input_cached_usd"] = round((cached_input_tokens / 1_000_000) * pricing["cached_input"], 6)
+            cost_breakdown["output_usd"] = round((output_tokens / 1_000_000) * pricing["output"], 6)
+            cost_breakdown["total_usd"] = round(
+                cost_breakdown["input_non_cached_usd"] + cost_breakdown["input_cached_usd"] + cost_breakdown["output_usd"],
+                6,
+            )
+
+        return {
+            "model": model_name,
+            "model_pricing_key": model_key,
+            "reasoning_effort": usage.get("reasoning_effort"),
+            "input_tokens": input_tokens,
+            "cached_input_tokens": cached_input_tokens,
+            "non_cached_input_tokens": non_cached_input_tokens,
+            "output_tokens": output_tokens,
+            "reasoning_tokens": reasoning_tokens,
+            "total_tokens": total_tokens,
+            "reasoning_tokens_billed_as_output_tokens": True,
+            "pricing_usd_per_1m_tokens": pricing,
+            "cost_usd": cost_breakdown,
+        }
+
+    def _sanitize_report_name_part(self, value: str | None, fallback: str) -> str:
+        raw = (value or "").strip()
+        if not raw:
+            raw = fallback
+        cleaned = "".join(ch if ch.isalnum() or ch in {"-", "_"} else "_" for ch in raw)
+        cleaned = cleaned.strip("_")
+        return cleaned or fallback
+
+    def _resolve_report_system_id(self, state: WorkflowState, metadata: dict | None) -> str:
+        metadata = metadata or {}
+        candidates = [
+            metadata.get("system_id"),
+            state.summary_json.get("system_id") if isinstance(state.summary_json, dict) else None,
+            (state.summary_json.get("system_metadata") or {}).get("system_id") if isinstance(state.summary_json, dict) and isinstance(state.summary_json.get("system_metadata"), dict) else None,
+        ]
+        for candidate in candidates:
+            if isinstance(candidate, str) and candidate.strip():
+                return candidate.strip().upper()
+        return "UNKNOWN"
+
+    def _build_usage_report(self, state: WorkflowState, original_metadata: dict | None) -> dict:
+        generated_at = datetime.utcnow().strftime("%Y-%m-%dT%H:%M:%SZ")
+        summary_usage = self._calculate_usage_cost(state.summary_usage)
+        parameter_usage = self._calculate_usage_cost(state.parameter_usage)
+        items = [item for item in [summary_usage, parameter_usage] if item]
+        aggregate = {
+            "input_tokens": sum(item.get("input_tokens", 0) for item in items),
+            "cached_input_tokens": sum(item.get("cached_input_tokens", 0) for item in items),
+            "non_cached_input_tokens": sum(item.get("non_cached_input_tokens", 0) for item in items),
+            "output_tokens": sum(item.get("output_tokens", 0) for item in items),
+            "reasoning_tokens": sum(item.get("reasoning_tokens", 0) for item in items),
+            "total_tokens": sum(item.get("total_tokens", 0) for item in items),
+            "total_cost_usd": round(sum((item.get("cost_usd") or {}).get("total_usd", 0) or 0 for item in items), 6),
+        }
+        return {
+            "generated_at_utc": generated_at,
+            "source_blob": state.blob_name,
+            "system_id": self._resolve_report_system_id(state, original_metadata),
+            "pricing_source": {
+                "url": OPENAI_PRICING_SOURCE_URL,
+                "notes": [
+                    "GPT-5.4 pricing retrieved from OpenAI pricing documentation.",
+                    "Reasoning tokens are billed as output tokens per OpenAI pricing guidance.",
+                ],
+            },
+            "summary": summary_usage,
+            "parameter_extraction": parameter_usage,
+            "aggregate": aggregate,
+        }
+
+    def _build_usage_report_blob_name(self, state: WorkflowState, original_metadata: dict | None) -> str:
+        timestamp = datetime.utcnow().strftime("%Y%m%d_%H%M%S")
+        system_id = self._sanitize_report_name_part(self._resolve_report_system_id(state, original_metadata), "UNKNOWN")
+        base_name = self._sanitize_report_name_part(os.path.splitext(state.blob_name)[0], "analysis")
+        return f"{system_id}_{timestamp}_{base_name}_token_usage.json"
     
     def _create_agent(self, model: str | None = None, summary_prompt: str | None = None) -> OpenAIEWAAgent:
         model_name = model or self.summary_model
@@ -530,6 +653,7 @@ class EWAWorkflowOrchestrator:
             ai_result = await agent.run(text_input, pdf_data=None)
             
             state.summary_json = ai_result if ai_result else {}
+            state.summary_usage = getattr(agent, "last_usage", {}) or {}
             
             # Validate and fix report_date if obviously wrong (fallback to filename)
             state.summary_json = self._fix_report_date_if_invalid(state.summary_json, state.blob_name)
@@ -543,11 +667,13 @@ class EWAWorkflowOrchestrator:
                     raise RuntimeError("OpenAI client not initialized")
                 param_agent = ParameterExtractionAgent(self.openai_client)
                 state.parameters_json = await param_agent.extract(text_input)
+                state.parameter_usage = getattr(param_agent, "last_usage", {}) or {}
                 param_count = len(state.parameters_json.get("parameters", []))
                 logger.info("[STEP 2b] Extracted %s parameters", param_count)
             except Exception as param_e:
                 logger.warning("[STEP 2b] Parameter extraction failed (non-fatal): %s", param_e)
                 state.parameters_json = {"parameters": [], "extraction_notes": f"Extraction failed: {str(param_e)}"}
+                state.parameter_usage = getattr(locals().get("param_agent"), "last_usage", {}) or {}
             
             return state
         except Exception as e:
@@ -611,6 +737,11 @@ class EWAWorkflowOrchestrator:
                 await self.upload_to_blob(params_blob_name, json.dumps(state.parameters_json, indent=2), "application/json", original_metadata)
                 param_count = len(state.parameters_json.get("parameters", []))
                 logger.info("Saved %s parameters to %s", param_count, params_blob_name)
+
+            state.usage_report = self._build_usage_report(state, original_metadata)
+            usage_report_blob_name = self._build_usage_report_blob_name(state, original_metadata)
+            await self.upload_to_blob(usage_report_blob_name, json.dumps(state.usage_report, indent=2), "application/json", original_metadata)
+            logger.info("Saved token usage report to %s", usage_report_blob_name)
             
             return state
         except Exception as e:

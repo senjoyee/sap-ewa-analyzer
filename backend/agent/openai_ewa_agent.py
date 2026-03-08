@@ -10,7 +10,7 @@ import logging
 from typing import Dict, Any, Union
 from jsonschema import validate, ValidationError
 from utils.json_repair import JSONRepair
-from core.runtime_config import SUMMARY_MAX_OUTPUT_TOKENS
+from core.runtime_config import SUMMARY_MAX_OUTPUT_TOKENS, SUMMARY_REASONING_EFFORT
 
 # Note: LLM-based JSON repair has been removed.
 # OpenAIEWAAgent uses local deterministic repair via utils.json_repair.JSONRepair.
@@ -28,6 +28,7 @@ class OpenAIEWAAgent:
     def __init__(self, client: Union[object, None], model: str, summary_prompt: str | None = None, schema_path: str | None = None):
         self.client = client
         self.model = model
+        self.last_usage: Dict[str, Any] = {}
 
         if summary_prompt is not None:
             self.summary_prompt = summary_prompt
@@ -91,6 +92,42 @@ class OpenAIEWAAgent:
     
 
     # ----------------------------- Internal helpers ----------------------------- #
+
+    def _extract_usage(self, response: Any) -> Dict[str, Any]:
+        usage = getattr(response, "usage", None)
+        if hasattr(usage, "model_dump"):
+            usage = usage.model_dump()
+        elif usage is not None and not isinstance(usage, dict):
+            usage = {
+                "input_tokens": getattr(usage, "input_tokens", None),
+                "output_tokens": getattr(usage, "output_tokens", None),
+                "total_tokens": getattr(usage, "total_tokens", None),
+                "input_tokens_details": getattr(usage, "input_tokens_details", None),
+                "output_tokens_details": getattr(usage, "output_tokens_details", None),
+            }
+
+        input_details = (usage or {}).get("input_tokens_details") or {}
+        output_details = (usage or {}).get("output_tokens_details") or {}
+
+        if hasattr(input_details, "model_dump"):
+            input_details = input_details.model_dump()
+        elif not isinstance(input_details, dict):
+            input_details = {"cached_tokens": getattr(input_details, "cached_tokens", None)}
+
+        if hasattr(output_details, "model_dump"):
+            output_details = output_details.model_dump()
+        elif not isinstance(output_details, dict):
+            output_details = {"reasoning_tokens": getattr(output_details, "reasoning_tokens", None)}
+
+        return {
+            "model": self.model,
+            "reasoning_effort": SUMMARY_REASONING_EFFORT,
+            "input_tokens": (usage or {}).get("input_tokens"),
+            "cached_input_tokens": input_details.get("cached_tokens", 0) or 0,
+            "output_tokens": (usage or {}).get("output_tokens"),
+            "reasoning_tokens": output_details.get("reasoning_tokens", 0) or 0,
+            "total_tokens": (usage or {}).get("total_tokens"),
+        }
 
 
     async def _call_openai_responses(self, markdown: str, pdf_data: bytes | None) -> Dict[str, Any]:
@@ -156,36 +193,21 @@ class OpenAIEWAAgent:
                     model=self.model,
                     input=[{"role": "user", "content": user_content}],
                     text=text_format,
-                    reasoning={"effort": "medium"},
+                    reasoning={"effort": SUMMARY_REASONING_EFFORT},
                     max_output_tokens=SUMMARY_MAX_OUTPUT_TOKENS,
                 )
             )
-            # Log token usage for visibility
+            self.last_usage = self._extract_usage(response)
             try:
-                usage = getattr(response, "usage", None)
-                in_tok = out_tok = None
-                if usage is not None:
-                    # usage may be a pydantic model or dict
-                    in_tok = getattr(usage, "input_tokens", None) if hasattr(usage, "input_tokens") else (usage.get("input_tokens") if isinstance(usage, dict) else None)
-                    out_tok = getattr(usage, "output_tokens", None) if hasattr(usage, "output_tokens") else (usage.get("output_tokens") if isinstance(usage, dict) else None)
-                if in_tok is None or out_tok is None:
-                    try:
-                        resp_dict = response.model_dump() if hasattr(response, "model_dump") else None
-                        if isinstance(resp_dict, dict):
-                            u = resp_dict.get("usage", {})
-                            if in_tok is None:
-                                in_tok = u.get("input_tokens")
-                            if out_tok is None:
-                                out_tok = u.get("output_tokens")
-                    except Exception:
-                        pass
                 logger.info(
-                    "Token usage: input_tokens=%s, output_tokens=%s",
-                    in_tok,
-                    out_tok,
+                    "Token usage: input_tokens=%s, cached_input_tokens=%s, output_tokens=%s, reasoning_tokens=%s, total_tokens=%s",
+                    self.last_usage.get("input_tokens"),
+                    self.last_usage.get("cached_input_tokens"),
+                    self.last_usage.get("output_tokens"),
+                    self.last_usage.get("reasoning_tokens"),
+                    self.last_usage.get("total_tokens"),
                 )
             except Exception:
-                # Do not fail if usage is unavailable
                 pass
 
             # Extract structured output

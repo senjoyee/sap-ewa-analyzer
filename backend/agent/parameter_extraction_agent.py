@@ -9,7 +9,7 @@ import json
 import asyncio
 import logging
 from typing import Dict, Any, List, Optional
-from core.runtime_config import PARAM_MAX_OUTPUT_TOKENS
+from core.runtime_config import PARAM_MAX_OUTPUT_TOKENS, PARAM_REASONING_EFFORT
 
 # Action status values for parameter classification
 ACTION_STATUS_CHANGE_REQUIRED = "Change Required"
@@ -44,6 +44,7 @@ class ParameterExtractionAgent:
             model: Model deployment name (defaults to AZURE_OPENAI_PARAM_MODEL or gpt-5.1)
         """
         self.client = client
+        self.last_usage: Dict[str, Any] = {}
         # Use gpt-5.1 specifically for parameter extraction
         self.model = model or os.getenv("AZURE_OPENAI_PARAM_MODEL", "gpt-5.1")
         
@@ -239,6 +240,42 @@ class ParameterExtractionAgent:
                 ]
             }
         ]
+
+        def extract_usage(response: Any) -> Dict[str, Any]:
+            usage = getattr(response, "usage", None)
+            if hasattr(usage, "model_dump"):
+                usage = usage.model_dump()
+            elif usage is not None and not isinstance(usage, dict):
+                usage = {
+                    "input_tokens": getattr(usage, "input_tokens", None),
+                    "output_tokens": getattr(usage, "output_tokens", None),
+                    "total_tokens": getattr(usage, "total_tokens", None),
+                    "input_tokens_details": getattr(usage, "input_tokens_details", None),
+                    "output_tokens_details": getattr(usage, "output_tokens_details", None),
+                }
+
+            input_details = (usage or {}).get("input_tokens_details") or {}
+            output_details = (usage or {}).get("output_tokens_details") or {}
+
+            if hasattr(input_details, "model_dump"):
+                input_details = input_details.model_dump()
+            elif not isinstance(input_details, dict):
+                input_details = {"cached_tokens": getattr(input_details, "cached_tokens", None)}
+
+            if hasattr(output_details, "model_dump"):
+                output_details = output_details.model_dump()
+            elif not isinstance(output_details, dict):
+                output_details = {"reasoning_tokens": getattr(output_details, "reasoning_tokens", None)}
+
+            return {
+                "model": self.model,
+                "reasoning_effort": PARAM_REASONING_EFFORT,
+                "input_tokens": (usage or {}).get("input_tokens"),
+                "cached_input_tokens": input_details.get("cached_tokens", 0) or 0,
+                "output_tokens": (usage or {}).get("output_tokens"),
+                "reasoning_tokens": output_details.get("reasoning_tokens", 0) or 0,
+                "total_tokens": (usage or {}).get("total_tokens"),
+            }
         
         # Call API using responses endpoint with medium reasoning effort
         response = await asyncio.to_thread(
@@ -246,18 +283,22 @@ class ParameterExtractionAgent:
                 model=self.model,
                 input=messages,
                 text=text_format,
-                reasoning={"effort": "medium"},
+                reasoning={"effort": PARAM_REASONING_EFFORT},
                 max_output_tokens=PARAM_MAX_OUTPUT_TOKENS,
             )
         )
+        self.last_usage = extract_usage(response)
         
         # Log token usage
         try:
-            usage = getattr(response, "usage", None)
-            if usage:
-                in_tok = getattr(usage, "input_tokens", None)
-                out_tok = getattr(usage, "output_tokens", None)
-                logger.info("Token usage: input=%s, output=%s", in_tok, out_tok)
+            logger.info(
+                "Token usage: input_tokens=%s, cached_input_tokens=%s, output_tokens=%s, reasoning_tokens=%s, total_tokens=%s",
+                self.last_usage.get("input_tokens"),
+                self.last_usage.get("cached_input_tokens"),
+                self.last_usage.get("output_tokens"),
+                self.last_usage.get("reasoning_tokens"),
+                self.last_usage.get("total_tokens"),
+            )
         except Exception:
             logger.exception("Failed to read token usage")
         
