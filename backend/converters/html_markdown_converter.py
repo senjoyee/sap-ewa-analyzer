@@ -71,12 +71,12 @@ def _classify_bar(image_path: str) -> str:
     try:
         img = Image.open(image_path).convert("RGB")
     except Exception:
-        return "[BAR]"
+        return "⬜ BAR"
 
     pixels = list(img.getdata())
     total = len(pixels)
     if total == 0:
-        return "[BAR]"
+        return "⬜ BAR"
 
     red = sum(1 for r, g, b in pixels if r > 150 and g < 100 and b < 100)
     green = sum(1 for r, g, b in pixels if g > 100 and r < 100 and b < 100)
@@ -85,26 +85,26 @@ def _classify_bar(image_path: str) -> str:
     pct_r, pct_g, pct_y = red / total, green / total, yellow / total
 
     if pct_g > 0.04:
-        return "[GREEN_BAR]"
+        return "🟢 GREEN_BAR"
     if pct_r > 0.04:
-        return "[RED_BAR]"
+        return "🔴 RED_BAR"
     if pct_y > 0.04:
-        return "[YELLOW_BAR]"
-    return "[GRAY_BAR]"
+        return "🟡 YELLOW_BAR"
+    return "⬜ GRAY_BAR"
 
 
 def classify_icon(image_path: str) -> str:
     """
     Classify an icon GIF by its dominant pixel color.
 
-    Returns a text label such as [GREEN], [YELLOW], [RED], [BLUE],
-    [GRAY], [NOT_RATED], [GREEN_BAR], etc.
+    Returns a text label with emoji such as 🟢 GREEN, 🟡 YELLOW, 🔴 RED,
+    🔵 BLUE, ⬜ GRAY, ⚫ NOT_RATED, etc.
     """
     avg, w, h = _avg_color(image_path)
 
     # Large images are charts / decorations
     if w > 50 and h > 50:
-        return _classify_bar(image_path) if w <= _BAR_VERT_WIDTH else "[IMAGE]"
+        return _classify_bar(image_path) if w <= _BAR_VERT_WIDTH else "📊 IMAGE"
 
     # Progress bars (32x15 horizontal or 41xN vertical)
     if (w, h) == _BAR_HORIZ_SIZE or w == _BAR_VERT_WIDTH:
@@ -112,43 +112,43 @@ def classify_icon(image_path: str) -> str:
 
     # Decorative / separator images (very wide but short)
     if w > 100 and h < 20:
-        return "[SEPARATOR]"
+        return "---"
 
     # Large decorative images
     if w > 50:
-        return "[IMAGE]"
+        return "📊 IMAGE"
 
     # If we couldn't determine color → not rated
     if avg is None:
-        return "[NOT_RATED]"
+        return "⚫ NOT_RATED"
 
     r, g, b = avg
 
     # Black / dash icon (avg very dark, all channels low)
     if r < 20 and g < 20 and b < 20:
-        return "[NOT_RATED]"
+        return "⚫ NOT_RATED"
 
     # Red icon: high red, low green and blue
     if r > 100 and g < 60 and b < 60:
-        return "[RED]"
+        return "🔴 RED"
 
     # Blue icon: high blue, low red and green
     if b > 100 and r < 60 and g < 60:
-        return "[BLUE]"
+        return "🔵 BLUE"
 
     # Yellow icon: high red, high green, low blue
     if r > 100 and g > 80 and b < 60:
-        return "[YELLOW]"
+        return "🟡 YELLOW"
 
     # Green icon: green channel dominant
     if g > 50 and r < 80 and b < 50:
-        return "[GREEN]"
+        return "🟢 GREEN"
 
     # Gray icon: all channels roughly equal and mid-range
     if abs(r - g) < 30 and abs(g - b) < 30:
-        return "[GRAY]"
+        return "⬜ GRAY"
 
-    return "[NOT_RATED]"
+    return "⚫ NOT_RATED"
 
 
 def build_icon_map(images_dir: str) -> dict[str, str]:
@@ -495,9 +495,13 @@ def main():
     md = convert_html_to_markdown(html_path, output_path)
 
     # Print summary statistics
-    icon_labels = re.findall(r"\[(?:GREEN|YELLOW|RED|BLUE|GRAY|NOT_RATED|GREEN_BAR|RED_BAR|YELLOW_BAR|GRAY_BAR|IMAGE|CHART|SEPARATOR)\]", md)
+    icon_labels = re.findall(r"(?:🟢|🟡|🔴|🔵|⬜|⚫|📊) (?:GREEN|YELLOW|RED|BLUE|GRAY|NOT_RATED|GREEN_BAR|RED_BAR|YELLOW_BAR|GRAY_BAR|IMAGE)", md)
     from collections import Counter
     counts = Counter(icon_labels)
+
+    # Force UTF-8 output for emoji labels
+    import io
+    sys.stdout = io.TextIOWrapper(sys.stdout.buffer, encoding='utf-8', errors='replace')
 
     print(f"\nConversion complete!")
     print(f"  Output: {output_path or os.path.splitext(html_path)[0] + '.md'}")
