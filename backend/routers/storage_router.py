@@ -209,7 +209,7 @@ async def upload_file(file: UploadFile = File(...), customer_name: str = Form(..
         
             # Try AI-based metadata extraction first (using Markdown text)
             try:
-                from utils.pdf_metadata_extractor import extract_metadata_with_ai
+                from utils.metadata_extractor import extract_metadata_with_ai
                 # Pass the first 2000 chars for metadata extraction to save tokens/time
                 file_metadata = await extract_metadata_with_ai(markdown_content[:2000])
                 logger.info(

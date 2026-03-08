@@ -1,4 +1,4 @@
-"""Utility functions for extracting metadata from PDF files using AI."""
+"""Utility functions for extracting metadata from document text using AI."""
 
 import json
 import re
@@ -214,5 +214,5 @@ async def extract_metadata_with_ai(text: str) -> Dict[str, Any]:
     # If both methods fail, raise an error
     raise HTTPException(
         status_code=400, 
-        detail="Could not extract System ID and Report Date from PDF. Please use filename format <SID>_ddmmyy.pdf as fallback."
+        detail="Could not extract System ID and Report Date from document. Please ensure the zipped HTML has readability."
     )
