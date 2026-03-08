@@ -246,7 +246,7 @@ class ParameterExtractionAgent:
                 model=self.model,
                 input=messages,
                 text=text_format,
-                reasoning={"effort": "none"},
+                reasoning={"effort": "medium"},
                 max_output_tokens=PARAM_MAX_OUTPUT_TOKENS,
             )
         )

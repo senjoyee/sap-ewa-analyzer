@@ -27,6 +27,7 @@ modules:
       AZURE_OPENAI_ENDPOINT: "{{AZURE_OPENAI_ENDPOINT}}"
       AZURE_OPENAI_API_KEY: "{{AZURE_OPENAI_API_KEY}}"
       AZURE_OPENAI_SUMMARY_MODEL: "{{AZURE_OPENAI_SUMMARY_MODEL}}"
+      AZURE_OPENAI_PARAM_MODEL: "{{AZURE_OPENAI_PARAM_MODEL}}"
     requires:
       - name: ewaanalyzer-uaa
     provides:

@@ -156,8 +156,8 @@ class OpenAIEWAAgent:
                     model=self.model,
                     input=[{"role": "user", "content": user_content}],
                     text=text_format,
+                    reasoning={"effort": "medium"},
                     max_output_tokens=SUMMARY_MAX_OUTPUT_TOKENS,
-                    # reasoning={"effort": "medium"},  # use default reasoning effort
                 )
             )
             # Log token usage for visibility
