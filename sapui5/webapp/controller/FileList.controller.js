@@ -171,8 +171,8 @@ sap.ui.define([
                             sStatus = "Analyzed";
                             sStatusText = "Analyzed";
                         } else if (oFile.processed) {
-                            sStatus = "Processing";
-                            sStatusText = "Processing";
+                            sStatus = "New";
+                            sStatusText = "Ready for AI";
                         }
 
                         return {
