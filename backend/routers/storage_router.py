@@ -294,7 +294,7 @@ async def list_files():
 
     try:
         container_client = blob_service_client.get_container_client(AZURE_STORAGE_CONTAINER_NAME)
-        blob_list = list(container_client.list_blobs())
+        blob_list = list(container_client.list_blobs(include=['metadata']))
 
         logger.info("Found %s total blobs in container", len(blob_list))
 
@@ -333,9 +333,7 @@ async def list_files():
             if name_low.endswith(".md") and base_name in pdf_zips:
                 continue
 
-            blob_client = container_client.get_blob_client(blob.name)
-            properties = blob_client.get_blob_properties()
-            metadata = properties.metadata or {}
+            metadata = blob.metadata or {}
 
             base_name, _ = os.path.splitext(blob.name)
             customer_name = metadata.get("customer_name", "Unknown")
