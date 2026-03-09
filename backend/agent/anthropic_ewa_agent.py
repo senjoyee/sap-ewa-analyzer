@@ -55,12 +55,12 @@ class AnthropicEWAAgent:
         # Local JSON repair utility
         self.json_repair = JSONRepair()
 
-    async def run(self, markdown: str, pdf_data: bytes = None) -> Dict[str, Any]:
+    async def run(self, markdown: str, document_data: bytes = None) -> Dict[str, Any]:
         """Return a validated summary JSON object.
         
         Args:
             markdown: Markdown text of the document
-            pdf_data: Unused, kept for API compatibility with EWAAgent
+            document_data: Unused, kept for API compatibility with EWAAgent
         """
         summary_json = await self._call_anthropic(markdown)
         

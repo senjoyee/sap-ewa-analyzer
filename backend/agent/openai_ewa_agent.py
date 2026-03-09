@@ -69,11 +69,11 @@ class OpenAIEWAAgent:
         self.json_repair = JSONRepair()
 
     # ----------------------------- Public API ----------------------------- #
-    async def run(self, markdown: str, pdf_data: bytes = None) -> Dict[str, Any]:
+    async def run(self, markdown: str, document_data: bytes = None) -> Dict[str, Any]:
         """Return a validated summary JSON object.
         Attempts a single local (non-LLM) repair if initial output is invalid.
         """
-        summary_json = await self._call_openai_responses(markdown, pdf_data)
+        summary_json = await self._call_openai_responses(markdown, document_data)
         if self._is_valid(summary_json):
             logger.info("Initial JSON valid; skipping repair")
             return summary_json
@@ -130,8 +130,8 @@ class OpenAIEWAAgent:
         }
 
 
-    async def _call_openai_responses(self, markdown: str, pdf_data: bytes | None) -> Dict[str, Any]:
-        """Use Azure OpenAI Responses API with Structured Outputs via text.format and optional PDF input.
+    async def _call_openai_responses(self, markdown: str, document_data: bytes | None) -> Dict[str, Any]:
+        """Use Azure OpenAI Responses API with Structured Outputs via text.format and optional document input.
         Returns the parsed JSON directly when available; otherwise falls back to output_text parsing/repair.
         """
 
@@ -141,10 +141,10 @@ class OpenAIEWAAgent:
         file_id = None
         temp_path = None
         try:
-            if pdf_data:
-                # Upload PDF bytes as a temp file to Files API (purpose="assistants")
-                with tempfile.NamedTemporaryFile(delete=False, suffix=".pdf") as tmp:
-                    tmp.write(pdf_data)
+            if document_data:
+                # Upload document bytes as a temp file to Files API (purpose="assistants")
+                with tempfile.NamedTemporaryFile(delete=False, suffix=".bin") as tmp:
+                    tmp.write(document_data)
                     temp_path = tmp.name
                 file_obj = open(temp_path, "rb")
                 try:
@@ -163,7 +163,7 @@ class OpenAIEWAAgent:
 
             if file_id:
                 user_content.append({"type": "input_file", "file_id": file_id})
-                user_content.append({"type": "input_text", "text": "Please analyze the attached EWA PDF and produce the structured JSON."})
+                user_content.append({"type": "input_text", "text": "Please analyze the attached EWA document and produce the structured JSON."})
                 # If file was attached, include instructions as separate text to steer the function call
                 user_content.append({"type": "input_text", "text": instruction_text})
             else:

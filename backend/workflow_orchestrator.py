@@ -363,7 +363,7 @@ class EWAWorkflowOrchestrator:
         return AnthropicEWAAgent(client=client, model=model_name, summary_prompt=summary_prompt)
     
     def _fix_report_date_if_invalid(self, summary_json: dict, blob_name: str) -> dict:
-        """Validate report_date; if obviously wrong, extract from filename pattern {SID}_{DD}_{Mon}_{YY}.pdf."""
+        """Validate report_date; if obviously wrong, extract from filename pattern {SID}_{DD}_{Mon}_{YY}.*."""
         import re
         MONTH_MAP = {
             "jan": "01", "feb": "02", "mar": "03", "apr": "04",
@@ -389,7 +389,7 @@ class EWAWorkflowOrchestrator:
             return False
         
         def extract_date_from_filename(fname: str) -> str | None:
-            # Pattern: {SID}_{DD}_{Mon}_{YY}.pdf  e.g. ERP_09_Nov_25.pdf
+            # Pattern: {SID}_{DD}_{Mon}_{YY}.*  e.g. ERP_09_Nov_25.zip or .html
             m = re.match(r"^[A-Za-z0-9]+_(\d{2})_([A-Za-z]{3})_(\d{2})", fname)
             if m:
                 day, mon, yy = m.group(1), m.group(2).lower(), m.group(3)
@@ -780,7 +780,7 @@ class EWAWorkflowOrchestrator:
         """Execute the complete workflow.
 
         Args:
-            blob_name: Name of the original PDF blob to analyze.
+            blob_name: Name of the original document blob to analyze.
             skip_markdown: If True, assume markdown conversion already ran and skip converter fallback.
         """
         processing_flag_set = False
