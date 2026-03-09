@@ -17,9 +17,22 @@ if (!$BackendOnly) {
 
 Write-Host "--- 2. Building MTA Archive (this may take a few minutes) ---" -ForegroundColor Cyan
 if ($BackendOnly) {
-    Write-Host "Building ONLY backend module..." -ForegroundColor Yellow
-    mbt build -m ewa-analyzer-backend -t ./mta_archives --mtar ewa_analyzer.mtar
-} else {
+    Write-Host "Building ONLY backend module (skipping UI)..." -ForegroundColor Yellow
+    $skipUiExt = "mta_skip_ui.mtaext"
+    @"
+_schema-version: "3.1"
+ID: ewa-analyzer-skip-ui
+extends: ewa-analyzer
+
+modules:
+  - name: ewa-analyzer-ui
+    build-parameters:
+      commands:
+        - node -e "console.log('Skipping UI build');"
+"@ | Out-File -FilePath $skipUiExt -Encoding utf8
+    mbt build -e $skipUiExt -t ./mta_archives --mtar ewa_analyzer.mtar
+}
+else {
     Write-Host "Building FULL project..." -ForegroundColor Yellow
     mbt build -t ./mta_archives --mtar ewa_analyzer.mtar
 }
@@ -38,7 +51,8 @@ if (Test-Path "mtaext.yaml") {
     Write-Host "Using local mtaext.yaml for deployment..." -ForegroundColor Yellow
     $params += "-e"
     $params += "mtaext.yaml"
-} else {
+}
+else {
     Write-Host "No mtaext.yaml found. Deploying with default configuration..." -ForegroundColor Yellow
 }
 
@@ -47,3 +61,6 @@ cf8 $params
 
 Write-Host "--- Deployment Complete! ---" -ForegroundColor Green
 
+if (Test-Path "mta_skip_ui.mtaext") {
+    Remove-Item "mta_skip_ui.mtaext" -Force
+}
