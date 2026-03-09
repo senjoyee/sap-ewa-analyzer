@@ -82,12 +82,12 @@ For each parameter, assign `action_status` and `priority` using the rules below.
 1. **`"Change Required"`** — Use if:
    - The current value differs from the recommended value
    - The report explicitly states a change is needed
-   - A red status indicator includes a specific target value
+   - A `[RED]` status indicator includes a specific target value
    - An SAP Note recommends a different value
 2. **`"Verify"`** — Use if:
    - The recommended value matches the current value and the parameter is already compliant
    - The parameter changed recently and verification is needed
-   - A yellow status indicates review is needed
+   - A `[YELLOW]` status indicates review is needed
 3. **`"No Action"`** — Use if:
    - The parameter is shown for information only, with no recommended value and no request to review, monitor, or change
    - The content is configuration or statistics only (for example, OS limits, file descriptors)
@@ -99,15 +99,15 @@ For each parameter, assign `action_status` and `priority` using the rules below.
    - Periodic review is recommended
 
 ## `priority`
-- **`"High"`**: Red status, critical alerts, security vulnerabilities, performance degradation
-- **`"Medium"`**: Yellow or warning status, optimization opportunities, best-practice deviations
-- **`"Low"`**: Informational content, green or OK status, no immediate action needed
+- **`"High"`**: `[RED]` status, critical alerts, security vulnerabilities, performance degradation
+- **`"Medium"`**: `[YELLOW]` or warning status, optimization opportunities, best-practice deviations
+- **`"Low"`**: Informational content, `[GREEN]` or OK status, no immediate action needed
 
 # Extraction Rules
 ## 1. Inclusivity
 Extract any mention of a parameter, even if:
 - Only the current value is shown
-- It appears in status tables (OK/Green — use `"No Action"` or `"Monitor"` as applicable)
+- It appears in status tables (OK/`[GREEN]` — use `"No Action"` or `"Monitor"` as applicable)
 - It appears in narrative text
 - It is part of a comparison or trend analysis
 
@@ -119,7 +119,7 @@ Look for parameters in:
 - Trend analyses with parameter changes
 - Statements such as "should be" or "must be"
 - SAP Note references proposing parameter changes
-- Status indicators (Red/Yellow/Green) next to parameters
+- Status indicators (`[RED]`/`[YELLOW]`/`[GREEN]`) next to parameters
 
 ## 3. Thorough Section-by-Section Review
 Review all relevant sections, including:

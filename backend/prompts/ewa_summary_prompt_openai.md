@@ -58,13 +58,13 @@ Serve as a highly experienced SAP Basis Architect (20+ years). Analyze an SAP Ea
    - Apply the following rubric consistently when grading findings.
 
    **Performance Rubric**
-   - `poor`: CPU utilization above 90% sustained, high paging or swapping rates, multiple red alerts in database performance sections, or response times exceeding thresholds.
-   - `fair`: Periodic spikes in CPU or memory, yellow alerts present, no sustained bottlenecks, but optimization opportunities exist.
-   - `good`: All performance KPIs within green thresholds and no response time issues.
+   - `poor`: CPU utilization above 90% sustained, high paging or swapping rates, multiple `[RED]` alerts in database performance sections, or response times exceeding thresholds.
+   - `fair`: Periodic spikes in CPU or memory, `[YELLOW]` alerts present, no sustained bottlenecks, but optimization opportunities exist.
+   - `good`: All performance KPIs within `[GREEN]` thresholds and no response time issues.
 
    **Security Rubric**
-   - `poor`: Standard users with `SAP_ALL` or `SAP_NEW`, default passwords in production, critical parameter deviations such as open RFC gateway or insecure SNC, or red security alerts.
-   - `fair`: Minor parameter warnings, user review needed, or yellow security alerts.
+   - `poor`: Standard users with `SAP_ALL` or `SAP_NEW`, default passwords in production, critical parameter deviations such as open RFC gateway or insecure SNC, or `[RED]` security alerts.
+   - `fair`: Minor parameter warnings, user review needed, or `[YELLOW]` security alerts.
    - `good`: No critical security alerts and compliant configurations.
 
    **Stability Rubric**
@@ -86,7 +86,7 @@ Serve as a highly experienced SAP Basis Architect (20+ years). Analyze an SAP Ea
    - List areas performing well, each supported by evidence.
    - Populate as an array with field names matching the schema.
    - Provide 4-5 concise positive findings total, selecting the strongest supported items.
-   - Do not derive Positive Findings from Check Overview green ticks; use document evidence instead.
+   - Do not derive Positive Findings from Check Overview `[GREEN]` indicators; use document evidence instead.
 
 6. **Key Findings (Check Overview-Driven Extraction)**
    Use the following Check Overview approach to extract findings. Process each Subtopic row one by one.
@@ -96,13 +96,13 @@ Serve as a highly experienced SAP Basis Architect (20+ years). Analyze an SAP Ea
    - Each row has: `Topic`, `Subtopic Rating`, `Subtopic`.
 
    **Step 2 - Mapping Rules**
-   - Red icon -> `high` severity Key Finding, where `Area = Topic` and `Finding = Subtopic`.
-   - Yellow icon -> `medium` severity Key Finding.
-   - Unknown icon -> treat as `medium` severity unless the document clearly indicates otherwise.
+   - `[RED]` indicator -> `high` severity Key Finding, where `Area = Topic` and `Finding = Subtopic`.
+   - `[YELLOW]` indicator -> `medium` severity Key Finding.
+   - `[NOT_RATED]` or `[GRAY]` indicators -> treat as `medium` severity unless the document clearly indicates otherwise.
    - Do not create `critical` severities from the Check Overview table.
 
    **Step 3 - Detail Expansion**
-   For each red, yellow, or unknown row:
+   For each `[RED]`, `[YELLOW]`, `[NOT_RATED]`, or `[GRAY]` row:
    1. Create a `Key Finding` entry with a unique ID, for example `KF-01`, `KF-02`, and so on.
    2. Use the `Subtopic` as the `Finding` text.
    3. Use `Topic` as `Area`, using the topic verbatim.
@@ -111,11 +111,11 @@ Serve as a highly experienced SAP Basis Architect (20+ years). Analyze an SAP Ea
    6. If no detailed section is found, set `Impact` and `Business Impact` to `Unknown`, and `Source` to `Check Overview`.
 
    **Step 4 - Completeness Check**
-   - Every red, yellow, or unknown row must appear in Key Findings.
+   - Every `[RED]`, `[YELLOW]`, `[NOT_RATED]`, or `[GRAY]` row must appear in Key Findings.
    - Do not invent findings not present in the Check Overview table.
 
 7. **Recommendations**
-   - For each red, yellow, or unknown Check Overview row, meaning every Key Finding, create a 1:1 recommendation.
+   - For each `[RED]`, `[YELLOW]`, `[NOT_RATED]`, or `[GRAY]` Check Overview row, meaning every Key Finding, create a 1:1 recommendation.
    - Populate `Action`, `Preventative Action`, and `Estimated Effort` from the document where possible.
    - If details are missing, use `Unknown` for `Action` and `Preventative Action`.
    - If details are missing, set `Estimated Effort` to `{analysis: "medium", implementation: "medium"}`.
@@ -130,9 +130,9 @@ Serve as a highly experienced SAP Basis Architect (20+ years). Analyze an SAP Ea
 
 9. **Overall Risk**
    Apply the following Overall Risk Rubric based on Check Overview severities only:
-   - `high`: Any red Subtopic Rating.
-   - `medium`: No red, but at least one yellow or unknown Subtopic Rating.
-   - `low`: All Subtopic Ratings are green, or there are no findings.
+   - `high`: Any `[RED]` Subtopic Rating.
+   - `medium`: No `[RED]`, but at least one `[YELLOW]`, `[NOT_RATED]`, or `[GRAY]` Subtopic Rating.
+   - `low`: All Subtopic Ratings are `[GREEN]`, or there are no findings.
 
 10. **Chapters Reviewed (Mandatory)**
    - Output the complete and clear list of enumerated chapters and sections as found in the EWA document.
