@@ -204,7 +204,10 @@ class MapReduceEWAAgent:
             response = await asyncio.to_thread(
                 lambda: self.client.responses.create(
                     model=self.reduce_model,
-                    input=[sys_msg, {"role": "user", "content": [user_msg]}],
+                    input=[
+                        sys_msg,
+                        {"role": "user", "content": [{"type": "text", "text": user_msg["content"]}]}
+                    ],
                     text=text_format,
                     reasoning={"effort": SUMMARY_REASONING_EFFORT},
                     max_output_tokens=SUMMARY_MAX_OUTPUT_TOKENS,
