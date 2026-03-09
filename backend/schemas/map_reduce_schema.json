@@ -1,0 +1,209 @@
+{
+    "name": "ewa_analysis_synthesis",
+    "description": "Synthesized summary and parameters from an SAP EWA report.",
+    "strict": true,
+    "schema": {
+        "type": "object",
+        "properties": {
+            "System Health Overview": {
+                "type": "object",
+                "description": "Overall status of key system areas.",
+                "properties": {
+                    "Performance": {
+                        "type": [
+                            "string",
+                            "null"
+                        ],
+                        "enum": [
+                            "good",
+                            "fair",
+                            "poor",
+                            null
+                        ]
+                    },
+                    "Security": {
+                        "type": [
+                            "string",
+                            "null"
+                        ],
+                        "enum": [
+                            "good",
+                            "fair",
+                            "poor",
+                            null
+                        ]
+                    },
+                    "Stability": {
+                        "type": [
+                            "string",
+                            "null"
+                        ],
+                        "enum": [
+                            "good",
+                            "fair",
+                            "poor",
+                            null
+                        ]
+                    },
+                    "Configuration": {
+                        "type": [
+                            "string",
+                            "null"
+                        ],
+                        "enum": [
+                            "good",
+                            "fair",
+                            "poor",
+                            null
+                        ]
+                    }
+                },
+                "required": [
+                    "Performance",
+                    "Security",
+                    "Stability",
+                    "Configuration"
+                ],
+                "additionalProperties": false
+            },
+            "Executive Summary": {
+                "type": "string",
+                "description": "Concise bullet-point summary for a C-level audience."
+            },
+            "Positive Findings": {
+                "type": "array",
+                "description": "List of things the system is doing well or configured correctly.",
+                "items": {
+                    "type": "object",
+                    "properties": {
+                        "Area": {
+                            "type": "string",
+                            "description": "The general area, e.g., Security, Performance."
+                        },
+                        "Description": {
+                            "type": "string",
+                            "description": "Details of the positive finding."
+                        }
+                    },
+                    "required": [
+                        "Area",
+                        "Description"
+                    ],
+                    "additionalProperties": false
+                }
+            },
+            "Capacity Outlook": {
+                "type": "object",
+                "description": "Metrics related to system growth and utilization.",
+                "properties": {
+                    "Database Growth": {
+                        "type": [
+                            "string",
+                            "null"
+                        ],
+                        "description": "E.g., 50GB/month."
+                    },
+                    "CPU Utilization": {
+                        "type": [
+                            "string",
+                            "null"
+                        ],
+                        "description": "E.g., Max CPU is 11%."
+                    },
+                    "Memory Utilization": {
+                        "type": [
+                            "string",
+                            "null"
+                        ],
+                        "description": "Memory and paging information."
+                    },
+                    "Summary": {
+                        "type": [
+                            "string",
+                            "null"
+                        ],
+                        "description": "Overall capacity health statement."
+                    }
+                },
+                "required": [
+                    "Database Growth",
+                    "CPU Utilization",
+                    "Memory Utilization",
+                    "Summary"
+                ],
+                "additionalProperties": false
+            },
+            "Overall Risk": {
+                "type": [
+                    "string",
+                    "null"
+                ],
+                "enum": [
+                    "low",
+                    "medium",
+                    "high",
+                    null
+                ],
+                "description": "The aggregated risk level for the entire system based on all findings."
+            },
+            "Technical Parameters": {
+                "type": "object",
+                "description": "Key-value pairs of technical SAP/Database parameters extracted from the report.",
+                "properties": {
+                    "system_role": {
+                        "type": [
+                            "string",
+                            "null"
+                        ],
+                        "description": "e.g., Production, Test"
+                    },
+                    "database_type": {
+                        "type": [
+                            "string",
+                            "null"
+                        ],
+                        "description": "e.g., SAP HANA"
+                    },
+                    "database_version": {
+                        "type": [
+                            "string",
+                            "null"
+                        ],
+                        "description": "e.g., 2.00.075.00"
+                    },
+                    "kernel_release": {
+                        "type": [
+                            "string",
+                            "null"
+                        ],
+                        "description": "e.g., 793"
+                    },
+                    "abap_release": {
+                        "type": [
+                            "string",
+                            "null"
+                        ],
+                        "description": "e.g., SAP S/4HANA 2023"
+                    }
+                },
+                "required": [
+                    "system_role",
+                    "database_type",
+                    "database_version",
+                    "kernel_release",
+                    "abap_release"
+                ],
+                "additionalProperties": false
+            }
+        },
+        "required": [
+            "System Health Overview",
+            "Executive Summary",
+            "Positive Findings",
+            "Capacity Outlook",
+            "Overall Risk",
+            "Technical Parameters"
+        ],
+        "additionalProperties": false
+    }
+}

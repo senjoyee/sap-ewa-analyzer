@@ -29,6 +29,7 @@ from openai import AzureOpenAI
 from dotenv import load_dotenv
 from agent.openai_ewa_agent import OpenAIEWAAgent
 from agent.anthropic_ewa_agent import AnthropicEWAAgent
+from agent.map_reduce_agent import MapReduceEWAAgent
 from agent.parameter_extraction_agent import ParameterExtractionAgent
 from utils.markdown_utils import json_to_markdown
 from services.storage_service import StorageService
@@ -65,7 +66,6 @@ AZURE_STORAGE_CONNECTION_STRING = os.getenv("AZURE_STORAGE_CONNECTION_STRING")
 AZURE_STORAGE_CONTAINER_NAME = os.getenv("AZURE_STORAGE_CONTAINER_NAME")
 
 # System prompts for each workflow
-# System prompts for each workflow
 def load_summary_prompt() -> str | None:
     """Return the first available summary prompt content, or None if none found."""
     current_dir = os.path.dirname(os.path.abspath(__file__))
@@ -89,7 +89,33 @@ def load_summary_prompt() -> str | None:
     logger.warning("No summary prompt files found; EWAAgent will use its internal default prompts.")
     return None
 
+def load_text_resource(filename: str, subfolder: str = "prompts") -> str | None:
+    current_dir = os.path.dirname(os.path.abspath(__file__))
+    path = os.path.join(current_dir, subfolder, filename)
+    if os.path.exists(path):
+         try:
+             with open(path, "r", encoding="utf-8") as f:
+                 return f.read()
+         except Exception as e:
+             logger.warning("Could not read %s: %s", path, e)
+    return None
+
+def load_json_resource(filename: str, subfolder: str = "schemas") -> dict | None:
+    current_dir = os.path.dirname(os.path.abspath(__file__))
+    path = os.path.join(current_dir, subfolder, filename)
+    if os.path.exists(path):
+         try:
+             with open(path, "r", encoding="utf-8") as f:
+                 return json.load(f)
+         except Exception as e:
+             logger.warning("Could not read %s: %s", path, e)
+    return None
+
 SUMMARY_PROMPT: str | None = load_summary_prompt()
+MAP_PROMPT: str | None = load_text_resource("ewa_map_prompt.md")
+REDUCE_PROMPT: str | None = load_text_resource("ewa_reduce_prompt.md")
+MAP_REDUCE_SCHEMA: dict | None = load_json_resource("map_reduce_schema.json")
+
 
 
 
@@ -615,31 +641,38 @@ class EWAWorkflowOrchestrator:
                 report_date_str,
             )
             
-            # Run AI analysis using the full prompt
-            ai_prompt = SUMMARY_PROMPT
-            
-            # Branch based on PROVIDER environment variable
             text_input = (state.markdown_content or "").strip()
             if not text_input:
                 raise ValueError("Markdown content is empty; conversion must succeed before analysis.")
 
             logger.info(
-                "[ANALYSIS] Using PROVIDER=%s, markdown input (%s chars)",
-                PROVIDER,
+                "[ANALYSIS] Using Map-Reduce approach for Azure OpenAI, markdown input (%s chars)",
                 len(text_input),
             )
             
             if PROVIDER == "anthropic":
-                # Use Claude via Azure AI Foundry
+                # Fallback to single pass for Anthropic 
+                ai_prompt = SUMMARY_PROMPT
                 agent = self._create_anthropic_agent(ANTHROPIC_SUMMARY_MODEL, ai_prompt)
+                ai_result = await agent.run(text_input, pdf_data=None)
+                state.summary_usage = getattr(agent, "last_usage", {}) or {}
             else:
-                # Default: Use OpenAI via Azure OpenAI
-                agent = self._create_agent(AZURE_OPENAI_SUMMARY_MODEL, ai_prompt)
-            
-            ai_result = await agent.run(text_input, pdf_data=None)
+                # Map-Reduce flow for Azure OpenAI
+                if not MAP_PROMPT or not REDUCE_PROMPT or not MAP_REDUCE_SCHEMA:
+                    raise Exception("Missing Map-Reduce prompts or schema.")
+                
+                agent = MapReduceEWAAgent(
+                    client=self.openai_client,
+                    map_model=self.summary_model,
+                    reduce_model=self.summary_model,
+                    map_prompt=MAP_PROMPT,
+                    reduce_prompt=REDUCE_PROMPT,
+                    schema_dict=MAP_REDUCE_SCHEMA
+                )
+                ai_result = await agent.run(text_input)
+                state.summary_usage = agent.last_usage
             
             state.summary_json = ai_result if ai_result else {}
-            state.summary_usage = getattr(agent, "last_usage", {}) or {}
             
             # Validate and fix report_date if obviously wrong (fallback to filename)
             state.summary_json = self._fix_report_date_if_invalid(state.summary_json, state.blob_name)
