@@ -206,7 +206,7 @@ class MapReduceEWAAgent:
                     model=self.reduce_model,
                     input=[
                         sys_msg,
-                        {"role": "user", "content": [{"type": "text", "text": user_msg["content"]}]}
+                        {"role": "user", "content": [{"type": "input_text", "text": user_msg["content"]}]}
                     ],
                     text=text_format,
                     reasoning={"effort": SUMMARY_REASONING_EFFORT},
