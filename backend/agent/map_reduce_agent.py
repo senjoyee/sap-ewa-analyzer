@@ -134,7 +134,7 @@ class MapReduceEWAAgent:
                         {"role": "system", "content": self.map_prompt},
                         {"role": "user", "content": chunk_text}
                     ],
-                    max_tokens=2000,
+                    max_completion_tokens=2000,
                     temperature=0.1
                 )
             )
