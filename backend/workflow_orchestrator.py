@@ -679,20 +679,28 @@ class EWAWorkflowOrchestrator:
             
             state.summary_result = json_to_markdown(state.summary_json)
 
-            # Step 2b: Extract parameters using fast model
-            try:
-                logger.info("[STEP 2b] Extracting parameters for %s", state.blob_name)
-                if not self.openai_client:
-                    raise RuntimeError("OpenAI client not initialized")
-                param_agent = ParameterExtractionAgent(self.openai_client)
-                state.parameters_json = await param_agent.extract(text_input)
-                state.parameter_usage = getattr(param_agent, "last_usage", {}) or {}
-                param_count = len(state.parameters_json.get("parameters", []))
-                logger.info("[STEP 2b] Extracted %s parameters", param_count)
-            except Exception as param_e:
-                logger.warning("[STEP 2b] Parameter extraction failed (non-fatal): %s", param_e)
-                state.parameters_json = {"parameters": [], "extraction_notes": f"Extraction failed: {str(param_e)}"}
-                state.parameter_usage = getattr(locals().get("param_agent"), "last_usage", {}) or {}
+            # Step 2b: Extract parameters
+            if PROVIDER == "anthropic":
+                try:
+                    logger.info("[STEP 2b] Extracting parameters for %s using Anthropic fallback", state.blob_name)
+                    if not self.openai_client:
+                        raise RuntimeError("OpenAI client not initialized")
+                    param_agent = ParameterExtractionAgent(self.openai_client)
+                    state.parameters_json = await param_agent.extract(text_input)
+                    state.parameter_usage = getattr(param_agent, "last_usage", {}) or {}
+                    param_count = len(state.parameters_json.get("parameters", []))
+                    logger.info("[STEP 2b] Extracted %s parameters", param_count)
+                except Exception as param_e:
+                    logger.warning("[STEP 2b] Parameter extraction failed (non-fatal): %s", param_e)
+                    state.parameters_json = {"parameters": [], "extraction_notes": f"Extraction failed: {str(param_e)}"}
+                    state.parameter_usage = getattr(locals().get("param_agent"), "last_usage", {}) or {}
+            else:
+                # Map-reduce natively extracts parameters, avoiding duplicate work!
+                logger.info("[STEP 2b] Using natively extracted parameters from Map-Reduce output.")
+                tech_params = state.summary_json.get("Technical Parameters", {})
+                state.parameters_json = {"parameters": tech_params}
+                # Cost is already rolled into summary_usage
+                state.parameter_usage = {}
             
             return state
         except Exception as e:
