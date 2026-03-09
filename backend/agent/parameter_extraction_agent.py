@@ -10,6 +10,7 @@ import asyncio
 import logging
 from typing import Dict, Any, List, Optional
 from core.runtime_config import PARAM_MAX_OUTPUT_TOKENS, PARAM_REASONING_EFFORT
+from utils.json_repair import JSONRepair
 
 # Action status values for parameter classification
 ACTION_STATUS_CHANGE_REQUIRED = "Change Required"
@@ -60,6 +61,8 @@ class ParameterExtractionAgent:
              # Fallback if file not found (though it should be there)
             self.prompt = "Error: Parameter extraction prompt file not found."
             logger.warning("Prompt file not found at %s", PROMPT_PATH)
+            
+        self.json_repair = JSONRepair()
 
     
     async def extract(self, markdown_content: str) -> Dict[str, Any]:
@@ -310,16 +313,25 @@ class ParameterExtractionAgent:
                     return parsed
                 if isinstance(parsed, list) and len(parsed) == 1 and isinstance(parsed[0], dict):
                     return parsed[0]
-        except Exception:
-            pass
+        except Exception as e:
+            logger.warning("Failed to extract output_parsed: %s", e)
         
         # Fallback to output_text
         text = getattr(response, "output_text", None)
         if text:
             try:
                 return json.loads(text)
-            except json.JSONDecodeError:
-                pass
+            except json.JSONDecodeError as de:
+                logger.warning("JSONDecodeError on output_text: %s. Attempting repair.", de)
+                try:
+                    rr = self.json_repair.repair(text)
+                    if rr.success and isinstance(rr.data, dict):
+                        return rr.data
+                except Exception as re:
+                    logger.error("JSONRepair failed: %s", re)
+                logger.error("Raw output_text that failed parsing: %s", text)
+        else:
+            logger.warning("Both output_parsed and output_text were None or empty. Response: %s", response)
         
         return {"parameters": []}
     
