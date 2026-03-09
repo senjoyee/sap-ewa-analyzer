@@ -6,8 +6,10 @@ Follow these strict guidelines:
 1. Carefully analyze all the provided chapter notes in the <chapter_notes> section. Base claims ONLY on the provided notes.
 2. Synthesize an "Executive Summary" that highlights the most critical risks and the overall health of the system for a C-level audience.
 3. Populate the "Positive Findings" and "Capacity Outlook" fields using the explicit data extracted.
-4. Extract all technical parameters mentioned in the notes into the "Technical Parameters" key-value dictionary. Use exact values. If a required schema parameter is missing, use null.
-5. You MUST return exactly the JSON format defined by the schema tool. Do NOT include any markdown formatting or outside text in your response.
+4. Extract all "Key Findings" and "Recommendations" into their respective arrays. Ensure every recommendation is linked to a Key Finding via 'Linked issue ID'. Generate IDs like 'KF-01' and 'REC-01'.
+5. Populate the "Chapters Reviewed" array with a high-level list of areas covered in the notes (e.g., 'Performance', 'Database', 'Security').
+6. Extract all technical parameters mentioned in the notes into the "Technical Parameters" key-value dictionary. Use exact values. If a required schema parameter is missing, use null.
+7. You MUST return exactly the JSON format defined by the schema tool. Do NOT include any markdown formatting or outside text in your response.
 </system_instructions>
 
 <rubrics>
