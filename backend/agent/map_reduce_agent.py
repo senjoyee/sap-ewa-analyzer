@@ -28,7 +28,8 @@ class MapReduceEWAAgent:
         self.reduce_model = reduce_model
         self.map_prompt = map_prompt
         self.reduce_prompt = reduce_prompt
-        self.schema = schema_dict
+        # Extract the inner 'schema' if the dictionary is wrapped for Structured Outputs
+        self.schema = schema_dict.get("schema", schema_dict) if isinstance(schema_dict, dict) else schema_dict
         self.last_usage: Dict[str, Any] = {
             "input_tokens": 0,
             "cached_input_tokens": 0,
