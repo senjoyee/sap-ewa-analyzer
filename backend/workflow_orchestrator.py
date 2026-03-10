@@ -127,6 +127,7 @@ class WorkflowState:
     markdown_content: str = ""
     summary_result: str = ""
     summary_json: dict = None
+    summary_debug_artifacts: dict = None
     parameters_json: dict = None
     summary_usage: dict = None
     parameter_usage: dict = None
@@ -656,6 +657,7 @@ class EWAWorkflowOrchestrator:
                 agent = self._create_anthropic_agent(ANTHROPIC_SUMMARY_MODEL, ai_prompt)
                 ai_result = await agent.run(text_input, pdf_data=None)
                 state.summary_usage = getattr(agent, "last_usage", {}) or {}
+                state.summary_debug_artifacts = {}
             else:
                 # Map-Reduce flow for Azure OpenAI
                 if not MAP_PROMPT or not REDUCE_PROMPT or not MAP_REDUCE_SCHEMA:
@@ -671,6 +673,7 @@ class EWAWorkflowOrchestrator:
                 )
                 ai_result = await agent.run(text_input)
                 state.summary_usage = agent.last_usage
+                state.summary_debug_artifacts = getattr(agent, "debug_artifacts", {}) or {}
             
             state.summary_json = ai_result if ai_result else {}
             
@@ -771,6 +774,36 @@ class EWAWorkflowOrchestrator:
             await self.upload_to_blob(usage_report_blob_name, json.dumps(state.usage_report, indent=2), "application/json", original_metadata)
             logger.info("Saved token usage report to %s", usage_report_blob_name)
             
+            debug_artifacts = state.summary_debug_artifacts or {}
+            if debug_artifacts:
+                debug_base_name = f"{base_name}/debug"
+
+                map_outputs = debug_artifacts.get("map_outputs")
+                if map_outputs:
+                    map_blob_name = f"{debug_base_name}/map_outputs.json"
+                    await self.upload_to_blob(map_blob_name, json.dumps(map_outputs, indent=2), "application/json", original_metadata)
+                    logger.info("Saved map debug outputs to %s", map_blob_name)
+
+                reduce_input = debug_artifacts.get("reduce_input")
+                if reduce_input:
+                    reduce_input_blob_name = f"{debug_base_name}/reduce_input.txt"
+                    await self.upload_to_blob(reduce_input_blob_name, str(reduce_input), "text/plain", original_metadata)
+                    logger.info("Saved reduce input debug artifact to %s", reduce_input_blob_name)
+
+                if "reduce_output_raw" in debug_artifacts and debug_artifacts.get("reduce_output_raw") is not None:
+                    reduce_output_raw = debug_artifacts.get("reduce_output_raw")
+                    reduce_raw_blob_name = f"{debug_base_name}/reduce_output_raw.json"
+                    reduce_raw_content = json.dumps(reduce_output_raw, indent=2) if isinstance(reduce_output_raw, (dict, list)) else str(reduce_output_raw)
+                    reduce_raw_type = "application/json" if isinstance(reduce_output_raw, (dict, list)) else "text/plain"
+                    await self.upload_to_blob(reduce_raw_blob_name, reduce_raw_content, reduce_raw_type, original_metadata)
+                    logger.info("Saved raw reduce output debug artifact to %s", reduce_raw_blob_name)
+
+                reduce_output_normalized = debug_artifacts.get("reduce_output_normalized")
+                if reduce_output_normalized is not None:
+                    reduce_normalized_blob_name = f"{debug_base_name}/reduce_output_normalized.json"
+                    await self.upload_to_blob(reduce_normalized_blob_name, json.dumps(reduce_output_normalized, indent=2), "application/json", original_metadata)
+                    logger.info("Saved normalized reduce output debug artifact to %s", reduce_normalized_blob_name)
+             
             return state
         except Exception as e:
             state.error = str(e)

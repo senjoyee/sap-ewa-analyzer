@@ -25,6 +25,24 @@ When looking for Technical Parameters, scan for:
 Include the parameter name, current value, recommended value (if stated), and note if an action/change is required (e.g., based on [RED] or [YELLOW] indicators).
 Only include configurable settings, switches, thresholds, buffers, queues, limits, or explicit recommendation values.
 Exclude hardware inventory, host specifications, software versions, product names, database IDs, server models, raw KPI values, and descriptive landscape facts unless the chapter explicitly recommends changing a configurable value.
+Use the following decision rule: if an item cannot be changed as a configuration setting, parameter, threshold, buffer, queue, limit, or profile value, do not extract it as a technical parameter.
+
+Examples of items to include as Technical Parameters:
+- `rdisp/wp_no_dia = 20; recommendation: increase to 30` -> include
+- `login/min_password_lng current value 6, recommended 8` -> include
+- `global.ini -> persistence -> log_mode should be normal` -> include
+- `abap/shared_objects_size_MB is set too low` -> include even if the recommended value is not given
+- `Increase HANA statement_memory_limit` -> include when the chapter explicitly recommends the change, even if only the target action is stated
+
+Examples of items to exclude from Technical Parameters:
+- `SAP kernel 789 patch 400` -> exclude
+- `Database size is 4.2 TB` -> exclude
+- `CPU utilization peaked at 92%` -> exclude
+- `Host has 64 cores and 512 GB RAM` -> exclude
+- `System SID is SHP` or `HANA DB name is HDB` -> exclude
+- `No critical alerts were found in this chapter` -> exclude
+
+If the chapter only reports a metric, inventory fact, version, landscape detail, or status statement without recommending a configurable change, do not extract it as a technical parameter.
 </extraction_guidance>
 
 <output_format>

@@ -7,7 +7,7 @@ import copy
 import logging
 from typing import Dict, Any, List
 
-from core.runtime_config import SUMMARY_MAX_OUTPUT_TOKENS, SUMMARY_REASONING_EFFORT
+from core.runtime_config import MAP_REASONING_EFFORT, SUMMARY_MAX_OUTPUT_TOKENS, SUMMARY_REASONING_EFFORT
 
 logger = logging.getLogger(__name__)
 
@@ -79,7 +79,11 @@ class MapReduceEWAAgent:
             "reasoning_tokens": 0,
             "total_tokens": 0,
             "model": f"map:{self.map_model}, reduce:{self.reduce_model}",
-            "reasoning_effort": SUMMARY_REASONING_EFFORT,
+            "reasoning_effort": f"map:{self._map_reasoning_effort_label()}, reduce:{SUMMARY_REASONING_EFFORT}",
+        }
+        self.debug_artifacts: Dict[str, Any] = {
+            "map_outputs": [],
+            "reduce_output_raw": None,
         }
         
     def _accumulate_usage(self, response: Any):
@@ -451,23 +455,23 @@ class MapReduceEWAAgent:
             {"type": "input_text", "text": f"Analyze the following EWA chapter text:\n\n{chunk_text}"}
         ]
         
+        request_kwargs = {
+            "model": self.map_model,
+            "messages": [
+                {"role": "system", "content": self.map_prompt},
+                {"role": "user", "content": chunk_text}
+            ],
+            "max_completion_tokens": 4096,
+            "temperature": 0,
+        }
+        if self._supports_reasoning_effort(self.map_model):
+            request_kwargs["reasoning_effort"] = MAP_REASONING_EFFORT
+        
         try:
-            # We use standard chat completions for the Map phase to get raw text output,
-            # but since we are using gpt-5.x we use the unified responses completion or chat completion.
-            # Using client.chat.completions.create mapping since it is simple plain text.
             response = await asyncio.to_thread(
-                lambda: self.client.chat.completions.create(
-                    model=self.map_model,
-                    messages=[
-                        {"role": "system", "content": self.map_prompt},
-                        {"role": "user", "content": chunk_text}
-                    ],
-                    max_completion_tokens=2000,
-                    temperature=0
-                )
+                lambda: self.client.chat.completions.create(**request_kwargs)
             )
             
-            # Accumulate usage
             self._accumulate_usage(response)
             
             result_text = response.choices[0].message.content
@@ -511,6 +515,7 @@ class MapReduceEWAAgent:
         combined_notes = "\n\n" + "="*50 + "\n\n".join(
             f"--- CHAPTER NOTES {i+1} ---\n{note}" for i, note in enumerate(mapped_notes)
         )
+        self.debug_artifacts["reduce_input"] = combined_notes
         
         strict_schema = self._make_strict_schema_for_structured_outputs(self.schema)
         
@@ -538,7 +543,6 @@ class MapReduceEWAAgent:
                         {"role": "user", "content": [{"type": "input_text", "text": user_msg["content"]}]}
                     ],
                     text=text_format,
-                    temperature=0,
                     reasoning={"effort": SUMMARY_REASONING_EFFORT},
                     max_output_tokens=SUMMARY_MAX_OUTPUT_TOKENS,
                 )
@@ -546,16 +550,20 @@ class MapReduceEWAAgent:
             
             self._accumulate_usage(response)
             
-            # Safely extract
             parsed = getattr(response, "output_parsed", None)
+            raw_text = getattr(response, "output_text", None)
+            if raw_text:
+                self.debug_artifacts["reduce_output_raw"] = raw_text
+            elif parsed is not None:
+                self.debug_artifacts["reduce_output_raw"] = parsed
+            
             if parsed is not None:
                 if isinstance(parsed, dict):
                     return parsed
                 if isinstance(parsed, list) and len(parsed) == 1 and isinstance(parsed[0], dict):
                     return parsed[0]
                     
-            # Fallback text parsing
-            text = getattr(response, "output_text", None)
+            text = raw_text
             if text:
                 try:
                     return json.loads(text)
@@ -579,18 +587,34 @@ class MapReduceEWAAgent:
 
         logger.info("Executing Map phase across %d chunks...", len(chapter_items))
 
-        # Concurrently process all chunks
         map_tasks = [self._run_map_chunk(item["text"]) for item in chapter_items]
         mapped_notes = await asyncio.gather(*map_tasks)
+        self.debug_artifacts["map_outputs"] = [
+            {
+                "chapter_index": index,
+                "chapter_title": item["title"],
+                "mapped_notes": note,
+            }
+            for index, (item, note) in enumerate(zip(chapter_items, mapped_notes), start=1)
+        ]
 
         logger.info("Map phase completed. Executing Reduce phase...")
 
-        # Run reduce on combined output
         json_output = await self._run_reduce(mapped_notes)
         json_output = self._normalize_final_output(
             json_output,
             [item["title"] for item in chapter_items],
         )
+        self.debug_artifacts["reduce_output_normalized"] = json_output
 
         logger.info("Map-Reduce workflow completed.")
         return json_output
+
+    def _supports_reasoning_effort(self, model_name: str) -> bool:
+        normalized = self._normalize_text(model_name).lower()
+        return normalized.startswith("gpt-5") or normalized.startswith("o1") or normalized.startswith("o3") or normalized.startswith("o4")
+
+    def _map_reasoning_effort_label(self) -> str:
+        if self._supports_reasoning_effort(self.map_model):
+            return MAP_REASONING_EFFORT
+        return "not_supported"
