@@ -319,11 +319,14 @@ async def list_files():
         file_groups: dict[str, list[dict[str, Any]]] = {}  # Group by customer+SID
         
         pdf_zips = {os.path.splitext(b.name)[0] for b in blob_list if b.name.lower().endswith(('.pdf', '.zip'))}
-        
+      
         for blob in blob_list:
             name_low = blob.name.lower()
             base_name, _ = os.path.splitext(blob.name)
             
+            if "/debug/" in name_low or "\\debug\\" in name_low:
+                continue
+                
             # Skip AI analysis artifacts
             if name_low.endswith(".json") or name_low.endswith("_ai.md"):
                 continue  # skip auxiliary files in main listing
@@ -338,13 +341,11 @@ async def list_files():
             base_name, _ = os.path.splitext(blob.name)
             customer_name = metadata.get("customer_name", "Unknown")
             system_id = metadata.get("system_id", "Unknown")
-            processed = base_name in json_files or base_name in md_files
-            ai_analyzed = base_name in ai_analyzed_files
-            
-            # Check for processing flag in metadata
-            is_processing = metadata.get("processing", "").lower() == "true"
             last_status = (metadata.get("last_status") or "").lower()
-            
+            is_processing = metadata.get("processing", "").lower() == "true"
+            processed = base_name in json_files or base_name in md_files
+            ai_analyzed = base_name in ai_analyzed_files and not is_processing and last_status != "failed"
+             
             file_info = {
                 "name": blob.name,
                 "last_modified": blob.last_modified,
@@ -355,6 +356,7 @@ async def list_files():
                 "system_id": system_id,
                 "processed": processed,
                 "ai_analyzed": ai_analyzed,
+                "processing": is_processing,  
                 "processing": is_processing,  # Add processing flag
                 "last_status": last_status,
                 "last_error_status_code": metadata.get("last_error_status_code"),

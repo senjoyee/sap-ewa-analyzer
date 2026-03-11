@@ -451,10 +451,6 @@ class MapReduceEWAAgent:
 
     async def _run_map_chunk(self, chunk_text: str) -> str:
         """Runs the map prompt on a single text chunk."""
-        user_content = [
-            {"type": "input_text", "text": f"Analyze the following EWA chapter text:\n\n{chunk_text}"}
-        ]
-        
         request_kwargs = {
             "model": self.map_model,
             "messages": [
@@ -462,7 +458,6 @@ class MapReduceEWAAgent:
                 {"role": "user", "content": chunk_text}
             ],
             "max_completion_tokens": 4096,
-            "temperature": 0,
         }
         if self._supports_reasoning_effort(self.map_model):
             request_kwargs["reasoning_effort"] = MAP_REASONING_EFFORT
@@ -577,6 +572,10 @@ class MapReduceEWAAgent:
             logger.exception("Error during reduce phase: %s", e)
             return {"_parse_error": f"Exception in reduce: {str(e)}"}
 
+    def _is_map_error_output(self, mapped_note: str) -> bool:
+        normalized = self._normalize_text(mapped_note)
+        return normalized.startswith("[Error processing chunk:")
+
     async def run(self, markdown: str) -> Dict[str, Any]:
         """Executes the full map-reduce pipeline on the given markdown."""
         logger.info("Starting Map-Reduce workflow.")
@@ -598,9 +597,22 @@ class MapReduceEWAAgent:
             for index, (item, note) in enumerate(zip(chapter_items, mapped_notes), start=1)
         ]
 
+        map_errors = [
+            entry for entry in self.debug_artifacts["map_outputs"]
+            if self._is_map_error_output(entry.get("mapped_notes", ""))
+        ]
+        if map_errors:
+            first_error = self._normalize_text(map_errors[0].get("mapped_notes", ""))
+            raise RuntimeError(
+                f"Map phase failed for {len(map_errors)} chapter(s). First error: {first_error}"
+            )
+
         logger.info("Map phase completed. Executing Reduce phase...")
 
         json_output = await self._run_reduce(mapped_notes)
+        if isinstance(json_output, dict) and json_output.get("_parse_error"):
+            raise RuntimeError(f"Reduce phase failed: {json_output['_parse_error']}")
+
         json_output = self._normalize_final_output(
             json_output,
             [item["title"] for item in chapter_items],

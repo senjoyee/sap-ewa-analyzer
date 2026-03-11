@@ -470,8 +470,14 @@ class EWAWorkflowOrchestrator:
             
             # Add metadata if provided
             if metadata:
-                upload_params["metadata"] = metadata
-                logger.info("Uploading %s with metadata: %s", blob_name, metadata)
+                upload_metadata = dict(metadata)
+                upload_metadata.pop("processing", None)
+                upload_metadata.pop("last_status", None)
+                upload_metadata.pop("last_error_status_code", None)
+                upload_metadata.pop("last_error_hint", None)
+                upload_metadata.pop("last_error_message", None)
+                upload_params["metadata"] = upload_metadata
+                logger.info("Uploading %s with metadata: %s", blob_name, upload_metadata)
             
             # Offload blocking upload to a thread
             await asyncio.to_thread(lambda: blob_client.upload_blob(**upload_params))
