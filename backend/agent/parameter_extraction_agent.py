@@ -205,11 +205,9 @@ class ParameterExtractionAgent:
                 "stream": False,
             }
 
-            if self.thinking_budget and self.thinking_budget > 0:
-                kwargs["thinking"] = {
-                    "type": "enabled",
-                    "budget_tokens": self.thinking_budget
-                }
+            # NOTE: Thinking mode is intentionally NOT used with structured output.
+            # Per Anthropic docs, extended thinking is incompatible with
+            # json_schema output_config and can produce unreliable results.
 
             return self.client.messages.create(**kwargs)
 

@@ -139,36 +139,25 @@ EWA Document:
             strict_schema = self._make_strict_schema(self.schema)
 
             def _call_messages_structured() -> Any:
-                kwargs = {
-                    "model": self.model,
-                    "max_tokens": ANTHROPIC_MAX_OUTPUT_TOKENS,
-                    "system": system_blocks,
-                    "messages": [
+                # NOTE: Thinking mode is intentionally NOT used with structured output.
+                # Per Anthropic docs, extended thinking is incompatible with
+                # json_schema output_config and can produce unreliable results.
+                return self.client.messages.create(
+                    model=self.model,
+                    max_tokens=ANTHROPIC_MAX_OUTPUT_TOKENS,
+                    system=system_blocks,
+                    messages=[
                         {"role": "user", "content": messages_content}
                     ],
-                    "output_config": {
+                    output_config={
                         "format": {
                             "type": "json_schema",
                             "name": "ewa_summary",
                             "schema": strict_schema,
                         }
                     },
-                    "stream": False,
-                }
-                
-                if self.thinking_budget and self.thinking_budget > 0:
-                    kwargs["thinking"] = {
-                        "type": "enabled",
-                        "budget_tokens": self.thinking_budget
-                    }
-                    # Effort is only supported on certain models/versions, add if provided
-                    if self.reasoning_effort:
-                        # Anthropic sometimes uses a separate thinking effort parameter or includes it in the block
-                        # For Claude 4.5/4.6 adaptive thinking:
-                        # kwargs["thinking"]["effort"] = self.reasoning_effort
-                        pass
-
-                return self.client.messages.create(**kwargs)
+                    stream=False,
+                )
 
             try:
                 response = await asyncio.to_thread(_call_messages_structured)
@@ -267,8 +256,6 @@ EWA Document:
                         cached_tokens = getattr(event.message.usage, "cache_read_tokens", 0) or 0
                         thinking_tokens = getattr(event.message.usage, "thinking_tokens", 0) or 0
 
-    def _call_messages_streaming(self, system_blocks: list, messages_content: list) -> tuple[str, int, int, int, int]:
-        # ... existing ...
         return collected_text, in_tokens, out_tokens, cached_tokens, thinking_tokens
 
     def _extract_text_and_usage_from_message(self, response: Any) -> tuple[str, int, int, int, int]:
