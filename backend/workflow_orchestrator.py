@@ -32,7 +32,17 @@ from agent.anthropic_ewa_agent import AnthropicEWAAgent
 from agent.parameter_extraction_agent import ParameterExtractionAgent
 from utils.markdown_utils import json_to_markdown
 from services.storage_service import StorageService
-from core.runtime_config import ANTHROPIC_TIMEOUT_SECONDS, ANTHROPIC_CONNECT_TIMEOUT_SECONDS
+from core.runtime_config import (
+    ANTHROPIC_TIMEOUT_SECONDS,
+    ANTHROPIC_CONNECT_TIMEOUT_SECONDS,
+    SUMMARY_MAX_OUTPUT_TOKENS,
+    PARAM_MAX_OUTPUT_TOKENS,
+    PDF_METADATA_TEXT_LIMIT,
+    PDF_METADATA_MAX_TOKENS,
+    SUMMARY_REASONING_EFFORT,
+    PARAM_REASONING_EFFORT,
+    ANTHROPIC_THINKING_BUDGET_TOKENS,
+)
 
 logger = logging.getLogger(__name__)
 
@@ -319,7 +329,7 @@ class EWAWorkflowOrchestrator:
             azure_endpoint=self.azure_openai_endpoint,
             api_key=self.azure_openai_api_key,
         )
-        return OpenAIEWAAgent(client=client, model=model_name, summary_prompt=summary_prompt)
+        return OpenAIEWAAgent(client=client, model=model_name, summary_prompt=summary_prompt, reasoning_effort=SUMMARY_REASONING_EFFORT)
 
     def _create_anthropic_client(self):
         if not AZURE_ANTHROPIC_ENDPOINT:
@@ -345,7 +355,13 @@ class EWAWorkflowOrchestrator:
         logger.info("Creating AnthropicEWAAgent with model: %s", model_name)
 
         client = self._create_anthropic_client()
-        return AnthropicEWAAgent(client=client, model=model_name, summary_prompt=summary_prompt)
+        return AnthropicEWAAgent(
+            client=client,
+            model=model_name,
+            summary_prompt=summary_prompt,
+            reasoning_effort=SUMMARY_REASONING_EFFORT,
+            thinking_budget=ANTHROPIC_THINKING_BUDGET_TOKENS,
+        )
     
     def _fix_report_date_if_invalid(self, summary_json: dict, blob_name: str) -> dict:
         """Validate report_date; if obviously wrong, extract from filename pattern {SID}_{DD}_{Mon}_{YY}.pdf."""
@@ -667,6 +683,8 @@ class EWAWorkflowOrchestrator:
                         param_client,
                         model=ANTHROPIC_SUMMARY_MODEL,
                         provider="anthropic",
+                        reasoning_effort=PARAM_REASONING_EFFORT,
+                        thinking_budget=ANTHROPIC_THINKING_BUDGET_TOKENS,
                     )
                 else:
                     if not self.openai_client:

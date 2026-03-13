@@ -9,7 +9,7 @@ import json
 import asyncio
 import logging
 from typing import Dict, Any, List, Optional
-from core.runtime_config import PARAM_MAX_OUTPUT_TOKENS, PARAM_REASONING_EFFORT
+from core.runtime_config import PARAM_MAX_OUTPUT_TOKENS, PARAM_REASONING_EFFORT, ANTHROPIC_THINKING_BUDGET_TOKENS
 from utils.json_repair import JSONRepair
 
 # Action status values for parameter classification
@@ -36,7 +36,7 @@ logger = logging.getLogger(__name__)
 class ParameterExtractionAgent:
     """Agent for extracting parameter recommendations using GPT-5."""
     
-    def __init__(self, client, model: str = None, provider: str = "openai"):
+    def __init__(self, client, model: str = None, provider: str = "openai", reasoning_effort: str | None = None, thinking_budget: int | None = None):
         """
         Initialize the parameter extraction agent.
         
@@ -52,6 +52,8 @@ class ParameterExtractionAgent:
             if self.provider == "anthropic"
             else os.getenv("AZURE_OPENAI_PARAM_MODEL", "gpt-5.1")
         )
+        self.reasoning_effort = reasoning_effort or PARAM_REASONING_EFFORT
+        self.thinking_budget = thinking_budget if thinking_budget is not None else ANTHROPIC_THINKING_BUDGET_TOKENS
         
         # Load schema
         with open(SCHEMA_PATH, "r", encoding="utf-8") as f:
@@ -156,14 +158,15 @@ class ParameterExtractionAgent:
             in_tokens = getattr(usage, "input_tokens", 0) if usage else 0
             output_tokens = getattr(usage, "output_tokens", 0) if usage else 0
             cached_tokens = getattr(usage, "cache_read_tokens", 0) if usage else 0
+            thinking_tokens = getattr(usage, "thinking_tokens", 0) if usage else 0
             total_input = in_tokens + (cached_tokens or 0)
             return {
                 "model": self.model,
-                "reasoning_effort": None,
+                "reasoning_effort": self.reasoning_effort,
                 "input_tokens": total_input,
                 "cached_input_tokens": cached_tokens or 0,
                 "output_tokens": output_tokens,
-                "reasoning_tokens": 0,
+                "reasoning_tokens": thinking_tokens or 0,
                 "total_tokens": total_input + output_tokens,
             }
 
@@ -185,22 +188,30 @@ class ParameterExtractionAgent:
                 }
             ]
 
-            return self.client.messages.create(
-                model=self.model,
-                max_tokens=PARAM_MAX_OUTPUT_TOKENS,
-                system=system_blocks,
-                messages=[
+            kwargs = {
+                "model": self.model,
+                "max_tokens": PARAM_MAX_OUTPUT_TOKENS,
+                "system": system_blocks,
+                "messages": [
                     {"role": "user", "content": messages_content}
                 ],
-                output_config={
+                "output_config": {
                     "format": {
                         "type": "json_schema",
                         "name": "extract_parameters",
                         "schema": strict_schema,
                     }
                 },
-                stream=False,
-            )
+                "stream": False,
+            }
+
+            if self.thinking_budget and self.thinking_budget > 0:
+                kwargs["thinking"] = {
+                    "type": "enabled",
+                    "budget_tokens": self.thinking_budget
+                }
+
+            return self.client.messages.create(**kwargs)
 
         try:
             response = await asyncio.to_thread(call_messages_structured)
@@ -215,38 +226,39 @@ class ParameterExtractionAgent:
                 structured_error,
             )
 
-        text, in_tokens, out_tokens, cached_tokens = await asyncio.to_thread(self._call_anthropic_streaming, user_content)
+        text, in_tokens, out_tokens, cached_tokens, thinking_tokens = await asyncio.to_thread(self._call_anthropic_streaming, user_content)
         total_input = in_tokens + (cached_tokens or 0)
         self.last_usage = {
             "model": self.model,
-            "reasoning_effort": None,
+            "reasoning_effort": self.reasoning_effort,
             "input_tokens": total_input,
             "cached_input_tokens": cached_tokens or 0,
             "output_tokens": out_tokens,
-            "reasoning_tokens": 0,
+            "reasoning_tokens": thinking_tokens or 0,
             "total_tokens": total_input + out_tokens,
         }
         if text:
             return self._parse_json_text(text)
         return {"parameters": [], "extraction_notes": "No text content in response"}
 
-    def _call_anthropic_streaming(self, user_content: str) -> tuple[str, int, int, int]:
+    def _call_anthropic_streaming(self, user_content: str) -> tuple[str, int, int, int, int]:
         collected_text = ""
         in_tokens = 0
         out_tokens = 0
         cached_tokens = 0
+        thinking_tokens = 0
 
-        stream = self.client.messages.create(
-            model=self.model,
-            max_tokens=PARAM_MAX_OUTPUT_TOKENS,
-            system=[
+        kwargs = {
+            "model": self.model,
+            "max_tokens": PARAM_MAX_OUTPUT_TOKENS,
+            "system": [
                 {
                     "type": "text",
                     "text": self.prompt,
                     "cache_control": {"type": "ephemeral"}
                 }
             ],
-            messages=[
+            "messages": [
                 {
                     "role": "user",
                     "content": [
@@ -258,8 +270,16 @@ class ParameterExtractionAgent:
                     ]
                 }
             ],
-            stream=True,
-        )
+            "stream": True,
+        }
+
+        if self.thinking_budget and self.thinking_budget > 0:
+            kwargs["thinking"] = {
+                "type": "enabled",
+                "budget_tokens": self.thinking_budget
+            }
+
+        stream = self.client.messages.create(**kwargs)
 
         for event in stream:
             if hasattr(event, "type"):
@@ -273,8 +293,9 @@ class ParameterExtractionAgent:
                     if hasattr(event, "message") and hasattr(event.message, "usage"):
                         in_tokens = getattr(event.message.usage, "input_tokens", 0)
                         cached_tokens = getattr(event.message.usage, "cache_read_tokens", 0) or 0
+                        thinking_tokens = getattr(event.message.usage, "thinking_tokens", 0) or 0
 
-        return collected_text, in_tokens, out_tokens, cached_tokens
+        return collected_text, in_tokens, out_tokens, cached_tokens, thinking_tokens
 
     def _extract_text_from_anthropic_message(self, response: Any) -> str:
         text_parts: List[str] = []

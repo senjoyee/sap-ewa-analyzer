@@ -9,7 +9,7 @@ import logging
 from typing import Dict, Any
 from jsonschema import validate, ValidationError
 from utils.json_repair import JSONRepair
-from core.runtime_config import ANTHROPIC_MAX_OUTPUT_TOKENS
+from core.runtime_config import ANTHROPIC_MAX_OUTPUT_TOKENS, ANTHROPIC_THINKING_BUDGET_TOKENS
 
 # Directory containing prompt templates
 _PROMPT_DIR = os.path.join(os.path.dirname(os.path.abspath(__file__)), "..", "prompts")
@@ -30,9 +30,13 @@ class AnthropicEWAAgent:
         model: str,
         summary_prompt: str | None = None,
         schema_path: str | None = None,
+        reasoning_effort: str | None = "medium",
+        thinking_budget: int | None = None,
     ):
         self.client = client
         self.model = model
+        self.reasoning_effort = reasoning_effort
+        self.thinking_budget = thinking_budget if thinking_budget is not None else ANTHROPIC_THINKING_BUDGET_TOKENS
 
         # Load prompt
         if summary_prompt is not None:
@@ -135,31 +139,46 @@ EWA Document:
             strict_schema = self._make_strict_schema(self.schema)
 
             def _call_messages_structured() -> Any:
-                return self.client.messages.create(
-                    model=self.model,
-                    max_tokens=ANTHROPIC_MAX_OUTPUT_TOKENS,
-                    system=system_blocks,
-                    messages=[
+                kwargs = {
+                    "model": self.model,
+                    "max_tokens": ANTHROPIC_MAX_OUTPUT_TOKENS,
+                    "system": system_blocks,
+                    "messages": [
                         {"role": "user", "content": messages_content}
                     ],
-                    output_config={
+                    "output_config": {
                         "format": {
                             "type": "json_schema",
                             "name": "ewa_summary",
                             "schema": strict_schema,
                         }
                     },
-                    stream=False,
-                )
+                    "stream": False,
+                }
+                
+                if self.thinking_budget and self.thinking_budget > 0:
+                    kwargs["thinking"] = {
+                        "type": "enabled",
+                        "budget_tokens": self.thinking_budget
+                    }
+                    # Effort is only supported on certain models/versions, add if provided
+                    if self.reasoning_effort:
+                        # Anthropic sometimes uses a separate thinking effort parameter or includes it in the block
+                        # For Claude 4.5/4.6 adaptive thinking:
+                        # kwargs["thinking"]["effort"] = self.reasoning_effort
+                        pass
+
+                return self.client.messages.create(**kwargs)
 
             try:
                 response = await asyncio.to_thread(_call_messages_structured)
-                text, in_tokens, out_tokens, cached_tokens = self._extract_text_and_usage_from_message(response)
+                text, in_tokens, out_tokens, cached_tokens, thinking_tokens = self._extract_text_and_usage_from_message(response)
                 logger.info(
-                    "Anthropic structured output request accepted: input_tokens=%s, cached_tokens=%s, output_tokens=%s",
+                    "Anthropic structured output request accepted: input_tokens=%s, cached_tokens=%s, output_tokens=%s, thinking_tokens=%s",
                     in_tokens,
                     cached_tokens,
                     out_tokens,
+                    thinking_tokens,
                 )
                 total_input = in_tokens + cached_tokens
                 self.last_usage = {
@@ -167,6 +186,7 @@ EWA Document:
                     "input_tokens": total_input,
                     "cached_input_tokens": cached_tokens,
                     "output_tokens": out_tokens,
+                    "reasoning_tokens": thinking_tokens,
                     "total_tokens": total_input + out_tokens,
                 }
                 if text:
@@ -178,12 +198,13 @@ EWA Document:
                     structured_error,
                 )
 
-            text, in_tokens, out_tokens, cached_tokens = await asyncio.to_thread(self._call_messages_streaming, system_blocks, messages_content)
+            text, in_tokens, out_tokens, cached_tokens, thinking_tokens = await asyncio.to_thread(self._call_messages_streaming, system_blocks, messages_content)
             logger.info(
-                "Token usage: input_tokens=%s, cached_tokens=%s, output_tokens=%s",
+                "Token usage: input_tokens=%s, cached_tokens=%s, output_tokens=%s, thinking_tokens=%s",
                 in_tokens,
                 cached_tokens,
                 out_tokens,
+                thinking_tokens,
             )
             
             total_input = in_tokens + cached_tokens
@@ -192,6 +213,7 @@ EWA Document:
                 "input_tokens": total_input,
                 "cached_input_tokens": cached_tokens,
                 "output_tokens": out_tokens,
+                "reasoning_tokens": thinking_tokens,
                 "total_tokens": total_input + out_tokens,
             }
 
@@ -205,22 +227,31 @@ EWA Document:
             logger.exception("Error calling Anthropic API: %s", e)
             return {"_parse_error": str(e), "raw_arguments": ""}
 
-    def _call_messages_streaming(self, system_blocks: list, messages_content: list) -> tuple[str, int, int, int]:
-        """Make streaming API call and return (text, input_tokens, output_tokens, cached_tokens)."""
+    def _call_messages_streaming(self, system_blocks: list, messages_content: list) -> tuple[str, int, int, int, int]:
+        """Make streaming API call and return (text, input_tokens, output_tokens, cached_tokens, thinking_tokens)."""
         collected_text = ""
         in_tokens = 0
         out_tokens = 0
         cached_tokens = 0
+        thinking_tokens = 0
 
-        stream = self.client.messages.create(
-            model=self.model,
-            max_tokens=ANTHROPIC_MAX_OUTPUT_TOKENS,
-            system=system_blocks,
-            messages=[
+        kwargs = {
+            "model": self.model,
+            "max_tokens": ANTHROPIC_MAX_OUTPUT_TOKENS,
+            "system": system_blocks,
+            "messages": [
                 {"role": "user", "content": messages_content}
             ],
-            stream=True,
-        )
+            "stream": True,
+        }
+
+        if self.thinking_budget and self.thinking_budget > 0:
+            kwargs["thinking"] = {
+                "type": "enabled",
+                "budget_tokens": self.thinking_budget
+            }
+
+        stream = self.client.messages.create(**kwargs)
 
         for event in stream:
             if hasattr(event, "type"):
@@ -234,12 +265,13 @@ EWA Document:
                     if hasattr(event, "message") and hasattr(event.message, "usage"):
                         in_tokens = getattr(event.message.usage, "input_tokens", 0)
                         cached_tokens = getattr(event.message.usage, "cache_read_tokens", 0) or 0
+                        thinking_tokens = getattr(event.message.usage, "thinking_tokens", 0) or 0
 
-    def _call_messages_streaming(self, system_blocks: list, messages_content: list) -> tuple[str, int, int, int]:
+    def _call_messages_streaming(self, system_blocks: list, messages_content: list) -> tuple[str, int, int, int, int]:
         # ... existing ...
-        return collected_text, in_tokens, out_tokens, cached_tokens
+        return collected_text, in_tokens, out_tokens, cached_tokens, thinking_tokens
 
-    def _extract_text_and_usage_from_message(self, response: Any) -> tuple[str, int, int, int]:
+    def _extract_text_and_usage_from_message(self, response: Any) -> tuple[str, int, int, int, int]:
         """Extract text and usage fields from a non-streaming Anthropic response."""
         text_parts: list[str] = []
         content = getattr(response, "content", None) or []
@@ -254,7 +286,8 @@ EWA Document:
         in_tokens = getattr(usage, "input_tokens", 0) if usage else 0
         out_tokens = getattr(usage, "output_tokens", 0) if usage else 0
         cached_tokens = getattr(usage, "cache_read_tokens", 0) if usage else 0
-        return "".join(text_parts), in_tokens, out_tokens, (cached_tokens or 0)
+        thinking_tokens = getattr(usage, "thinking_tokens", 0) if usage else 0
+        return "".join(text_parts), in_tokens, out_tokens, (cached_tokens or 0), (thinking_tokens or 0)
 
     def _make_strict_schema(self, schema: Dict[str, Any]) -> Dict[str, Any]:
         """Recursively add additionalProperties: false to object schemas."""
