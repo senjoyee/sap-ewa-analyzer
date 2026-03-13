@@ -1,4 +1,4 @@
-﻿"""
+"""
 Parameter Extraction Agent using GPT-5-mini for extracting SAP parameter recommendations.
 Runs as a post-processing step after main EWA analysis to extract parameter changes from markdown.
 """
@@ -153,25 +153,44 @@ class ParameterExtractionAgent:
 
         def extract_usage(response: Any) -> Dict[str, Any]:
             usage = getattr(response, "usage", None)
-            input_tokens = getattr(usage, "input_tokens", 0) if usage else 0
+            in_tokens = getattr(usage, "input_tokens", 0) if usage else 0
             output_tokens = getattr(usage, "output_tokens", 0) if usage else 0
+            cached_tokens = getattr(usage, "cache_read_tokens", 0) if usage else 0
+            total_input = in_tokens + (cached_tokens or 0)
             return {
                 "model": self.model,
                 "reasoning_effort": None,
-                "input_tokens": input_tokens,
-                "cached_input_tokens": 0,
+                "input_tokens": total_input,
+                "cached_input_tokens": cached_tokens or 0,
                 "output_tokens": output_tokens,
                 "reasoning_tokens": 0,
-                "total_tokens": input_tokens + output_tokens,
+                "total_tokens": total_input + output_tokens,
             }
 
         def call_messages_structured() -> Any:
+            # Construct message content for Anthropic Caching:
+            system_blocks = [
+                {
+                    "type": "text",
+                    "text": self.prompt,
+                    "cache_control": {"type": "ephemeral"}
+                }
+            ]
+            
+            messages_content = [
+                {
+                    "type": "text",
+                    "text": user_content,
+                    "cache_control": {"type": "ephemeral"}
+                }
+            ]
+
             return self.client.messages.create(
                 model=self.model,
                 max_tokens=PARAM_MAX_OUTPUT_TOKENS,
-                system=self.prompt,
+                system=system_blocks,
                 messages=[
-                    {"role": "user", "content": user_content}
+                    {"role": "user", "content": messages_content}
                 ],
                 output_config={
                     "format": {
@@ -196,31 +215,48 @@ class ParameterExtractionAgent:
                 structured_error,
             )
 
-        text, in_tokens, out_tokens = await asyncio.to_thread(self._call_anthropic_streaming, user_content)
+        text, in_tokens, out_tokens, cached_tokens = await asyncio.to_thread(self._call_anthropic_streaming, user_content)
+        total_input = in_tokens + (cached_tokens or 0)
         self.last_usage = {
             "model": self.model,
             "reasoning_effort": None,
-            "input_tokens": in_tokens,
-            "cached_input_tokens": 0,
+            "input_tokens": total_input,
+            "cached_input_tokens": cached_tokens or 0,
             "output_tokens": out_tokens,
             "reasoning_tokens": 0,
-            "total_tokens": in_tokens + out_tokens,
+            "total_tokens": total_input + out_tokens,
         }
         if text:
             return self._parse_json_text(text)
         return {"parameters": [], "extraction_notes": "No text content in response"}
 
-    def _call_anthropic_streaming(self, user_content: str) -> tuple[str, int, int]:
+    def _call_anthropic_streaming(self, user_content: str) -> tuple[str, int, int, int]:
         collected_text = ""
         in_tokens = 0
         out_tokens = 0
+        cached_tokens = 0
 
         stream = self.client.messages.create(
             model=self.model,
             max_tokens=PARAM_MAX_OUTPUT_TOKENS,
-            system=self.prompt,
+            system=[
+                {
+                    "type": "text",
+                    "text": self.prompt,
+                    "cache_control": {"type": "ephemeral"}
+                }
+            ],
             messages=[
-                {"role": "user", "content": user_content}
+                {
+                    "role": "user",
+                    "content": [
+                        {
+                            "type": "text",
+                            "text": user_content,
+                            "cache_control": {"type": "ephemeral"}
+                        }
+                    ]
+                }
             ],
             stream=True,
         )
@@ -236,8 +272,9 @@ class ParameterExtractionAgent:
                 elif event.type == "message_start":
                     if hasattr(event, "message") and hasattr(event.message, "usage"):
                         in_tokens = getattr(event.message.usage, "input_tokens", 0)
+                        cached_tokens = getattr(event.message.usage, "cache_read_tokens", 0) or 0
 
-        return collected_text, in_tokens, out_tokens
+        return collected_text, in_tokens, out_tokens, cached_tokens
 
     def _extract_text_from_anthropic_message(self, response: Any) -> str:
         text_parts: List[str] = []

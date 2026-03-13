@@ -85,7 +85,10 @@ class AnthropicEWAAgent:
         
         # Build the user message with schema and document
         schema_str = json.dumps(self.schema, indent=2)
-        user_content = f"""Analyze the following SAP EarlyWatch Alert document and produce a JSON output that strictly conforms to this schema:
+        
+        # Split into blocks for prompt caching
+        # Block 1: Instructions and Schema
+        instructions_block = f"""Analyze the following SAP EarlyWatch Alert document and produce a JSON output that strictly conforms to this schema:
 
 ```json
 {schema_str}
@@ -96,13 +99,37 @@ Important:
 - Include "Schema Version": "1.1" in your output.
 - Use lowercase for severity, risk, and health rating values.
 - Use ISO date format (YYYY-MM-DD) for dates.
-
+"""
+        # Block 2: The actual document (will be cached)
+        document_block = f"""
 ---
 
 EWA Document:
 
 {markdown}
 """
+        
+        # Construct message content for Anthropic Caching:
+        # We cache the system prompt (static) and the large document content.
+        system_blocks = [
+            {
+                "type": "text",
+                "text": self.summary_prompt,
+                "cache_control": {"type": "ephemeral"}
+            }
+        ]
+        
+        messages_content = [
+            {
+                "type": "text",
+                "text": instructions_block,
+            },
+            {
+                "type": "text",
+                "text": document_block,
+                "cache_control": {"type": "ephemeral"}
+            }
+        ]
 
         try:
             strict_schema = self._make_strict_schema(self.schema)
@@ -111,9 +138,9 @@ EWA Document:
                 return self.client.messages.create(
                     model=self.model,
                     max_tokens=ANTHROPIC_MAX_OUTPUT_TOKENS,
-                    system=self.summary_prompt,
+                    system=system_blocks,
                     messages=[
-                        {"role": "user", "content": user_content}
+                        {"role": "user", "content": messages_content}
                     ],
                     output_config={
                         "format": {
@@ -127,12 +154,21 @@ EWA Document:
 
             try:
                 response = await asyncio.to_thread(_call_messages_structured)
-                text, in_tokens, out_tokens = self._extract_text_and_usage_from_message(response)
+                text, in_tokens, out_tokens, cached_tokens = self._extract_text_and_usage_from_message(response)
                 logger.info(
-                    "Anthropic structured output request accepted: input_tokens=%s, output_tokens=%s",
+                    "Anthropic structured output request accepted: input_tokens=%s, cached_tokens=%s, output_tokens=%s",
                     in_tokens,
+                    cached_tokens,
                     out_tokens,
                 )
+                total_input = in_tokens + cached_tokens
+                self.last_usage = {
+                    "model": self.model,
+                    "input_tokens": total_input,
+                    "cached_input_tokens": cached_tokens,
+                    "output_tokens": out_tokens,
+                    "total_tokens": total_input + out_tokens,
+                }
                 if text:
                     return self._parse_json_from_text(text)
                 logger.warning("Anthropic structured output returned no text content; falling back to streaming request")
@@ -142,12 +178,22 @@ EWA Document:
                     structured_error,
                 )
 
-            text, in_tokens, out_tokens = await asyncio.to_thread(self._call_messages_streaming, user_content)
+            text, in_tokens, out_tokens, cached_tokens = await asyncio.to_thread(self._call_messages_streaming, system_blocks, messages_content)
             logger.info(
-                "Token usage: input_tokens=%s, output_tokens=%s",
+                "Token usage: input_tokens=%s, cached_tokens=%s, output_tokens=%s",
                 in_tokens,
+                cached_tokens,
                 out_tokens,
             )
+            
+            total_input = in_tokens + cached_tokens
+            self.last_usage = {
+                "model": self.model,
+                "input_tokens": total_input,
+                "cached_input_tokens": cached_tokens,
+                "output_tokens": out_tokens,
+                "total_tokens": total_input + out_tokens,
+            }
 
             if not text:
                 logger.warning("No text content in response")
@@ -159,18 +205,19 @@ EWA Document:
             logger.exception("Error calling Anthropic API: %s", e)
             return {"_parse_error": str(e), "raw_arguments": ""}
 
-    def _call_messages_streaming(self, user_content: str) -> tuple[str, int, int]:
-        """Make streaming API call and return (text, input_tokens, output_tokens)."""
+    def _call_messages_streaming(self, system_blocks: list, messages_content: list) -> tuple[str, int, int, int]:
+        """Make streaming API call and return (text, input_tokens, output_tokens, cached_tokens)."""
         collected_text = ""
         in_tokens = 0
         out_tokens = 0
+        cached_tokens = 0
 
         stream = self.client.messages.create(
             model=self.model,
             max_tokens=ANTHROPIC_MAX_OUTPUT_TOKENS,
-            system=self.summary_prompt,
+            system=system_blocks,
             messages=[
-                {"role": "user", "content": user_content}
+                {"role": "user", "content": messages_content}
             ],
             stream=True,
         )
@@ -186,10 +233,13 @@ EWA Document:
                 elif event.type == "message_start":
                     if hasattr(event, "message") and hasattr(event.message, "usage"):
                         in_tokens = getattr(event.message.usage, "input_tokens", 0)
+                        cached_tokens = getattr(event.message.usage, "cache_read_tokens", 0) or 0
 
-        return collected_text, in_tokens, out_tokens
+    def _call_messages_streaming(self, system_blocks: list, messages_content: list) -> tuple[str, int, int, int]:
+        # ... existing ...
+        return collected_text, in_tokens, out_tokens, cached_tokens
 
-    def _extract_text_and_usage_from_message(self, response: Any) -> tuple[str, int, int]:
+    def _extract_text_and_usage_from_message(self, response: Any) -> tuple[str, int, int, int]:
         """Extract text and usage fields from a non-streaming Anthropic response."""
         text_parts: list[str] = []
         content = getattr(response, "content", None) or []
@@ -203,7 +253,8 @@ EWA Document:
         usage = getattr(response, "usage", None)
         in_tokens = getattr(usage, "input_tokens", 0) if usage else 0
         out_tokens = getattr(usage, "output_tokens", 0) if usage else 0
-        return "".join(text_parts), in_tokens, out_tokens
+        cached_tokens = getattr(usage, "cache_read_tokens", 0) if usage else 0
+        return "".join(text_parts), in_tokens, out_tokens, (cached_tokens or 0)
 
     def _make_strict_schema(self, schema: Dict[str, Any]) -> Dict[str, Any]:
         """Recursively add additionalProperties: false to object schemas."""
