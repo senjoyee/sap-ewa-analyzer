@@ -1,0 +1,3 @@
+cf set-env <application-name> <variable-name> <value>
+cf set-env ewa-analyzer-backend AZURE_OPENAI_SUMMARY_MODEL gpt-5.1
+cf restage ewa-analyzer-backend

@@ -34,9 +34,9 @@ logger = logging.getLogger(__name__)
 
 
 class ParameterExtractionAgent:
-    """Agent for extracting parameter recommendations using GPT-5.1."""
+    """Agent for extracting parameter recommendations using GPT-5."""
     
-    def __init__(self, client, model: str = None):
+    def __init__(self, client, model: str = None, provider: str = "openai"):
         """
         Initialize the parameter extraction agent.
         
@@ -46,8 +46,12 @@ class ParameterExtractionAgent:
         """
         self.client = client
         self.last_usage: Dict[str, Any] = {}
-        # Use gpt-5.1 specifically for parameter extraction
-        self.model = model or os.getenv("AZURE_OPENAI_PARAM_MODEL", "gpt-5.1")
+        self.provider = (provider or "openai").lower()
+        self.model = model or (
+            os.getenv("ANTHROPIC_SUMMARY_MODEL", "claude-sonnet-4-5")
+            if self.provider == "anthropic"
+            else os.getenv("AZURE_OPENAI_PARAM_MODEL", "gpt-5.1")
+        )
         
         # Load schema
         with open(SCHEMA_PATH, "r", encoding="utf-8") as f:
@@ -79,7 +83,11 @@ class ParameterExtractionAgent:
             return {"parameters": [], "extraction_notes": "Empty input content", "summary": self.get_summary_stats([])}
         
         try:
-            result = await self._call_api(markdown_content)
+            result = await (
+                self._call_anthropic_api(markdown_content)
+                if self.provider == "anthropic"
+                else self._call_api(markdown_content)
+            )
             
             # Validate result structure
             if not isinstance(result, dict):
@@ -138,23 +146,140 @@ class ParameterExtractionAgent:
         except Exception as e:
             logger.exception("Error during extraction: %s", e)
             return {"parameters": [], "extraction_notes": f"Extraction error: {str(e)}", "summary": self.get_summary_stats([])}
-    
+
+    async def _call_anthropic_api(self, markdown_content: str) -> Dict[str, Any]:
+        strict_schema = self._make_strict_schema(self.schema)
+        user_content = markdown_content
+
+        def extract_usage(response: Any) -> Dict[str, Any]:
+            usage = getattr(response, "usage", None)
+            input_tokens = getattr(usage, "input_tokens", 0) if usage else 0
+            output_tokens = getattr(usage, "output_tokens", 0) if usage else 0
+            return {
+                "model": self.model,
+                "reasoning_effort": None,
+                "input_tokens": input_tokens,
+                "cached_input_tokens": 0,
+                "output_tokens": output_tokens,
+                "reasoning_tokens": 0,
+                "total_tokens": input_tokens + output_tokens,
+            }
+
+        def call_messages_structured() -> Any:
+            return self.client.messages.create(
+                model=self.model,
+                max_tokens=PARAM_MAX_OUTPUT_TOKENS,
+                system=self.prompt,
+                messages=[
+                    {"role": "user", "content": user_content}
+                ],
+                output_config={
+                    "format": {
+                        "type": "json_schema",
+                        "name": "extract_parameters",
+                        "schema": strict_schema,
+                    }
+                },
+                stream=False,
+            )
+
+        try:
+            response = await asyncio.to_thread(call_messages_structured)
+            self.last_usage = extract_usage(response)
+            text = self._extract_text_from_anthropic_message(response)
+            if text:
+                return self._parse_json_text(text)
+            logger.warning("Anthropic parameter structured output returned no text; falling back to streaming request")
+        except Exception as structured_error:
+            logger.warning(
+                "Anthropic parameter structured output failed; falling back to streaming request: %s",
+                structured_error,
+            )
+
+        text, in_tokens, out_tokens = await asyncio.to_thread(self._call_anthropic_streaming, user_content)
+        self.last_usage = {
+            "model": self.model,
+            "reasoning_effort": None,
+            "input_tokens": in_tokens,
+            "cached_input_tokens": 0,
+            "output_tokens": out_tokens,
+            "reasoning_tokens": 0,
+            "total_tokens": in_tokens + out_tokens,
+        }
+        if text:
+            return self._parse_json_text(text)
+        return {"parameters": [], "extraction_notes": "No text content in response"}
+
+    def _call_anthropic_streaming(self, user_content: str) -> tuple[str, int, int]:
+        collected_text = ""
+        in_tokens = 0
+        out_tokens = 0
+
+        stream = self.client.messages.create(
+            model=self.model,
+            max_tokens=PARAM_MAX_OUTPUT_TOKENS,
+            system=self.prompt,
+            messages=[
+                {"role": "user", "content": user_content}
+            ],
+            stream=True,
+        )
+
+        for event in stream:
+            if hasattr(event, "type"):
+                if event.type == "content_block_delta":
+                    if hasattr(event, "delta") and hasattr(event.delta, "text"):
+                        collected_text += event.delta.text
+                elif event.type == "message_delta":
+                    if hasattr(event, "usage"):
+                        out_tokens = getattr(event.usage, "output_tokens", 0)
+                elif event.type == "message_start":
+                    if hasattr(event, "message") and hasattr(event.message, "usage"):
+                        in_tokens = getattr(event.message.usage, "input_tokens", 0)
+
+        return collected_text, in_tokens, out_tokens
+
+    def _extract_text_from_anthropic_message(self, response: Any) -> str:
+        text_parts: List[str] = []
+        content = getattr(response, "content", None) or []
+        for block in content:
+            block_type = getattr(block, "type", None)
+            if block_type == "text":
+                text_value = getattr(block, "text", None)
+                if text_value:
+                    text_parts.append(text_value)
+        return "".join(text_parts)
+
+    def _parse_json_text(self, text: str) -> Dict[str, Any]:
+        try:
+            return json.loads(text)
+        except json.JSONDecodeError as de:
+            logger.warning("JSONDecodeError on text output: %s. Attempting repair.", de)
+            try:
+                rr = self.json_repair.repair(text)
+                if rr.success and isinstance(rr.data, dict):
+                    return rr.data
+            except Exception as re:
+                logger.error("JSONRepair failed: %s", re)
+            logger.error("Raw text that failed parsing: %s", text)
+        return {"parameters": []}
+
     @staticmethod
     def filter_by_action(parameters: List[Dict[str, Any]], statuses: List[str]) -> List[Dict[str, Any]]:
         """
         Filter parameters by action status.
-        
+
         Args:
             parameters: List of parameter dictionaries
             statuses: List of action_status values to include (e.g., ["Change Required", "Verify"])
-            
+
         Returns:
             Filtered list of parameters matching any of the specified statuses
         """
         if not statuses:
             return parameters
         return [p for p in parameters if p.get("action_status") in statuses]
-    
+
     @staticmethod
     def filter_by_priority(parameters: List[Dict[str, Any]], priorities: List[str]) -> List[Dict[str, Any]]:
         """
@@ -319,17 +444,7 @@ class ParameterExtractionAgent:
         # Fallback to output_text
         text = getattr(response, "output_text", None)
         if text:
-            try:
-                return json.loads(text)
-            except json.JSONDecodeError as de:
-                logger.warning("JSONDecodeError on output_text: %s. Attempting repair.", de)
-                try:
-                    rr = self.json_repair.repair(text)
-                    if rr.success and isinstance(rr.data, dict):
-                        return rr.data
-                except Exception as re:
-                    logger.error("JSONRepair failed: %s", re)
-                logger.error("Raw output_text that failed parsing: %s", text)
+            return self._parse_json_text(text)
         else:
             logger.warning("Both output_parsed and output_text were None or empty. Response: %s", response)
         

@@ -310,23 +310,17 @@ class EWAWorkflowOrchestrator:
             api_key=self.azure_openai_api_key,
         )
         return OpenAIEWAAgent(client=client, model=model_name, summary_prompt=summary_prompt)
-    
-    def _create_anthropic_agent(self, model: str | None = None, summary_prompt: str | None = None) -> AnthropicEWAAgent:
-        """Create an AnthropicEWAAgent for Azure AI Foundry (Claude) models."""
-        model_name = model or ANTHROPIC_SUMMARY_MODEL
-        logger.info("Creating AnthropicEWAAgent with model: %s", model_name)
-        
+
+    def _create_anthropic_client(self):
         if not AZURE_ANTHROPIC_ENDPOINT:
             raise ValueError("AZURE_ANTHROPIC_ENDPOINT environment variable is required for PROVIDER=anthropic")
         if not AZURE_ANTHROPIC_API_KEY:
             raise ValueError("AZURE_ANTHROPIC_API_KEY environment variable is required for PROVIDER=anthropic")
-        
-        # Import AnthropicFoundry from anthropic SDK
+
         from anthropic import AnthropicFoundry
         import httpx
-        
-        # Configure extended timeout for long-running requests
-        client = AnthropicFoundry(
+
+        return AnthropicFoundry(
             api_key=AZURE_ANTHROPIC_API_KEY,
             base_url=AZURE_ANTHROPIC_ENDPOINT,
             timeout=httpx.Timeout(
@@ -334,6 +328,13 @@ class EWAWorkflowOrchestrator:
                 connect=float(ANTHROPIC_CONNECT_TIMEOUT_SECONDS),
             ),
         )
+    
+    def _create_anthropic_agent(self, model: str | None = None, summary_prompt: str | None = None) -> AnthropicEWAAgent:
+        """Create an AnthropicEWAAgent for Azure AI Foundry (Claude) models."""
+        model_name = model or ANTHROPIC_SUMMARY_MODEL
+        logger.info("Creating AnthropicEWAAgent with model: %s", model_name)
+
+        client = self._create_anthropic_client()
         return AnthropicEWAAgent(client=client, model=model_name, summary_prompt=summary_prompt)
     
     def _fix_report_date_if_invalid(self, summary_json: dict, blob_name: str) -> dict:
@@ -649,9 +650,21 @@ class EWAWorkflowOrchestrator:
             # Step 2b: Extract parameters using fast model
             try:
                 logger.info("[STEP 2b] Extracting parameters for %s", state.blob_name)
-                if not self.openai_client:
-                    raise RuntimeError("OpenAI client not initialized")
-                param_agent = ParameterExtractionAgent(self.openai_client)
+                if PROVIDER == "anthropic":
+                    param_client = self._create_anthropic_client()
+                    param_agent = ParameterExtractionAgent(
+                        param_client,
+                        model=ANTHROPIC_SUMMARY_MODEL,
+                        provider="anthropic",
+                    )
+                else:
+                    if not self.openai_client:
+                        raise RuntimeError("OpenAI client not initialized")
+                    param_agent = ParameterExtractionAgent(
+                        self.openai_client,
+                        model=os.getenv("AZURE_OPENAI_PARAM_MODEL", "gpt-5.1"),
+                        provider="openai",
+                    )
                 state.parameters_json = await param_agent.extract(text_input)
                 state.parameter_usage = getattr(param_agent, "last_usage", {}) or {}
                 param_count = len(state.parameters_json.get("parameters", []))

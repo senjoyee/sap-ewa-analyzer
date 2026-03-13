@@ -47,6 +47,16 @@ jobs:
                 AZURE_OPENAI_ENDPOINT: "${{ secrets.AZURE_OPENAI_ENDPOINT }}"
                 AZURE_OPENAI_API_KEY: "${{ secrets.AZURE_OPENAI_API_KEY }}"
                 AZURE_OPENAI_SUMMARY_MODEL: "${{ secrets.AZURE_OPENAI_SUMMARY_MODEL }}"
+                AZURE_OPENAI_PARAM_MODEL: "${{ secrets.AZURE_OPENAI_PARAM_MODEL }}"
+                AZURE_OPENAI_API_VERSION: "${{ secrets.AZURE_OPENAI_API_VERSION }}"
+                AZURE_OPENAI_FAST_MODEL: "${{ secrets.AZURE_OPENAI_FAST_MODEL }}"
+                AZURE_OPENAI_CHAT_MODEL: "${{ secrets.AZURE_OPENAI_CHAT_MODEL }}"
+                SUMMARY_REASONING_EFFORT: "${{ secrets.SUMMARY_REASONING_EFFORT }}"
+                PARAM_REASONING_EFFORT: "${{ secrets.PARAM_REASONING_EFFORT }}"
+                PROVIDER: "${{ secrets.PROVIDER }}"
+                ANTHROPIC_SUMMARY_MODEL: "${{ secrets.ANTHROPIC_SUMMARY_MODEL }}"
+                AZURE_ANTHROPIC_ENDPOINT: "${{ secrets.AZURE_ANTHROPIC_ENDPOINT }}"
+                AZURE_ANTHROPIC_API_KEY: "${{ secrets.AZURE_ANTHROPIC_API_KEY }}"
           EOF
 
       - name: Build MTA Archive

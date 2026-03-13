@@ -105,46 +105,44 @@ EWA Document:
 """
 
         try:
-            # Try streaming with stream=True parameter to avoid server-side timeout
-            # This uses SSE (Server-Sent Events) which keeps the connection alive
-            def _call_messages_streaming() -> tuple[str, int, int]:
-                """Make streaming API call and return (text, input_tokens, output_tokens)."""
-                collected_text = ""
-                in_tokens = 0
-                out_tokens = 0
-                
-                # Use stream=True parameter for SSE streaming
-                stream = self.client.messages.create(
+            strict_schema = self._make_strict_schema(self.schema)
+
+            def _call_messages_structured() -> Any:
+                return self.client.messages.create(
                     model=self.model,
                     max_tokens=ANTHROPIC_MAX_OUTPUT_TOKENS,
                     system=self.summary_prompt,
                     messages=[
                         {"role": "user", "content": user_content}
                     ],
-                    stream=True,
+                    output_config={
+                        "format": {
+                            "type": "json_schema",
+                            "name": "ewa_summary",
+                            "schema": strict_schema,
+                        }
+                    },
+                    stream=False,
                 )
-                
-                # Iterate over SSE events
-                for event in stream:
-                    # Handle different event types
-                    if hasattr(event, "type"):
-                        if event.type == "content_block_delta":
-                            # Extract text from delta
-                            if hasattr(event, "delta") and hasattr(event.delta, "text"):
-                                collected_text += event.delta.text
-                        elif event.type == "message_delta":
-                            # Extract usage from final message delta
-                            if hasattr(event, "usage"):
-                                out_tokens = getattr(event.usage, "output_tokens", 0)
-                        elif event.type == "message_start":
-                            # Extract input tokens from message start
-                            if hasattr(event, "message") and hasattr(event.message, "usage"):
-                                in_tokens = getattr(event.message.usage, "input_tokens", 0)
-                
-                return collected_text, in_tokens, out_tokens
-            
-            # Offload streaming call to a thread
-            text, in_tokens, out_tokens = await asyncio.to_thread(_call_messages_streaming)
+
+            try:
+                response = await asyncio.to_thread(_call_messages_structured)
+                text, in_tokens, out_tokens = self._extract_text_and_usage_from_message(response)
+                logger.info(
+                    "Anthropic structured output request accepted: input_tokens=%s, output_tokens=%s",
+                    in_tokens,
+                    out_tokens,
+                )
+                if text:
+                    return self._parse_json_from_text(text)
+                logger.warning("Anthropic structured output returned no text content; falling back to streaming request")
+            except Exception as structured_error:
+                logger.warning(
+                    "Anthropic structured output request failed; falling back to streaming request: %s",
+                    structured_error,
+                )
+
+            text, in_tokens, out_tokens = await asyncio.to_thread(self._call_messages_streaming, user_content)
             logger.info(
                 "Token usage: input_tokens=%s, output_tokens=%s",
                 in_tokens,
@@ -155,12 +153,80 @@ EWA Document:
                 logger.warning("No text content in response")
                 return {"_parse_error": "No text content in response", "raw_arguments": ""}
 
-            # Parse JSON from response
             return self._parse_json_from_text(text)
 
         except Exception as e:
             logger.exception("Error calling Anthropic API: %s", e)
             return {"_parse_error": str(e), "raw_arguments": ""}
+
+    def _call_messages_streaming(self, user_content: str) -> tuple[str, int, int]:
+        """Make streaming API call and return (text, input_tokens, output_tokens)."""
+        collected_text = ""
+        in_tokens = 0
+        out_tokens = 0
+
+        stream = self.client.messages.create(
+            model=self.model,
+            max_tokens=ANTHROPIC_MAX_OUTPUT_TOKENS,
+            system=self.summary_prompt,
+            messages=[
+                {"role": "user", "content": user_content}
+            ],
+            stream=True,
+        )
+
+        for event in stream:
+            if hasattr(event, "type"):
+                if event.type == "content_block_delta":
+                    if hasattr(event, "delta") and hasattr(event.delta, "text"):
+                        collected_text += event.delta.text
+                elif event.type == "message_delta":
+                    if hasattr(event, "usage"):
+                        out_tokens = getattr(event.usage, "output_tokens", 0)
+                elif event.type == "message_start":
+                    if hasattr(event, "message") and hasattr(event.message, "usage"):
+                        in_tokens = getattr(event.message.usage, "input_tokens", 0)
+
+        return collected_text, in_tokens, out_tokens
+
+    def _extract_text_and_usage_from_message(self, response: Any) -> tuple[str, int, int]:
+        """Extract text and usage fields from a non-streaming Anthropic response."""
+        text_parts: list[str] = []
+        content = getattr(response, "content", None) or []
+        for block in content:
+            block_type = getattr(block, "type", None)
+            if block_type == "text":
+                text_value = getattr(block, "text", None)
+                if text_value:
+                    text_parts.append(text_value)
+
+        usage = getattr(response, "usage", None)
+        in_tokens = getattr(usage, "input_tokens", 0) if usage else 0
+        out_tokens = getattr(usage, "output_tokens", 0) if usage else 0
+        return "".join(text_parts), in_tokens, out_tokens
+
+    def _make_strict_schema(self, schema: Dict[str, Any]) -> Dict[str, Any]:
+        """Recursively add additionalProperties: false to object schemas."""
+        node = copy.deepcopy(schema)
+
+        def _walk(value: Any) -> Any:
+            if isinstance(value, dict):
+                mapped = {k: _walk(v) for k, v in value.items()}
+                if mapped.get("type") == "object":
+                    mapped.setdefault("additionalProperties", False)
+                    properties = mapped.get("properties")
+                    if isinstance(properties, dict):
+                        mapped["properties"] = {k: _walk(v) for k, v in properties.items()}
+                if "$defs" in mapped and isinstance(mapped["$defs"], dict):
+                    mapped["$defs"] = {k: _walk(v) for k, v in mapped["$defs"].items()}
+                if "definitions" in mapped and isinstance(mapped["definitions"], dict):
+                    mapped["definitions"] = {k: _walk(v) for k, v in mapped["definitions"].items()}
+                return mapped
+            if isinstance(value, list):
+                return [_walk(item) for item in value]
+            return value
+
+        return _walk(node)
 
     def _parse_json_from_text(self, text: str) -> Dict[str, Any]:
         """Parse JSON from Claude's response text."""
