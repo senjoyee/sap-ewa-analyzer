@@ -72,9 +72,11 @@ def load_summary_prompt() -> str | None:
     prompt_dir = os.path.join(current_dir, "prompts")
 
     candidate_files = [
+        "ewa_summary_prompt_anthropic.md" if PROVIDER == "anthropic" else None,
         "ewa_summary_prompt_openai.md",
         "ewa_summary_prompt.md",
     ]
+    candidate_files = [f for f in candidate_files if f]
 
     for filename in candidate_files:
         path = os.path.join(prompt_dir, filename)
@@ -114,9 +116,16 @@ MODEL_PRICING_USD_PER_1M = {
     "gpt-5.1": {"input": 1.25, "cached_input": 0.125, "output": 10.0},
     "gpt-5": {"input": 1.25, "cached_input": 0.125, "output": 10.0},
     "gpt-5-mini": {"input": 0.25, "cached_input": 0.025, "output": 2.0},
+    "claude-haiku-4.5": {"input": 1.0, "cached_input": 0.1, "output": 5.0},
+    "claude-haiku-4-5": {"input": 1.0, "cached_input": 0.1, "output": 5.0},
+    "claude-sonnet-4.6": {"input": 3.0, "cached_input": 0.3, "output": 15.0},
+    "claude-sonnet-4-6": {"input": 3.0, "cached_input": 0.3, "output": 15.0},
+    "claude-opus-4.6": {"input": 15.0, "cached_input": 1.5, "output": 75.0},
+    "claude-opus-4-6": {"input": 15.0, "cached_input": 1.5, "output": 75.0},
 }
 
 OPENAI_PRICING_SOURCE_URL = "https://openai.com/api/pricing/"
+ANTHROPIC_PRICING_SOURCE_URL = "https://www.anthropic.com/pricing"
 
 class EWAWorkflowOrchestrator:
     """Custom orchestrator for EWA analysis workflows"""
@@ -125,7 +134,7 @@ class EWAWorkflowOrchestrator:
         self.client = None
         self.blob_service_client = None
         self.openai_client = None
-        self.summary_model = AZURE_OPENAI_SUMMARY_MODEL
+        self.summary_model = ANTHROPIC_SUMMARY_MODEL if PROVIDER == "anthropic" else AZURE_OPENAI_SUMMARY_MODEL
         self.azure_openai_endpoint = AZURE_OPENAI_ENDPOINT
         self.azure_openai_api_key = AZURE_OPENAI_API_KEY
         self.azure_openai_api_version = AZURE_OPENAI_API_VERSION
@@ -276,12 +285,13 @@ class EWAWorkflowOrchestrator:
         return {
             "generated_at_utc": generated_at,
             "source_blob": state.blob_name,
+            "provider": PROVIDER,
             "system_id": self._resolve_report_system_id(state, original_metadata),
             "pricing_source": {
-                "url": OPENAI_PRICING_SOURCE_URL,
+                "url": ANTHROPIC_PRICING_SOURCE_URL if PROVIDER == "anthropic" else OPENAI_PRICING_SOURCE_URL,
                 "notes": [
-                    "GPT-5.4 pricing retrieved from OpenAI pricing documentation.",
-                    "Reasoning tokens are billed as output tokens per OpenAI pricing guidance.",
+                    f"{'Anthropic' if PROVIDER == 'anthropic' else 'OpenAI'} pricing retrieved from official documentation.",
+                    "Cached inputs are billed at a significantly reduced rate.",
                 ],
             },
             "summary": summary_usage,
