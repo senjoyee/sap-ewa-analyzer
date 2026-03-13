@@ -6,7 +6,7 @@ import logging.config
 import os
 
 
-DEFAULT_LOG_LEVEL = "ERROR"
+DEFAULT_LOG_LEVEL = "INFO"
 
 
 def setup_logging() -> None:

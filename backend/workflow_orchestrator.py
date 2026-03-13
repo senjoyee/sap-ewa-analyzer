@@ -610,10 +610,11 @@ class EWAWorkflowOrchestrator:
             report_date_str = original_metadata.get('report_date_str', '')
             
             logger.info(
-                "Analysis - Customer: %s, System: %s, Report Date: %s",
+                "Analysis - Customer: %s, System: %s, Report Date: %s, Provider: %s",
                 customer_name,
                 system_id,
                 report_date_str,
+                PROVIDER
             )
             
             # Run AI analysis using the full prompt
