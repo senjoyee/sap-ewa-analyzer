@@ -82,7 +82,6 @@ def load_summary_prompt() -> str | None:
     prompt_dir = os.path.join(current_dir, "prompts")
 
     candidate_files = [
-        "ewa_summary_prompt_anthropic.md" if PROVIDER == "anthropic" else None,
         "ewa_summary_prompt_openai.md",
         "ewa_summary_prompt.md",
     ]
