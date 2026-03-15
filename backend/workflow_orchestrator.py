@@ -623,6 +623,17 @@ class EWAWorkflowOrchestrator:
             return state
     
 
+    def _strip_markdown_wrappers_recursive(self, obj: Any) -> Any:
+        """Recursively strip ** and * from string values in dictionaries and lists."""
+        if isinstance(obj, dict):
+            return {k: self._strip_markdown_wrappers_recursive(v) for k, v in obj.items()}
+        elif isinstance(obj, list):
+            return [self._strip_markdown_wrappers_recursive(item) for item in obj]
+        elif isinstance(obj, str):
+            # Strip ** and * markdown wrappers from text
+            return obj.replace("**", "").replace("*", "")
+        return obj
+
     async def run_analysis_step(self, state: WorkflowState) -> WorkflowState:
         """Step 2: Generate comprehensive EWA analysis; then extract KPIs via image agent"""
         try:
@@ -665,6 +676,10 @@ class EWAWorkflowOrchestrator:
             
             ai_result = await agent.run(text_input, pdf_data=None)
             
+            # Strip markdown wrappers if any
+            if isinstance(ai_result, dict):
+                ai_result = self._strip_markdown_wrappers_recursive(ai_result)
+                
             state.summary_json = ai_result if ai_result else {}
             state.summary_usage = getattr(agent, "last_usage", {}) or {}
             
@@ -693,7 +708,12 @@ class EWAWorkflowOrchestrator:
                         model=os.getenv("AZURE_OPENAI_PARAM_MODEL", "gpt-5.1"),
                         provider="openai",
                     )
-                state.parameters_json = await param_agent.extract(text_input)
+                param_json = await param_agent.extract(text_input)
+                # Strip markdown wrappers if any
+                if isinstance(param_json, dict):
+                    param_json = self._strip_markdown_wrappers_recursive(param_json)
+                    
+                state.parameters_json = param_json
                 state.parameter_usage = getattr(param_agent, "last_usage", {}) or {}
                 param_count = len(state.parameters_json.get("parameters", []))
                 logger.info("[STEP 2b] Extracted %s parameters", param_count)

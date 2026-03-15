@@ -156,6 +156,7 @@ EWA Document:
                             "schema": strict_schema,
                         }
                     },
+                    temperature=0.0,
                     stream=False,
                 )
 
@@ -231,6 +232,7 @@ EWA Document:
             "messages": [
                 {"role": "user", "content": messages_content}
             ],
+            "temperature": 0.0,
             "stream": True,
         }
 

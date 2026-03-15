@@ -202,6 +202,7 @@ class ParameterExtractionAgent:
                         "schema": strict_schema,
                     }
                 },
+                "temperature": 0.0,
                 "stream": False,
             }
 
@@ -268,6 +269,7 @@ class ParameterExtractionAgent:
                     ]
                 }
             ],
+            "temperature": 0.0,
             "stream": True,
         }
 
