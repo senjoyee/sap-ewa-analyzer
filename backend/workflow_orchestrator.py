@@ -42,6 +42,7 @@ from core.runtime_config import (
     SUMMARY_REASONING_EFFORT,
     PARAM_REASONING_EFFORT,
     ANTHROPIC_THINKING_BUDGET_TOKENS,
+    ANTHROPIC_TEMPERATURE,
 )
 
 logger = logging.getLogger(__name__)
@@ -360,6 +361,7 @@ class EWAWorkflowOrchestrator:
             summary_prompt=summary_prompt,
             reasoning_effort=SUMMARY_REASONING_EFFORT,
             thinking_budget=ANTHROPIC_THINKING_BUDGET_TOKENS,
+            temperature=ANTHROPIC_TEMPERATURE,
         )
     
     def _fix_report_date_if_invalid(self, summary_json: dict, blob_name: str) -> dict:

@@ -15,6 +15,16 @@ def _get_int(name: str, default: int) -> int:
         return default
 
 
+def _get_float(name: str, default: Optional[float]) -> Optional[float]:
+    value = os.getenv(name)
+    if value is None:
+        return default
+    try:
+        return float(value)
+    except ValueError:
+        return default
+
+
 def _get_choice(name: str, default: str, allowed: set[str]) -> str:
     value = os.getenv(name)
     if value is None:
@@ -33,6 +43,7 @@ ANTHROPIC_MAX_OUTPUT_TOKENS = _get_int("ANTHROPIC_MAX_OUTPUT_TOKENS", 32768)
 ANTHROPIC_TIMEOUT_SECONDS = _get_int("ANTHROPIC_TIMEOUT_SECONDS", 1800)
 ANTHROPIC_CONNECT_TIMEOUT_SECONDS = _get_int("ANTHROPIC_CONNECT_TIMEOUT_SECONDS", 30)
 ANTHROPIC_THINKING_BUDGET_TOKENS = _get_int("ANTHROPIC_THINKING_BUDGET_TOKENS", 0) # 0 means disabled
+ANTHROPIC_TEMPERATURE: Optional[float] = _get_float("ANTHROPIC_TEMPERATURE", None)
 PDF_METADATA_TEXT_LIMIT = _get_int("PDF_METADATA_TEXT_LIMIT", 4000)
 PDF_METADATA_MAX_TOKENS = _get_int("PDF_METADATA_MAX_TOKENS", 100)
 SUMMARY_REASONING_EFFORT = _get_choice("SUMMARY_REASONING_EFFORT", "medium", {"minimal", "none", "low", "medium", "high", "xhigh"})

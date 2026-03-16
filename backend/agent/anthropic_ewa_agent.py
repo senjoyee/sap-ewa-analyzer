@@ -32,11 +32,13 @@ class AnthropicEWAAgent:
         schema_path: str | None = None,
         reasoning_effort: str | None = "medium",
         thinking_budget: int | None = None,
+        temperature: float | None = None,
     ):
         self.client = client
         self.model = model
         self.reasoning_effort = reasoning_effort
         self.thinking_budget = thinking_budget if thinking_budget is not None else ANTHROPIC_THINKING_BUDGET_TOKENS
+        self.temperature = temperature
 
         # Load prompt
         if summary_prompt is not None:
@@ -156,6 +158,7 @@ EWA Document:
                             "schema": strict_schema,
                         }
                     },
+                    temperature=self.temperature,
                     stream=False,
                 )
 
