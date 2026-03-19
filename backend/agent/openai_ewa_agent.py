@@ -25,9 +25,10 @@ logger = logging.getLogger(__name__)
 class OpenAIEWAAgent:
     """Small agent that plans (single step) and returns a validated JSON summary."""
 
-    def __init__(self, client: Union[object, None], model: str, summary_prompt: str | None = None, schema_path: str | None = None):
+    def __init__(self, client: Union[object, None], model: str, summary_prompt: str | None = None, schema_path: str | None = None, reasoning_effort: str | None = None):
         self.client = client
         self.model = model
+        self.reasoning_effort = reasoning_effort or SUMMARY_REASONING_EFFORT
         self.last_usage: Dict[str, Any] = {}
 
         if summary_prompt is not None:
@@ -121,7 +122,7 @@ class OpenAIEWAAgent:
 
         return {
             "model": self.model,
-            "reasoning_effort": SUMMARY_REASONING_EFFORT,
+            "reasoning_effort": self.reasoning_effort,
             "input_tokens": (usage or {}).get("input_tokens"),
             "cached_input_tokens": input_details.get("cached_tokens", 0) or 0,
             "output_tokens": (usage or {}).get("output_tokens"),
@@ -193,7 +194,7 @@ class OpenAIEWAAgent:
                     model=self.model,
                     input=[{"role": "user", "content": user_content}],
                     text=text_format,
-                    reasoning={"effort": SUMMARY_REASONING_EFFORT},
+                    reasoning={"effort": self.reasoning_effort},
                     max_output_tokens=SUMMARY_MAX_OUTPUT_TOKENS,
                 )
             )
