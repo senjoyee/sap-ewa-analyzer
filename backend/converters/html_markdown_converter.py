@@ -69,6 +69,8 @@ _KNOWN_ICON_HASHES: dict[str, str] = {
     "ea6de01a481241168d7880494344c7db": "[GREEN]",
     "ea6d7ea285f0754007d4d753306df8cb": "[GREEN]",
     "537ea033b8b1b1f797e2ce9ab59fb473": "[GREEN]",
+    "54ee8b9f5e84d049112e327cb1532a04": "[GREEN]",
+    "eee9cc45a2ad0128e0c4224f20254b2d": "[GREEN]",
     # GREEN_BAR (32x15 / 41x100)
     "3246c1d94713d64f42e9258aa648599c": "[GREEN_BAR]",
     "46882c7f941acb354df7a66a7fd71785": "[GREEN_BAR]",
@@ -79,10 +81,8 @@ _KNOWN_ICON_HASHES: dict[str, str] = {
     "9f2ee22b943a41f856c1476295d40016": "[GREEN_BAR]",
     # NOT_RATED (16x14 / 16x16)
     "423b0448e5a27a9c5b40a3581b034cce": "[NOT_RATED]",
-    "54ee8b9f5e84d049112e327cb1532a04": "[NOT_RATED]",
-    "eee9cc45a2ad0128e0c4224f20254b2d": "[NOT_RATED]",
-    "17b4ebb1dc8381d26be3c4a9e5e033d1": "[NOT_RATED]",
     # RED (16x14)
+    "17b4ebb1dc8381d26be3c4a9e5e033d1": "[RED]",
     "59d85d6ff36d8d22cc171a4be6b4dab4": "[RED]",
     "0dcb043d93362db34e18e43973a4dbe1": "[RED]",
     "dc3022b77b8645a56fd7b187bdbd5d34": "[RED]",
@@ -219,20 +219,20 @@ def classify_icon(image_path: str) -> str:
     if r < 20 and g < 20 and b < 20:
         return "[NOT_RATED]"
 
-    # Red icon: high red, low green and blue
-    if r > 100 and g < 60 and b < 60:
+    # Red icon: red dominant
+    if r > g + 40 and r > b + 40:
         return "[RED]"
 
-    # Blue icon: high blue, low red and green
-    if b > 100 and r < 60 and g < 60:
+    # Blue icon: blue dominant
+    if b > r + 30 and b > g + 30:
         return "[BLUE]"
 
     # Yellow icon: high red, high green, low blue
-    if r > 100 and g > 80 and b < 60:
+    if r > 100 and g > 80 and b < 80:
         return "[YELLOW]"
 
-    # Green icon: green channel dominant
-    if g > 50 and r < 80 and b < 50:
+    # Green icon: green dominant
+    if g > r + 15 and g > b + 15:
         return "[GREEN]"
 
     # Gray icon: all channels roughly equal and mid-range
