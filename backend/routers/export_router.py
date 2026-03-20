@@ -673,10 +673,13 @@ async def export_json_to_excel(blob_name: str):
         base_name = os.path.splitext(blob_name)[0]
         original_base = base_name[:-3] if base_name.endswith("_AI") else base_name
 
-        # Fetch customer_name from original PDF metadata if available
+        # Fetch customer_name from original PDF or MD metadata if available
         customer_name = ""
         try:
             original_pdf_name = f"{original_base}.pdf"
+            original_md_name = f"{original_base}.md"
+            
+            # Try PDF first
             original_blob_client = blob_service_client.get_blob_client(
                 container=AZURE_STORAGE_CONTAINER_NAME, blob=original_pdf_name
             )
@@ -684,7 +687,18 @@ async def export_json_to_excel(blob_name: str):
                 blob_props = original_blob_client.get_blob_properties()
                 if blob_props.metadata:
                     customer_name = blob_props.metadata.get("customer_name", "")
-                    logger.info("[Excel Export] Customer name from metadata: %s", customer_name)
+                    logger.info("[Excel Export] Customer name from PDF metadata: %s", customer_name)
+                    
+            # Fallback to MD if PDF not found or no customer_name
+            if not customer_name:
+                original_md_client = blob_service_client.get_blob_client(
+                    container=AZURE_STORAGE_CONTAINER_NAME, blob=original_md_name
+                )
+                if original_md_client.exists():
+                    blob_props = original_md_client.get_blob_properties()
+                    if blob_props.metadata:
+                        customer_name = blob_props.metadata.get("customer_name", "")
+                        logger.info("[Excel Export] Customer name from MD metadata: %s", customer_name)
         except Exception as meta_e:
             logger.warning("[Excel Export] Error fetching customer metadata: %s", meta_e)
 
