@@ -29,6 +29,7 @@ SCHEMA_PATH = os.path.join(os.path.dirname(os.path.abspath(__file__)), "..", "sc
 
 # Prompt file path
 PROMPT_PATH = os.path.join(os.path.dirname(os.path.abspath(__file__)), "..", "prompts", "parameter_extraction_prompt.md")
+ANTHROPIC_PROMPT_PATH = os.path.join(os.path.dirname(os.path.abspath(__file__)), "..", "prompts", "parameter_extraction_prompt_anthropic.md")
 
 logger = logging.getLogger(__name__)
 
@@ -60,13 +61,14 @@ class ParameterExtractionAgent:
             self.schema = json.load(f)
             
         # Load prompt
-        if os.path.exists(PROMPT_PATH):
-            with open(PROMPT_PATH, "r", encoding="utf-8") as f:
+        prompt_path = ANTHROPIC_PROMPT_PATH if self.provider == "anthropic" else PROMPT_PATH
+        if os.path.exists(prompt_path):
+            with open(prompt_path, "r", encoding="utf-8") as f:
                 self.prompt = f.read()
         else:
              # Fallback if file not found (though it should be there)
             self.prompt = "Error: Parameter extraction prompt file not found."
-            logger.warning("Prompt file not found at %s", PROMPT_PATH)
+            logger.warning("Prompt file not found at %s", prompt_path)
             
         self.json_repair = JSONRepair()
 

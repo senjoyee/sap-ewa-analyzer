@@ -82,11 +82,16 @@ def load_summary_prompt() -> str | None:
     current_dir = os.path.dirname(os.path.abspath(__file__))
     prompt_dir = os.path.join(current_dir, "prompts")
 
-    candidate_files = [
-        "ewa_summary_prompt_openai.md",
-        "ewa_summary_prompt.md",
-    ]
-    candidate_files = [f for f in candidate_files if f]
+    if PROVIDER == "anthropic":
+        candidate_files = [
+            "ewa_summary_prompt_anthropic.md",
+            "ewa_summary_prompt.md",
+        ]
+    else:
+        candidate_files = [
+            "ewa_summary_prompt_openai.md",
+            "ewa_summary_prompt.md",
+        ]
 
     for filename in candidate_files:
         path = os.path.join(prompt_dir, filename)
