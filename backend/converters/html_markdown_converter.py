@@ -80,7 +80,6 @@ _KNOWN_ICON_HASHES: dict[str, str] = {
     "4bccdc1eeaa1f0c31ca5f22b584276e1": "[GREEN_BAR]",
     "9f2ee22b943a41f856c1476295d40016": "[GREEN_BAR]",
     # NOT_RATED (16x14 / 16x16)
-    "423b0448e5a27a9c5b40a3581b034cce": "[NOT_RATED]",
     # RED (16x14)
     "17b4ebb1dc8381d26be3c4a9e5e033d1": "[RED]",
     "59d85d6ff36d8d22cc171a4be6b4dab4": "[RED]",
@@ -89,6 +88,8 @@ _KNOWN_ICON_HASHES: dict[str, str] = {
     "3bdf0d49a7602e32279f886df405da9d": "[RED]",
     "4bfca9ff9e6b2e1ceb55ed42c6c7122b": "[RED]",
     "4f892c34e4678233f406174667f0288e": "[RED]",
+    # CHECK / ARROW
+    "423b0448e5a27a9c5b40a3581b034cce": "[CHECK]",
     # RED_BAR (32x15 / 41x100)
     "f28580d67f0b2bbd42c42ae43cb30518": "[RED_BAR]",
     "9a31964d762fb4a9b3e9c1fff98a7d2d": "[RED_BAR]",
@@ -586,7 +587,7 @@ def main():
     md = convert_html_to_markdown(html_path, output_path)
 
     # Print summary statistics
-    icon_labels = re.findall(r"\[(?:GREEN|YELLOW|RED|BLUE|GRAY|NOT_RATED|GREEN_BAR|RED_BAR|YELLOW_BAR|GRAY_BAR|IMAGE|CHART|SEPARATOR)\]", md)
+    icon_labels = re.findall(r"\[(?:GREEN|YELLOW|RED|BLUE|GRAY|NOT_RATED|GREEN_BAR|RED_BAR|YELLOW_BAR|GRAY_BAR|IMAGE|CHART|SEPARATOR|CHECK)\]", md)
     from collections import Counter
     counts = Counter(icon_labels)
 
