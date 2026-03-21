@@ -46,5 +46,5 @@ ANTHROPIC_THINKING_BUDGET_TOKENS = _get_int("ANTHROPIC_THINKING_BUDGET_TOKENS", 
 ANTHROPIC_TEMPERATURE: Optional[float] = _get_float("ANTHROPIC_TEMPERATURE", None)
 PDF_METADATA_TEXT_LIMIT = _get_int("PDF_METADATA_TEXT_LIMIT", 4000)
 PDF_METADATA_MAX_TOKENS = _get_int("PDF_METADATA_MAX_TOKENS", 100)
-SUMMARY_REASONING_EFFORT = _get_choice("SUMMARY_REASONING_EFFORT", "low", {"minimal", "none", "low", "medium", "high", "xhigh"})
-PARAM_REASONING_EFFORT = _get_choice("PARAM_REASONING_EFFORT", "low", {"minimal", "none", "low", "medium", "high", "xhigh"})
+SUMMARY_REASONING_EFFORT = _get_choice("SUMMARY_REASONING_EFFORT", "none", {"minimal", "none", "low", "medium", "high", "xhigh"})
+PARAM_REASONING_EFFORT = _get_choice("PARAM_REASONING_EFFORT", "none", {"minimal", "none", "low", "medium", "high", "xhigh"})

@@ -154,7 +154,6 @@ EWA Document:
                     output_config={
                         "format": {
                             "type": "json_schema",
-                            "name": "ewa_summary",
                             "schema": strict_schema,
                         }
                     },

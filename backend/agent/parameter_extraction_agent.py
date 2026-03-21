@@ -9,7 +9,7 @@ import json
 import asyncio
 import logging
 from typing import Dict, Any, List, Optional
-from core.runtime_config import PARAM_MAX_OUTPUT_TOKENS, PARAM_REASONING_EFFORT, ANTHROPIC_THINKING_BUDGET_TOKENS
+from core.runtime_config import PARAM_MAX_OUTPUT_TOKENS, PARAM_REASONING_EFFORT, ANTHROPIC_THINKING_BUDGET_TOKENS, ANTHROPIC_MAX_OUTPUT_TOKENS
 from utils.json_repair import JSONRepair
 
 # Action status values for parameter classification
@@ -192,7 +192,7 @@ class ParameterExtractionAgent:
 
             kwargs = {
                 "model": self.model,
-                "max_tokens": PARAM_MAX_OUTPUT_TOKENS,
+                "max_tokens": ANTHROPIC_MAX_OUTPUT_TOKENS,
                 "system": system_blocks,
                 "messages": [
                     {"role": "user", "content": messages_content}
@@ -200,7 +200,6 @@ class ParameterExtractionAgent:
                 "output_config": {
                     "format": {
                         "type": "json_schema",
-                        "name": "extract_parameters",
                         "schema": strict_schema,
                     }
                 },
@@ -250,7 +249,7 @@ class ParameterExtractionAgent:
 
         kwargs = {
             "model": self.model,
-            "max_tokens": PARAM_MAX_OUTPUT_TOKENS,
+            "max_tokens": ANTHROPIC_MAX_OUTPUT_TOKENS,
             "system": [
                 {
                     "type": "text",
