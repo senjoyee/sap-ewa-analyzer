@@ -113,3 +113,5 @@ recent_logs_utf8.txt
 files_response.json
 
 
+cf_backend_logs.txt
+.agents/rules/btp-cloud-foundry.md
