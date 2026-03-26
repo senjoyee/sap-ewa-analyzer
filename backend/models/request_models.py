@@ -11,9 +11,11 @@ class BlobNameRequest(BaseModel):
     """Simple request body that only requires a blob name."""
 
     blob_name: str
+    schema_version: str = "1.1"
 
 
 class ProcessAnalyzeRequest(BaseModel):
     """Request body for combined process+analyze."""
 
     blob_name: str
+    schema_version: str = "1.1"

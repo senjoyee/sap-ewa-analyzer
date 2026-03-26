@@ -29,7 +29,7 @@ logger = logging.getLogger(__name__)
 router = APIRouter(prefix="/api", tags=["ai-workflow"])
 
 
-async def _run_processing_flow(original_blob_name: str) -> Dict[str, Any]:
+async def _run_processing_flow(original_blob_name: str, schema_version: str = "1.1") -> Dict[str, Any]:
     base_name, _ = os.path.splitext(original_blob_name)
     markdown_blob_name = f"{base_name}.md"
     container_client = blob_service_client.get_container_client(AZURE_STORAGE_CONTAINER_NAME)
@@ -70,7 +70,7 @@ async def _run_processing_flow(original_blob_name: str) -> Dict[str, Any]:
 
         # Run analysis (markdown guaranteed to exist)
         logger.info("[PROCESS] Starting workflow execution for %s", original_blob_name)
-        result = await ewa_orchestrator.execute_workflow(original_blob_name, skip_markdown=True)
+        result = await ewa_orchestrator.execute_workflow(original_blob_name, skip_markdown=True, schema_version=schema_version)
         logger.info("[PROCESS] Workflow completed with result: %s", result)
         return result
     except HTTPException as http_err:
@@ -107,7 +107,7 @@ async def process_and_analyze_document_endpoint(request: ProcessAnalyzeRequest):
     if not blob_service_client:
         raise HTTPException(status_code=500, detail="Azure Blob Service client not initialized.")
     try:
-        result = await _run_processing_flow(request.blob_name)
+        result = await _run_processing_flow(request.blob_name, schema_version=request.schema_version)
         if not result.get("success", False):
             raise HTTPException(
                 status_code=result.get("status_code", 500),
@@ -141,7 +141,7 @@ async def analyze_document_with_ai_endpoint(request: BlobNameRequest):
         raise HTTPException(status_code=404, detail=f"Markdown file {markdown_file} not found. Please process the document first.")
 
     try:
-        result = await ewa_orchestrator.execute_workflow(markdown_file)
+        result = await ewa_orchestrator.execute_workflow(markdown_file, schema_version=request.schema_version)
         if not result.get("success", False):
             raise HTTPException(
                 status_code=result.get("status_code", 500),
@@ -174,7 +174,7 @@ async def reprocess_document_with_ai(request: BlobNameRequest):
     logger.info("[REPROCESS] Starting reprocess for %s", original_blob_name)
 
     try:
-        result = await _run_processing_flow(original_blob_name)
+        result = await _run_processing_flow(original_blob_name, schema_version=request.schema_version)
         if not result.get("success", False):
             error_msg = result.get("error_hint") or result.get("message", "Unknown error")
             logger.warning("[REPROCESS] Workflow failed: %s", error_msg)

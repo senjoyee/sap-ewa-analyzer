@@ -31,6 +31,9 @@ from agent.openai_ewa_agent import OpenAIEWAAgent
 from agent.anthropic_ewa_agent import AnthropicEWAAgent
 from agent.parameter_extraction_agent import ParameterExtractionAgent
 from utils.markdown_utils import json_to_markdown
+from utils.schema_utils import detect_schema_version, is_pillar_schema
+from utils.pillar_router import validate_and_fix_pillar_assignments, distribute_parameters
+from utils.audit_verifier import verify_coverage
 from services.storage_service import StorageService
 from core.runtime_config import (
     ANTHROPIC_TIMEOUT_SECONDS,
@@ -107,6 +110,43 @@ def load_summary_prompt() -> str | None:
     return None
 
 SUMMARY_PROMPT: str | None = load_summary_prompt()
+
+
+def load_pillar_prompt() -> str | None:
+    """Return the first available v2 pillar prompt content, or None."""
+    current_dir = os.path.dirname(os.path.abspath(__file__))
+    prompt_dir = os.path.join(current_dir, "prompts")
+
+    if PROVIDER == "anthropic":
+        candidate_files = [
+            "ewa_pillar_prompt_anthropic.md",
+            "ewa_pillar_prompt_openai.md",
+        ]
+    else:
+        candidate_files = [
+            "ewa_pillar_prompt_openai.md",
+            "ewa_pillar_prompt_anthropic.md",
+        ]
+
+    for filename in candidate_files:
+        path = os.path.join(prompt_dir, filename)
+        if os.path.exists(path):
+            try:
+                with open(path, "r", encoding="utf-8") as f:
+                    logger.info("Loaded pillar prompt from %s", path)
+                    return f.read()
+            except Exception as e:
+                logger.warning("Could not read prompt file %s: %s", path, e)
+    logger.warning("No pillar prompt files found; v2 analysis unavailable.")
+    return None
+
+
+PILLAR_PROMPT: str | None = load_pillar_prompt()
+
+# Resolve v2 schema path once
+_PILLAR_SCHEMA_PATH = os.path.join(
+    os.path.dirname(os.path.abspath(__file__)), "schemas", "ewa_pillar_schema.json"
+)
 
 
 
@@ -320,7 +360,7 @@ class EWAWorkflowOrchestrator:
         base_name = self._sanitize_report_name_part(os.path.splitext(state.blob_name)[0], "analysis")
         return f"{system_id}_{timestamp}_{base_name}_token_usage.json"
     
-    def _create_agent(self, model: str | None = None, summary_prompt: str | None = None) -> OpenAIEWAAgent:
+    def _create_agent(self, model: str | None = None, summary_prompt: str | None = None, schema_path: str | None = None) -> OpenAIEWAAgent:
         model_name = model or self.summary_model
         logger.info("Creating OpenAIEWAAgent with model: %s", model_name)
         if not self.azure_openai_endpoint:
@@ -334,7 +374,7 @@ class EWAWorkflowOrchestrator:
             azure_endpoint=self.azure_openai_endpoint,
             api_key=self.azure_openai_api_key,
         )
-        return OpenAIEWAAgent(client=client, model=model_name, summary_prompt=summary_prompt, reasoning_effort=SUMMARY_REASONING_EFFORT)
+        return OpenAIEWAAgent(client=client, model=model_name, summary_prompt=summary_prompt, schema_path=schema_path, reasoning_effort=SUMMARY_REASONING_EFFORT)
 
     def _create_anthropic_client(self):
         if not AZURE_ANTHROPIC_ENDPOINT:
@@ -354,7 +394,7 @@ class EWAWorkflowOrchestrator:
             ),
         )
     
-    def _create_anthropic_agent(self, model: str | None = None, summary_prompt: str | None = None) -> AnthropicEWAAgent:
+    def _create_anthropic_agent(self, model: str | None = None, summary_prompt: str | None = None, schema_path: str | None = None) -> AnthropicEWAAgent:
         """Create an AnthropicEWAAgent for Azure AI Foundry (Claude) models."""
         model_name = model or ANTHROPIC_SUMMARY_MODEL
         logger.info("Creating AnthropicEWAAgent with model: %s", model_name)
@@ -364,6 +404,7 @@ class EWAWorkflowOrchestrator:
             client=client,
             model=model_name,
             summary_prompt=summary_prompt,
+            schema_path=schema_path,
             reasoning_effort=SUMMARY_REASONING_EFFORT,
             thinking_budget=ANTHROPIC_THINKING_BUDGET_TOKENS,
             temperature=ANTHROPIC_TEMPERATURE,
@@ -630,8 +671,13 @@ class EWAWorkflowOrchestrator:
             return state
     
 
-    async def run_analysis_step(self, state: WorkflowState) -> WorkflowState:
-        """Step 2: Generate comprehensive EWA analysis; then extract KPIs via image agent"""
+    async def run_analysis_step(self, state: WorkflowState, schema_version: str = "1.1") -> WorkflowState:
+        """Step 2: Generate comprehensive EWA analysis; then extract KPIs via image agent.
+        
+        Args:
+            state: Current workflow state.
+            schema_version: "1.1" for legacy flat output, "2.0" for pillar-routed output.
+        """
         try:
             logger.info("[STEP 2] Running EWA analysis for %s", state.blob_name)
             
@@ -650,7 +696,13 @@ class EWAWorkflowOrchestrator:
             )
             
             # Run AI analysis using the full prompt
-            ai_prompt = SUMMARY_PROMPT
+            if schema_version == "2.0":
+                ai_prompt = PILLAR_PROMPT
+                ai_schema_path = _PILLAR_SCHEMA_PATH
+                logger.info("[ANALYSIS] Using v2.0 pillar schema and prompt")
+            else:
+                ai_prompt = SUMMARY_PROMPT
+                ai_schema_path = None  # agents default to v1.1 schema
             
             # Branch based on PROVIDER environment variable
             text_input = (state.markdown_content or "").strip()
@@ -665,10 +717,10 @@ class EWAWorkflowOrchestrator:
             
             if PROVIDER == "anthropic":
                 # Use Claude via Azure AI Foundry
-                agent = self._create_anthropic_agent(ANTHROPIC_SUMMARY_MODEL, ai_prompt)
+                agent = self._create_anthropic_agent(ANTHROPIC_SUMMARY_MODEL, ai_prompt, ai_schema_path)
             else:
                 # Default: Use OpenAI via Azure OpenAI
-                agent = self._create_agent(AZURE_OPENAI_SUMMARY_MODEL, ai_prompt)
+                agent = self._create_agent(AZURE_OPENAI_SUMMARY_MODEL, ai_prompt, ai_schema_path)
             
             ai_result = await agent.run(text_input, pdf_data=None)
             
@@ -708,7 +760,20 @@ class EWAWorkflowOrchestrator:
                 logger.warning("[STEP 2b] Parameter extraction failed (non-fatal): %s", param_e)
                 state.parameters_json = {"parameters": [], "extraction_notes": f"Extraction failed: {str(param_e)}"}
                 state.parameter_usage = getattr(locals().get("param_agent"), "last_usage", {}) or {}
-            
+
+            # Step 2c: Post-LLM pillar routing and audit (v2.0 only)
+            if schema_version == "2.0" and isinstance(state.summary_json, dict) and is_pillar_schema(state.summary_json):
+                try:
+                    logger.info("[STEP 2c] Running pillar routing and audit verification")
+                    state.summary_json = validate_and_fix_pillar_assignments(state.summary_json)
+                    params_list = (state.parameters_json or {}).get("parameters", [])
+                    if params_list:
+                        state.summary_json = distribute_parameters(state.summary_json, params_list)
+                    state.summary_json = verify_coverage(state.summary_json)
+                    logger.info("[STEP 2c] Pillar routing and audit complete")
+                except Exception as routing_e:
+                    logger.warning("[STEP 2c] Pillar routing/audit failed (non-fatal): %s", routing_e)
+
             return state
         except Exception as e:
             state.error = str(e)
@@ -783,12 +848,13 @@ class EWAWorkflowOrchestrator:
             return state
     
 
-    async def execute_workflow(self, blob_name: str, skip_markdown: bool = False) -> Dict[str, Any]:
+    async def execute_workflow(self, blob_name: str, skip_markdown: bool = False, schema_version: str = "1.1") -> Dict[str, Any]:
         """Execute the complete workflow.
 
         Args:
             blob_name: Name of the original PDF blob to analyze.
             skip_markdown: If True, assume markdown conversion already ran and skip converter fallback.
+            schema_version: "1.1" for legacy flat output, "2.0" for pillar-routed output.
         """
         processing_flag_set = False
         try:
@@ -809,7 +875,7 @@ class EWAWorkflowOrchestrator:
             
 
             # Run the EWA analysis using single enhanced agent
-            summary_state = await self.run_analysis_step(state)
+            summary_state = await self.run_analysis_step(state, schema_version=schema_version)
             
             # Check for errors
             if summary_state.error:
@@ -859,14 +925,15 @@ class EWAWorkflowOrchestrator:
 # Global orchestrator instance
 ewa_orchestrator = EWAWorkflowOrchestrator()
 
-async def execute_ewa_analysis(blob_name: str) -> Dict[str, Any]:
+async def execute_ewa_analysis(blob_name: str, schema_version: str = "1.1") -> Dict[str, Any]:
     """
     Convenience function to execute EWA analysis workflow
     
     Args:
         blob_name: Name of the file to analyze
+        schema_version: "1.1" for legacy flat output, "2.0" for pillar-routed output
     
     Returns:
         dict: Analysis result
     """
-    return await ewa_orchestrator.execute_workflow(blob_name)
+    return await ewa_orchestrator.execute_workflow(blob_name, schema_version=schema_version)

@@ -25,6 +25,8 @@ from services.storage_service import StorageService
 from utils.markdown_utils import json_to_markdown
 from utils.html_utils import json_to_html
 from utils.excel_utils import json_to_excel
+from utils.excel_pillar_utils import json_to_pillar_excel
+from utils.schema_utils import is_pillar_schema
 from utils.parameter_extractor import extract_parameters_from_markdown
 
 FILENAME_DATE_YEAR_MIN = 2000
@@ -725,7 +727,11 @@ async def export_json_to_excel(blob_name: str):
         except Exception as params_e:
             logger.warning("[Excel Export] Error loading parameters JSON: %s", params_e)
 
-        excel_bytes = json_to_excel(json_data, customer_name=customer_name, parameters=parameters)
+        excel_bytes = (
+            json_to_pillar_excel(json_data, customer_name=customer_name, parameters=parameters)
+            if is_pillar_schema(json_data)
+            else json_to_excel(json_data, customer_name=customer_name, parameters=parameters)
+        )
 
         safe_customer = _sanitize_filename_component(customer_name) if customer_name else "Customer"
         excel_filename = f"{original_base}_{safe_customer}.xlsx"

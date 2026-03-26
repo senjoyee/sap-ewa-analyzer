@@ -1,0 +1,364 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://example.com/schemas/ewa_pillar_analysis/v2.0.json",
+  "title": "EWAPillarAnalysis",
+  "description": "8-Pillar domain-routed analysis of an SAP EarlyWatch Alert report.",
+  "type": "object",
+  "properties": {
+    "Schema Version": {
+      "type": "string",
+      "const": "2.0"
+    },
+
+    "System Metadata": {
+      "type": "object",
+      "required": ["System ID", "Report Date", "Analysis Period"],
+      "properties": {
+        "System ID": {
+          "type": "string",
+          "description": "The SAP System ID (SID)."
+        },
+        "Report Date": {
+          "type": "string",
+          "format": "date",
+          "description": "Date the EWA report was generated."
+        },
+        "Analysis Period": {
+          "type": "string",
+          "description": "Date range the report covers (e.g. 2024-05-01 / 2024-05-31)."
+        }
+      }
+    },
+
+    "Chapters Reviewed": {
+      "type": "array",
+      "description": "List of all chapters/sections found and reviewed in the EWA document.",
+      "items": { "type": "string" }
+    },
+
+    "TOC Health Map": {
+      "type": "array",
+      "description": "Maps each chapter to its health status indicator and assigned pillar.",
+      "items": {
+        "type": "object",
+        "required": ["chapter", "status", "pillar"],
+        "properties": {
+          "chapter": {
+            "type": "string",
+            "description": "Chapter title as found in the EWA Table of Contents."
+          },
+          "status": {
+            "type": "string",
+            "enum": ["RED", "YELLOW", "GREEN", "GRAY", "NOT_RATED"],
+            "description": "Overall health indicator color for this chapter."
+          },
+          "pillar": {
+            "type": "string",
+            "enum": [
+              "executive_summary",
+              "security_compliance",
+              "basis_operations",
+              "database_infrastructure",
+              "integration_connectivity",
+              "lifecycle_upgrades",
+              "business_processes_dvm",
+              "uncategorized"
+            ],
+            "description": "The pillar this chapter is routed to."
+          }
+        }
+      }
+    },
+
+    "System Health Overview": {
+      "type": "object",
+      "properties": {
+        "Performance":    { "type": "string", "enum": ["good", "fair", "poor"] },
+        "Security":       { "type": "string", "enum": ["good", "fair", "poor"] },
+        "Stability":      { "type": "string", "enum": ["good", "fair", "poor"] },
+        "configuration":  { "type": "string", "enum": ["good", "fair", "poor"] }
+      },
+      "required": ["Performance", "Security", "Stability", "configuration"]
+    },
+
+    "Executive Summary": {
+      "type": "string",
+      "description": "Concise bullet-point summary for a C-level audience."
+    },
+
+    "Top 3 Critical Risks": {
+      "type": "array",
+      "description": "The three most critical risks across the entire report.",
+      "minItems": 1,
+      "maxItems": 3,
+      "items": {
+        "type": "object",
+        "required": ["risk", "pillar", "severity"],
+        "properties": {
+          "risk": {
+            "type": "string",
+            "description": "Plain-English description of the risk."
+          },
+          "pillar": {
+            "type": "string",
+            "enum": [
+              "security_compliance",
+              "basis_operations",
+              "database_infrastructure",
+              "integration_connectivity",
+              "lifecycle_upgrades",
+              "business_processes_dvm",
+              "uncategorized"
+            ]
+          },
+          "severity": {
+            "type": "string",
+            "enum": ["CRITICAL", "HIGH"]
+          }
+        }
+      }
+    },
+
+    "Pillars": {
+      "type": "object",
+      "description": "Domain-routed findings, positives, recommendations, and parameters grouped by pillar.",
+      "required": [
+        "executive_summary",
+        "security_compliance",
+        "basis_operations",
+        "database_infrastructure",
+        "integration_connectivity",
+        "lifecycle_upgrades",
+        "business_processes_dvm",
+        "uncategorized"
+      ],
+      "properties": {
+        "executive_summary":        { "$ref": "#/$defs/PillarContent" },
+        "security_compliance":      { "$ref": "#/$defs/PillarContent" },
+        "basis_operations":         { "$ref": "#/$defs/PillarContent" },
+        "database_infrastructure":  { "$ref": "#/$defs/PillarContent" },
+        "integration_connectivity": { "$ref": "#/$defs/PillarContent" },
+        "lifecycle_upgrades":       { "$ref": "#/$defs/PillarContent" },
+        "business_processes_dvm":   { "$ref": "#/$defs/PillarContent" },
+        "uncategorized":            { "$ref": "#/$defs/PillarContent" }
+      }
+    },
+
+    "Capacity Outlook": {
+      "type": "object",
+      "properties": {
+        "Database Growth":    { "type": "string" },
+        "CPU Utilization":    { "type": "string" },
+        "Memory Utilization": { "type": "string" },
+        "Summary":            { "type": "string" }
+      },
+      "required": ["Database Growth", "CPU Utilization", "Memory Utilization", "Summary"]
+    },
+
+    "Overall Risk": {
+      "type": "string",
+      "enum": ["low", "medium", "high"]
+    },
+
+    "Audit Trail": {
+      "type": "object",
+      "description": "Verification metadata: ensures every RED/YELLOW finding was captured.",
+      "required": ["red_yellow_total", "red_yellow_mapped", "unmapped_chapters", "coverage_pct"],
+      "properties": {
+        "red_yellow_total": {
+          "type": "integer",
+          "description": "Total RED and YELLOW items found in the Check Overview."
+        },
+        "red_yellow_mapped": {
+          "type": "integer",
+          "description": "Number of RED/YELLOW items that were mapped to a pillar finding."
+        },
+        "unmapped_chapters": {
+          "type": "array",
+          "items": { "type": "string" },
+          "description": "Chapter titles of any unmapped RED/YELLOW items."
+        },
+        "coverage_pct": {
+          "type": "number",
+          "description": "Percentage of RED/YELLOW items successfully mapped (0-100)."
+        }
+      }
+    }
+  },
+
+  "required": [
+    "Schema Version",
+    "System Metadata",
+    "Chapters Reviewed",
+    "TOC Health Map",
+    "System Health Overview",
+    "Executive Summary",
+    "Top 3 Critical Risks",
+    "Pillars",
+    "Capacity Outlook",
+    "Overall Risk",
+    "Audit Trail"
+  ],
+
+  "$defs": {
+    "PillarContent": {
+      "type": "object",
+      "required": ["findings", "positives", "recommendations"],
+      "properties": {
+        "findings": {
+          "type": "array",
+          "items": { "$ref": "#/$defs/PillarFinding" }
+        },
+        "positives": {
+          "type": "array",
+          "items": { "$ref": "#/$defs/PillarPositive" }
+        },
+        "recommendations": {
+          "type": "array",
+          "items": { "$ref": "#/$defs/PillarRecommendation" }
+        }
+      }
+    },
+
+    "PillarFinding": {
+      "type": "object",
+      "required": [
+        "Issue ID", "Area", "Finding", "Impact", "Business impact",
+        "Severity", "Source", "pillar", "priority", "category",
+        "assignee_group", "reference"
+      ],
+      "properties": {
+        "Issue ID": {
+          "type": "string",
+          "pattern": "^KF-[0-9]{2}$",
+          "description": "Unique key finding identifier."
+        },
+        "Area":            { "type": "string", "description": "Exact Topic text from Check Overview." },
+        "Finding":         { "type": "string" },
+        "Impact":          { "type": "string", "description": "Potential technical impact." },
+        "Business impact": { "type": "string", "description": "Translated business risk." },
+        "Severity":        { "type": "string", "enum": ["medium", "high"] },
+        "Source":          { "type": "string", "description": "Report section or evidence." },
+        "pillar": {
+          "type": "string",
+          "enum": [
+            "executive_summary",
+            "security_compliance",
+            "basis_operations",
+            "database_infrastructure",
+            "integration_connectivity",
+            "lifecycle_upgrades",
+            "business_processes_dvm",
+            "uncategorized"
+          ],
+          "description": "The pillar this finding belongs to."
+        },
+        "priority": {
+          "type": "string",
+          "enum": ["CRITICAL", "HIGH", "LOW/INFO"],
+          "description": "Operational priority derived from status indicator."
+        },
+        "category": {
+          "type": "string",
+          "description": "Sub-category within the pillar (e.g., Memory, Authorization, Patching)."
+        },
+        "assignee_group": {
+          "type": "string",
+          "description": "Operational team assignment (e.g., DBA, SecOps, Basis)."
+        },
+        "reference": {
+          "type": "string",
+          "description": "SAP Note number, transaction code, or report section reference."
+        }
+      }
+    },
+
+    "PillarPositive": {
+      "type": "object",
+      "required": ["Area", "Description", "pillar"],
+      "properties": {
+        "Area":        { "type": "string" },
+        "Description": { "type": "string" },
+        "pillar": {
+          "type": "string",
+          "enum": [
+            "executive_summary",
+            "security_compliance",
+            "basis_operations",
+            "database_infrastructure",
+            "integration_connectivity",
+            "lifecycle_upgrades",
+            "business_processes_dvm",
+            "uncategorized"
+          ]
+        }
+      }
+    },
+
+    "PillarRecommendation": {
+      "type": "object",
+      "required": [
+        "Recommendation ID", "Estimated Effort", "Responsible Area",
+        "Linked issue ID", "Action", "Preventative Action",
+        "pillar", "assignee_group", "reference"
+      ],
+      "properties": {
+        "Recommendation ID": {
+          "type": "string",
+          "pattern": "^REC-[0-9]{2}$"
+        },
+        "Estimated Effort": {
+          "type": "object",
+          "required": ["analysis", "implementation"],
+          "properties": {
+            "analysis":       { "type": "string", "enum": ["low", "medium", "high"] },
+            "implementation": { "type": "string", "enum": ["low", "medium", "high"] }
+          }
+        },
+        "Responsible Area": {
+          "type": "string",
+          "enum": [
+            "SAP Basis Team",
+            "Database Administration",
+            "Operating System Administration",
+            "Network & Connectivity",
+            "Security / Compliance Team",
+            "Application Development",
+            "Functional / Business Process Owner",
+            "Infrastructure / Hardware Team",
+            "Third-Party Vendor",
+            "Project / Change Management"
+          ]
+        },
+        "Linked issue ID": {
+          "type": "string",
+          "pattern": "^KF-[0-9]{2}$",
+          "description": "Key finding this recommendation addresses."
+        },
+        "Action":              { "type": "string", "description": "Specific steps to execute." },
+        "Preventative Action": { "type": "string", "description": "Measure to prevent recurrence." },
+        "pillar": {
+          "type": "string",
+          "enum": [
+            "executive_summary",
+            "security_compliance",
+            "basis_operations",
+            "database_infrastructure",
+            "integration_connectivity",
+            "lifecycle_upgrades",
+            "business_processes_dvm",
+            "uncategorized"
+          ]
+        },
+        "assignee_group": {
+          "type": "string",
+          "description": "Operational team assignment."
+        },
+        "reference": {
+          "type": "string",
+          "description": "SAP Note number, transaction code, or report section reference."
+        }
+      }
+    }
+  }
+}
