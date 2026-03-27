@@ -1,12 +1,12 @@
 {
   "title": "EWADeepThinkerResult",
-  "description": "Supplemental findings from the Deep Thinker agent identifying implicit cross-domain risks.",
+  "description": "Derived recommendations from the Deep Thinker agent identifying cross-domain patterns that imply concrete actions not captured by the specialist agents.",
   "type": "object",
   "additionalProperties": false,
   "properties": {
     "supplemental_findings": {
       "type": "array",
-      "description": "Implicit risks identified through cross-domain analysis, not flagged by SAP.",
+      "description": "Derived recommendations identified through cross-domain analysis.",
       "items": {
         "type": "object",
         "additionalProperties": false,
@@ -17,25 +17,24 @@
           },
           "title": {
             "type": "string",
-            "description": "Short descriptive title of the implicit risk."
+            "description": "Short descriptive title of the derived finding."
           },
           "domain": {
             "type": "string",
             "enum": ["security", "database", "performance", "basis", "business", "lifecycle"],
             "description": "The most relevant domain for this finding."
           },
-          "rag_status": {
+          "finding": {
             "type": "string",
-            "enum": ["implicit"],
-            "description": "Always 'implicit' for Deep Thinker findings."
-          },
-          "description": {
-            "type": "string",
-            "description": "Detailed description of the implicit risk."
+            "description": "The cross-domain condition or pattern observed across specialist outputs."
           },
           "rationale": {
             "type": "string",
-            "description": "Explanation of why this is a risk despite not being SAP-flagged."
+            "description": "Explanation of why the combined evidence implies this action is needed."
+          },
+          "recommendation": {
+            "type": "string",
+            "description": "The concrete action recommended based on the cross-domain pattern."
           },
           "source": {
             "type": "string",
@@ -43,7 +42,7 @@
             "description": "Always 'AI Deep Analysis'."
           }
         },
-        "required": ["finding_id", "title", "domain", "rag_status", "description", "rationale", "source"]
+        "required": ["finding_id", "title", "domain", "finding", "rationale", "recommendation", "source"]
       }
     }
   },

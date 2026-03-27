@@ -143,7 +143,7 @@ def _write_executive_summary(
     ws.merge_cells(f"A{row}:F{row}")
     row += 1
 
-    matrix_headers = ["Domain", "RED Findings", "YELLOW Findings", "Parameters", "Deep Thinker", "Abstentions"]
+    matrix_headers = ["Domain", "Findings", "Parameters", "Derived Recommendations", "Abstentions"]
     for col_idx, header in enumerate(matrix_headers, start=1):
         cell = ws.cell(row=row, column=col_idx, value=header)
         _apply_header(cell)
@@ -151,44 +151,35 @@ def _write_executive_summary(
 
     for domain in DOMAIN_TAB_ORDER:
         dr = results_by_domain.get(domain, DomainResult(domain=domain))
-        red_count = sum(1 for f in dr.findings if f.get("rag_status") == "red")
-        yellow_count = sum(1 for f in dr.findings if f.get("rag_status") == "yellow")
+        finding_count = len(dr.findings)
         param_count = len(dr.parameters)
         sup_count = sum(1 for sf in supplemental_findings
                         if (sf.domain if isinstance(sf, SupplementalFinding) else sf.get("domain", "")) == domain)
         abstention_count = len(dr.abstentions)
 
-        values = [DOMAIN_DISPLAY_NAMES.get(domain, domain), red_count, yellow_count, param_count, sup_count, abstention_count]
+        values = [DOMAIN_DISPLAY_NAMES.get(domain, domain), finding_count, param_count, sup_count, abstention_count]
         for col_idx, val in enumerate(values, start=1):
             cell = ws.cell(row=row, column=col_idx, value=val)
             _apply_data(cell, row)
-            # Color the domain name cell based on worst status
             if col_idx == 1:
                 cell.font = Font(name="Calibri", size=11, bold=True)
-            elif col_idx == 2 and val > 0:
-                cell.font = Font(name="Calibri", size=11, bold=True, color=COLORS["red"])
-            elif col_idx == 3 and val > 0:
-                cell.font = Font(name="Calibri", size=11, bold=True, color=COLORS["yellow"])
         row += 1
     row += 1
 
-    # Top 5 Risks
-    ws[f"A{row}"] = "Top Risks"
+    # Priority Recommendations
+    ws[f"A{row}"] = "Priority Recommendations"
     ws[f"A{row}"].font = Font(name="Calibri", size=14, bold=True, color=COLORS["sap_dark"])
     ws.merge_cells(f"A{row}:F{row}")
     row += 1
 
-    # Collect all findings across domains, sort by severity
+    # Collect all findings across domains in domain order
     all_findings: list[tuple[str, dict]] = []
     for domain in DOMAIN_TAB_ORDER:
         dr = results_by_domain.get(domain, DomainResult(domain=domain))
         for f in dr.findings:
             all_findings.append((domain, f))
 
-    # Sort: red first, then yellow
-    all_findings.sort(key=lambda x: 0 if x[1].get("rag_status") == "red" else 1)
-
-    risk_headers = ["ID", "Domain", "Title", "RAG", "Impact", "Source Chapter"]
+    risk_headers = ["ID", "Domain", "Title", "Finding", "Impact", "Recommendation"]
     for col_idx, header in enumerate(risk_headers, start=1):
         cell = ws.cell(row=row, column=col_idx, value=header)
         _apply_header(cell)
@@ -199,15 +190,13 @@ def _write_executive_summary(
             finding.get("finding_id", ""),
             DOMAIN_DISPLAY_NAMES.get(domain, domain),
             finding.get("title", ""),
-            finding.get("rag_status", "").upper(),
+            finding.get("finding", ""),
             finding.get("impact", ""),
-            finding.get("source_chapter", ""),
+            finding.get("recommendation", ""),
         ]
         for col_idx, val in enumerate(vals, start=1):
             cell = ws.cell(row=row, column=col_idx, value=val)
             _apply_data(cell, row)
-            if col_idx == 4:
-                _color_rag(cell, val)
         row += 1
 
     # Deep Thinker Highlights
@@ -218,7 +207,7 @@ def _write_executive_summary(
         ws.merge_cells(f"A{row}:F{row}")
         row += 1
 
-        dt_headers = ["ID", "Domain", "Title", "Description", "Rationale", ""]
+        dt_headers = ["ID", "Domain", "Title", "Finding", "Rationale", "Recommendation"]
         for col_idx, header in enumerate(dt_headers, start=1):
             if header:
                 cell = ws.cell(row=row, column=col_idx, value=header)
@@ -231,8 +220,9 @@ def _write_executive_summary(
                 sd.get("finding_id", ""),
                 DOMAIN_DISPLAY_NAMES.get(sd.get("domain", ""), sd.get("domain", "")),
                 sd.get("title", ""),
-                sd.get("description", ""),
+                sd.get("finding", ""),
                 sd.get("rationale", ""),
+                sd.get("recommendation", ""),
             ]
             for col_idx, val in enumerate(vals, start=1):
                 cell = ws.cell(row=row, column=col_idx, value=val)
@@ -263,69 +253,65 @@ def _write_domain_tab(
     row += 2
 
     # Section A: Findings
-    row = _write_section_header(ws, row, "A — Findings (RED/YELLOW)")
+    row = _write_section_header(ws, row, "A — Findings")
     if dr.findings:
-        headers = ["ID", "Source Chapter", "Title", "RAG", "Description", "Impact"]
+        headers = ["ID", "Source Chapter", "Title", "Finding", "Impact", "Recommendation"]
         row = _write_table_headers(ws, row, headers)
         for finding in dr.findings:
             vals = [
                 finding.get("finding_id", ""),
                 finding.get("source_chapter", ""),
                 finding.get("title", ""),
-                finding.get("rag_status", "").upper(),
-                finding.get("description", ""),
+                finding.get("finding", ""),
                 finding.get("impact", ""),
+                finding.get("recommendation", ""),
             ]
             for col_idx, val in enumerate(vals, start=1):
                 cell = ws.cell(row=row, column=col_idx, value=val)
                 _apply_data(cell, row)
-                if col_idx == 4:
-                    _color_rag(cell, val)
             ws.row_dimensions[row].height = 60
             row += 1
     else:
-        ws[f"A{row}"] = "No RED or YELLOW findings in this domain."
+        ws[f"A{row}"] = "No actionable findings in this domain."
         ws[f"A{row}"].font = Font(name="Calibri", size=11, italic=True, color="666666")
         row += 1
     row += 1
 
     # Section B: Parameters
-    row = _write_section_header(ws, row, "B — Parameters (RED/YELLOW)")
+    row = _write_section_header(ws, row, "B — Parameters")
     if dr.parameters:
-        headers = ["Parameter", "Current Value", "Recommended", "RAG", "Action", "Source Chapter"]
+        headers = ["Parameter", "Current Value", "Recommended", "Action", "Source Chapter", ""]
         row = _write_table_headers(ws, row, headers)
         for param in dr.parameters:
             vals = [
                 param.get("param_name", ""),
                 param.get("current_value", ""),
                 param.get("recommended_value", ""),
-                param.get("rag_status", "").upper(),
                 param.get("action", ""),
                 param.get("source_chapter", ""),
             ]
             for col_idx, val in enumerate(vals, start=1):
                 cell = ws.cell(row=row, column=col_idx, value=val)
                 _apply_data(cell, row)
-                if col_idx == 4:
-                    _color_rag(cell, val)
             row += 1
     else:
-        ws[f"A{row}"] = "No flagged parameters in this domain."
+        ws[f"A{row}"] = "No parameter changes recommended in this domain."
         ws[f"A{row}"].font = Font(name="Calibri", size=11, italic=True, color="666666")
         row += 1
     row += 1
 
     # Section C: Deep Thinker Supplements
-    row = _write_section_header(ws, row, "C — AI Deep Analysis (Implicit Risks)")
+    row = _write_section_header(ws, row, "C — AI Deep Analysis (Derived Recommendations)")
     if supplements:
-        headers = ["ID", "Title", "Description", "Rationale", "", ""]
+        headers = ["ID", "Title", "Finding", "Rationale", "Recommendation", ""]
         row = _write_table_headers(ws, row, headers)
         for sf in supplements:
             vals = [
                 sf.get("finding_id", ""),
                 sf.get("title", ""),
-                sf.get("description", ""),
+                sf.get("finding", ""),
                 sf.get("rationale", ""),
+                sf.get("recommendation", ""),
             ]
             for col_idx, val in enumerate(vals, start=1):
                 cell = ws.cell(row=row, column=col_idx, value=val)
@@ -335,7 +321,7 @@ def _write_domain_tab(
             ws.row_dimensions[row].height = 60
             row += 1
     else:
-        ws[f"A{row}"] = "No supplemental findings for this domain."
+        ws[f"A{row}"] = "No derived recommendations for this domain."
         ws[f"A{row}"].font = Font(name="Calibri", size=11, italic=True, color="666666")
         row += 1
     row += 1

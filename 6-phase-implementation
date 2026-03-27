@@ -1,0 +1,310 @@
+## Plan: EWA Analyzer V2 — Phase-by-Phase Implementation
+
+**TL;DR:** 6 implementation phases (Phase 0 sets foundations, Phases 1–5 are sequential, Phase 6 is frontend). Each phase is independently verifiable before moving to the next.
+
+---
+
+## Phase 0 — Foundations *(no dependencies, all parallel)*
+
+Create the schema contract and all 8 prompt files before writing any agent code. Everything downstream depends on these being stable.
+
+**Step 0.1 — Create `backend/schemas/domain_result_schema.json`**
+
+The shared output contract for all 6 specialist agents:
+```json
+{
+  "domain": "security|database|performance|basis|business|lifecycle",
+  "findings": [{
+    "finding_id": "SEC-01",
+    "source_chapter": "11.2 ABAP Stack",
+    "title": "string",
+    "rag_status": "red|yellow",
+    "description": "string",
+    "impact": "string"
+  }],
+  "parameters": [{
+    "param_name": "string",
+    "current_value": "string",
+    "recommended_value": "string",
+    "rag_status": "red|yellow",
+    "action": "Change Required|Verify",
+    "source_chapter": "string"
+  }],
+  "abstentions": [{
+    "chapter": "string",
+    "reason": "unreadable|no_data|no_flags|table_empty|sql_truncated"
+  }]
+}
+```
+
+**Step 0.2 — Create 6 specialist prompt files**
+
+Each in prompts, each opening with a domain-specific persona and the Option A extraction rule:
+
+| File | Persona | Focus Keywords |
+|---|---|---|
+| `specialist_security_prompt.md` | SAP Security Consultant | Passwords, SAP_ALL, RFC/ICF, TLS, patch status, auth failures |
+| `specialist_database_prompt.md` | SAP HANA DBA | HANA config, stability alerts, disk/memory, SQL workload, backups. Note: ch19 SQL statement tables are pre-truncated — record abstention with count. |
+| `specialist_performance_prompt.md` | SAP Performance Expert | Response times, dialog/background WP, transaction profile, hardware capacity |
+| `specialist_basis_prompt.md` | SAP Basis Administrator | Transport management, system operations, ABAP dumps, number ranges, availability |
+| `specialist_business_prompt.md` | SAP Business Process Analyst | DVM, financial integrity, key figures, reconciliation, business process analytics |
+| `specialist_lifecycle_prompt.md` | SAP Upgrade Architect | OS/DB/kernel EoL, support package currency, Fiori maintenance, silent migration |
+
+All 6 prompts share this extraction rule block:
+> "Extract ONLY data that SAP has explicitly marked RED or YELLOW in this report. For every chapter or table section with no RED/YELLOW flag, no data, or unreadable content, add an entry to `abstentions`. Do not infer or deduce findings. Output strict JSON matching the provided schema."
+
+**Step 0.3 — Create `backend/prompts/deep_thinker_prompt.md`**
+
+Persona: Senior SAP Solution Architect with infrastructure risk experience.
+Input framing: "You will receive JSON from 6 domain specialists. They extracted only explicit RED/YELLOW flags. Your job is to identify implicit, cross-domain, or compound risks that appear GREEN but are logically dangerous given system configuration, growth trends, or known SAP failure patterns."
+Output: `supplemental_findings[]` — same shape as a finding item but with `"source": "AI Deep Analysis"` and a `"domain"` field.
+
+**Verify Phase 0:** All 8 files exist; schema JSON is valid; each prompt file references the correct domain.
+
+---
+
+## Phase 1 — Deterministic Slicer
+
+**New file: `backend/utils/ewa_slicer.py`**
+
+**Step 1.1 — `slice_chapters(markdown: str) -> dict[int, ChapterData]`**
+- Walk lines; detect chapter boundary: line matches `^# (\d+)\s+` (e.g., `# 11 Security`)
+- For each chapter, collect lines until the next `# N` boundary
+- Within a chapter's lines, detect `^## (\d+\.\d+)` subsections
+- Return `dict` keyed by chapter number; value is a `ChapterData` dataclass:
+  ```python
+  @dataclass
+  class ChapterData:
+      number: int
+      title: str
+      raw_content: str
+      subsections: list[tuple[str, str]]  # (title, content)
+  ```
+- Preamble (lines before `# 1`) is stored under key `0` (cover page, handled by dispatcher as skip)
+
+**Step 1.2 — `truncate_large_chapter(chapter: ChapterData, char_limit: int = 8000) -> ChapterData`**
+- If `len(chapter.raw_content) > char_limit`:
+  - Count subsections: `n_subs = len(chapter.subsections)`
+  - Extract overview: lines up to the first `##` heading (up to `char_limit`)
+  - Replace `raw_content` with overview + `"\n\n[TRUNCATED: {n_subs} subsections found. Refer to original report for full details.]"`
+  - Sets flag in subsections list as `[("__truncated__", f"{n_subs} subsections")]`
+- Call this on ch19 automatically (ch19 has ~4,000 lines / ~200k chars)
+
+**Verify Phase 1:**
+- Test with SHP_20474620_850648038_2026-03-02_R_EWA.md
+- Assert `len(chapters) == 23`
+- Assert `chapters[19].subsections[0][0] == "__truncated__"` (ch19 was truncated)
+- Assert `chapters[11].title == "Security"` (exact match)
+
+---
+
+## Phase 2 — Hybrid Dispatcher
+
+**New file: `backend/utils/ewa_dispatcher.py`**
+
+**Step 2.1 — Static routing table**
+```python
+DOMAIN_ROUTES: dict[int, str] = {
+    1: "lifecycle",  2: "lifecycle",  3: "basis",
+    4: "lifecycle",  5: "performance", 6: "business",
+    7: "performance", 8: "performance", 9: "performance",
+    10: "basis",    11: "security",   12: "basis",
+    13: "business", 14: "business",   15: "lifecycle",
+    16: "lifecycle", 17: "lifecycle",  18: "database",
+    19: "database", 20: "basis",      21: "basis",
+    22: "business", 23: "performance"
+}
+```
+
+**Step 2.2 — `dispatch_chapters(chapters: dict[int, ChapterData], ai_client=None) -> dict[str, list[ChapterData]]`**
+- Iterate chapter numbers; lookup in `DOMAIN_ROUTES`
+- If found: append to that domain's list
+- If NOT found: call `_ai_route_chapter(chapter, ai_client)`
+  - Prompt: chapter title + first 500 chars → `{"domain": "...", "confidence": 0.0-1.0}` via `gpt-5.4-nano`
+  - If confidence < 0.75 → route to `"lifecycle"` as catch-all
+- Chapter `0` (preamble): skip entirely
+- Returns `dict[domain_name, list[ChapterData]]`
+
+**Verify Phase 2:**
+- Test with all 23 known chapter numbers → assert `_ai_route_chapter` is never called
+- Test with a fake chapter titled "Custom Z-Report Analysis" → assert it routes to `lifecycle` or captures an AI response
+
+---
+
+## Phase 3a — Specialist Agents
+
+**New file: `backend/agent/specialist_agents.py`**
+
+**Step 3.1 — Base class `SpecialistAgent`**
+```python
+class SpecialistAgent:
+    def __init__(self, client: AzureOpenAI, model: str = "gpt-5.4-mini",
+                 domain: str, prompt_path: Path, schema_path: Path): ...
+    async def run(self, chapters: list[ChapterData]) -> DomainResult: ...
+```
+- Build context by concatenating all assigned `ChapterData.raw_content` with chapter titles as separators
+- Load prompt from `prompt_path`; load schema from `schema_path` (`domain_result_schema.json`)
+- Call via Responses API with `json_schema` structured output (same pattern as `OpenAIEWAAgent._call_openai_responses()`)
+- On schema validation failure: call local `json_repair` then re-validate
+- Post-process: auto-generate `finding_id` values if blank (`"{DOMAIN_PREFIX}-{index:02d}"`)
+
+**Step 3.2 — 6 domain subclasses**
+
+Each is a one-liner pointing to the correct prompt file:
+```python
+class SecuritySpecialist(SpecialistAgent):
+    def __init__(self, client, model):
+        super().__init__(client, model, domain="security",
+                         prompt_path=PROMPTS_DIR/"specialist_security_prompt.md",
+                         schema_path=SCHEMAS_DIR/"domain_result_schema.json")
+```
+Subclasses for: `DatabaseSpecialist`, `PerformanceSpecialist`, `BasisSpecialist`, `BusinessSpecialist`, `LifecycleSpecialist`
+
+**Step 3.3 — `run_all_specialists(domain_chapters, client, model) -> list[DomainResult]`**
+
+Top-level async function:
+```python
+results = await asyncio.gather(
+    SecuritySpecialist(client, model).run(domain_chapters["security"]),
+    DatabaseSpecialist(client, model).run(domain_chapters["database"]),
+    ...
+)
+```
+
+**Verify Phase 3a:**
+- Run `SecuritySpecialist` against ch11 content from the SHP document
+- Assert `DomainResult.domain == "security"`
+- Assert `DomainResult.abstentions` is a list (not None), even if empty
+- Assert all `finding_id` values match pattern `SEC-\d+`
+
+---
+
+## Phase 3b — Deep Thinker Agent
+
+**New file: `backend/agent/deep_thinker_agent.py`**
+
+**Step 3b.1 — `DeepThinkerAgent` class**
+```python
+class DeepThinkerAgent:
+    def __init__(self, client: AzureOpenAI, model: str = "gpt-5.4"):
+    async def run(self, domain_results: list[DomainResult]) -> list[SupplementalFinding]:
+```
+- Serialize all 6 `DomainResult` objects to JSON and pass as the user message body
+- System prompt from `deep_thinker_prompt.md`
+- Output schema: `{"supplemental_findings": [{finding_id, title, domain, rag_status: "implicit", description, rationale, source: "AI Deep Analysis"}]}`
+- Use `json_schema` structured output with `gpt-5.4`
+- `reasoning_effort` sourced from existing `SUMMARY_REASONING_EFFORT` env var
+
+**Verify Phase 3b:**
+- Run against the 6 specialist results from the SHP document
+- Assert `supplemental_findings` is a list (may be empty — log a warning but don't fail)
+- Assert all entries have `"source": "AI Deep Analysis"`
+
+---
+
+## Phase 4 — Excel Builder
+
+**Modify: excel_utils.py**
+
+**Step 4.1 — Add `build_workbook(domain_results, supplemental_findings, system_metadata) -> bytes`**
+
+Does NOT touch the existing `json_to_excel()` function.
+
+**Tab 1 — Executive Summary**
+- System metadata header (system ID, report date — passed in `system_metadata`)
+- Domain RAG status matrix: one row per domain, column = `findings_count | params_count | worst_rag | deep_thinker_count`
+- Top risks table: 5 most severe findings across all domains (sort by `rag_status=red` first, then by finding count)
+- Supplemental highlights: top 3 Deep Thinker findings
+
+**Tabs 2–7 — Domain tabs** (Security, Database, Performance, Basis, Business, Lifecycle)
+
+Each tab has 4 sections, written top-to-bottom on the same sheet with section header rows:
+- **Section A: Findings** — `finding_id | source_chapter | title | rag_status | description | impact`
+- **Section B: Parameters** — `param_name | current_value | recommended_value | rag_status | action | source_chapter`
+- **Section C: Deep Thinker Supplements** — supplemental_findings filtered to this domain
+- **Section D: Abstentions** — `chapter | reason` (all abstention entries from the domain result)
+
+Reuse existing SAP color palette, `_apply_header_style()`, `_apply_data_style()`, `_auto_fit_columns()` from `excel_utils.py`.
+
+**Verify Phase 4:**
+- Call `build_workbook()` with mock `DomainResult` objects
+- Open resulting xlsx with openpyxl and assert exactly 7 sheet names
+- Assert Tab 1 exists and has a non-empty row for each of the 6 domains
+- Assert each domain tab has 4 section headers
+
+---
+
+## Phase 5 — Orchestrator Wiring
+
+**Modify: workflow_orchestrator.py**
+
+**Step 5.1 — Replace `run_analysis_step()`**
+
+New `_run_v2_pipeline(state: WorkflowState) -> bytes`:
+```
+chapters        = slice_chapters(state.markdown_content)
+domain_chapters = dispatch_chapters(chapters, ai_client)
+domain_results  = await run_all_specialists(domain_chapters, client, model)
+supplemental    = await DeepThinkerAgent(client, deep_model).run(domain_results)
+xlsx_bytes      = build_workbook(domain_results, supplemental, metadata)
+return xlsx_bytes
+```
+
+- `client` = existing `AzureOpenAI` client instance already on the orchestrator
+- `model` = `os.getenv("AZURE_OPENAI_SPECIALIST_MODEL", "gpt-5.4-mini")`
+- `deep_model` = `os.getenv("AZURE_OPENAI_DEEP_MODEL", "gpt-5.4")`
+- `router_model` = `os.getenv("AZURE_OPENAI_ROUTER_MODEL", "gpt-5.4-nano")` (used in dispatcher)
+
+**Step 5.2 — Update `save_results_step()`**
+- Store `{base_name}_workbook.xlsx` blob (content-type `application/vnd.openxmlformats-officedocument.spreadsheetml.sheet`)
+- Remove the call to `ParameterExtractionAgent` (fully replaced)
+- Keep `_AI.md` storage if you still want the processed markdown blob; remove `_AI.json`
+
+**Step 5.3 — Add 3 new env vars to runtime_config.py**
+```python
+SPECIALIST_MODEL = os.getenv("AZURE_OPENAI_SPECIALIST_MODEL", "gpt-5.4-mini")
+DEEP_MODEL       = os.getenv("AZURE_OPENAI_DEEP_MODEL", "gpt-5.4")
+ROUTER_MODEL     = os.getenv("AZURE_OPENAI_ROUTER_MODEL", "gpt-5.4-nano")
+```
+
+**Verify Phase 5:**
+- POST `/api/analyze-ai` with the SHP blob name
+- Assert a `_workbook.xlsx` blob appears in storage
+- Assert old `_AI.json` is NOT created
+- Download the xlsx and assert 7 tabs
+
+---
+
+## Phase 6 — Frontend *(can be deferred)*
+
+**Modify: Analysis.controller.js**
+
+**Step 6.1 — Replace JSON rendering with workbook download**
+- Remove the sections that render health cards, findings table, recommendations accordion
+- Add a "Download Workbook" button that calls `GET /api/download/{base_name}_workbook.xlsx`
+- Show "Workbook Ready" status when `_workbook.xlsx` blob exists (check in file list metadata), "Not analyzed yet" otherwise
+- Retain the Chat interface (`/api/chat`) — it still reads the `.md` blob which is unchanged
+
+---
+
+**Relevant files — full list**
+
+New:
+- `backend/utils/ewa_slicer.py`
+- `backend/utils/ewa_dispatcher.py`
+- `backend/agent/specialist_agents.py`
+- `backend/agent/deep_thinker_agent.py`
+- `backend/schemas/domain_result_schema.json`
+- `backend/prompts/specialist_security_prompt.md` (×6)
+- `backend/prompts/deep_thinker_prompt.md`
+
+Modified:
+- workflow_orchestrator.py
+- excel_utils.py
+- runtime_config.py
+- Analysis.controller.js
+
+Dead code (leave in place, can remove later):
+- parameter_extraction_agent.py
+- export_router.py `json-to-excel` endpoint
+- parameter_extraction_schema.json

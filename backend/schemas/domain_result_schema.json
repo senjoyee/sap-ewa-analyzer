@@ -1,6 +1,6 @@
 {
   "title": "EWADomainResult",
-  "description": "Structured output from a domain specialist agent analyzing assigned SAP EWA chapters.",
+  "description": "Structured output from a domain specialist agent analyzing assigned SAP EWA chapters. Recommendation-first model: each finding is grounded in a SAP advisory, then paired with the observed condition and its impact.",
   "type": "object",
   "additionalProperties": false,
   "properties": {
@@ -10,14 +10,14 @@
     },
     "findings": {
       "type": "array",
-      "description": "Items explicitly flagged RED or YELLOW by SAP in the EWA report.",
+      "description": "Actionable findings derived from SAP recommendations in the EWA report.",
       "items": {
         "type": "object",
         "additionalProperties": false,
         "properties": {
           "finding_id": {
             "type": "string",
-            "description": "Auto-generated ID, e.g. SEC-01, DB-02."
+            "description": "Domain-prefixed ID, e.g. SEC-01, DB-02."
           },
           "source_chapter": {
             "type": "string",
@@ -27,26 +27,25 @@
             "type": "string",
             "description": "Short descriptive title of the finding."
           },
-          "rag_status": {
+          "finding": {
             "type": "string",
-            "enum": ["red", "yellow"],
-            "description": "The RAG status as flagged by SAP in the report."
-          },
-          "description": {
-            "type": "string",
-            "description": "Detailed description of the finding."
+            "description": "The observed condition or configuration that SAP's recommendation addresses."
           },
           "impact": {
             "type": "string",
-            "description": "Business or technical impact of this finding."
+            "description": "Technical or business consequence if this finding is not actioned."
+          },
+          "recommendation": {
+            "type": "string",
+            "description": "SAP's explicit recommended action, quoted or closely paraphrased from the report."
           }
         },
-        "required": ["finding_id", "source_chapter", "title", "rag_status", "description", "impact"]
+        "required": ["finding_id", "source_chapter", "title", "finding", "impact", "recommendation"]
       }
     },
     "parameters": {
       "type": "array",
-      "description": "Configuration parameters explicitly flagged RED or YELLOW.",
+      "description": "Configuration parameters with an explicit SAP-recommended value change.",
       "items": {
         "type": "object",
         "additionalProperties": false,
@@ -61,11 +60,7 @@
           },
           "recommended_value": {
             "type": "string",
-            "description": "SAP-recommended value, if stated."
-          },
-          "rag_status": {
-            "type": "string",
-            "enum": ["red", "yellow"]
+            "description": "SAP-recommended value as stated in the report."
           },
           "action": {
             "type": "string",
@@ -77,12 +72,12 @@
             "description": "Chapter where this parameter appears."
           }
         },
-        "required": ["param_name", "current_value", "recommended_value", "rag_status", "action", "source_chapter"]
+        "required": ["param_name", "current_value", "recommended_value", "action", "source_chapter"]
       }
     },
     "abstentions": {
       "type": "array",
-      "description": "Chapters or sections that could not be analyzed or had no RED/YELLOW data.",
+      "description": "Chapters or sections with no actionable recommendations or where data is unreadable.",
       "items": {
         "type": "object",
         "additionalProperties": false,
@@ -93,7 +88,7 @@
           },
           "reason": {
             "type": "string",
-            "enum": ["unreadable", "no_data", "no_flags", "table_empty", "sql_truncated"],
+            "enum": ["unreadable", "no_data", "no_recommendations", "table_empty", "sql_truncated"],
             "description": "Reason the section was not analyzed."
           }
         },

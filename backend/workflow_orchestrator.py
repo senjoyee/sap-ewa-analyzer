@@ -33,7 +33,7 @@ from agent.parameter_extraction_agent import ParameterExtractionAgent
 from agent.specialist_agents import run_all_specialists, DomainResult
 from agent.deep_thinker_agent import DeepThinkerAgent, SupplementalFinding
 from utils.markdown_utils import json_to_markdown
-from utils.ewa_slicer import slice_chapters, truncate_large_chapter
+from utils.ewa_slicer import slice_chapters
 from utils.ewa_dispatcher import dispatch_chapters
 from utils.excel_workbook_builder import build_workbook
 from services.storage_service import StorageService
@@ -55,7 +55,6 @@ from core.runtime_config import (
     V2_DEEP_MAX_TOKENS,
     V2_SPECIALIST_REASONING,
     V2_DEEP_REASONING,
-    V2_LARGE_CHAPTER_LIMIT,
 )
 
 logger = logging.getLogger(__name__)
@@ -808,13 +807,6 @@ class EWAWorkflowOrchestrator:
             logger.info("[V2-SLICE] Parsing chapters from markdown (%d chars)", len(text))
             chapters = slice_chapters(text)
             logger.info("[V2-SLICE] Extracted %d chapters", len(chapters))
-
-            # Truncate oversized chapters (e.g. ch19 SQL statements)
-            for num, ch in chapters.items():
-                if len(ch.raw_content) > V2_LARGE_CHAPTER_LIMIT:
-                    chapters[num] = truncate_large_chapter(ch, V2_LARGE_CHAPTER_LIMIT)
-                    logger.info("[V2-SLICE] Truncated chapter %d from %d to %d chars",
-                                num, len(ch.raw_content), len(chapters[num].raw_content))
 
             # Stage 2: Dispatch chapters to domains
             logger.info("[V2-DISPATCH] Routing chapters to domains (router=%s)", V2_ROUTER_MODEL)

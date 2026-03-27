@@ -27,13 +27,13 @@ _SCHEMA_PATH = _BASE_DIR / "schemas" / "deep_thinker_schema.json"
 
 @dataclass
 class SupplementalFinding:
-    """A single implicit risk identified by the Deep Thinker."""
+    """A derived recommendation identified by the Deep Thinker."""
     finding_id: str
     title: str
     domain: str
-    rag_status: str  # always "implicit"
-    description: str
+    finding: str
     rationale: str
+    recommendation: str
     source: str  # always "AI Deep Analysis"
 
     def to_dict(self) -> dict[str, Any]:
@@ -41,9 +41,9 @@ class SupplementalFinding:
             "finding_id": self.finding_id,
             "title": self.title,
             "domain": self.domain,
-            "rag_status": self.rag_status,
-            "description": self.description,
+            "finding": self.finding,
             "rationale": self.rationale,
+            "recommendation": self.recommendation,
             "source": self.source,
         }
 
@@ -99,8 +99,7 @@ class DeepThinkerAgent:
             fid = f.get("finding_id", "")
             if not fid or not fid.startswith("DT-"):
                 f["finding_id"] = f"DT-{i:02d}"
-            # Enforce constant fields
-            f["rag_status"] = "implicit"
+            # Enforce constant field
             f["source"] = "AI Deep Analysis"
 
         results = []
@@ -109,9 +108,9 @@ class DeepThinkerAgent:
                 finding_id=f.get("finding_id", ""),
                 title=f.get("title", ""),
                 domain=f.get("domain", ""),
-                rag_status=f.get("rag_status", "implicit"),
-                description=f.get("description", ""),
+                finding=f.get("finding", ""),
                 rationale=f.get("rationale", ""),
+                recommendation=f.get("recommendation", ""),
                 source=f.get("source", "AI Deep Analysis"),
             ))
 
