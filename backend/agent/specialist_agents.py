@@ -250,9 +250,19 @@ class SpecialistAgent:
         return data
 
     def _make_strict_schema(self, schema: dict[str, Any]) -> dict[str, Any]:
-        """Deep copy schema with additionalProperties: false on all objects."""
+        """Prepare schema for OpenAI strict mode.
+
+        - Strips meta-keywords ($schema, $id) not accepted by the Responses API.
+        - Ensures additionalProperties: false on every object node.
+        """
+        # Strip top-level JSON Schema meta-keywords that OpenAI does not accept
+        _STRIP_KEYS = {"$schema", "$id"}
+
         def visit(node: Any) -> Any:
             if isinstance(node, dict):
+                # Remove unsupported meta-keywords at any level
+                for k in _STRIP_KEYS:
+                    node.pop(k, None)
                 if node.get("type") == "object":
                     node["additionalProperties"] = False
                     props = node.get("properties")

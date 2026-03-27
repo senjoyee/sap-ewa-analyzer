@@ -204,8 +204,17 @@ class DeepThinkerAgent:
         }
 
     def _make_strict_schema(self, schema: dict[str, Any]) -> dict[str, Any]:
+        """Prepare schema for OpenAI strict mode.
+
+        - Strips meta-keywords ($schema, $id) not accepted by the Responses API.
+        - Ensures additionalProperties: false on every object node.
+        """
+        _STRIP_KEYS = {"$schema", "$id"}
+
         def visit(node: Any) -> Any:
             if isinstance(node, dict):
+                for k in _STRIP_KEYS:
+                    node.pop(k, None)
                 if node.get("type") == "object":
                     node["additionalProperties"] = False
                     props = node.get("properties")

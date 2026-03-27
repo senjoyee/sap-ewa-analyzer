@@ -1,9 +1,8 @@
 {
-  "$schema": "https://json-schema.org/draft/2020-12/schema",
-  "$id": "https://example.com/schemas/ewa_domain_result/v1.0.json",
   "title": "EWADomainResult",
   "description": "Structured output from a domain specialist agent analyzing assigned SAP EWA chapters.",
   "type": "object",
+  "additionalProperties": false,
   "properties": {
     "domain": {
       "type": "string",
@@ -14,6 +13,7 @@
       "description": "Items explicitly flagged RED or YELLOW by SAP in the EWA report.",
       "items": {
         "type": "object",
+        "additionalProperties": false,
         "properties": {
           "finding_id": {
             "type": "string",
@@ -49,6 +49,7 @@
       "description": "Configuration parameters explicitly flagged RED or YELLOW.",
       "items": {
         "type": "object",
+        "additionalProperties": false,
         "properties": {
           "param_name": {
             "type": "string",
@@ -84,6 +85,7 @@
       "description": "Chapters or sections that could not be analyzed or had no RED/YELLOW data.",
       "items": {
         "type": "object",
+        "additionalProperties": false,
         "properties": {
           "chapter": {
             "type": "string",

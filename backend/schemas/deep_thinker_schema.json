@@ -1,15 +1,15 @@
 {
-  "$schema": "https://json-schema.org/draft/2020-12/schema",
-  "$id": "https://example.com/schemas/ewa_deep_thinker_result/v1.0.json",
   "title": "EWADeepThinkerResult",
   "description": "Supplemental findings from the Deep Thinker agent identifying implicit cross-domain risks.",
   "type": "object",
+  "additionalProperties": false,
   "properties": {
     "supplemental_findings": {
       "type": "array",
       "description": "Implicit risks identified through cross-domain analysis, not flagged by SAP.",
       "items": {
         "type": "object",
+        "additionalProperties": false,
         "properties": {
           "finding_id": {
             "type": "string",
@@ -26,7 +26,7 @@
           },
           "rag_status": {
             "type": "string",
-            "const": "implicit",
+            "enum": ["implicit"],
             "description": "Always 'implicit' for Deep Thinker findings."
           },
           "description": {
@@ -39,7 +39,7 @@
           },
           "source": {
             "type": "string",
-            "const": "AI Deep Analysis",
+            "enum": ["AI Deep Analysis"],
             "description": "Always 'AI Deep Analysis'."
           }
         },
