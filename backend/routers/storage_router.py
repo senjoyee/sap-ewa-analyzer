@@ -310,6 +310,8 @@ async def list_files():
                 json_files[base_name] = True
                 if base_name.endswith("_AI"):
                     ai_analyzed_files[base_name[:-3]] = True  # strip _AI
+                elif base_name.endswith("_workbook_payload"):
+                    ai_analyzed_files[base_name[:-17]] = True  # strip _workbook_payload
             elif ext == ".md":
                 md_files[base_name] = True
                 if base_name.endswith("_AI"):
@@ -329,7 +331,11 @@ async def list_files():
             # Skip AI analysis artifacts (V1 and V2)
             if name_low.endswith(".json") or name_low.endswith("_ai.md"):
                 continue  # skip auxiliary files in main listing
-            if name_low.endswith("_workbook.xlsx") or name_low.endswith("_v2_usage.json"):
+            if (
+                name_low.endswith("_workbook.xlsx")
+                or name_low.endswith("_workbook_payload.json")
+                or name_low.endswith("_v2_usage.json")
+            ):
                 continue  # skip V2 workbook artifacts from main listing
                 
             # If it's a regular .md file from the old workflow, it has a corresponding .pdf
@@ -473,7 +479,7 @@ async def delete_analysis(request_data: DeleteAnalysisRequest):
     except Exception as e:
         logger.exception(
             "Error deleting analysis for %s: %s",
-            request_data.get("fileName", "unknown file"),
+            getattr(request_data, "fileName", "unknown file"),
             e,
         )
         raise HTTPException(status_code=500, detail=f"Could not delete analysis files: {str(e)}")

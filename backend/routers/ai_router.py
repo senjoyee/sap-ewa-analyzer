@@ -16,7 +16,6 @@ from typing import Dict, Any
 from fastapi import APIRouter, HTTPException
 from models import BlobNameRequest
 from models.request_models import ProcessAnalyzeRequest
-from models.request_models import ProcessAnalyzeRequest
 
 from core.azure_clients import (
     blob_service_client,
@@ -149,11 +148,16 @@ async def analyze_document_with_ai_endpoint(request: BlobNameRequest):
             )
         return {
             "success": True,
-            "message": "Analysis completed successfully with structured JSON output",
+            "message": "Agentic analysis completed successfully",
             "original_file": blob_name,
-            "analysis_file": result.get("summary_file"),
-            "analysis_json_file": result.get("summary_json_file"),
-            "preview": result.get("summary_preview", ""),
+            "workbook_file": result.get("workbook_file"),
+            "workbook_payload_file": result.get("workbook_payload_file"),
+            "usage_file": result.get("usage_file"),
+            "analysis_file": result.get("workbook_file"),
+            "analysis_json_file": result.get("workbook_payload_file"),
+            "total_findings": result.get("total_findings", 0),
+            "total_parameters": result.get("total_parameters", 0),
+            "supplemental_findings": result.get("supplemental_findings", 0),
         }
     except HTTPException:
         raise
@@ -183,9 +187,15 @@ async def reprocess_document_with_ai(request: BlobNameRequest):
         logger.info("[REPROCESS] Re-analysis completed successfully for %s", original_blob_name)
         return {
             "success": True,
-            "message": "Re-analysis completed successfully.",
-            "analysis_file": result.get("summary_file"),
-            "analysis_json_file": result.get("summary_json_file"),
+            "message": "Agentic re-analysis completed successfully.",
+            "workbook_file": result.get("workbook_file"),
+            "workbook_payload_file": result.get("workbook_payload_file"),
+            "usage_file": result.get("usage_file"),
+            "analysis_file": result.get("workbook_file"),
+            "analysis_json_file": result.get("workbook_payload_file"),
+            "total_findings": result.get("total_findings", 0),
+            "total_parameters": result.get("total_parameters", 0),
+            "supplemental_findings": result.get("supplemental_findings", 0),
         }
     except HTTPException:
         raise

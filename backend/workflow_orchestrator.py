@@ -918,6 +918,8 @@ class EWAWorkflowOrchestrator:
                 "message": "Workflow completed successfully",
                 "original_file": blob_name,
                 "workbook_file": f"{base_name}_workbook.xlsx",
+                "workbook_payload_file": f"{base_name}_workbook_payload.json",
+                "usage_file": f"{base_name}_v2_usage.json",
                 "total_findings": total_findings,
                 "total_parameters": total_params,
                 "supplemental_findings": len(state.supplemental_findings or []),
