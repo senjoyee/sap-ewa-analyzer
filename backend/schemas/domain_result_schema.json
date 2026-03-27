@@ -1,0 +1,103 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://example.com/schemas/ewa_domain_result/v1.0.json",
+  "title": "EWADomainResult",
+  "description": "Structured output from a domain specialist agent analyzing assigned SAP EWA chapters.",
+  "type": "object",
+  "properties": {
+    "domain": {
+      "type": "string",
+      "enum": ["security", "database", "performance", "basis", "business", "lifecycle"]
+    },
+    "findings": {
+      "type": "array",
+      "description": "Items explicitly flagged RED or YELLOW by SAP in the EWA report.",
+      "items": {
+        "type": "object",
+        "properties": {
+          "finding_id": {
+            "type": "string",
+            "description": "Auto-generated ID, e.g. SEC-01, DB-02."
+          },
+          "source_chapter": {
+            "type": "string",
+            "description": "Chapter and subsection where this finding originates, e.g. '11.2 ABAP Stack of SHP'."
+          },
+          "title": {
+            "type": "string",
+            "description": "Short descriptive title of the finding."
+          },
+          "rag_status": {
+            "type": "string",
+            "enum": ["red", "yellow"],
+            "description": "The RAG status as flagged by SAP in the report."
+          },
+          "description": {
+            "type": "string",
+            "description": "Detailed description of the finding."
+          },
+          "impact": {
+            "type": "string",
+            "description": "Business or technical impact of this finding."
+          }
+        },
+        "required": ["finding_id", "source_chapter", "title", "rag_status", "description", "impact"]
+      }
+    },
+    "parameters": {
+      "type": "array",
+      "description": "Configuration parameters explicitly flagged RED or YELLOW.",
+      "items": {
+        "type": "object",
+        "properties": {
+          "param_name": {
+            "type": "string",
+            "description": "Name of the SAP parameter or configuration item."
+          },
+          "current_value": {
+            "type": "string",
+            "description": "Current value as reported in the EWA."
+          },
+          "recommended_value": {
+            "type": "string",
+            "description": "SAP-recommended value, if stated."
+          },
+          "rag_status": {
+            "type": "string",
+            "enum": ["red", "yellow"]
+          },
+          "action": {
+            "type": "string",
+            "enum": ["Change Required", "Verify"],
+            "description": "Required action for this parameter."
+          },
+          "source_chapter": {
+            "type": "string",
+            "description": "Chapter where this parameter appears."
+          }
+        },
+        "required": ["param_name", "current_value", "recommended_value", "rag_status", "action", "source_chapter"]
+      }
+    },
+    "abstentions": {
+      "type": "array",
+      "description": "Chapters or sections that could not be analyzed or had no RED/YELLOW data.",
+      "items": {
+        "type": "object",
+        "properties": {
+          "chapter": {
+            "type": "string",
+            "description": "Chapter or subsection identifier."
+          },
+          "reason": {
+            "type": "string",
+            "enum": ["unreadable", "no_data", "no_flags", "table_empty", "sql_truncated"],
+            "description": "Reason the section was not analyzed."
+          }
+        },
+        "required": ["chapter", "reason"]
+      }
+    }
+  },
+  "required": ["domain", "findings", "parameters", "abstentions"]
+}

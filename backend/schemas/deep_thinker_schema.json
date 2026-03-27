@@ -1,0 +1,51 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://example.com/schemas/ewa_deep_thinker_result/v1.0.json",
+  "title": "EWADeepThinkerResult",
+  "description": "Supplemental findings from the Deep Thinker agent identifying implicit cross-domain risks.",
+  "type": "object",
+  "properties": {
+    "supplemental_findings": {
+      "type": "array",
+      "description": "Implicit risks identified through cross-domain analysis, not flagged by SAP.",
+      "items": {
+        "type": "object",
+        "properties": {
+          "finding_id": {
+            "type": "string",
+            "description": "ID with prefix DT-, e.g. DT-01."
+          },
+          "title": {
+            "type": "string",
+            "description": "Short descriptive title of the implicit risk."
+          },
+          "domain": {
+            "type": "string",
+            "enum": ["security", "database", "performance", "basis", "business", "lifecycle"],
+            "description": "The most relevant domain for this finding."
+          },
+          "rag_status": {
+            "type": "string",
+            "const": "implicit",
+            "description": "Always 'implicit' for Deep Thinker findings."
+          },
+          "description": {
+            "type": "string",
+            "description": "Detailed description of the implicit risk."
+          },
+          "rationale": {
+            "type": "string",
+            "description": "Explanation of why this is a risk despite not being SAP-flagged."
+          },
+          "source": {
+            "type": "string",
+            "const": "AI Deep Analysis",
+            "description": "Always 'AI Deep Analysis'."
+          }
+        },
+        "required": ["finding_id", "title", "domain", "rag_status", "description", "rationale", "source"]
+      }
+    }
+  },
+  "required": ["supplemental_findings"]
+}
