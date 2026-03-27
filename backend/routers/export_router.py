@@ -61,6 +61,60 @@ def _parse_date_for_filename(raw_date: str) -> str:
     return "nodate"
 
 
+def _normalize_base_name(blob_name: str) -> str:
+    """Normalize an incoming blob name to the report base name.
+
+    Examples:
+    - ERP_07_Jun_25.md -> ERP_07_Jun_25
+    - ERP_07_Jun_25_workbook_payload.json -> ERP_07_Jun_25
+    - ERP_07_Jun_25_workbook.xlsx -> ERP_07_Jun_25
+    - ERP_07_Jun_25_AI.json -> ERP_07_Jun_25
+    """
+    stem = os.path.splitext(blob_name)[0]
+    for suffix in ("_workbook_payload", "_workbook", "_AI"):
+        if stem.endswith(suffix):
+            return stem[: -len(suffix)]
+    return stem
+
+
+def _candidate_json_blobs(blob_name: str) -> list[str]:
+    """Return JSON blob candidates in agentic-first order."""
+    base_name = _normalize_base_name(blob_name)
+    lower = blob_name.lower()
+
+    candidates: list[str] = []
+    if lower.endswith(".json"):
+        candidates.append(blob_name)
+
+    candidates.extend(
+        [
+            f"{base_name}_workbook_payload.json",
+            f"{base_name}.json",
+            f"{base_name}_AI.json",  # Legacy fallback
+        ]
+    )
+
+    # Deduplicate while preserving order
+    unique: list[str] = []
+    seen: set[str] = set()
+    for item in candidates:
+        if item not in seen:
+            seen.add(item)
+            unique.append(item)
+    return unique
+
+
+def _load_first_json_blob(candidates: list[str]) -> tuple[str, Dict[str, Any]]:
+    """Load and parse the first JSON blob that exists."""
+    for blob in candidates:
+        try:
+            text = storage_service.get_text_content(blob)
+            return blob, json.loads(text)
+        except FileNotFoundError:
+            continue
+    raise FileNotFoundError("No JSON blob found in candidates")
+
+
 def _get_pdf_optimized_markdown(blob_name: str, markdown_text: str) -> str:
     """
     Attempt to regenerate markdown from JSON with pdf_export=True.
@@ -73,15 +127,9 @@ def _get_pdf_optimized_markdown(blob_name: str, markdown_text: str) -> str:
     logger.debug("[PDF Export] Original markdown length: %s", len(markdown_text))
     
     try:
-        # Derive the JSON blob name from the markdown blob name
-        # Pattern: filename_AI.md -> filename_AI.json
-        base_name = os.path.splitext(blob_name)[0]
-        json_blob_name = f"{base_name}.json"
-        logger.info("[PDF Export] Looking for JSON: %s", json_blob_name)
-        
-        # Try to download the JSON file
-        json_text = storage_service.get_text_content(json_blob_name)
-        json_data = json.loads(json_text)
+        json_candidates = _candidate_json_blobs(blob_name)
+        json_blob_name, json_data = _load_first_json_blob(json_candidates)
+        logger.info("[PDF Export] Using JSON source: %s", json_blob_name)
         logger.debug("[PDF Export] JSON loaded successfully, keys: %s", list(json_data.keys()))
         
         # Regenerate markdown with pdf_export=True
@@ -91,7 +139,7 @@ def _get_pdf_optimized_markdown(blob_name: str, markdown_text: str) -> str:
         return regenerated
             
     except FileNotFoundError:
-        logger.info("[PDF Export] JSON not found (%s), using original markdown", json_blob_name)
+        logger.info("[PDF Export] No JSON companion found for %s, using original markdown", blob_name)
         return markdown_text
     except Exception as e:
         logger.exception("[PDF Export] Error loading JSON for PDF optimization: %s", e)
@@ -738,12 +786,22 @@ async def export_json_to_excel(blob_name: str):
         except FileNotFoundError:
             logger.info("[Excel Export] Parameters file not found (%s), attempting markdown extraction", params_blob_name)
             try:
-                md_blob_name = f"{original_base}_AI.md"
-                md_text = storage_service.get_text_content(md_blob_name)
+                md_candidates = [f"{original_base}.md", f"{original_base}_AI.md"]
+                md_blob_name = None
+                md_text = None
+                for candidate in md_candidates:
+                    try:
+                        md_text = storage_service.get_text_content(candidate)
+                        md_blob_name = candidate
+                        break
+                    except FileNotFoundError:
+                        continue
+                if md_text is None:
+                    raise FileNotFoundError("No markdown source found for parameter extraction")
                 parameters = extract_parameters_from_markdown(md_text)
                 logger.info("[Excel Export] Extracted %s parameters from markdown", len(parameters))
             except FileNotFoundError:
-                logger.warning("[Excel Export] Markdown file not found (%s); continuing without parameters", md_blob_name)
+                logger.warning("[Excel Export] Markdown file not found (tried %s); continuing without parameters", md_candidates)
             except Exception as md_e:
                 logger.warning("[Excel Export] Parameter extraction from markdown failed: %s", md_e)
         except Exception as params_e:
@@ -1306,54 +1364,53 @@ async def export_json_to_pdf(
     landscape: bool = Query(True, description="Render PDF in landscape orientation (default: true)"),
     page_size: str = Query("A4", description="Page size for PDF (e.g., A4, A3, Letter). Default: A4"),
 ):
-    """
-    Export EWA analysis to PDF directly from JSON.
-    
-    This endpoint bypasses Markdown entirely for cleaner output.
-    Accepts either a .json or .md blob_name (will derive JSON name from MD).
+    """Export EWA analysis to PDF from JSON (agentic-first).
+
+    Resolution order for JSON source:
+    1) <base>_workbook_payload.json (agentic pipeline output)
+    2) <base>.json
+    3) <base>_AI.json (legacy fallback)
     """
     if not blob_service_client:
         raise HTTPException(status_code=500, detail="Azure Blob Service client not initialized")
 
     try:
-        # Derive JSON blob name
-        base_name = os.path.splitext(blob_name)[0]
-        if blob_name.lower().endswith(".md"):
-            json_blob_name = f"{base_name}.json"
-        elif blob_name.lower().endswith(".json"):
-            json_blob_name = blob_name
-        else:
-            # Assume it's a base name, try _AI.json
-            json_blob_name = f"{base_name}_AI.json"
-        
-        logger.info("[PDF Export V2] Looking for JSON: %s", json_blob_name)
-        
+        base_name = _normalize_base_name(blob_name)
+        json_candidates = _candidate_json_blobs(blob_name)
+        logger.info("[PDF Export V2] JSON candidates: %s", json_candidates)
+
         try:
-            json_text = storage_service.get_text_content(json_blob_name)
+            json_blob_name, json_data = _load_first_json_blob(json_candidates)
         except FileNotFoundError:
-            raise HTTPException(status_code=404, detail=f"JSON file {json_blob_name} not found") from None
-        
-        json_data = json.loads(json_text)
+            raise HTTPException(
+                status_code=404,
+                detail=(
+                    "No JSON analysis found. Tried: "
+                    + ", ".join(json_candidates)
+                ),
+            ) from None
+
+        logger.info("[PDF Export V2] Using JSON source: %s", json_blob_name)
         logger.debug("[PDF Export V2] JSON loaded, keys: %s", list(json_data.keys()))
         
         # Fetch customer_name from original PDF blob metadata
         customer_name = ""
         try:
-            # Derive original PDF blob name from JSON blob name
-            # JSON is typically <base>_AI.json, original PDF is <base>.pdf
-            if json_blob_name.endswith("_AI.json"):
-                original_blob_name = json_blob_name.replace("_AI.json", ".pdf")
-            else:
-                original_blob_name = base_name + ".pdf"
-            
-            original_blob_client = blob_service_client.get_blob_client(
-                container=AZURE_STORAGE_CONTAINER_NAME, blob=original_blob_name
-            )
-            if original_blob_client.exists():
-                blob_props = original_blob_client.get_blob_properties()
-                if blob_props.metadata:
-                    customer_name = blob_props.metadata.get('customer_name', '')
-                    logger.info("[PDF Export V2] Customer name from metadata: %s", customer_name)
+            for original_blob_name in (f"{base_name}.pdf", f"{base_name}.md"):
+                original_blob_client = blob_service_client.get_blob_client(
+                    container=AZURE_STORAGE_CONTAINER_NAME, blob=original_blob_name
+                )
+                if original_blob_client.exists():
+                    blob_props = original_blob_client.get_blob_properties()
+                    if blob_props.metadata:
+                        customer_name = blob_props.metadata.get('customer_name', '')
+                        if customer_name:
+                            logger.info(
+                                "[PDF Export V2] Customer name from metadata (%s): %s",
+                                original_blob_name,
+                                customer_name,
+                            )
+                            break
         except Exception as e:
             logger.warning("[PDF Export V2] Error fetching customer metadata: %s", e)
         
