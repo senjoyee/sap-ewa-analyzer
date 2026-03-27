@@ -314,6 +314,8 @@ async def list_files():
                 md_files[base_name] = True
                 if base_name.endswith("_AI"):
                     ai_analyzed_files[base_name[:-3]] = True
+            elif ext == ".xlsx" and base_name.endswith("_workbook"):
+                ai_analyzed_files[base_name[:-9]] = True  # strip _workbook
 
         files: list[dict[str, Any]] = []
         file_groups: dict[str, list[dict[str, Any]]] = {}  # Group by customer+SID
@@ -324,9 +326,11 @@ async def list_files():
             name_low = blob.name.lower()
             base_name, _ = os.path.splitext(blob.name)
             
-            # Skip AI analysis artifacts
+            # Skip AI analysis artifacts (V1 and V2)
             if name_low.endswith(".json") or name_low.endswith("_ai.md"):
                 continue  # skip auxiliary files in main listing
+            if name_low.endswith("_workbook.xlsx") or name_low.endswith("_v2_usage.json"):
+                continue  # skip V2 workbook artifacts from main listing
                 
             # If it's a regular .md file from the old workflow, it has a corresponding .pdf
             # Skip it so we don't show duplicates. For new zip uploads, only the .md exists.
@@ -503,21 +507,27 @@ async def download_file(blob_name: str):
             except FileNotFoundError:
                 raise HTTPException(status_code=404, detail=f"File {blob_name} not found") from None
 
-            content_type = "application/pdf" if blob_name.endswith(".pdf") else "application/octet-stream"
+            if blob_name.endswith(".xlsx"):
+                content_type = "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
+            elif blob_name.endswith(".pdf"):
+                content_type = "application/pdf"
+            else:
+                content_type = "application/octet-stream"
 
         if isinstance(content, str):
             content = content.encode("utf-8")
 
         if blob_name.endswith(".pdf"):
             content_type = "application/pdf"
-        else:
-            # Keep previously determined content types for text/json/others
-            content_type = content_type
+        elif blob_name.endswith(".xlsx"):
+            content_type = "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
+
+        disposition = "attachment" if blob_name.endswith(".xlsx") else "inline"
 
         return Response(
             content=content,
             media_type=content_type,
-            headers={"Content-Disposition": f"inline; filename={blob_name}"},
+            headers={"Content-Disposition": f"{disposition}; filename=\"{blob_name}\""},
         )
 
     except HTTPException:

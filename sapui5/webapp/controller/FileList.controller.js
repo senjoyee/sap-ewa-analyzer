@@ -510,17 +510,9 @@ sap.ui.define([
 
         onDownloadPress: function (oEvent) {
             var oItem = oEvent.getSource().getBindingContext("files").getObject();
-            // The backend expects the AI-generated markdown file, not the original
-            // Pattern: ERP_09_Nov_25.pdf -> ERP_09_Nov_25_AI.md
             var sBaseName = oItem.name.replace(/\.(pdf|zip|md)$/i, "");
-            var sMdName = sBaseName + "_AI.md";
-
-            // Construct the download URL
-            // The backend expects blob_name as a query parameter
-            var sUrl = Config.getEndpoint("exportPdf") + "?blob_name=" + encodeURIComponent(sMdName);
-
-            // Trigger download in new window/tab
-            window.open(sUrl, "_blank");
+            var sWorkbookName = sBaseName + "_workbook.xlsx";
+            window.open(Config.getDownloadUrl(sWorkbookName), "_blank");
         },
 
         onDeletePress: function (oEvent) {
@@ -599,9 +591,8 @@ sap.ui.define([
         onDownloadExcelPress: function (oEvent) {
             var oItem = oEvent.getSource().getBindingContext("files").getObject();
             var sBaseName = oItem.name.replace(/\.(pdf|zip|md)$/i, "");
-            var sJsonName = sBaseName + "_AI.json";
-            var sUrl = Config.getEndpoint("exportExcel") + "?blob_name=" + encodeURIComponent(sJsonName);
-            window.open(sUrl, "_blank");
+            var sWorkbookName = sBaseName + "_workbook.xlsx";
+            window.open(Config.getDownloadUrl(sWorkbookName), "_blank");
         },
 
         onChatPress: function (oEvent) {
