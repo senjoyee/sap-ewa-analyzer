@@ -30,7 +30,12 @@ from dotenv import load_dotenv
 from agent.openai_ewa_agent import OpenAIEWAAgent
 from agent.anthropic_ewa_agent import AnthropicEWAAgent
 from agent.parameter_extraction_agent import ParameterExtractionAgent
+from agent.specialist_agents import run_all_specialists, DomainResult
+from agent.deep_thinker_agent import DeepThinkerAgent, SupplementalFinding
 from utils.markdown_utils import json_to_markdown
+from utils.ewa_slicer import slice_chapters, truncate_large_chapter
+from utils.ewa_dispatcher import dispatch_chapters
+from utils.excel_workbook_builder import build_workbook
 from services.storage_service import StorageService
 from core.runtime_config import (
     ANTHROPIC_TIMEOUT_SECONDS,
@@ -43,6 +48,14 @@ from core.runtime_config import (
     PARAM_REASONING_EFFORT,
     ANTHROPIC_THINKING_BUDGET_TOKENS,
     ANTHROPIC_TEMPERATURE,
+    V2_ROUTER_MODEL,
+    V2_SPECIALIST_MODEL,
+    V2_DEEP_MODEL,
+    V2_SPECIALIST_MAX_TOKENS,
+    V2_DEEP_MAX_TOKENS,
+    V2_SPECIALIST_REASONING,
+    V2_DEEP_REASONING,
+    V2_LARGE_CHAPTER_LIMIT,
 )
 
 logger = logging.getLogger(__name__)
@@ -123,6 +136,11 @@ class WorkflowState:
     parameter_usage: dict = None
     usage_report: dict = None
     error: str = ""
+    # V2 pipeline fields
+    domain_results: list = None
+    supplemental_findings: list = None
+    workbook_bytes: bytes = None
+    v2_usage: dict = None
 
 
 MODEL_PRICING_USD_PER_1M = {
@@ -717,71 +735,151 @@ class EWAWorkflowOrchestrator:
 
     
     async def save_results_step(self, state: WorkflowState) -> WorkflowState:
-        """Step 5: Save all results to blob storage with metadata propagation"""
+        """Save V2 workbook and diagnostics to blob storage."""
         try:
-            logger.info("[STEP 5] Saving results for %s", state.blob_name)
+            logger.info("[SAVE] Saving V2 results for %s", state.blob_name)
             base_name = os.path.splitext(state.blob_name)[0]
-            
+
             # Retrieve metadata from original blob
             original_metadata = await self.get_blob_metadata(state.blob_name)
             logger.debug("Retrieved original metadata: %s", original_metadata)
-            
-            # Save summary markdown with metadata
-            summary_blob_name = f"{base_name}_AI.md"
-            await self.upload_to_blob(summary_blob_name, state.summary_result, "text/markdown", original_metadata)
-            
-            # Save structured JSON as well with metadata
-            summary_json_blob_name = f"{base_name}_AI.json"
-            if state.summary_json is not None:
-                await self.upload_to_blob(summary_json_blob_name, json.dumps(state.summary_json, indent=2), "application/json", original_metadata)
 
-                # Persist report_date as blob metadata so that list_files can group by week/month
-                report_date = state.summary_json.get("report_date")
-                if report_date is None:
-                    report_date = state.summary_json.get("system_metadata", {}).get("report_date")
-                if report_date:
-                    try:
-                        orig_blob_client = self.blob_service_client.get_blob_client(
-                            container=AZURE_STORAGE_CONTAINER_NAME,
-                            blob=state.blob_name
-                        )
-                        # Offload property retrieval to a thread
-                        existing_properties = await asyncio.to_thread(orig_blob_client.get_blob_properties)
-                        existing_metadata = (existing_properties.metadata or {}).copy()
-                        # Azure metadata keys must be lowercase
-                        existing_metadata["report_date"] = report_date
-                        # Offload setting metadata to a thread
-                        await asyncio.to_thread(orig_blob_client.set_blob_metadata, existing_metadata)
-                        logger.info(
-                            "Set report_date metadata (%s) on %s",
-                            report_date,
-                            state.blob_name,
-                        )
-                    except Exception as meta_e:
-                        # Non-fatal; continue even if metadata update fails
-                        logger.warning(
-                            "Could not set report_date metadata for %s: %s",
-                            state.blob_name,
-                            meta_e,
-                        )
+            # Save Excel workbook
+            if state.workbook_bytes:
+                workbook_blob = f"{base_name}_workbook.xlsx"
+                blob_client = self.blob_service_client.get_blob_client(
+                    container=AZURE_STORAGE_CONTAINER_NAME,
+                    blob=workbook_blob,
+                )
+                await asyncio.to_thread(
+                    lambda: blob_client.upload_blob(
+                        data=state.workbook_bytes,
+                        overwrite=True,
+                        content_type="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+                        metadata=original_metadata,
+                    )
+                )
+                logger.info("[SAVE] Uploaded workbook (%d bytes) to %s", len(state.workbook_bytes), workbook_blob)
 
-            # Save extracted parameters JSON
-            if state.parameters_json is not None:
-                params_blob_name = f"{base_name}_parameters.json"
-                await self.upload_to_blob(params_blob_name, json.dumps(state.parameters_json, indent=2), "application/json", original_metadata)
-                param_count = len(state.parameters_json.get("parameters", []))
-                logger.info("Saved %s parameters to %s", param_count, params_blob_name)
+            # Save workbook payload JSON (domain results + supplements) for diagnostics
+            if state.domain_results is not None:
+                payload = {
+                    "domain_results": [dr.to_dict() for dr in state.domain_results],
+                    "supplemental_findings": [
+                        sf.to_dict() if isinstance(sf, SupplementalFinding) else sf
+                        for sf in (state.supplemental_findings or [])
+                    ],
+                }
+                payload_blob = f"{base_name}_workbook_payload.json"
+                await self.upload_to_blob(
+                    payload_blob,
+                    json.dumps(payload, indent=2, ensure_ascii=False),
+                    "application/json",
+                    original_metadata,
+                )
+                logger.info("[SAVE] Uploaded workbook payload to %s", payload_blob)
 
-            state.usage_report = self._build_usage_report(state, original_metadata)
-            usage_report_blob_name = self._build_usage_report_blob_name(state, original_metadata)
-            await self.upload_to_blob(usage_report_blob_name, json.dumps(state.usage_report, indent=2), "application/json", original_metadata)
-            logger.info("Saved token usage report to %s", usage_report_blob_name)
-            
+            # Save V2 usage report
+            if state.v2_usage:
+                usage_blob = f"{base_name}_v2_usage.json"
+                await self.upload_to_blob(
+                    usage_blob,
+                    json.dumps(state.v2_usage, indent=2, ensure_ascii=False),
+                    "application/json",
+                    original_metadata,
+                )
+                logger.info("[SAVE] Uploaded V2 usage to %s", usage_blob)
+
             return state
         except Exception as e:
             state.error = str(e)
             return state
     
+
+    async def _run_v2_pipeline(self, state: WorkflowState) -> WorkflowState:
+        """V2 agentic pipeline: slice → dispatch → specialists → deep thinker → workbook."""
+        try:
+            logger.info("[V2] Starting agentic pipeline for %s", state.blob_name)
+            text = (state.markdown_content or "").strip()
+            if not text:
+                raise ValueError("Markdown content is empty; conversion must succeed before analysis.")
+
+            # Stage 1: Slice markdown into chapters
+            logger.info("[V2-SLICE] Parsing chapters from markdown (%d chars)", len(text))
+            chapters = slice_chapters(text)
+            logger.info("[V2-SLICE] Extracted %d chapters", len(chapters))
+
+            # Truncate oversized chapters (e.g. ch19 SQL statements)
+            for num, ch in chapters.items():
+                if len(ch.raw_content) > V2_LARGE_CHAPTER_LIMIT:
+                    chapters[num] = truncate_large_chapter(ch, V2_LARGE_CHAPTER_LIMIT)
+                    logger.info("[V2-SLICE] Truncated chapter %d from %d to %d chars",
+                                num, len(ch.raw_content), len(chapters[num].raw_content))
+
+            # Stage 2: Dispatch chapters to domains
+            logger.info("[V2-DISPATCH] Routing chapters to domains (router=%s)", V2_ROUTER_MODEL)
+            domain_chapters = await dispatch_chapters(
+                chapters,
+                ai_client=self.openai_client,
+                router_model=V2_ROUTER_MODEL,
+            )
+            for domain, chs in domain_chapters.items():
+                if chs:
+                    logger.info("[V2-DISPATCH] %s: %d chapters", domain, len(chs))
+
+            # Stage 3a: Run 6 specialists in parallel
+            logger.info("[V2-SPECIALISTS] Running 6 domain specialists (model=%s)", V2_SPECIALIST_MODEL)
+            domain_results = await run_all_specialists(
+                domain_chapters,
+                client=self.openai_client,
+                model=V2_SPECIALIST_MODEL,
+                reasoning_effort=V2_SPECIALIST_REASONING,
+                max_output_tokens=V2_SPECIALIST_MAX_TOKENS,
+            )
+            state.domain_results = domain_results
+
+            total_findings = sum(len(dr.findings) for dr in domain_results)
+            total_params = sum(len(dr.parameters) for dr in domain_results)
+            total_abstentions = sum(len(dr.abstentions) for dr in domain_results)
+            logger.info("[V2-SPECIALISTS] Done: %d findings, %d parameters, %d abstentions",
+                        total_findings, total_params, total_abstentions)
+
+            # Stage 3b: Deep Thinker cross-domain analysis
+            logger.info("[V2-DEEP] Running Deep Thinker (model=%s)", V2_DEEP_MODEL)
+            deep_thinker = DeepThinkerAgent(
+                client=self.openai_client,
+                model=V2_DEEP_MODEL,
+                reasoning_effort=V2_DEEP_REASONING,
+                max_output_tokens=V2_DEEP_MAX_TOKENS,
+            )
+            supplemental = await deep_thinker.run(domain_results)
+            state.supplemental_findings = supplemental
+            logger.info("[V2-DEEP] Produced %d supplemental findings", len(supplemental))
+
+            # Stage 4: Build Excel workbook
+            original_metadata = await self.get_blob_metadata(state.blob_name)
+            system_metadata = {
+                "system_id": original_metadata.get("system_id", ""),
+                "report_date": original_metadata.get("report_date_str", original_metadata.get("report_date", "")),
+                "customer_name": original_metadata.get("customer_name", ""),
+            }
+            logger.info("[V2-WORKBOOK] Building 7-tab workbook")
+            state.workbook_bytes = build_workbook(domain_results, supplemental, system_metadata)
+            logger.info("[V2-WORKBOOK] Generated %d bytes", len(state.workbook_bytes))
+
+            # Collect usage across all agents
+            specialist_usages = [dr.usage for dr in domain_results if dr.usage]
+            deep_usage = deep_thinker.last_usage or {}
+            state.v2_usage = {
+                "specialists": specialist_usages,
+                "deep_thinker": deep_usage,
+            }
+
+            return state
+        except Exception as e:
+            state.error = str(e)
+            logger.exception("[V2] Pipeline error: %s", e)
+            return state
 
     async def execute_workflow(self, blob_name: str, skip_markdown: bool = False) -> Dict[str, Any]:
         """Execute the complete workflow.
@@ -807,20 +905,12 @@ class EWAWorkflowOrchestrator:
             if state.error:
                 raise Exception(state.error)
             
-
-            # Run the EWA analysis using single enhanced agent
-            summary_state = await self.run_analysis_step(state)
+            # Run V2 agentic pipeline
+            state = await self._run_v2_pipeline(state)
+            if state.error:
+                raise Exception(state.error)
             
-            # Check for errors
-            if summary_state.error:
-                errors = [f"Agent summary generation failed: {summary_state.error}"]
-                raise Exception(f"Workflow step failed: {'; '.join(errors)}")
-            
-            # Store the summary results
-            state.summary_result = summary_state.summary_result
-            state.summary_json = summary_state.summary_json
-            
-            # Save all results
+            # Save results (workbook + diagnostics)
             state = await self.save_results_step(state)
             if state.error:
                 raise Exception(state.error)
@@ -829,14 +919,16 @@ class EWAWorkflowOrchestrator:
             
             # Return success response
             base_name = os.path.splitext(blob_name)[0]
+            total_findings = sum(len(dr.findings) for dr in (state.domain_results or []))
+            total_params = sum(len(dr.parameters) for dr in (state.domain_results or []))
             return {
                 "success": True,
                 "message": "Workflow completed successfully",
                 "original_file": blob_name,
-                "summary_file": f"{base_name}_AI.md",
-                "summary_json_file": f"{base_name}_AI.json",
-                "summary_data": state.summary_result,
-                "summary_preview": state.summary_result[:500] + "..." if len(state.summary_result) > 500 else state.summary_result
+                "workbook_file": f"{base_name}_workbook.xlsx",
+                "total_findings": total_findings,
+                "total_parameters": total_params,
+                "supplemental_findings": len(state.supplemental_findings or []),
             }
             
         except Exception as e:

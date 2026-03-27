@@ -48,3 +48,13 @@ PDF_METADATA_TEXT_LIMIT = _get_int("PDF_METADATA_TEXT_LIMIT", 4000)
 PDF_METADATA_MAX_TOKENS = _get_int("PDF_METADATA_MAX_TOKENS", 100)
 SUMMARY_REASONING_EFFORT = _get_choice("SUMMARY_REASONING_EFFORT", "none", {"minimal", "none", "low", "medium", "high", "xhigh"})
 PARAM_REASONING_EFFORT = _get_choice("PARAM_REASONING_EFFORT", "none", {"minimal", "none", "low", "medium", "high", "xhigh"})
+
+# V2 agentic pipeline model deployments
+V2_ROUTER_MODEL = os.getenv("V2_ROUTER_MODEL", "gpt-5.4-nano")
+V2_SPECIALIST_MODEL = os.getenv("V2_SPECIALIST_MODEL", "gpt-5.4-mini")
+V2_DEEP_MODEL = os.getenv("V2_DEEP_MODEL", "gpt-5.4")
+V2_SPECIALIST_MAX_TOKENS = _get_int("V2_SPECIALIST_MAX_TOKENS", 16384)
+V2_DEEP_MAX_TOKENS = _get_int("V2_DEEP_MAX_TOKENS", 16384)
+V2_SPECIALIST_REASONING = _get_choice("V2_SPECIALIST_REASONING", "none", {"minimal", "none", "low", "medium", "high", "xhigh"})
+V2_DEEP_REASONING = _get_choice("V2_DEEP_REASONING", "medium", {"minimal", "none", "low", "medium", "high", "xhigh"})
+V2_LARGE_CHAPTER_LIMIT = _get_int("V2_LARGE_CHAPTER_LIMIT", 8000)
