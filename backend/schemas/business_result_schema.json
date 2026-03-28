@@ -1,0 +1,109 @@
+{
+  "title": "EWABusinessResult",
+  "description": "Structured output from the Business specialist agent. Reporting-first model: every assigned business chapter produces at least one observation, whether clean or flagged. RAG status is captured when available from EWA flags; narrative quality summaries are used otherwise.",
+  "type": "object",
+  "additionalProperties": false,
+  "properties": {
+    "domain": {
+      "type": "string",
+      "enum": ["business"]
+    },
+    "applicable": {
+      "type": "boolean",
+      "description": "True when the analyzed system is SAP ECC or SAP S/4HANA (i.e., has business process chapters). False when the EWA belongs to a non-ECC/S4 system (BW, SolMan, Gateway, etc.) — in which case findings must be empty."
+    },
+    "findings": {
+      "type": "array",
+      "description": "Business observations — one entry per business topic area. Every assigned section must produce at least one observation, including clean areas. Leave empty only when applicable=false.",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "finding_id": {
+            "type": "string",
+            "description": "Domain-prefixed ID: BIZ-01, BIZ-02, etc."
+          },
+          "source_chapter": {
+            "type": "string",
+            "description": "Chapter and subsection where this observation originates."
+          },
+          "title": {
+            "type": "string",
+            "description": "Short descriptive title for this topic area (e.g. 'DVM Housekeeping Status', 'Financial Reconciliation')."
+          },
+          "rag_status": {
+            "type": ["string", "null"],
+            "enum": ["GREEN", "YELLOW", "RED", null],
+            "description": "RAG status: GREEN=no issues, YELLOW=warning/attention needed, RED=critical issue. Set to null only when the EWA provides no RAG flag for this topic and a narrative quality summary is used instead."
+          },
+          "finding": {
+            "type": "string",
+            "description": "The observed state of this business area — what was found, whether clean or problematic. For clean areas, summarize the positive status (e.g., 'No overdue items reported. DVM volumes are within recommended thresholds.')."
+          },
+          "impact": {
+            "type": "string",
+            "description": "Business significance of this observation. For clean items, note what this means for operational health (e.g., 'Data volumes are manageable; no archiving urgency.'). For flagged items, state the business risk."
+          },
+          "recommendation": {
+            "type": ["string", "null"],
+            "description": "Required action, if any. Set to null for GREEN observations with no action needed. For YELLOW/RED, quote or closely paraphrase the SAP advisory."
+          }
+        },
+        "required": ["finding_id", "source_chapter", "title", "rag_status", "finding", "impact", "recommendation"]
+      }
+    },
+    "parameters": {
+      "type": "array",
+      "description": "Configuration parameters with an explicit SAP-recommended value change.",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "param_name": {
+            "type": "string",
+            "description": "Name of the SAP parameter or configuration item."
+          },
+          "current_value": {
+            "type": "string",
+            "description": "Current value as reported in the EWA."
+          },
+          "recommended_value": {
+            "type": "string",
+            "description": "SAP-recommended value as stated in the report."
+          },
+          "action": {
+            "type": "string",
+            "enum": ["Change Required", "Verify"],
+            "description": "Required action for this parameter."
+          },
+          "source_chapter": {
+            "type": "string",
+            "description": "Chapter where this parameter appears."
+          }
+        },
+        "required": ["param_name", "current_value", "recommended_value", "action", "source_chapter"]
+      }
+    },
+    "abstentions": {
+      "type": "array",
+      "description": "Only used when applicable=false. A single entry with reason not_applicable_system_type to signal the entire business pillar is not relevant for this system.",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "chapter": {
+            "type": "string",
+            "description": "Chapter or subsection identifier."
+          },
+          "reason": {
+            "type": "string",
+            "enum": ["unreadable", "no_data", "no_recommendations", "table_empty", "sql_truncated", "not_applicable_system_type"],
+            "description": "Reason code."
+          }
+        },
+        "required": ["chapter", "reason"]
+      }
+    }
+  },
+  "required": ["domain", "applicable", "findings", "parameters", "abstentions"]
+}

@@ -1,8 +1,9 @@
-"""7-tab Excel workbook builder for the V2 agentic pipeline.
+"""Workbook builder for the V2 agentic pipeline.
 
-Produces: Executive Summary + 6 domain tabs (Security, Database, Performance,
-Basis, Business, Lifecycle). Each domain tab has 4 sections: Findings,
-Parameters, Deep Thinker Supplements, and Abstentions.
+Produces: Executive Summary + up to 6 domain tabs (Security, Database, Performance,
+Basis, Business, Lifecycle). The Business tab is omitted when the system is not
+ECC or S/4HANA. Each domain tab has three sections: Findings, Parameters, and
+AI Deep Analysis supplements.
 """
 from __future__ import annotations
 
@@ -62,13 +63,23 @@ _DATA_BORDER = Border(
 _WRAP_ALIGNMENT = Alignment(horizontal="left", vertical="top", wrap_text=True)
 
 
+def _is_business_applicable(dr: DomainResult) -> bool:
+    """Return False when the business specialist signalled the system is not ECC/S4."""
+    if not dr.applicable:
+        return False
+    if any(a.get("reason") == "not_applicable_system_type" for a in dr.abstentions):
+        return False
+    return True
+
+
 def build_workbook(
     domain_results: list[DomainResult],
     supplemental_findings: list[SupplementalFinding],
     system_metadata: dict[str, str] | None = None,
 ) -> bytes:
-    """Build a 7-tab Excel workbook from pipeline outputs.
+    """Build a workbook from pipeline outputs.
 
+    The Business tab is omitted entirely when the system is not ECC/S4.
     Returns xlsx bytes ready for blob storage.
     """
     wb = Workbook()
@@ -78,6 +89,10 @@ def build_workbook(
     results_by_domain: dict[str, DomainResult] = {}
     for dr in domain_results:
         results_by_domain[dr.domain] = dr
+
+    # Determine whether business tab should be included
+    business_dr = results_by_domain.get("business", DomainResult(domain="business"))
+    include_business = _is_business_applicable(business_dr)
 
     # Index supplemental findings by domain
     supplements_by_domain: dict[str, list[dict[str, Any]]] = {d: [] for d in DOMAIN_TAB_ORDER}
@@ -89,14 +104,21 @@ def build_workbook(
 
     # Tab 1: Executive Summary
     ws_exec = wb.active
-    _write_executive_summary(ws_exec, results_by_domain, supplemental_findings, metadata)
+    _write_executive_summary(ws_exec, results_by_domain, supplemental_findings, metadata, include_business)
 
-    # Tabs 2-7: Domain tabs
+    # Remaining domain tabs (business skipped when not applicable)
     for domain in DOMAIN_TAB_ORDER:
-        ws = wb.create_sheet(title=DOMAIN_DISPLAY_NAMES[domain])
-        dr = results_by_domain.get(domain, DomainResult(domain=domain))
-        sups = supplements_by_domain.get(domain, [])
-        _write_domain_tab(ws, dr, sups, domain)
+        if domain == "business":
+            if not include_business:
+                continue
+            ws = wb.create_sheet(title=DOMAIN_DISPLAY_NAMES[domain])
+            sups = supplements_by_domain.get(domain, [])
+            _write_business_tab(ws, business_dr, sups)
+        else:
+            ws = wb.create_sheet(title=DOMAIN_DISPLAY_NAMES[domain])
+            dr = results_by_domain.get(domain, DomainResult(domain=domain))
+            sups = supplements_by_domain.get(domain, [])
+            _write_domain_tab(ws, dr, sups, domain)
 
     buf = io.BytesIO()
     wb.save(buf)
@@ -112,6 +134,7 @@ def _write_executive_summary(
     results_by_domain: dict[str, DomainResult],
     supplemental_findings: list[SupplementalFinding],
     metadata: dict[str, str],
+    include_business: bool = True,
 ):
     ws.title = "Executive Summary"
 
@@ -137,13 +160,13 @@ def _write_executive_summary(
             row += 1
     row += 1
 
-    # Domain RAG Status Matrix
+    # Domain Overview Matrix
     ws[f"A{row}"] = "Domain Overview"
     ws[f"A{row}"].font = Font(name="Calibri", size=14, bold=True, color=COLORS["sap_dark"])
     ws.merge_cells(f"A{row}:F{row}")
     row += 1
 
-    matrix_headers = ["Domain", "Findings", "Parameters", "Derived Recommendations", "Abstentions"]
+    matrix_headers = ["Domain", "Findings / Observations", "Parameters", "Derived Recommendations"]
     for col_idx, header in enumerate(matrix_headers, start=1):
         cell = ws.cell(row=row, column=col_idx, value=header)
         _apply_header(cell)
@@ -151,13 +174,25 @@ def _write_executive_summary(
 
     for domain in DOMAIN_TAB_ORDER:
         dr = results_by_domain.get(domain, DomainResult(domain=domain))
+
+        if domain == "business" and not include_business:
+            values = [DOMAIN_DISPLAY_NAMES.get(domain, domain), "N/A — not applicable for this system type", "", ""]
+            for col_idx, val in enumerate(values, start=1):
+                cell = ws.cell(row=row, column=col_idx, value=val)
+                _apply_data(cell, row)
+                if col_idx == 1:
+                    cell.font = Font(name="Calibri", size=11, bold=True)
+                if col_idx == 2:
+                    cell.font = Font(name="Calibri", size=11, italic=True, color="888888")
+            row += 1
+            continue
+
         finding_count = len(dr.findings)
         param_count = len(dr.parameters)
         sup_count = sum(1 for sf in supplemental_findings
                         if (sf.domain if isinstance(sf, SupplementalFinding) else sf.get("domain", "")) == domain)
-        abstention_count = len(dr.abstentions)
 
-        values = [DOMAIN_DISPLAY_NAMES.get(domain, domain), finding_count, param_count, sup_count, abstention_count]
+        values = [DOMAIN_DISPLAY_NAMES.get(domain, domain), finding_count, param_count, sup_count]
         for col_idx, val in enumerate(values, start=1):
             cell = ws.cell(row=row, column=col_idx, value=val)
             _apply_data(cell, row)
@@ -166,15 +201,17 @@ def _write_executive_summary(
         row += 1
     row += 1
 
-    # Priority Recommendations
+    # Priority Recommendations (non-business domains only — business has its own status report tab)
     ws[f"A{row}"] = "Priority Recommendations"
     ws[f"A{row}"].font = Font(name="Calibri", size=14, bold=True, color=COLORS["sap_dark"])
     ws.merge_cells(f"A{row}:F{row}")
     row += 1
 
-    # Collect all findings across domains in domain order
+    # Collect actionable findings across non-business domains
     all_findings: list[tuple[str, dict]] = []
     for domain in DOMAIN_TAB_ORDER:
+        if domain == "business":
+            continue
         dr = results_by_domain.get(domain, DomainResult(domain=domain))
         for f in dr.findings:
             all_findings.append((domain, f))
@@ -195,7 +232,7 @@ def _write_executive_summary(
             finding.get("recommendation", ""),
         ]
         for col_idx, val in enumerate(vals, start=1):
-            cell = ws.cell(row=row, column=col_idx, value=val)
+            cell = ws.cell(row=row, column=col_idx, value=str(val) if val is not None else "")
             _apply_data(cell, row)
         row += 1
 
@@ -225,7 +262,7 @@ def _write_executive_summary(
                 sd.get("recommendation", ""),
             ]
             for col_idx, val in enumerate(vals, start=1):
-                cell = ws.cell(row=row, column=col_idx, value=val)
+                cell = ws.cell(row=row, column=col_idx, value=str(val) if val is not None else "")
                 _apply_data(cell, row)
             row += 1
 
@@ -267,7 +304,7 @@ def _write_domain_tab(
                 finding.get("recommendation", ""),
             ]
             for col_idx, val in enumerate(vals, start=1):
-                cell = ws.cell(row=row, column=col_idx, value=val)
+                cell = ws.cell(row=row, column=col_idx, value=str(val) if val is not None else "")
                 _apply_data(cell, row)
             ws.row_dimensions[row].height = 60
             row += 1
@@ -314,7 +351,7 @@ def _write_domain_tab(
                 sf.get("recommendation", ""),
             ]
             for col_idx, val in enumerate(vals, start=1):
-                cell = ws.cell(row=row, column=col_idx, value=val)
+                cell = ws.cell(row=row, column=col_idx, value=str(val) if val is not None else "")
                 _apply_data(cell, row)
                 if col_idx == 1:
                     cell.font = Font(name="Calibri", size=11, color=COLORS["implicit"])
@@ -324,21 +361,131 @@ def _write_domain_tab(
         ws[f"A{row}"] = "No derived recommendations for this domain."
         ws[f"A{row}"].font = Font(name="Calibri", size=11, italic=True, color="666666")
         row += 1
+
+    _auto_fit(ws)
+
+
+# ---------------------------------------------------------------------------
+# Business Status Report Tab (reporting-first, separate layout)
+# ---------------------------------------------------------------------------
+
+_RAG_FILL: dict[str, str] = {
+    "RED": COLORS["red"],
+    "YELLOW": COLORS["yellow"],
+    "GREEN": COLORS["green"],
+}
+_RAG_TEXT_COLOR: dict[str, str] = {
+    "RED": COLORS["white"],
+    "YELLOW": COLORS["white"],
+    "GREEN": COLORS["white"],
+}
+
+
+def _apply_rag_status_cell(cell, rag_status: str | None):
+    """Apply RAG traffic-light fill to a status cell."""
+    val = (rag_status or "").upper()
+    fill_color = _RAG_FILL.get(val)
+    if fill_color:
+        cell.fill = PatternFill(start_color=fill_color, end_color=fill_color, fill_type="solid")
+        cell.font = Font(name="Calibri", size=11, bold=True, color=_RAG_TEXT_COLOR.get(val, COLORS["white"]))
+    else:
+        # Unknown / null — neutral styling
+        cell.font = Font(name="Calibri", size=11, italic=True, color="888888")
+    cell.alignment = Alignment(horizontal="center", vertical="top")
+    cell.border = _DATA_BORDER
+    cell.value = val if fill_color else (rag_status or "—")
+
+
+def _write_business_tab(
+    ws: Worksheet,
+    dr: DomainResult,
+    supplements: list[dict[str, Any]],
+):
+    row = 1
+
+    # Title
+    ws[f"A{row}"] = "Business — Status Report"
+    ws[f"A{row}"].font = Font(name="Calibri", size=18, bold=True, color=COLORS["sap_gold"])
+    ws.merge_cells(f"A{row}:F{row}")
+    ws.row_dimensions[row].height = 28
+    row += 2
+
+    # Section A: Business Observations
+    row = _write_section_header(ws, row, "A — Business Area Status")
+    if dr.findings:
+        headers = ["ID", "Status", "Topic Area", "Observation", "Business Significance", "Action Required"]
+        row = _write_table_headers(ws, row, headers)
+        for obs in dr.findings:
+            rag = obs.get("rag_status")
+            recommendation = obs.get("recommendation") or ""
+            row_vals = [
+                obs.get("finding_id", ""),
+                None,  # placeholder — written by _apply_rag_status_cell
+                obs.get("title", ""),
+                obs.get("finding", ""),
+                obs.get("impact", ""),
+                recommendation if recommendation and recommendation.lower() not in ("null", "none") else "No action required",
+            ]
+            for col_idx, val in enumerate(row_vals, start=1):
+                if col_idx == 2:
+                    cell = ws.cell(row=row, column=col_idx)
+                    _apply_rag_status_cell(cell, rag)
+                else:
+                    cell = ws.cell(row=row, column=col_idx, value=str(val) if val is not None else "")
+                    _apply_data(cell, row)
+            ws.row_dimensions[row].height = 60
+            row += 1
+    else:
+        ws[f"A{row}"] = "No business observations available."
+        ws[f"A{row}"].font = Font(name="Calibri", size=11, italic=True, color="666666")
+        row += 1
     row += 1
 
-    # Section D: Abstentions
-    row = _write_section_header(ws, row, "D — Abstentions (Chapters with No Extracted Data)")
-    if dr.abstentions:
-        headers = ["Chapter", "Reason", "", "", "", ""]
+    # Section B: Parameters
+    row = _write_section_header(ws, row, "B — Parameters")
+    if dr.parameters:
+        headers = ["Parameter", "Current Value", "Recommended", "Action", "Source Chapter", ""]
         row = _write_table_headers(ws, row, headers)
-        for ab in dr.abstentions:
-            vals = [ab.get("chapter", ""), ab.get("reason", "")]
+        for param in dr.parameters:
+            vals = [
+                param.get("param_name", ""),
+                param.get("current_value", ""),
+                param.get("recommended_value", ""),
+                param.get("action", ""),
+                param.get("source_chapter", ""),
+            ]
             for col_idx, val in enumerate(vals, start=1):
                 cell = ws.cell(row=row, column=col_idx, value=val)
                 _apply_data(cell, row)
             row += 1
     else:
-        ws[f"A{row}"] = "All assigned chapters had extractable data."
+        ws[f"A{row}"] = "No parameter changes recommended in the business domain."
+        ws[f"A{row}"].font = Font(name="Calibri", size=11, italic=True, color="666666")
+        row += 1
+    row += 1
+
+    # Section C: Deep Thinker Supplements
+    row = _write_section_header(ws, row, "C — AI Deep Analysis (Derived Recommendations)")
+    if supplements:
+        headers = ["ID", "Title", "Finding", "Rationale", "Recommendation", ""]
+        row = _write_table_headers(ws, row, headers)
+        for sf in supplements:
+            vals = [
+                sf.get("finding_id", ""),
+                sf.get("title", ""),
+                sf.get("finding", ""),
+                sf.get("rationale", ""),
+                sf.get("recommendation", ""),
+            ]
+            for col_idx, val in enumerate(vals, start=1):
+                cell = ws.cell(row=row, column=col_idx, value=str(val) if val is not None else "")
+                _apply_data(cell, row)
+                if col_idx == 1:
+                    cell.font = Font(name="Calibri", size=11, color=COLORS["implicit"])
+            ws.row_dimensions[row].height = 60
+            row += 1
+    else:
+        ws[f"A{row}"] = "No derived recommendations for the business domain."
         ws[f"A{row}"].font = Font(name="Calibri", size=11, italic=True, color="666666")
         row += 1
 
@@ -362,22 +509,6 @@ def _apply_data(cell, row_num: int):
     cell.alignment = _WRAP_ALIGNMENT
     if row_num % 2 == 0:
         cell.fill = PatternFill(start_color=COLORS["light_gray"], end_color=COLORS["light_gray"], fill_type="solid")
-
-
-def _color_rag(cell, value: str):
-    v = value.strip().upper() if value else ""
-    if v == "RED":
-        cell.font = Font(name="Calibri", size=11, bold=True, color=COLORS["white"])
-        cell.fill = PatternFill(start_color=COLORS["red"], end_color=COLORS["red"], fill_type="solid")
-        cell.alignment = Alignment(horizontal="center", vertical="top")
-    elif v == "YELLOW":
-        cell.font = Font(name="Calibri", size=11, bold=True, color=COLORS["sap_dark"])
-        cell.fill = PatternFill(start_color=COLORS["yellow"], end_color=COLORS["yellow"], fill_type="solid")
-        cell.alignment = Alignment(horizontal="center", vertical="top")
-    elif v == "IMPLICIT":
-        cell.font = Font(name="Calibri", size=11, bold=True, color=COLORS["white"])
-        cell.fill = PatternFill(start_color=COLORS["implicit"], end_color=COLORS["implicit"], fill_type="solid")
-        cell.alignment = Alignment(horizontal="center", vertical="top")
 
 
 def _write_section_header(ws: Worksheet, row: int, text: str) -> int:

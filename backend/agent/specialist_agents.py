@@ -24,6 +24,7 @@ _BASE_DIR = Path(__file__).resolve().parent.parent
 _PROMPTS_DIR = _BASE_DIR / "prompts"
 _SCHEMAS_DIR = _BASE_DIR / "schemas"
 _DOMAIN_RESULT_SCHEMA_PATH = _SCHEMAS_DIR / "domain_result_schema.json"
+_BUSINESS_SCHEMA_PATH = _SCHEMAS_DIR / "business_result_schema.json"
 
 # Finding ID prefixes per domain
 DOMAIN_PREFIXES: dict[str, str] = {
@@ -54,6 +55,7 @@ class DomainResult:
     parameters: list[dict[str, Any]] = field(default_factory=list)
     abstentions: list[dict[str, Any]] = field(default_factory=list)
     usage: dict[str, Any] = field(default_factory=dict)
+    applicable: bool = True  # False for business domain on non-ECC/S4 systems
 
     def to_dict(self) -> dict[str, Any]:
         return {
@@ -61,6 +63,7 @@ class DomainResult:
             "findings": self.findings,
             "parameters": self.parameters,
             "abstentions": self.abstentions,
+            "applicable": self.applicable,
         }
 
 
@@ -138,6 +141,7 @@ class SpecialistAgent:
             parameters=raw_json.get("parameters", []),
             abstentions=raw_json.get("abstentions", []),
             usage=self.last_usage,
+            applicable=raw_json.get("applicable", True),
         )
 
     def _build_context(self, chapters: list[ChapterData]) -> str:
@@ -334,7 +338,7 @@ class BasisSpecialist(SpecialistAgent):
 
 class BusinessSpecialist(SpecialistAgent):
     def __init__(self, client: Any, model: str, **kwargs):
-        super().__init__(client, model, domain="business", **kwargs)
+        super().__init__(client, model, domain="business", schema_path=_BUSINESS_SCHEMA_PATH, **kwargs)
 
 
 class LifecycleSpecialist(SpecialistAgent):
