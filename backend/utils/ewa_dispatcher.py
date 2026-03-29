@@ -67,6 +67,7 @@ async def dispatch_chapters(
     chapters: dict[int, ChapterData],
     ai_client: Any = None,
     router_model: str = "gpt-5.4-nano",
+    provider: str = "openai",
 ) -> dict[str, list[ChapterData]]:
     """Route each chapter to a domain. Returns dict keyed by domain name.
 
@@ -92,7 +93,7 @@ async def dispatch_chapters(
     # Route unknown chapters via LLM
     if ai_calls and ai_client:
         for num, chapter in ai_calls:
-            domain = await _ai_route_chapter(chapter, ai_client, router_model)
+            domain = await _ai_route_chapter(chapter, ai_client, router_model, provider=provider)
             result[domain].append(chapter)
             logger.info("Chapter %d -> %s (AI router)", num, domain)
     elif ai_calls:
@@ -114,24 +115,44 @@ async def _ai_route_chapter(
     chapter: ChapterData,
     ai_client: Any,
     model: str,
+    provider: str = "openai",
 ) -> str:
     """Use a fast LLM to classify an unknown chapter into a domain."""
     preview = chapter.raw_content[:500]
     user_msg = f"Chapter title: {chapter.title}\nContent preview: {preview}"
 
     try:
-        response = await asyncio.to_thread(
-            lambda: ai_client.responses.create(
-                model=model,
-                input=[
-                    {"role": "system", "content": _AI_ROUTER_SYSTEM_PROMPT},
-                    {"role": "user", "content": user_msg},
-                ],
-                max_output_tokens=100,
+        if provider == "anthropic":
+            response = await asyncio.to_thread(
+                lambda: ai_client.messages.create(
+                    model=model,
+                    max_tokens=100,
+                    system=_AI_ROUTER_SYSTEM_PROMPT,
+                    messages=[{"role": "user", "content": user_msg}],
+                    stream=False,
+                )
             )
-        )
+            # Extract text from Anthropic response
+            parts: list[str] = []
+            for block in (getattr(response, "content", None) or []):
+                if getattr(block, "type", None) == "text":
+                    t = getattr(block, "text", None)
+                    if t:
+                        parts.append(t)
+            text = "".join(parts).strip()
+        else:
+            response = await asyncio.to_thread(
+                lambda: ai_client.responses.create(
+                    model=model,
+                    input=[
+                        {"role": "system", "content": _AI_ROUTER_SYSTEM_PROMPT},
+                        {"role": "user", "content": user_msg},
+                    ],
+                    max_output_tokens=100,
+                )
+            )
+            text = response.output_text.strip()
 
-        text = response.output_text.strip()
         # Strip markdown code fences if present
         if text.startswith("```"):
             text = text.split("\n", 1)[-1].rsplit("```", 1)[0].strip()

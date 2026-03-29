@@ -55,6 +55,11 @@ from core.runtime_config import (
     V2_DEEP_MAX_TOKENS,
     V2_SPECIALIST_REASONING,
     V2_DEEP_REASONING,
+    V2_ANTHROPIC_ROUTER_MODEL,
+    V2_ANTHROPIC_SPECIALIST_MODEL,
+    V2_ANTHROPIC_DEEP_MODEL,
+    V2_ANTHROPIC_SPECIALIST_MAX_TOKENS,
+    V2_ANTHROPIC_DEEP_MAX_TOKENS,
 )
 
 logger = logging.getLogger(__name__)
@@ -80,6 +85,7 @@ PROVIDER = os.getenv("PROVIDER", "openai").lower()
 
 # Azure AI Foundry / Anthropic configuration (used when PROVIDER=anthropic)
 ANTHROPIC_SUMMARY_MODEL = os.getenv("ANTHROPIC_SUMMARY_MODEL", "claude-sonnet-4-5")
+ANTHROPIC_PARAM_MODEL = os.getenv("ANTHROPIC_PARAM_MODEL", ANTHROPIC_SUMMARY_MODEL)
 AZURE_ANTHROPIC_ENDPOINT = os.getenv("AZURE_ANTHROPIC_ENDPOINT")
 AZURE_ANTHROPIC_API_KEY = os.getenv("AZURE_ANTHROPIC_API_KEY")
 
@@ -166,6 +172,7 @@ class EWAWorkflowOrchestrator:
         self.client = None
         self.blob_service_client = None
         self.openai_client = None
+        self.anthropic_client = None
         self.summary_model = ANTHROPIC_SUMMARY_MODEL if PROVIDER == "anthropic" else AZURE_OPENAI_SUMMARY_MODEL
         self.azure_openai_endpoint = AZURE_OPENAI_ENDPOINT
         self.azure_openai_api_key = AZURE_OPENAI_API_KEY
@@ -188,6 +195,14 @@ class EWAWorkflowOrchestrator:
                     azure_endpoint=self.azure_openai_endpoint,
                     api_key=self.azure_openai_api_key,
                 )
+
+            # Initialize Anthropic client when provider is anthropic
+            if PROVIDER == "anthropic":
+                try:
+                    self.anthropic_client = self._create_anthropic_client()
+                    logger.info("Successfully initialized Anthropic client for V2 pipeline")
+                except Exception as e:
+                    logger.warning("Failed to initialize Anthropic client: %s", e)
             
             logger.info("Successfully initialized Blob Storage client")
             
@@ -704,7 +719,7 @@ class EWAWorkflowOrchestrator:
                     param_client = self._create_anthropic_client()
                     param_agent = ParameterExtractionAgent(
                         param_client,
-                        model=ANTHROPIC_SUMMARY_MODEL,
+                        model=ANTHROPIC_PARAM_MODEL,
                         provider="anthropic",
                         reasoning_effort=PARAM_REASONING_EFFORT,
                         thinking_budget=ANTHROPIC_THINKING_BUDGET_TOKENS,
@@ -798,10 +813,26 @@ class EWAWorkflowOrchestrator:
     async def _run_v2_pipeline(self, state: WorkflowState) -> WorkflowState:
         """V2 agentic pipeline: slice → dispatch → specialists → deep thinker → workbook."""
         try:
-            logger.info("[V2] Starting agentic pipeline for %s", state.blob_name)
+            logger.info("[V2] Starting agentic pipeline for %s (provider=%s)", state.blob_name, PROVIDER)
             text = (state.markdown_content or "").strip()
             if not text:
                 raise ValueError("Markdown content is empty; conversion must succeed before analysis.")
+
+            # Select client and model config based on provider
+            if PROVIDER == "anthropic":
+                v2_client = self.anthropic_client
+                router_model = V2_ANTHROPIC_ROUTER_MODEL
+                specialist_model = V2_ANTHROPIC_SPECIALIST_MODEL
+                deep_model = V2_ANTHROPIC_DEEP_MODEL
+                specialist_max_tokens = V2_ANTHROPIC_SPECIALIST_MAX_TOKENS
+                deep_max_tokens = V2_ANTHROPIC_DEEP_MAX_TOKENS
+            else:
+                v2_client = self.openai_client
+                router_model = V2_ROUTER_MODEL
+                specialist_model = V2_SPECIALIST_MODEL
+                deep_model = V2_DEEP_MODEL
+                specialist_max_tokens = V2_SPECIALIST_MAX_TOKENS
+                deep_max_tokens = V2_DEEP_MAX_TOKENS
 
             # Stage 1: Slice markdown into chapters
             logger.info("[V2-SLICE] Parsing chapters from markdown (%d chars)", len(text))
@@ -809,24 +840,26 @@ class EWAWorkflowOrchestrator:
             logger.info("[V2-SLICE] Extracted %d chapters", len(chapters))
 
             # Stage 2: Dispatch chapters to domains
-            logger.info("[V2-DISPATCH] Routing chapters to domains (router=%s)", V2_ROUTER_MODEL)
+            logger.info("[V2-DISPATCH] Routing chapters to domains (router=%s)", router_model)
             domain_chapters = await dispatch_chapters(
                 chapters,
-                ai_client=self.openai_client,
-                router_model=V2_ROUTER_MODEL,
+                ai_client=v2_client,
+                router_model=router_model,
+                provider=PROVIDER,
             )
             for domain, chs in domain_chapters.items():
                 if chs:
                     logger.info("[V2-DISPATCH] %s: %d chapters", domain, len(chs))
 
             # Stage 3a: Run 6 specialists in parallel
-            logger.info("[V2-SPECIALISTS] Running 6 domain specialists (model=%s)", V2_SPECIALIST_MODEL)
+            logger.info("[V2-SPECIALISTS] Running 6 domain specialists (model=%s)", specialist_model)
             domain_results = await run_all_specialists(
                 domain_chapters,
-                client=self.openai_client,
-                model=V2_SPECIALIST_MODEL,
+                client=v2_client,
+                model=specialist_model,
                 reasoning_effort=V2_SPECIALIST_REASONING,
-                max_output_tokens=V2_SPECIALIST_MAX_TOKENS,
+                max_output_tokens=specialist_max_tokens,
+                provider=PROVIDER,
             )
             state.domain_results = domain_results
 
@@ -837,12 +870,13 @@ class EWAWorkflowOrchestrator:
                         total_findings, total_params, total_abstentions)
 
             # Stage 3b: Deep Thinker cross-domain analysis
-            logger.info("[V2-DEEP] Running Deep Thinker (model=%s)", V2_DEEP_MODEL)
+            logger.info("[V2-DEEP] Running Deep Thinker (model=%s)", deep_model)
             deep_thinker = DeepThinkerAgent(
-                client=self.openai_client,
-                model=V2_DEEP_MODEL,
+                client=v2_client,
+                model=deep_model,
                 reasoning_effort=V2_DEEP_REASONING,
-                max_output_tokens=V2_DEEP_MAX_TOKENS,
+                max_output_tokens=deep_max_tokens,
+                provider=PROVIDER,
             )
             supplemental = await deep_thinker.run(domain_results)
             state.supplemental_findings = supplemental

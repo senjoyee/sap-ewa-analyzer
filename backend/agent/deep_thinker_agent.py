@@ -63,11 +63,13 @@ class DeepThinkerAgent:
         schema_path: Path | None = None,
         reasoning_effort: str = "medium",
         max_output_tokens: int = 16384,
+        provider: str = "openai",
     ):
         self.client = client
         self.model = model
         self.reasoning_effort = reasoning_effort
         self.max_output_tokens = max_output_tokens
+        self.provider = provider.lower()
         self.last_usage: dict[str, Any] = {}
         self.json_repair = JSONRepair()
 
@@ -118,6 +120,12 @@ class DeepThinkerAgent:
         return results
 
     async def _call_llm(self, context: str) -> dict[str, Any]:
+        """Dispatch to the appropriate LLM backend."""
+        if self.provider == "anthropic":
+            return await self._call_llm_anthropic(context)
+        return await self._call_llm_openai(context)
+
+    async def _call_llm_openai(self, context: str) -> dict[str, Any]:
         """Call Azure OpenAI Responses API with structured output."""
         instruction_text = (
             f"{self.prompt}\n\n"
@@ -173,6 +181,138 @@ class DeepThinkerAgent:
         except Exception:
             logger.exception("Deep Thinker: LLM call failed")
             return {"supplemental_findings": []}
+
+    async def _call_llm_anthropic(self, context: str) -> dict[str, Any]:
+        """Call Anthropic Messages API with structured output."""
+        system_blocks = [
+            {
+                "type": "text",
+                "text": self.prompt,
+                "cache_control": {"type": "ephemeral"},
+            }
+        ]
+        instruction_text = (
+            "Return ONLY a valid JSON object that strictly conforms to the provided JSON schema. "
+            "Do not include any text outside of the JSON."
+        )
+        messages_content = [
+            {"type": "text", "text": context, "cache_control": {"type": "ephemeral"}},
+            {"type": "text", "text": instruction_text},
+        ]
+
+        try:
+            def _call_structured():
+                return self.client.messages.create(
+                    model=self.model,
+                    max_tokens=self.max_output_tokens,
+                    system=system_blocks,
+                    messages=[{"role": "user", "content": messages_content}],
+                    output_config={
+                        "format": {
+                            "type": "json_schema",
+                            "schema": self.strict_schema,
+                        }
+                    },
+                    stream=False,
+                )
+
+            try:
+                response = await asyncio.to_thread(_call_structured)
+                self.last_usage = self._extract_usage_anthropic(response)
+                text = self._extract_text_from_anthropic(response)
+                if text:
+                    try:
+                        return json.loads(text)
+                    except json.JSONDecodeError:
+                        rr = self.json_repair.repair(text)
+                        if rr.success and isinstance(rr.data, dict):
+                            return rr.data
+                logger.warning("Deep Thinker: Anthropic structured output returned no text, falling back to streaming")
+            except Exception as e:
+                logger.warning("Deep Thinker: Anthropic structured output failed, falling back to streaming: %s", e)
+
+            # Streaming fallback
+            text, in_tok, out_tok, cached_tok = await asyncio.to_thread(
+                self._call_anthropic_streaming, system_blocks, messages_content
+            )
+            self.last_usage = {
+                "model": self.model,
+                "role": "deep_thinker",
+                "input_tokens": in_tok + cached_tok,
+                "cached_input_tokens": cached_tok,
+                "output_tokens": out_tok,
+                "reasoning_tokens": 0,
+                "total_tokens": in_tok + cached_tok + out_tok,
+            }
+            if text:
+                try:
+                    return json.loads(text)
+                except json.JSONDecodeError:
+                    rr = self.json_repair.repair(text)
+                    if rr.success and isinstance(rr.data, dict):
+                        return rr.data
+            return {"supplemental_findings": []}
+
+        except Exception:
+            logger.exception("Deep Thinker: Anthropic call failed")
+            return {"supplemental_findings": []}
+
+    def _extract_text_from_anthropic(self, response: Any) -> str:
+        """Extract text content from a non-streaming Anthropic response."""
+        parts: list[str] = []
+        for block in (getattr(response, "content", None) or []):
+            if getattr(block, "type", None) == "text":
+                t = getattr(block, "text", None)
+                if t:
+                    parts.append(t)
+        return "".join(parts)
+
+    def _extract_usage_anthropic(self, response: Any) -> dict[str, Any]:
+        """Extract token usage from a non-streaming Anthropic response."""
+        usage = getattr(response, "usage", None)
+        in_tokens = getattr(usage, "input_tokens", 0) if usage else 0
+        out_tokens = getattr(usage, "output_tokens", 0) if usage else 0
+        cached_tokens = getattr(usage, "cache_read_tokens", 0) if usage else 0
+        return {
+            "model": self.model,
+            "role": "deep_thinker",
+            "input_tokens": in_tokens + (cached_tokens or 0),
+            "cached_input_tokens": cached_tokens or 0,
+            "output_tokens": out_tokens,
+            "reasoning_tokens": 0,
+            "total_tokens": in_tokens + (cached_tokens or 0) + out_tokens,
+        }
+
+    def _call_anthropic_streaming(
+        self, system_blocks: list, messages_content: list
+    ) -> tuple[str, int, int, int]:
+        """Streaming fallback for Anthropic. Returns (text, in_tokens, out_tokens, cached_tokens)."""
+        collected_text = ""
+        in_tokens = 0
+        out_tokens = 0
+        cached_tokens = 0
+
+        stream = self.client.messages.create(
+            model=self.model,
+            max_tokens=self.max_output_tokens,
+            system=system_blocks,
+            messages=[{"role": "user", "content": messages_content}],
+            stream=True,
+        )
+        for event in stream:
+            if not hasattr(event, "type"):
+                continue
+            if event.type == "content_block_delta":
+                if hasattr(event, "delta") and hasattr(event.delta, "text"):
+                    collected_text += event.delta.text
+            elif event.type == "message_delta":
+                if hasattr(event, "usage"):
+                    out_tokens = getattr(event.usage, "output_tokens", 0)
+            elif event.type == "message_start":
+                if hasattr(event, "message") and hasattr(event.message, "usage"):
+                    in_tokens = getattr(event.message.usage, "input_tokens", 0)
+                    cached_tokens = getattr(event.message.usage, "cache_read_tokens", 0) or 0
+        return collected_text, in_tokens, out_tokens, cached_tokens
 
     def _extract_usage(self, response: Any) -> dict[str, Any]:
         usage = getattr(response, "usage", None)

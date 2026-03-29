@@ -49,7 +49,7 @@ class ParameterExtractionAgent:
         self.last_usage: Dict[str, Any] = {}
         self.provider = (provider or "openai").lower()
         self.model = model or (
-            os.getenv("ANTHROPIC_SUMMARY_MODEL", "claude-sonnet-4-5")
+            os.getenv("ANTHROPIC_PARAM_MODEL", os.getenv("ANTHROPIC_SUMMARY_MODEL", "claude-sonnet-4-5"))
             if self.provider == "anthropic"
             else os.getenv("AZURE_OPENAI_PARAM_MODEL", "gpt-5.1")
         )
