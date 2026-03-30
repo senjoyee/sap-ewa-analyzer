@@ -36,28 +36,43 @@ Findings And Status
   - Reject path traversal characters in file name.
 
 5) CORS configuration allows wildcard origins with credentials (medium)
-- Status: Pending
-- Suggested action:
-  - Replace wildcard with explicit origin allowlist per environment.
+- Status: Solved
+- What was done:
+  - Added CORS_ALLOWED_ORIGINS environment variable parser.
+  - Replaced allow_origins=["*"] with environment-specific allowlist.
+  - Restricted allow_methods and allow_headers to specific values instead of wildcard.
+  - Fallback to localhost origins for development if env var not set.
 
 6) Chat endpoint returns HTTP 200 on upstream model failures (medium)
-- Status: Pending
-- Suggested action:
-  - Return proper 4xx/5xx status codes with structured error payloads.
+- Status: Solved
+- What was done:
+  - Changed error handling to raise HTTPException(500) on OpenAI API failures.
+  - Replaced return {"response": f"Error: {err_text}", "error": True} pattern.
+  - Returns proper 5xx status code with error detail in HTTP response.
 
 7) Blocking Azure Blob SDK calls inside async routes (medium)
-- Status: Pending
-- Suggested action:
-  - Offload blocking storage operations to threadpool or move to async-compatible patterns.
+- Status: Solved
+- What was done:
+  - Wrapped get_blob_properties() in list_files() with asyncio.to_thread().
+  - Wrapped list_blobs() and delete_blob() in delete_analysis() with asyncio.to_thread().
+  - Wrapped storage_service.get_text_content() and get_bytes() in download_file() with asyncio.to_thread().
+  - All blocking Azure SDK calls now offload to threadpool instead of blocking event loop.
 
-Files Changed To Solve 1-4
-- backend/core/xsuaa_middleware.py
-- backend/routers/storage_router.py
+Files Changed To Solve 1-7
+- backend/core/xsuaa_middleware.py (fixes 1-2 auth issues)
+- backend/routers/storage_router.py (fixes 3, 4, 7 storage issues)
+- backend/ewa_main.py (fix 5 CORS config)
+- backend/routers/chat_router.py (fix 6 error handling)
 
 Commit And Push
 - Branch: agentic-workflow
-- Commit: 82c605a
+- Commits: 
+  - 82c605a (fixes 1-4)
+  - 1a69d2d (fixes 5-7)
 - Remote push: completed
 
-Recommended Next Batch
-- Address findings 5-7 in a separate hardening commit.
+Review Status Summary
+- All 7 findings identified in backend code review have been addressed.
+- Security fixes (1-4) maintain auth while enabling signature verification and preventing attacks.
+- Reliability fixes (5-7) improve error handling, prevent event loop blocking, and enforce CORS properly.
+- Ready for deployment and testing.
