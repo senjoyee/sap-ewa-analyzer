@@ -35,6 +35,16 @@ class XSUAAMiddleware(BaseHTTPMiddleware):
         url = self.xsuaa_creds.get("url")
         return url.rstrip("/") if url else None
 
+    def _allowed_issuers(self) -> tuple[str, ...]:
+        """Return accepted issuer values used by XSUAA tokens."""
+        uaa_url = self._uaa_url()
+        if not uaa_url:
+            return tuple()
+        return (
+            uaa_url,
+            f"{uaa_url}/oauth/token",
+        )
+
     def _cache_keys(self) -> None:
         """Fetch and cache XSUAA RSA public keys from the token_keys endpoint."""
         uaa_url = self._uaa_url()
@@ -86,7 +96,7 @@ class XSUAAMiddleware(BaseHTTPMiddleware):
                 public_key,
                 algorithms=["RS256"],
                 options={"verify_exp": True},
-                issuer=self._uaa_url(),
+                issuer=self._allowed_issuers(),
             )
 
             # Enforce required scope
