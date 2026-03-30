@@ -45,6 +45,12 @@ class XSUAAMiddleware(BaseHTTPMiddleware):
             f"{uaa_url}/oauth/token",
         )
 
+    def _is_allowed_issuer(self, issuer: str | None) -> bool:
+        """Return True when token issuer matches one of the accepted XSUAA issuers."""
+        if not issuer:
+            return False
+        return issuer.rstrip("/") in {item.rstrip("/") for item in self._allowed_issuers()}
+
     def _cache_keys(self) -> None:
         """Fetch and cache XSUAA RSA public keys from token_keys and verificationkey."""
         self.public_keys = {}
@@ -125,8 +131,9 @@ class XSUAAMiddleware(BaseHTTPMiddleware):
                         token,
                         candidate_key,
                         algorithms=["RS256"],
-                        options={"verify_exp": True},
-                        issuer=self._allowed_issuers(),
+                        # Verify cryptographic signature and expiry first.
+                        # Issuer is validated explicitly below to avoid environment-specific decode mismatches.
+                        options={"verify_exp": True, "verify_iss": False, "verify_aud": False},
                     )
                     break
                 except jwt.InvalidTokenError as exc:
@@ -137,6 +144,15 @@ class XSUAAMiddleware(BaseHTTPMiddleware):
                 if last_error is not None:
                     raise last_error
                 return self._unauthorized("Unrecognised token key")
+
+            token_issuer = claims.get("iss")
+            if not self._is_allowed_issuer(token_issuer):
+                logger.warning(
+                    "Token issuer '%s' is not allowed (expected one of %s)",
+                    token_issuer,
+                    self._allowed_issuers(),
+                )
+                return self._unauthorized("Invalid token issuer")
 
             # Enforce required scope
             xsappname = (self.xsuaa_creds or {}).get("xsappname")
