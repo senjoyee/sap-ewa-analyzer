@@ -63,17 +63,25 @@ sap.ui.define([
             this.getView().setModel(new JSONModel([]), "files");
             this.getView().setModel(new JSONModel({ count: 0 }), "selectedFiles");
             this.getView().setModel(new JSONModel({ files: [] }), "uploadQueue");
+            var aCustomerItems = [
+                { key: "ALL", text: "All Customers" },
+                { key: "TBS", text: "TBS" },
+                { key: "BSW", text: "BSW" },
+                { key: "SHOOSMITHS", text: "SHOOSMITHS" },
+                { key: "COREX", text: "COREX" },
+                { key: "SONOCO", text: "SONOCO" },
+                { key: "ASAHI", text: "ASAHI" }
+            ];
             this.getView().setModel(new JSONModel({
-                customers: [
-                    { key: "ALL", text: "All Customers" },
-                    { key: "TBS", text: "TBS" },
-                    { key: "BSW", text: "BSW" },
-                    { key: "SHOOSMITHS", text: "SHOOSMITHS" },
-                    { key: "COREX", text: "COREX" },
-                    { key: "SONOCO", text: "SONOCO" },
-                    { key: "ASAHI", text: "ASAHI" }
-                ]
+                customers: aCustomerItems
             }), "customers");
+            this.getView().setModel(new JSONModel({
+                customers: [{ key: "", text: "Select customer" }].concat(
+                    aCustomerItems.filter(function (oCustomer) {
+                        return oCustomer.key !== "ALL";
+                    })
+                )
+            }), "uploadCustomers");
 
             this.getView().setModel(new JSONModel({ selectedCustomer: "ALL", selectedYear: "ALL", selectedMonth: "ALL" }), "view");
 
@@ -136,16 +144,6 @@ sap.ui.define([
             }
         },
 
-        createCustomerGroupHeader: function (oGroup) {
-            var sTitle = oGroup && (oGroup.text || oGroup.key);
-            if (!sTitle) {
-                sTitle = "Unknown Customer";
-            }
-            return new GroupHeaderListItem({
-                title: sTitle
-            });
-        },
-
         _loadFiles: function () {
             fetch(Config.getEndpoint("listFiles"))
                 .then(response => response.json())
@@ -188,7 +186,7 @@ sap.ui.define([
                             reportMonth: oFile.report_date ? new Date(oFile.report_date).getMonth() : null
                         };
                     });
-                    // Sort by customer then upload date desc for stable grouping
+                    // Sort by customer then upload date desc for stable display
                     aFiles.sort(function (a, b) {
                         var custA = (a.customer || "").toLowerCase();
                         var custB = (b.customer || "").toLowerCase();

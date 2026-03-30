@@ -79,9 +79,8 @@
                                                 change=".onUploadQueueCustomerChange"
                                                 width="150px"
                                                 forceSelection="true"
-                                                items="{customers>/customers}">
-                                                <core:Item key="" text="Select customer"/>
-                                                <core:Item key="{customers>key}" text="{customers>text}"/>
+                                                items="{uploadCustomers>/customers}">
+                                                <core:Item key="{uploadCustomers>key}" text="{uploadCustomers>text}"/>
                                             </Select>
                                             <Input 
                                                 value="{uploadQueue>sid}" 
@@ -124,11 +123,9 @@
                     items="{
                         path: 'files>/',
                         sorter: [{
-                            path: 'customer',
-                            group: true
+                            path: 'customer'
                         }]
                     }"
-                    groupHeaderFactory=".createCustomerGroupHeader"
                     mode="MultiSelect"
                     growing="true"
                     growingThreshold="20"
