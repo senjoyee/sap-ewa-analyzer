@@ -5,7 +5,6 @@ This middleware handles JWT validation for requests coming from the SAP BTP App 
 It verifies the token signature against the XSUAA service binding.
 """
 
-import os
 import logging
 from fastapi import Request, status
 from starlette.middleware.base import BaseHTTPMiddleware
@@ -26,6 +25,7 @@ class XSUAAMiddleware(BaseHTTPMiddleware):
         super().__init__(app)
         self.xsuaa_creds = get_xsuaa_credentials()
         self.public_keys: dict = {}
+        self.verification_key_pem: str | None = None
         self._cache_keys()
 
     def _uaa_url(self) -> str | None:
@@ -46,7 +46,15 @@ class XSUAAMiddleware(BaseHTTPMiddleware):
         )
 
     def _cache_keys(self) -> None:
-        """Fetch and cache XSUAA RSA public keys from the token_keys endpoint."""
+        """Fetch and cache XSUAA RSA public keys from token_keys and verificationkey."""
+        self.public_keys = {}
+        self.verification_key_pem = None
+
+        # Fallback key directly from XSUAA credentials (works even if token_keys call fails).
+        verification_key = (self.xsuaa_creds or {}).get("verificationkey")
+        if verification_key:
+            self.verification_key_pem = verification_key.replace("\\n", "\n")
+
         uaa_url = self._uaa_url()
         if not uaa_url:
             logger.warning("No UAA URL in XSUAA credentials; JWT signature verification will fail.")
@@ -58,9 +66,33 @@ class XSUAAMiddleware(BaseHTTPMiddleware):
                 kid = key_info.get("kid")
                 if kid:
                     self.public_keys[kid] = RSAAlgorithm.from_jwk(key_info)
-            logger.info("Cached %d XSUAA public key(s)", len(self.public_keys))
+            logger.info(
+                "Cached %d XSUAA public key(s)%s",
+                len(self.public_keys),
+                " with verificationkey fallback" if self.verification_key_pem else "",
+            )
         except Exception as exc:
             logger.error("Failed to fetch XSUAA public keys: %s", exc)
+            if self.verification_key_pem:
+                logger.info("Continuing with XSUAA verificationkey fallback")
+
+    def _verification_candidates(self, kid: str | None) -> list:
+        """Return candidate keys to try for token verification."""
+        candidates: list = []
+        if kid and kid in self.public_keys:
+            candidates.append(self.public_keys[kid])
+
+        # Try all cached JWKs in case kid mapping differs/rotated.
+        for key_id, key in self.public_keys.items():
+            if kid and key_id == kid:
+                continue
+            candidates.append(key)
+
+        # Finally try credentials fallback key if available.
+        if self.verification_key_pem:
+            candidates.append(self.verification_key_pem)
+
+        return candidates
 
     async def dispatch(self, request: Request, call_next):
         # Skip validation when not on Cloud Foundry (local development)
@@ -81,23 +113,30 @@ class XSUAAMiddleware(BaseHTTPMiddleware):
             header = jwt.get_unverified_header(token)
             kid = header.get("kid")
 
-            public_key = self.public_keys.get(kid)
-            if public_key is None:
-                # Key may have been rotated — attempt one refresh
+            # Key may have been rotated — refresh once before verifying.
+            if not self.public_keys and not self.verification_key_pem:
                 self._cache_keys()
-                public_key = self.public_keys.get(kid)
 
-            if public_key is None:
-                logger.warning("JWT kid '%s' not found in cached XSUAA keys", kid)
+            claims = None
+            last_error: Exception | None = None
+            for candidate_key in self._verification_candidates(kid):
+                try:
+                    claims = jwt.decode(
+                        token,
+                        candidate_key,
+                        algorithms=["RS256"],
+                        options={"verify_exp": True},
+                        issuer=self._allowed_issuers(),
+                    )
+                    break
+                except jwt.InvalidTokenError as exc:
+                    last_error = exc
+
+            if claims is None:
+                logger.warning("Unable to verify JWT with available XSUAA keys (kid=%s)", kid)
+                if last_error is not None:
+                    raise last_error
                 return self._unauthorized("Unrecognised token key")
-
-            claims = jwt.decode(
-                token,
-                public_key,
-                algorithms=["RS256"],
-                options={"verify_exp": True},
-                issuer=self._allowed_issuers(),
-            )
 
             # Enforce required scope
             xsappname = (self.xsuaa_creds or {}).get("xsappname")
