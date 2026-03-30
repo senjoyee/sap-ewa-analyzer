@@ -186,6 +186,14 @@ async def upload_file(
                 
             try:
                 with zipfile.ZipFile(zip_path, 'r') as zip_ref:
+                    real_temp = os.path.realpath(temp_dir)
+                    for member in zip_ref.namelist():
+                        dest = os.path.realpath(os.path.join(real_temp, member))
+                        if not (dest.startswith(real_temp + os.sep) or dest == real_temp):
+                            raise HTTPException(
+                                status_code=400,
+                                detail="Invalid ZIP archive: path traversal detected.",
+                            )
                     zip_ref.extractall(temp_dir)
             except zipfile.BadZipFile:
                 raise HTTPException(status_code=400, detail="Uploaded file is not a valid ZIP archive.")
@@ -447,29 +455,46 @@ async def delete_analysis(request_data: DeleteAnalysisRequest):
     
     try:
         file_name = request_data.fileName
-        base_name = request_data.baseName
-        
-        if not file_name or not base_name:
-            raise HTTPException(status_code=400, detail="File name or base name not provided")
-            
+
+        if not file_name:
+            raise HTTPException(status_code=400, detail="File name not provided")
+
+        # Reject path traversal or directory separator characters in the file name
+        if ".." in file_name or "/" in file_name or "\\" in file_name:
+            raise HTTPException(status_code=400, detail="Invalid file name")
+
+        # Derive base_name server-side; ignore any client-supplied baseName
+        base_name = os.path.splitext(file_name)[0]
+
+        # Allowlist of derivative suffixes that may be deleted for this document
+        _DERIVATIVE_SUFFIXES = (
+            ".md", ".json", ".xlsx",
+            "_AI.json", "_AI.md",
+            "_workbook.xlsx", "_workbook_payload.json",
+            "_v2_usage.json", "_parameters.json",
+            "_token_usage.json",
+        )
+        allowed_blob_names = {file_name} | {f"{base_name}{s}" for s in _DERIVATIVE_SUFFIXES}
+
         container_client = blob_service_client.get_container_client(AZURE_STORAGE_CONTAINER_NAME)
-        
-        # Delete all blobs whose names start with the base_name (remove all traces)
+
+        # Delete only blobs that match the base name with a known derivative suffix
         deleted_files = []
         errors = []
         try:
-            blob_list = container_client.list_blobs()
+            blob_list = container_client.list_blobs(name_starts_with=base_name)
             for blob in blob_list:
-                if blob.name.startswith(base_name):
-                    try:
-                        blob_client = container_client.get_blob_client(blob.name)
-                        blob_client.delete_blob()
-                        deleted_files.append(blob.name)
-                    except Exception as e:
-                        errors.append(f"Failed to delete {blob.name}: {str(e)}")
+                if blob.name not in allowed_blob_names:
+                    continue
+                try:
+                    blob_client = container_client.get_blob_client(blob.name)
+                    blob_client.delete_blob()
+                    deleted_files.append(blob.name)
+                except Exception as e:
+                    errors.append(f"Failed to delete {blob.name}: {str(e)}")
         except Exception as e:
             errors.append(f"Failed to list blobs: {str(e)}")
-        
+
         return {
             "message": f"Analysis for {file_name} deletion processed",
             "deleted_files": deleted_files,

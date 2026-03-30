@@ -7,9 +7,9 @@ It verifies the token signature against the XSUAA service binding.
 
 import os
 import logging
-from typing import Optional
-from fastapi import Request, HTTPException, status
+from fastapi import Request, status
 from starlette.middleware.base import BaseHTTPMiddleware
+from starlette.responses import JSONResponse
 import jwt
 from jwt.algorithms import RSAAlgorithm
 import requests
@@ -17,82 +17,115 @@ from core.btp_config import get_xsuaa_credentials, is_running_on_cf
 
 logger = logging.getLogger(__name__)
 
+# Paths that bypass authentication (health/discovery only)
+_PUBLIC_PATHS = frozenset(["/", "/health", "/api/ping", "/docs", "/openapi.json", "/redoc"])
+
+
 class XSUAAMiddleware(BaseHTTPMiddleware):
     def __init__(self, app):
         super().__init__(app)
         self.xsuaa_creds = get_xsuaa_credentials()
-        self.public_keys = {}
+        self.public_keys: dict = {}
         self._cache_keys()
 
-    def _cache_keys(self):
-        """Fetch and cache XSUAA public keys."""
+    def _uaa_url(self) -> str | None:
+        """Return the UAA base URL from XSUAA credentials."""
         if not self.xsuaa_creds:
-            return
+            return None
+        url = self.xsuaa_creds.get("url")
+        return url.rstrip("/") if url else None
 
+    def _cache_keys(self) -> None:
+        """Fetch and cache XSUAA RSA public keys from the token_keys endpoint."""
+        uaa_url = self._uaa_url()
+        if not uaa_url:
+            logger.warning("No UAA URL in XSUAA credentials; JWT signature verification will fail.")
+            return
         try:
-            # In a real production scenario, use the JKU from the token header.
-            # For simplicity/resiliency here, we try to fetch from the UAADomain.
-            # Or relying on the verification key if provided in credentials (rare now).
-            # Better approach: trust the JWT header's 'jku' but whitelist the domain.
-            pass 
-        except Exception as e:
-            logger.error(f"Failed to cache XSUAA keys: {e}")
+            resp = requests.get(f"{uaa_url}/token_keys", timeout=10)
+            resp.raise_for_status()
+            for key_info in resp.json().get("keys", []):
+                kid = key_info.get("kid")
+                if kid:
+                    self.public_keys[kid] = RSAAlgorithm.from_jwk(key_info)
+            logger.info("Cached %d XSUAA public key(s)", len(self.public_keys))
+        except Exception as exc:
+            logger.error("Failed to fetch XSUAA public keys: %s", exc)
 
     async def dispatch(self, request: Request, call_next):
-        # Skip validation if not running on Cloud Foundry or if specifically disabled
-        if not is_running_on_cf() or os.getenv("DISABLE_AUTH", "false").lower() == "true":
+        # Skip validation when not on Cloud Foundry (local development)
+        if not is_running_on_cf():
             return await call_next(request)
 
-        # Skip validation for health check and root
-        if request.url.path in ["/", "/health", "/docs", "/openapi.json"]:
+        # Allow health and discovery paths without a token
+        if request.url.path in _PUBLIC_PATHS:
             return await call_next(request)
 
         auth_header = request.headers.get("Authorization")
         if not auth_header or not auth_header.startswith("Bearer "):
-            # In 'none' auth mode (migration), we might want to allow this.
-            # For strict security, verify user requested strict mode.
-            if os.getenv("ENFORCE_AUTH", "false").lower() == "true":
-                 return await self._unauthorized("Missing Authorization Header")
-            else:
-                 # Warn but proceed (Migration Mode)
-                 logger.warning(f"Request to {request.url.path} missing Auth header")
-                 return await call_next(request)
+            return self._unauthorized("Missing Authorization header")
 
-        token = auth_header.split(" ")[1]
-        
+        token = auth_header.split(" ", 1)[1]
+
         try:
-            # 1. Decode header to get Key ID (kid) and JKU
             header = jwt.get_unverified_header(token)
-            
-            # 2. In a full implementation, fetch key from JKU and verify signature.
-            # Here we perform a basic decode to extract claims if valid structure.
-            # NOTE: Verify signature is CRITICAL for production. 
-            # We are skipping strict signature verification in this skeleton 
-            # to avoid blocking the deployment without full SAP key setup.
-            # We trust the AppRouter passed it (internal network).
-            claims = jwt.decode(token, options={"verify_signature": False})
-            
-            # 3. Check Scopes (Authorization)
-            # Scope name in xs-security.json is "$XSAPPNAME.viewer"
-            required_scope = f"{self.xsuaa_creds.get('xsappname')}.viewer" if self.xsuaa_creds else None
+            kid = header.get("kid")
+
+            public_key = self.public_keys.get(kid)
+            if public_key is None:
+                # Key may have been rotated — attempt one refresh
+                self._cache_keys()
+                public_key = self.public_keys.get(kid)
+
+            if public_key is None:
+                logger.warning("JWT kid '%s' not found in cached XSUAA keys", kid)
+                return self._unauthorized("Unrecognised token key")
+
+            claims = jwt.decode(
+                token,
+                public_key,
+                algorithms=["RS256"],
+                options={"verify_exp": True},
+                issuer=self._uaa_url(),
+            )
+
+            # Enforce required scope
+            xsappname = (self.xsuaa_creds or {}).get("xsappname")
+            required_scope = f"{xsappname}.viewer" if xsappname else None
             user_scopes = claims.get("scope", [])
-            
-            # Add user info to request state for endpoints to use
+            if required_scope and required_scope not in user_scopes:
+                logger.warning(
+                    "Token missing required scope '%s'; present: %s",
+                    required_scope,
+                    user_scopes,
+                )
+                return self._forbidden("Insufficient scope")
+
             request.state.user = {
                 "id": claims.get("user_id"),
                 "email": claims.get("email"),
-                "scopes": user_scopes
+                "scopes": user_scopes,
             }
 
-        except jwt.InvalidTokenError as e:
-            logger.error(f"Invalid Token: {e}")
-            return await self._unauthorized("Invalid Token")
+        except jwt.ExpiredSignatureError:
+            return self._unauthorized("Token has expired")
+        except jwt.InvalidTokenError as exc:
+            logger.warning("JWT validation failed: %s", exc)
+            return self._unauthorized("Invalid token")
 
         return await call_next(request)
 
-    async def _unauthorized(self, detail: str):
-        raise HTTPException(
+    @staticmethod
+    def _unauthorized(detail: str) -> JSONResponse:
+        return JSONResponse(
             status_code=status.HTTP_401_UNAUTHORIZED,
-            detail=detail,
+            content={"detail": detail},
             headers={"WWW-Authenticate": "Bearer"},
+        )
+
+    @staticmethod
+    def _forbidden(detail: str) -> JSONResponse:
+        return JSONResponse(
+            status_code=status.HTTP_403_FORBIDDEN,
+            content={"detail": detail},
         )
