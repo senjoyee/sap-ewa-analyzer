@@ -23,6 +23,34 @@ import uvicorn
 load_dotenv()
 setup_logging()
 logger = logging.getLogger(__name__)
+
+# Parse CORS allowed origins from environment variable (comma-separated or JSON array)
+def _parse_cors_origins() -> list[str]:
+    """Parse CORS allowed origins from environment variable.
+    
+    Supports:
+    - CORS_ALLOWED_ORIGINS env var as comma-separated list: "http://localhost:3000,https://example.com"
+    
+    Falls back to localhost for development if not set.
+    """
+    cors_env = os.getenv("CORS_ALLOWED_ORIGINS", "").strip()
+    if cors_env:
+        # Split by comma and strip whitespace
+        origins = [origin.strip() for origin in cors_env.split(",") if origin.strip()]
+        if origins:
+            logger.info("CORS allowed origins from env: %s", origins)
+            return origins
+    
+    # Development default
+    dev_origins = ["http://localhost:3000", "http://localhost:5000", "http://localhost:8080"]
+    logger.warning(
+        "CORS_ALLOWED_ORIGINS not set. Using development defaults: %s. "
+        "For production, set CORS_ALLOWED_ORIGINS env variable.",
+        dev_origins
+    )
+    return dev_origins
+
+CORS_ALLOWED_ORIGINS = _parse_cors_origins()
 AZURE_STORAGE_CONNECTION_STRING = os.getenv("AZURE_STORAGE_CONNECTION_STRING")
 AZURE_STORAGE_CONTAINER_NAME = os.getenv("AZURE_STORAGE_CONTAINER_NAME")
 
@@ -49,10 +77,10 @@ app.add_middleware(XSUAAMiddleware)
 
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],  # Relaxed for dev; tighten in production
+    allow_origins=CORS_ALLOWED_ORIGINS,
     allow_credentials=True,
-    allow_methods=["*"],
-    allow_headers=["*"],
+    allow_methods=["GET", "POST", "DELETE", "OPTIONS"],
+    allow_headers=["Content-Type", "Authorization"],
 )
 
 # ---------------------------------------------------------------------------

@@ -14,6 +14,7 @@ import os
 import re
 import json
 import logging
+import asyncio
 from typing import Dict, Any, List
 from datetime import datetime
 
@@ -352,7 +353,7 @@ async def list_files():
                 continue
 
             blob_client = container_client.get_blob_client(blob.name)
-            properties = blob_client.get_blob_properties()
+            properties = await asyncio.to_thread(blob_client.get_blob_properties)
             metadata = properties.metadata or {}
 
             base_name, _ = os.path.splitext(blob.name)
@@ -482,13 +483,13 @@ async def delete_analysis(request_data: DeleteAnalysisRequest):
         deleted_files = []
         errors = []
         try:
-            blob_list = container_client.list_blobs(name_starts_with=base_name)
+            blob_list = await asyncio.to_thread(lambda: list(container_client.list_blobs(name_starts_with=base_name)))
             for blob in blob_list:
                 if blob.name not in allowed_blob_names:
                     continue
                 try:
                     blob_client = container_client.get_blob_client(blob.name)
-                    blob_client.delete_blob()
+                    await asyncio.to_thread(blob_client.delete_blob)
                     deleted_files.append(blob.name)
                 except Exception as e:
                     errors.append(f"Failed to delete {blob.name}: {str(e)}")
@@ -522,19 +523,19 @@ async def download_file(blob_name: str):
 
         if blob_name.endswith(".md"):
             try:
-                content = storage_service.get_text_content(blob_name)
+                content = await asyncio.to_thread(storage_service.get_text_content, blob_name)
             except FileNotFoundError:
                 raise HTTPException(status_code=404, detail=f"File {blob_name} not found") from None
             content_type = "text/markdown"
         elif blob_name.endswith(".json"):
             try:
-                content = storage_service.get_text_content(blob_name)
+                content = await asyncio.to_thread(storage_service.get_text_content, blob_name)
             except FileNotFoundError:
                 raise HTTPException(status_code=404, detail=f"File {blob_name} not found") from None
             content_type = "application/json"
         else:
             try:
-                content = storage_service.get_bytes(blob_name)
+                content = await asyncio.to_thread(storage_service.get_bytes, blob_name)
             except FileNotFoundError:
                 raise HTTPException(status_code=404, detail=f"File {blob_name} not found") from None
 

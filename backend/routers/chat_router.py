@@ -159,7 +159,7 @@ async def chat_with_document(request: ChatRequest):
         except Exception as api_err:
             logger.exception("OpenAI API error: %s", api_err)
             err_text = _humanize_openai_error(api_err, model_name)
-            return {"response": f"Error: {err_text}", "error": True}
+            raise HTTPException(status_code=500, detail=f"Open AI API error: {err_text}")
 
     except HTTPException:
         raise
