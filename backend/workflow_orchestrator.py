@@ -890,7 +890,12 @@ class EWAWorkflowOrchestrator:
                 "customer_name": original_metadata.get("customer_name", ""),
             }
             logger.info("[V2-WORKBOOK] Building 7-tab workbook")
-            state.workbook_bytes = build_workbook(domain_results, supplemental, system_metadata)
+            state.workbook_bytes = build_workbook(
+                domain_results,
+                supplemental,
+                domain_chapters=domain_chapters,
+                system_metadata=system_metadata,
+            )
             logger.info("[V2-WORKBOOK] Generated %d bytes", len(state.workbook_bytes))
 
             # Collect usage across all agents

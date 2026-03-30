@@ -18,6 +18,7 @@ from openpyxl.worksheet.worksheet import Worksheet
 
 from agent.specialist_agents import DomainResult
 from agent.deep_thinker_agent import SupplementalFinding
+from utils.ewa_slicer import ChapterData
 
 logger = logging.getLogger(__name__)
 
@@ -75,6 +76,7 @@ def _is_business_applicable(dr: DomainResult) -> bool:
 def build_workbook(
     domain_results: list[DomainResult],
     supplemental_findings: list[SupplementalFinding],
+    domain_chapters: dict[str, list[ChapterData]] | None = None,
     system_metadata: dict[str, str] | None = None,
 ) -> bytes:
     """Build a workbook from pipeline outputs.
@@ -84,6 +86,7 @@ def build_workbook(
     """
     wb = Workbook()
     metadata = system_metadata or {}
+    chapters_by_domain = domain_chapters or {}
 
     # Index results by domain
     results_by_domain: dict[str, DomainResult] = {}
@@ -113,12 +116,12 @@ def build_workbook(
                 continue
             ws = wb.create_sheet(title=DOMAIN_DISPLAY_NAMES[domain])
             sups = supplements_by_domain.get(domain, [])
-            _write_business_tab(ws, business_dr, sups)
+            _write_business_tab(ws, business_dr, sups, chapters_by_domain.get(domain, []))
         else:
             ws = wb.create_sheet(title=DOMAIN_DISPLAY_NAMES[domain])
             dr = results_by_domain.get(domain, DomainResult(domain=domain))
             sups = supplements_by_domain.get(domain, [])
-            _write_domain_tab(ws, dr, sups, domain)
+            _write_domain_tab(ws, dr, sups, domain, chapters_by_domain.get(domain, []))
 
     buf = io.BytesIO()
     wb.save(buf)
@@ -278,6 +281,7 @@ def _write_domain_tab(
     dr: DomainResult,
     supplements: list[dict[str, Any]],
     domain: str,
+    chapters: list[ChapterData],
 ):
     display_name = DOMAIN_DISPLAY_NAMES.get(domain, domain)
     row = 1
@@ -362,6 +366,24 @@ def _write_domain_tab(
         ws[f"A{row}"].font = Font(name="Calibri", size=11, italic=True, color="666666")
         row += 1
 
+    row += 1
+
+    # Section D: Chapters Considered
+    row = _write_section_header(ws, row, "D — Chapters Considered")
+    if chapters:
+        headers = ["Chapter", "Chapter Name", "", "", "", ""]
+        row = _write_table_headers(ws, row, headers)
+        for chapter in chapters:
+            vals = [chapter.number, chapter.title]
+            for col_idx, val in enumerate(vals, start=1):
+                cell = ws.cell(row=row, column=col_idx, value=val)
+                _apply_data(cell, row)
+            row += 1
+    else:
+        ws[f"A{row}"] = "No chapters were routed to this domain."
+        ws[f"A{row}"].font = Font(name="Calibri", size=11, italic=True, color="666666")
+        row += 1
+
     _auto_fit(ws)
 
 
@@ -400,6 +422,7 @@ def _write_business_tab(
     ws: Worksheet,
     dr: DomainResult,
     supplements: list[dict[str, Any]],
+    chapters: list[ChapterData],
 ):
     row = 1
 
@@ -486,6 +509,24 @@ def _write_business_tab(
             row += 1
     else:
         ws[f"A{row}"] = "No derived recommendations for the business domain."
+        ws[f"A{row}"].font = Font(name="Calibri", size=11, italic=True, color="666666")
+        row += 1
+
+    row += 1
+
+    # Section D: Chapters Considered
+    row = _write_section_header(ws, row, "D — Chapters Considered")
+    if chapters:
+        headers = ["Chapter", "Chapter Name", "", "", "", ""]
+        row = _write_table_headers(ws, row, headers)
+        for chapter in chapters:
+            vals = [chapter.number, chapter.title]
+            for col_idx, val in enumerate(vals, start=1):
+                cell = ws.cell(row=row, column=col_idx, value=val)
+                _apply_data(cell, row)
+            row += 1
+    else:
+        ws[f"A{row}"] = "No chapters were routed to the business domain."
         ws[f"A{row}"].font = Font(name="Calibri", size=11, italic=True, color="666666")
         row += 1
 
