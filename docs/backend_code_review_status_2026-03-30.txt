@@ -1,0 +1,63 @@
+Backend Code Review Status
+Date: 2026-03-30
+Scope: backend
+
+Summary
+- A backend security and reliability review identified 7 findings.
+- Findings 1-4 are now fixed and pushed.
+- Findings 5-7 remain pending.
+
+Findings And Status
+1) JWT signature verification was disabled (critical)
+- Status: Solved
+- What was done:
+  - Removed verify_signature=False behavior.
+  - Added RS256 JWT signature verification against XSUAA token keys.
+  - Added key refresh/reload behavior when kid is not found.
+
+2) Scope authorization was computed but not enforced (high)
+- Status: Solved
+- What was done:
+  - Enforced required scope check (<xsappname>.viewer).
+  - Return 403 for insufficient scope.
+
+3) ZIP extraction path traversal risk via extractall (high)
+- Status: Solved
+- What was done:
+  - Added path normalization and traversal guard for each archive entry.
+  - Rejects ZIPs with entries escaping extraction directory.
+
+4) Unsafe broad blob deletion based on user-supplied prefix (high)
+- Status: Solved
+- What was done:
+  - Stopped trusting client baseName for bulk delete.
+  - Derive base name server-side from fileName.
+  - Restrict deletion to a known allowlist of derivative artifact names.
+  - Reject path traversal characters in file name.
+
+5) CORS configuration allows wildcard origins with credentials (medium)
+- Status: Pending
+- Suggested action:
+  - Replace wildcard with explicit origin allowlist per environment.
+
+6) Chat endpoint returns HTTP 200 on upstream model failures (medium)
+- Status: Pending
+- Suggested action:
+  - Return proper 4xx/5xx status codes with structured error payloads.
+
+7) Blocking Azure Blob SDK calls inside async routes (medium)
+- Status: Pending
+- Suggested action:
+  - Offload blocking storage operations to threadpool or move to async-compatible patterns.
+
+Files Changed To Solve 1-4
+- backend/core/xsuaa_middleware.py
+- backend/routers/storage_router.py
+
+Commit And Push
+- Branch: agentic-workflow
+- Commit: 82c605a
+- Remote push: completed
+
+Recommended Next Batch
+- Address findings 5-7 in a separate hardening commit.
