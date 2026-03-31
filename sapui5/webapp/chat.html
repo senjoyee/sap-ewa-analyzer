@@ -303,6 +303,45 @@
     .msg a { color: var(--accent); text-decoration: underline; }
     .msg strong { color: var(--text); }
     .msg.user strong { color: #fff; }
+    .msg .chat-table {
+      border-collapse: collapse;
+      width: 100%;
+      margin: 8px 0;
+      font-size: 0.9em;
+      border: 1px solid var(--border);
+      border-radius: var(--radius-sm);
+      overflow: hidden;
+    }
+    .msg .chat-table thead {
+      background: rgba(59, 130, 246, 0.12);
+    }
+    .msg .chat-table th {
+      padding: 8px 10px;
+      text-align: left;
+      font-weight: 600;
+      color: var(--accent);
+      border-bottom: 1px solid var(--border-accent);
+    }
+    .msg .chat-table td {
+      padding: 8px 10px;
+      border-bottom: 1px solid var(--border);
+    }
+    .msg .chat-table tbody tr:hover {
+      background: rgba(59, 130, 246, 0.06);
+    }
+    .msg.user .chat-table {
+      border-color: rgba(255, 255, 255, 0.2);
+    }
+    .msg.user .chat-table thead {
+      background: rgba(255, 255, 255, 0.1);
+    }
+    .msg.user .chat-table th {
+      color: #fff;
+      border-bottom-color: rgba(255, 255, 255, 0.2);
+    }
+    .msg.user .chat-table td {
+      border-bottom-color: rgba(255, 255, 255, 0.12);
+    }
 
     /* ─── Footer ─── */
     .footer-note {
@@ -430,11 +469,46 @@
         let listTag = 'ul';
         let inCode = false;
         let codeLines = [];
+        let inTable = false;
+        let tableLines = [];
 
         const closeList = () => {
           if (inList) {
             html += `</${listTag}>`;
             inList = false;
+          }
+        };
+
+        const closeTable = () => {
+          if (inTable && tableLines.length > 0) {
+            html += `<table class="chat-table">`;
+            let firstRow = true;
+            for (let i = 0; i < tableLines.length; i++) {
+              const row = tableLines[i];
+              // Skip separator rows (contain only dashes and pipes)
+              if (/^[\s\|\-:]+$/.test(row)) continue;
+              const cells = row.split('|').map(c => c.trim()).filter(c => c);
+              if (cells.length === 0) continue;
+              const tag = firstRow ? 'th' : 'td';
+              const rowTag = firstRow ? 'thead' : 'tbody';
+              if (firstRow) {
+                html += '<thead><tr>';
+                cells.forEach(cell => {
+                  html += `<${tag}>${renderInline(cell)}</${tag}>`;
+                });
+                html += '</tr></thead><tbody>';
+                firstRow = false;
+              } else {
+                html += '<tr>';
+                cells.forEach(cell => {
+                  html += `<td>${renderInline(cell)}</td>`;
+                });
+                html += '</tr>';
+              }
+            }
+            html += '</tbody></table>';
+            inTable = false;
+            tableLines = [];
           }
         };
 
@@ -449,6 +523,7 @@
               inCode = false;
             } else {
               closeList();
+              closeTable();
               inCode = true;
             }
             return;
@@ -456,6 +531,19 @@
           if (inCode) {
             codeLines.push(line);
             return;
+          }
+
+          // Detect markdown tables (lines with pipes)
+          const isTableRow = trimmed.includes('|') && trimmed.startsWith('|') && trimmed.endsWith('|');
+          if (isTableRow) {
+            if (!inTable) {
+              closeList();
+              inTable = true;
+            }
+            tableLines.push(trimmed);
+            return;
+          } else if (inTable) {
+            closeTable();
           }
 
           const headingMatch = trimmed.match(/^(#{1,6})\s+(.*)$/);
@@ -494,6 +582,7 @@
 
         if (inList) html += `</${listTag}>`;
         if (inCode) html += `<pre><code>${esc(codeLines.join('\n'))}</code></pre>`;
+        if (inTable) closeTable();
         return html;
       }
 
