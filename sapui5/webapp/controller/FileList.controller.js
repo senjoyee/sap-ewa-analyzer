@@ -506,13 +506,6 @@ sap.ui.define([
             });
         },
 
-        onDownloadPress: function (oEvent) {
-            var oItem = oEvent.getSource().getBindingContext("files").getObject();
-            var sBaseName = oItem.name.replace(/\.(pdf|zip|md)$/i, "");
-            var sWorkbookName = sBaseName + "_workbook.xlsx";
-            window.open(Config.getDownloadUrl(sWorkbookName), "_blank");
-        },
-
         onDeletePress: function (oEvent) {
             var oItem = oEvent.getSource().getBindingContext("files").getObject();
             var sBaseName = oItem.name.replace(/\.(pdf|zip|md)$/i, "");
