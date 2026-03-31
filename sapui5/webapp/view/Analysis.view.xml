@@ -4,7 +4,7 @@
     xmlns="sap.m"
     xmlns:layout="sap.ui.layout"
     xmlns:core="sap.ui.core">
-    <Page id="analysisPage" title="{i18n>analysisTitle}" showNavButton="true" navButtonPress=".onNavBack" backgroundDesign="List" class="sapUiSizeCompact">
+    <Page id="analysisPage" title="{i18n>analysisTitle}" showNavButton="true" navButtonPress=".onNavBack" backgroundDesign="Transparent" class="sapUiSizeCompact">
         <headerContent>
             <Button icon="sap-icon://excel-attachment" text="Download Workbook" press=".onDownloadWorkbook" type="Emphasized"/>
         </headerContent>

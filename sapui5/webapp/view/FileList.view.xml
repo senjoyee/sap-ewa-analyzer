@@ -9,7 +9,7 @@
     core:require="{
         DateType: 'sap/ui/model/type/Date'
     }">
-    <Page title="{i18n>fileListTitle}" backgroundDesign="List">
+    <Page title="{i18n>fileListTitle}" backgroundDesign="Transparent">
         <content>
             <!-- Grey Background Container -->
             <!-- White Centered Content -->

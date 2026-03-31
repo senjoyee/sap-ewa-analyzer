@@ -120,3 +120,4 @@ btp_logon.txt
 BTP_MIGRATION_PLAN_V2.md
 btp_logon.txt
 test_strip.py
+*.mta

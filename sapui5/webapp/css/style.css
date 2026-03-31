@@ -1,38 +1,74 @@
-/* Custom Font - Standard SAP 72 */
-@font-face {
-    font-family: "72";
-    src: url("https://sapui5.hana.ondemand.com/resources/sap/ui/core/themes/base/fonts/72-Regular.woff2") format("woff2"),
-        url("https://sapui5.hana.ondemand.com/resources/sap/ui/core/themes/base/fonts/72-Regular.woff") format("woff");
+/* ═══════════════════════════════════════════════════════════════════════════
+   EWA ANALYZER — "Observatory" Design System
+   A refined, data-command-center aesthetic with deep blues, 
+   electric accents, and atmospheric depth.
+   ═══════════════════════════════════════════════════════════════════════════ */
+
+/* ─── Google Fonts ─── */
+@import url('https://fonts.googleapis.com/css2?family=DM+Sans:ital,opsz,wght@0,9..40,300;0,9..40,400;0,9..40,500;0,9..40,600;0,9..40,700;1,9..40,400&family=JetBrains+Mono:wght@400;500&display=swap');
+
+/* ─── Design Tokens ─── */
+:root {
+    /* Surface */
+    --ewa-bg-deep:       #0c1222;
+    --ewa-bg-mid:        #111a2e;
+    --ewa-bg-surface:    #162033;
+    --ewa-bg-card:       #1a2740;
+    --ewa-bg-elevated:   #1f2f4a;
+    --ewa-bg-hover:      #243654;
+    --ewa-bg-glass:      rgba(26, 39, 64, 0.65);
+
+    /* Accent */
+    --ewa-accent-primary:   #3b82f6;
+    --ewa-accent-glow:      rgba(59, 130, 246, 0.35);
+    --ewa-accent-warm:      #f59e0b;
+    --ewa-accent-warm-glow: rgba(245, 158, 11, 0.25);
+    --ewa-accent-success:   #10b981;
+    --ewa-accent-danger:    #ef4444;
+    --ewa-accent-warning:   #f59e0b;
+
+    /* Text */
+    --ewa-text-primary:   #e8ecf4;
+    --ewa-text-secondary: #94a3b8;
+    --ewa-text-muted:     #64748b;
+    --ewa-text-inverse:   #0f172a;
+
+    /* Border */
+    --ewa-border:         rgba(148, 163, 184, 0.12);
+    --ewa-border-accent:  rgba(59, 130, 246, 0.25);
+
+    /* Shadows */
+    --ewa-shadow-sm:  0 1px 3px rgba(0, 0, 0, 0.3);
+    --ewa-shadow-md:  0 4px 16px rgba(0, 0, 0, 0.35);
+    --ewa-shadow-lg:  0 8px 32px rgba(0, 0, 0, 0.45);
+    --ewa-shadow-glow: 0 0 20px var(--ewa-accent-glow);
+
+    /* Radius */
+    --ewa-radius-sm: 6px;
+    --ewa-radius-md: 10px;
+    --ewa-radius-lg: 16px;
+    --ewa-radius-xl: 20px;
+
+    /* Transitions */
+    --ewa-ease: cubic-bezier(0.22, 0.61, 0.36, 1);
+    --ewa-transition-fast: 150ms var(--ewa-ease);
+    --ewa-transition-mid:  250ms var(--ewa-ease);
+    --ewa-transition-slow: 400ms var(--ewa-ease);
+}
+
+/* ─── Global Reset & Base ─── */
+body,
+.sapUiBody {
+    font-family: 'DM Sans', -apple-system, BlinkMacSystemFont, sans-serif !important;
+    background: var(--ewa-bg-deep) !important;
+    color: var(--ewa-text-primary) !important;
     font-weight: 400;
-    font-style: normal;
+    letter-spacing: 0.005em;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
 }
 
-@font-face {
-    font-family: "72";
-    src: url("https://sapui5.hana.ondemand.com/resources/sap/ui/core/themes/base/fonts/72-Bold.woff2") format("woff2"),
-        url("https://sapui5.hana.ondemand.com/resources/sap/ui/core/themes/base/fonts/72-Bold.woff") format("woff");
-    font-weight: 700;
-    font-style: normal;
-}
-
-@font-face {
-    font-family: "72";
-    src: url("https://sapui5.hana.ondemand.com/resources/sap/ui/core/themes/base/fonts/72-Light.woff2") format("woff2"),
-        url("https://sapui5.hana.ondemand.com/resources/sap/ui/core/themes/base/fonts/72-Light.woff") format("woff");
-    font-weight: 300;
-    font-style: normal;
-}
-
-body {
-    font-family: "72", "72full", Arial, Helvetica, sans-serif !important;
-    color: #0f172a;
-    /* Much darker slate (almost black) */
-    /* REMOVED smoothing to prevent text thinning */
-    font-weight: 500;
-}
-
-/* Override standard SAP fonts */
-.sapUiBody,
+/* Override all SAPUI5 text inheritance */
 .sapMText,
 .sapMLabel,
 .sapMBtnContent,
@@ -41,305 +77,148 @@ body {
 .sapUiTableColHdr,
 .sapUiTableColCell,
 .sapUiTableCell,
-.sapMTitle {
-    font-family: "72", "72full", Arial, Helvetica, sans-serif !important;
-    color: #1a1a1a !important;
-    color: #1a1a1a !important;
-    /* Darker secondary text globally */
+.sapMTitle,
+.sapMObjectIdentifierTitle .sapMText,
+.sapMObjectStatusText {
+    font-family: 'DM Sans', -apple-system, BlinkMacSystemFont, sans-serif !important;
 }
 
-/* Page Header Title - Increased Weight */
-.sapMPageHeader .sapMTitle {
-    font-weight: 700 !important;
-    font-size: 1.15rem !important;
-    color: #0f172a !important;
+/* ─── Scrollbar styling ─── */
+::-webkit-scrollbar {
+    width: 6px;
+    height: 6px;
 }
-
-/* No Data Text - Increased Weight and Visibility */
-.sapMListNoDataText {
-    font-weight: 700 !important;
-    font-size: 0.9375rem !important;
-    color: #4b5563 !important;
-}
-
-/* Global label weighting */
-.sapMLabel {
-    font-weight: 600 !important;
-    color: #0f172a !important;
-}
-
-/* Chat Bubbles */
-.chatBubbleUser {
-    background: linear-gradient(180deg, #0a6ed1 0%, #0854a0 100%);
-    color: #ffffff;
-    border-radius: 16px;
-    border-top-right-radius: 6px;
-    padding: 0.65rem 0.85rem;
-    margin: 0.25rem 0;
-    max-width: 78%;
-    box-shadow: 0 2px 10px rgba(0, 0, 0, 0.14);
-    word-break: break-word;
-}
-
-.chatBubbleBot {
-    background-color: #ffffff;
-    color: #1f2937;
-    border: 1px solid #e5e7eb;
-    border-radius: 16px;
-    border-top-left-radius: 6px;
-    padding: 0.65rem 0.85rem;
-    margin: 0.25rem 0;
-    max-width: 78%;
-    box-shadow: 0 2px 10px rgba(0, 0, 0, 0.08);
-    word-break: break-word;
-}
-
-.chatBubbleSystem {
-    background-color: #fff7ed;
-    color: #92400e;
-    border: 1px solid #fed7aa;
-    border-radius: 14px;
-    padding: 0.6rem 0.85rem;
-    margin: 0.25rem 0;
-    max-width: 90%;
-    box-shadow: 0 1px 4px rgba(0, 0, 0, 0.06);
-    word-break: break-word;
-}
-
-.chatMessageRow {
-    margin: 0.25rem 0;
-}
-
-.chatList.sapMList {
-    padding: 0.75rem 0.75rem 0.5rem;
+::-webkit-scrollbar-track {
     background: transparent;
 }
-
-.chatList .sapMLIB {
-    background: transparent;
-    border: none;
-}
-
-.chatList .sapMLIBContent {
-    padding: 0;
-}
-
-.chatFormattedText {
-    line-height: 1.55;
-    font-size: 0.9375rem;
-}
-
-.chatFormattedText p {
-    margin: 0;
-}
-
-.chatFormattedText p+p {
-    margin-top: 0.5rem;
-}
-
-.chatFormattedText ul,
-.chatFormattedText ol {
-    margin: 0.35rem 0 0.35rem 1.25rem;
-    padding: 0;
-}
-
-.chatFormattedText li {
-    margin: 0.2rem 0;
-}
-
-.chatFormattedText a {
-    color: #0a6ed1;
-    text-decoration: none;
-    font-weight: 600;
-}
-
-.chatFormattedText a:hover {
-    text-decoration: underline;
-}
-
-.chatFormattedText hr {
-    border: 0;
-    border-top: 1px solid #e5e7eb;
-    margin: 0.75rem 0;
-}
-
-.chatFormattedText .chatHeading {
-    margin: 0.35rem 0 0.25rem;
-    letter-spacing: 0.01em;
-}
-
-.chatFormattedText .chatHeading.h1 {
-    font-size: 1.1rem;
-}
-
-.chatFormattedText .chatHeading.h2 {
-    font-size: 1.05rem;
-}
-
-.chatFormattedText .chatHeading.h3 {
-    font-size: 1rem;
-}
-
-.chatFormattedText .chatHeading.h4 {
-    font-size: 0.95rem;
-}
-
-.chatFormattedText code {
-    font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace;
-    font-size: 0.875em;
-    padding: 0.08rem 0.3rem;
-    border-radius: 6px;
-    background-color: rgba(0, 0, 0, 0.08);
-}
-
-.chatBubbleUser .chatFormattedText code {
-    background-color: rgba(255, 255, 255, 0.22);
-}
-
-.chatFormattedText pre {
-    margin: 0.5rem 0 0;
-    padding: 0.65rem 0.75rem;
+::-webkit-scrollbar-thumb {
+    background: var(--ewa-text-muted);
     border-radius: 10px;
-    background-color: rgba(0, 0, 0, 0.06);
-    overflow: auto;
-    white-space: pre;
+}
+::-webkit-scrollbar-thumb:hover {
+    background: var(--ewa-text-secondary);
 }
 
-.chatBubbleUser .chatFormattedText pre {
-    background-color: rgba(255, 255, 255, 0.18);
+/* ─── Page Header ─── */
+.sapMPageHeader {
+    background: linear-gradient(135deg, var(--ewa-bg-mid) 0%, var(--ewa-bg-surface) 100%) !important;
+    border-bottom: 1px solid var(--ewa-border) !important;
+    box-shadow: 0 1px 6px rgba(0,0,0,0.25) !important;
 }
 
-.chatInputContainer {
-    align-items: flex-end;
-    gap: 0.5rem;
-    padding: 0.75rem;
-    border-top: 1px solid #e5e7eb;
+.sapMPageHeader .sapMTitle {
+    font-weight: 600 !important;
+    font-size: 1.1rem !important;
+    color: var(--ewa-text-primary) !important;
+    letter-spacing: -0.01em !important;
 }
 
-.chatInput textarea {
-    font-size: 0.9375rem;
-    line-height: 1.45;
+.sapMBar {
+    background: linear-gradient(135deg, var(--ewa-bg-mid) 0%, var(--ewa-bg-surface) 100%) !important;
 }
 
-.chatInput .sapMInputBaseContentWrapper {
-    border-radius: 12px;
+.sapMBarMiddle .sapMTitle {
+    color: var(--ewa-text-primary) !important;
 }
 
-.chatSendButton {
-    margin-bottom: 2px;
+/* Nav-back button */
+.sapMBarLeft .sapMBtn .sapMBtnIcon {
+    color: var(--ewa-accent-primary) !important;
 }
 
-.chatBusyIndicator {
-    margin: 0.25rem 0.75rem 0.25rem;
-    opacity: 0.9;
+/* ─── Page Background ─── */
+.sapMPage,
+.sapMPage > section {
+    background: var(--ewa-bg-deep) !important;
 }
 
-/* Markdown Rendering Helpers */
-.markdown-content h1 {
-    font-size: 2rem;
-    font-weight: 600;
-    color: #1d2d3e;
-    margin-top: 2.5rem;
-    margin-bottom: 1.5rem;
-    border-bottom: none;
-    letter-spacing: -0.02em;
+/* ─── Paper Sheet (main content card) ─── */
+.paperSheet {
+    background: var(--ewa-bg-surface) !important;
+    max-width: 1200px;
+    width: 100%;
+    margin: 1.5rem auto !important;
+    padding: 2.5rem !important;
+    box-shadow: var(--ewa-shadow-lg), 0 0 60px rgba(59,130,246,0.04) !important;
+    border-radius: var(--ewa-radius-lg) !important;
+    border: 1px solid var(--ewa-border) !important;
+    min-height: 80vh;
+    position: relative;
+    overflow: hidden;
 }
 
-.markdown-content h2 {
-    font-size: 1.5rem;
-    font-weight: 400;
-    color: #0064d9;
-    margin-top: 2rem;
-    margin-bottom: 1rem;
-    letter-spacing: -0.01em;
+/* Subtle gradient overlay on paper sheet */
+.paperSheet::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    height: 200px;
+    background: linear-gradient(180deg, rgba(59,130,246,0.03) 0%, transparent 100%);
+    pointer-events: none;
+    z-index: 0;
 }
 
-.markdown-content h3 {
-    font-size: 1.125rem;
-    font-weight: 600;
-    color: #32363a;
-    margin-top: 1.5rem;
-    margin-bottom: 0.75rem;
+.paperSheet > * {
+    position: relative;
+    z-index: 1;
 }
 
-.markdown-content p {
-    margin-bottom: 1rem;
-    line-height: 1.7;
-    font-size: 0.95rem;
-    font-weight: 500;
-    color: #1a1a1a;
-    letter-spacing: 0.01em;
+/* ─── File List Sheet (wider variant) ─── */
+.fileListSheet {
+    max-width: 1400px !important;
+    padding: 1.25rem 1.75rem !important;
+    min-height: 0 !important;
 }
 
-.markdown-content ul,
-.markdown-content ol {
-    margin-left: 1.25rem;
-    margin-bottom: 1rem;
-}
-
-.markdown-content li {
-    margin-bottom: 0.625rem;
-    color: #1a1a1a;
-    line-height: 1.65;
-    font-size: 0.95rem;
-    font-weight: 500;
-}
-
-/* Normalize tables (System Health, Positive Findings) to match Executive Summary body font */
-.analysis-table .sapMText,
-.analysis-table .sapMLabel {
-    font-family: "72", "72full", Arial, Helvetica, sans-serif !important;
-    font-size: 0.95rem !important;
-    font-weight: 500 !important;
-    color: #1a1a1a !important;
-    line-height: 1.65;
-    letter-spacing: 0.01em;
-}
-
-/* Upload Area */
-.uploadArea {
-    border: 1px dashed #d0d0d0;
-    border-radius: 6px;
-    padding: 1rem;
-    text-align: center;
-    background-color: #fafbfc;
-    transition: border-color 0.2s, background-color 0.2s;
-}
-
-.uploadArea:hover {
-    border-color: #0a6ed1;
-    background-color: #f5f8fc;
-}
-
+/* ─── Upload Panel ─── */
 .uploadPanel.sapMPanel {
-    border: 1px solid #e2e8f0;
-    border-radius: 8px;
+    border: 1px solid var(--ewa-border) !important;
+    border-radius: var(--ewa-radius-md) !important;
+    background: var(--ewa-bg-card) !important;
+    overflow: hidden;
+    transition: border-color var(--ewa-transition-mid);
+}
+
+.uploadPanel.sapMPanel:hover {
+    border-color: var(--ewa-border-accent) !important;
 }
 
 .uploadPanel .sapMPanelWrappingDivTb,
 .uploadPanel .sapMPanelHdr {
-    background-color: #f8fafc;
+    background: var(--ewa-bg-card) !important;
+    color: var(--ewa-text-primary) !important;
 }
 
 .uploadPanel .sapMPanelHdr {
-    color: #0f172a;
-    font-weight: 600;
+    font-weight: 600 !important;
+    font-size: 0.9rem !important;
+    letter-spacing: 0.01em !important;
 }
 
-.uploadPanel>.sapMPanelContent {
-    padding-top: 0.75rem;
+.uploadPanel > .sapMPanelContent {
+    padding-top: 0.75rem !important;
+    background: var(--ewa-bg-card) !important;
 }
 
-.uploadQueueToolbar.sapMTB {
-    border-bottom: 1px solid #e2e8f0;
-    padding-left: 0.25rem;
-    padding-right: 0.25rem;
+/* ─── Upload Area ─── */
+.uploadArea {
+    border: 1px dashed var(--ewa-text-muted) !important;
+    border-radius: var(--ewa-radius-md) !important;
+    padding: 1.25rem !important;
+    text-align: center;
+    background: var(--ewa-bg-elevated) !important;
+    transition: border-color var(--ewa-transition-mid), background var(--ewa-transition-mid), box-shadow var(--ewa-transition-mid);
 }
 
-.uploadQueueToolbar .sapMTitle {
-    font-weight: 600;
+.uploadArea:hover {
+    border-color: var(--ewa-accent-primary) !important;
+    background: rgba(59, 130, 246, 0.05) !important;
+    box-shadow: 0 0 20px rgba(59, 130, 246, 0.08) !important;
 }
 
+/* Upload area inner text colors */
 .uploadArea .sapMText,
 .uploadArea .sapMLabel,
 .uploadArea .sapMListTblCell .sapMText,
@@ -347,298 +226,167 @@ body {
 .uploadArea .sapMSltLabel,
 .uploadArea .sapMInputBaseInner,
 .uploadArea .sapMComboBoxTextField .sapMInputBaseInner {
-    font-family: "72", "72full", Arial, Helvetica, sans-serif !important;
+    font-family: 'DM Sans', -apple-system, BlinkMacSystemFont, sans-serif !important;
+    color: var(--ewa-text-primary) !important;
 }
 
-.uploadArea .sapMSltText,
-.uploadArea .sapMSltLabel,
-.uploadArea .sapMSelectListItemText,
-.uploadArea .sapMSltArrow,
-.sapMSltText,
-.sapMSltLabel {
-    font-size: 0.8125rem !important;
-    font-weight: 600 !important;
-    color: #0f172a !important;
-}
-
-/* Specific overrides for FileUploader input text */
 .uploadArea .sapMInputBaseInner,
 .uploadArea .sapMInputBasePlaceholder {
     font-size: 0.8125rem !important;
+    font-weight: 500 !important;
+    color: var(--ewa-text-primary) !important;
+}
+
+/* Upload queue toolbar */
+.uploadQueueToolbar.sapMTB {
+    border-bottom: 1px solid var(--ewa-border) !important;
+    background: transparent !important;
+}
+
+.uploadQueueToolbar .sapMTitle {
     font-weight: 600 !important;
-    color: #0f172a !important;
+    color: var(--ewa-text-primary) !important;
 }
 
-/* Ensure Upload Queue Table headers match File List Table headers */
+/* Upload queue table headers */
 .uploadArea .sapMListTblHeader .sapMText {
-    font-size: 0.75rem !important;
-    font-weight: 800 !important;
-    color: #1e293b !important;
-    letter-spacing: 0.06em !important;
+    font-size: 0.7rem !important;
+    font-weight: 700 !important;
+    color: var(--ewa-accent-primary) !important;
+    letter-spacing: 0.08em !important;
     text-transform: uppercase !important;
-    opacity: 1 !important;
 }
 
-/* Ensure Upload Queue Table row content matches File List Table row content */
+/* Upload queue row content */
 .uploadArea .sapMListTblCell .sapMText,
 .uploadArea .sapMObjectIdentifierTitle .sapMText {
     font-size: 0.8125rem !important;
-    font-weight: 600 !important;
-    color: #0f172a !important;
-    /* Darkened from #334155 */
+    font-weight: 500 !important;
+    color: var(--ewa-text-primary) !important;
 }
 
-/* Dropdown popover list (when Select is expanded) */
-.sapMSltPicker-CTX .sapMSelectListItemText,
-.sapMSltPicker-CTX .sapMSelectListItemBase,
-.sapMSltPicker-CTX .sapMSLITitleOnly {
-    font-family: "72", "72full", Arial, Helvetica, sans-serif !important;
+/* Selects inside upload area */
+.uploadArea .sapMSltText,
+.uploadArea .sapMSltLabel,
+.uploadArea .sapMSelectListItemText {
     font-size: 0.8125rem !important;
-    font-weight: 600 !important;
-    color: #0f172a !important;
-    /* Darkened from #334155 */
+    font-weight: 500 !important;
+    color: var(--ewa-text-primary) !important;
 }
 
-/* Panel refinements inside content container */
-.contentContainer .sapMPanel {
-    border-radius: 6px;
-    overflow: hidden;
+/* ─── File Uploader Input & Button Styling ─── */
+.uploadArea .sapUiFu,
+.uploadArea .sapUiFu .sapUiFuInputMask {
+    background: var(--ewa-bg-surface) !important;
+    border-color: var(--ewa-border) !important;
+    border-radius: var(--ewa-radius-sm) !important;
 }
 
-.contentContainer .sapMPanelHdr {
-    background-color: #f7f8fa;
+/* ─── Labels ─── */
+.sapMLabel {
+    font-weight: 500 !important;
+    color: var(--ewa-text-secondary) !important;
 }
 
-/* Risk Badges (legacy) */
-.risk-high {
-    color: #b00;
-    font-weight: bold;
+/* ─── No Data Text ─── */
+.sapMListNoDataText {
+    font-weight: 500 !important;
+    font-size: 0.9rem !important;
+    color: var(--ewa-text-muted) !important;
 }
 
-.risk-medium {
-    color: #d97706;
-    font-weight: bold;
-}
+/* ═══════════════════════════════════════════════════════════════════════════
+   FILE LIST TABLE
+   ═══════════════════════════════════════════════════════════════════════════ */
 
-.risk-low {
-    color: #15803d;
-    font-weight: bold;
-}
-
-/* Custom Severity Chips - Built from scratch */
-.severity-chip {
-    display: inline-block;
-    padding: 4px 10px;
-    border-radius: 4px;
-    font-family: "72", "72full", Arial, Helvetica, sans-serif;
-    font-size: 0.75rem;
-    font-weight: 500;
-    letter-spacing: 0.02em;
-    color: #ffffff;
-    line-height: 1.4;
-    vertical-align: middle;
-    margin-left: 0.5rem;
-}
-
-.severity-chip-critical {
-    background-color: #c0392b;
-}
-
-.severity-chip-high {
-    background-color: #e67e22;
-}
-
-.severity-chip-medium {
-    background-color: #f39c12;
-    color: #1a1a1a;
-}
-
-.severity-chip-low {
-    background-color: #27ae60;
-}
-
-/* Layout Utilities */
-.limitWidth {
-    max-width: 1200px;
-    width: 100%;
-}
-
-/* Centered Content Container */
-.contentContainer {
-    max-width: 1100px;
-    width: 100%;
-    margin: 1.5rem auto;
-    padding: 1.5rem 2rem;
-    background-color: #ffffff;
-    border-radius: 8px;
-    box-shadow: 0 1px 4px rgba(0, 0, 0, 0.08);
-}
-
-/* Responsive adjustments for content container */
-@media (max-width: 1200px) {
-    .contentContainer {
-        margin: 1rem;
-        max-width: calc(100% - 2rem);
-    }
-}
-
-@media (max-width: 600px) {
-    .contentContainer {
-        margin: 0.5rem;
-        padding: 1rem;
-        max-width: calc(100% - 1rem);
-        border-radius: 4px;
-    }
-}
-
-/* Objective Card Styling */
-.objectiveCard {
-    background-color: #fdfdfd;
-    border: 1px solid #e0e0e0;
-    border-radius: 8px;
-    padding: 1.5rem;
-    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
-}
-
-.objectiveTitle {
-    font-weight: 600;
-    color: #32363a;
-    margin-bottom: 0.5rem;
-}
-
-.objectiveText {
-    color: #555;
-    line-height: 1.5;
-}
-
-/* Breadcrumbs */
-.sapMBreadcrumbs {
-    padding-left: 0;
-}
-
-/* Paper Layout */
-.appBackground {
-    background-color: #f0f2f5;
-    height: 100%;
-}
-
-.paperSheet {
-    background-color: #ffffff;
-    max-width: 1200px;
-    width: 100%;
-    margin: 2rem auto;
-    padding: 3rem;
-    box-shadow: 0 1px 3px 0 rgba(0, 0, 0, 0.1), 0 1px 2px 0 rgba(0, 0, 0, 0.06);
-    border-radius: 8px;
-    min-height: 80vh;
-}
-
-/* File List specific - wider container to fit table content */
-.fileListSheet {
-    max-width: 1300px;
-    padding: 1rem 1.5rem;
-    min-height: 0;
-}
-
+/* Toolbar */
 .fileListSheet .fileListToolbar.sapMTB {
-    border-bottom: 1px solid #e2e8f0;
+    border-bottom: 1px solid var(--ewa-border) !important;
+    background: transparent !important;
     padding-left: 0.25rem;
     padding-right: 0.25rem;
 }
 
 .fileListSheet .fileListToolbar .sapMTitle {
-    font-weight: 600;
+    font-weight: 600 !important;
+    color: var(--ewa-text-primary) !important;
+}
+
+.fileListSheet .fileListToolbar .sapMLabel {
+    color: var(--ewa-text-secondary) !important;
+    font-weight: 500 !important;
+    font-size: 0.8125rem !important;
 }
 
 .fileListSheet .fileListToolbar .sapMTBSeparator {
+    background: var(--ewa-border) !important;
     margin-left: 0.5rem;
     margin-right: 0.5rem;
 }
 
-/* Toolbar Labels & Dropdowns */
-.fileListSheet .fileListToolbar .sapMLabel {
-    color: #0f172a !important;
-    font-weight: 600 !important;
-    font-size: 0.875rem !important;
-}
-
-/* 
-   Enhanced File List Typography & Visuals 
-   - Smaller fonts
-   - Bolder headers
-   - Subtle row interactions
-*/
-
-/* Header Styling */
+/* Table Header */
 .fileListSheet .sapMListTblHeader {
-    background-color: #f8fafc !important;
-    border-bottom: 2px solid #e2e8f0 !important;
-    height: 2.25rem !important;
-    /* Compact header */
+    background: var(--ewa-bg-card) !important;
+    border-bottom: 1px solid var(--ewa-border-accent) !important;
+    height: 2.5rem !important;
 }
 
 .fileListSheet .sapMListTblHeader .sapMText {
-    font-size: 0.75rem !important;
-    font-weight: 800 !important;
-    color: #1e293b !important;
-    letter-spacing: 0.06em !important;
-    text-transform: uppercase;
-    opacity: 1 !important;
+    font-size: 0.7rem !important;
+    font-weight: 700 !important;
+    color: var(--ewa-accent-primary) !important;
+    letter-spacing: 0.08em !important;
+    text-transform: uppercase !important;
+    opacity: 0.9 !important;
 }
 
 /* Row & Cell Styling */
 .fileListSheet .sapMListTblCell {
-    border-bottom: 1px solid #f1f5f9 !important;
+    border-bottom: 1px solid var(--ewa-border) !important;
     vertical-align: middle !important;
-    padding-top: 0.25rem !important;
-    /* Compact vertical padding */
-    padding-bottom: 0.25rem !important;
+    padding-top: 0.5rem !important;
+    padding-bottom: 0.5rem !important;
+    background: transparent !important;
 }
 
-/* Remove padding from the last cell (Actions) to allow full-height flex container for perfect centering */
 .fileListSheet .sapMListTblCell:last-child {
     padding-top: 0 !important;
     padding-bottom: 0 !important;
-    height: 1px;
-    /* Trick to force cell to respect child height if needed */
+}
+
+.fileListSheet .sapMListTblRow {
+    background: transparent !important;
+    transition: background var(--ewa-transition-fast) !important;
 }
 
 .fileListSheet .sapMListTblRow:hover {
-    background-color: #f1f5f9 !important;
-    /* Subtle slate hover */
+    background: var(--ewa-bg-hover) !important;
 }
 
-/* Cell Content Typography - Smaller & Cleaner */
+/* Cell Text */
 .fileListSheet .sapMListTblCell .sapMText,
 .fileListSheet .sapMObjectStatus,
 .fileListSheet .sapMObjectStatusText {
     font-size: 0.8125rem !important;
-    /* 13px */
-    font-weight: 600 !important;
-    /* Semi-bold */
-    color: #0f172a !important;
-    /* Slate 900 */
+    font-weight: 500 !important;
+    color: var(--ewa-text-primary) !important;
 }
 
 .fileListSheet .sapMObjectIdentifierTitle .sapMText {
     font-size: 0.8125rem !important;
-    /* Match date text size for visual consistency */
     font-weight: 600 !important;
-    /* Increased weight to stand out on high-res monitors */
-    color: #0f172a !important;
-    /* Slate 900 */
+    color: var(--ewa-text-primary) !important;
 }
 
-/* Status Icons - Adjust size to match text */
+/* Status Icons */
 .fileListSheet .sapMObjectStatusIcon {
     font-size: 0.875rem !important;
     margin-right: 0.35rem !important;
 }
 
-/* Action Buttons - Subtle adjustment */
+/* Action Buttons in rows */
 .fileListSheet .sapMListTblCell .sapMBtn {
     margin: 0 !important;
-    vertical-align: middle;
 }
 
 .fileListSheet .sapMListTblCell .sapMBtnInner {
@@ -653,250 +401,493 @@ body {
 }
 
 .actionsContainer .sapMBtn {
-    margin-left: 0.5rem !important;
+    margin-left: 0.25rem !important;
     margin-top: 0 !important;
     margin-bottom: 0 !important;
 }
 
-/* Group Headers */
+/* ─── Group Headers ─── */
 .fileListSheet .sapMGHLI {
-    background-color: #f8fafc !important;
-    border-bottom: 1px solid #cbd5e1 !important;
-    height: 2.25rem !important;
-    vertical-align: middle !important;
+    background: var(--ewa-bg-card) !important;
+    border-bottom: 1px solid var(--ewa-border-accent) !important;
+    height: 2.5rem !important;
 }
 
 .fileListSheet .sapMGHLI .sapMGroupTitle {
-    color: #0f172a !important;
-    font-size: 0.9375rem !important;
+    color: var(--ewa-accent-warm) !important;
+    font-size: 0.875rem !important;
     font-weight: 700 !important;
-    letter-spacing: -0.01em;
-}
-
-/* Responsive adjustments for file list */
-@media (max-width: 1700px) {
-    .fileListSheet {
-        margin: 1.5rem;
-        max-width: calc(100% - 3rem);
-    }
-}
-
-/* 
-   REMOVED forced centering on cells. 
-   Let SAPUI5 hAlign property control text alignment.
-*/
-
-@media (max-width: 768px) {
-    .fileListSheet {
-        margin: 0.75rem;
-        padding: 1rem;
-        max-width: calc(100% - 1.5rem);
-        border-radius: 6px;
-    }
-
-    /* Slightly smaller table text on mobile */
-    .fileListSheet .sapMListTblCell .sapMText,
-    .fileListSheet .sapMObjLTitle {
-        font-size: 0.875rem !important;
-    }
-}
-
-/* Typography Enhancements for Paper */
-.paperSheet .sapMTitle {
-    font-family: "72", "72full", Arial, Helvetica, sans-serif !important;
-    color: #32363a;
-}
-
-.paperSheet .sapMText {
-    font-family: "72", "72full", Arial, Helvetica, sans-serif !important;
-    color: #454a50;
-    line-height: 1.65;
-    font-size: 0.9375rem;
-    font-weight: 400;
-}
-
-/* Ensure Headers look clean (Overrides for UI5 Controls) */
-.markdown-header-1 {
-    font-size: 1.75rem !important;
-    font-weight: 600 !important;
-    color: #1d2d3e !important;
-    margin-top: 1.5rem !important;
-    margin-bottom: 1rem !important;
-    border-bottom: none !important;
-    letter-spacing: -0.015em !important;
-}
-
-.markdown-header-2 {
-    font-size: 1.375rem !important;
-    font-weight: 400 !important;
-    color: #0064d9 !important;
-    margin-top: 1.75rem !important;
-    margin-bottom: 0.75rem !important;
-    letter-spacing: -0.01em !important;
-}
-
-/* Table Enhancements */
-.sapMListTblHeader {
-    background-color: #f5f7fa !important;
-    border-bottom: 2px solid #e5e7eb !important;
-    height: 3rem;
-}
-
-.sapMListTblHeader .sapMText {
-    color: #1d2d3e !important;
-    font-weight: 700 !important;
+    letter-spacing: 0.02em !important;
     text-transform: uppercase;
-    font-size: 0.8125rem !important;
-    letter-spacing: 0.05em !important;
-    opacity: 0.9;
 }
 
-.sapMListTblCell {
-    padding-top: 1rem !important;
-    padding-bottom: 1rem !important;
-    vertical-align: middle !important;
-}
-
-.sapMListTblCell .sapMText {
-    color: #454a50 !important;
-    font-size: 0.9375rem !important;
-    font-weight: 400 !important;
-}
-
-/* Group Headers (Customer Names) - CLEANED UP */
-/* Removed conflicting global .sapMGHLI rule that was breaking layout */
-
-.sapMGHLI .sapMGroupTitle {
-    color: #0064d9 !important;
-    font-size: 1.1rem !important;
-    font-weight: 600 !important;
-    padding-left: 0.5rem;
-}
-
-/* Hover effect for table rows */
-.sapMListTblRow:hover {
-    background-color: #f8faff !important;
-}
-
-/* Section Specific Spacing */
-.section-capacity-outlook .markdown-content li {
-    margin-bottom: 0.5rem;
-    /* Ensure consistent spacing */
-}
-
-.objectiveCard .markdown-content li {
-    margin-bottom: 0.5rem;
-    /* Match Capacity Outlook */
+/* ─── MultiSelect Checkbox ─── */
+.fileListSheet .sapMCb .sapMCbBg {
+    border-color: var(--ewa-text-muted) !important;
 }
 
 /* ═══════════════════════════════════════════════════════════════════════════
-   JSON-BASED RENDERING STYLES
+   GLOBAL TABLE ENHANCEMENTS
    ═══════════════════════════════════════════════════════════════════════════ */
 
-/* Status indicators for System Health */
-.status-good {
-    color: #27ae60 !important;
+.sapMListTblHeader {
+    background: var(--ewa-bg-card) !important;
+    border-bottom: 1px solid var(--ewa-border-accent) !important;
+}
+
+.sapMListTblHeader .sapMText {
+    color: var(--ewa-accent-primary) !important;
+    font-weight: 700 !important;
+    text-transform: uppercase;
+    font-size: 0.7rem !important;
+    letter-spacing: 0.08em !important;
+}
+
+.sapMListTblCell {
+    padding-top: 0.75rem !important;
+    padding-bottom: 0.75rem !important;
+    vertical-align: middle !important;
+    border-bottom: 1px solid var(--ewa-border) !important;
+}
+
+.sapMListTblCell .sapMText {
+    color: var(--ewa-text-primary) !important;
+    font-size: 0.875rem !important;
     font-weight: 400 !important;
 }
 
-.status-fair {
-    color: #f39c12 !important;
-    font-weight: 400 !important;
+.sapMListTblRow {
+    background: transparent !important;
 }
 
-.status-poor {
-    color: #c0392b !important;
+.sapMListTblRow:hover {
+    background: var(--ewa-bg-hover) !important;
+}
+
+/* Global Group Headers */
+.sapMGHLI .sapMGroupTitle {
+    color: var(--ewa-accent-warm) !important;
+    font-size: 0.9rem !important;
+    font-weight: 600 !important;
+}
+
+/* ═══════════════════════════════════════════════════════════════════════════
+   BUTTONS
+   ═══════════════════════════════════════════════════════════════════════════ */
+
+/* Primary / Emphasized Button */
+.sapMBtnEmphasized .sapMBtnInner {
+    background: linear-gradient(135deg, var(--ewa-accent-primary) 0%, #2563eb 100%) !important;
+    border: none !important;
+    border-radius: var(--ewa-radius-sm) !important;
+    box-shadow: 0 2px 8px var(--ewa-accent-glow) !important;
+    transition: transform var(--ewa-transition-fast), box-shadow var(--ewa-transition-fast) !important;
+    color: #ffffff !important;
+}
+
+.sapMBtnEmphasized .sapMBtnInner:hover {
+    transform: translateY(-1px) !important;
+    box-shadow: 0 4px 16px var(--ewa-accent-glow) !important;
+}
+
+/* Accept (Process) */
+.sapMBtnAccept .sapMBtnInner {
+    background: linear-gradient(135deg, var(--ewa-accent-success), #059669) !important;
+    border: none !important;
+    border-radius: var(--ewa-radius-sm) !important;
+    color: #ffffff !important;
+}
+
+/* Reject (Delete) */
+.sapMBtnReject .sapMBtnInner {
+    background: linear-gradient(135deg, var(--ewa-accent-danger), #dc2626) !important;
+    border: none !important;
+    border-radius: var(--ewa-radius-sm) !important;
+    color: #ffffff !important;
+}
+
+/* Transparent Buttons */
+.sapMBtnTransparent .sapMBtnIcon {
+    color: var(--ewa-text-secondary) !important;
+    transition: color var(--ewa-transition-fast) !important;
+}
+
+.sapMBtnTransparent:hover .sapMBtnIcon {
+    color: var(--ewa-accent-primary) !important;
+}
+
+/* ═══════════════════════════════════════════════════════════════════════════
+   SELECT / DROPDOWN
+   ═══════════════════════════════════════════════════════════════════════════ */
+
+.sapMSlt .sapMSltArrow {
+    background: var(--ewa-bg-elevated) !important;
+    color: var(--ewa-text-secondary) !important;
+}
+
+.sapMSlt .sapMSltLabel,
+.sapMSltText {
+    color: var(--ewa-text-primary) !important;
+    font-weight: 500 !important;
+    font-size: 0.8125rem !important;
+}
+
+.sapMSlt {
+    background: var(--ewa-bg-elevated) !important;
+    border-color: var(--ewa-border) !important;
+    border-radius: var(--ewa-radius-sm) !important;
+}
+
+/* Dropdown popover */
+.sapMSltPicker-CTX .sapMSelectListItemText,
+.sapMSltPicker-CTX .sapMSelectListItemBase,
+.sapMSltPicker-CTX .sapMSLITitleOnly {
+    font-family: 'DM Sans', -apple-system, BlinkMacSystemFont, sans-serif !important;
+    font-size: 0.8125rem !important;
+    font-weight: 500 !important;
+    color: var(--ewa-text-inverse) !important;
+}
+
+/* ═══════════════════════════════════════════════════════════════════════════
+   INPUT FIELDS
+   ═══════════════════════════════════════════════════════════════════════════ */
+
+.sapMInputBaseContentWrapper {
+    background: var(--ewa-bg-elevated) !important;
+    border-color: var(--ewa-border) !important;
+    border-radius: var(--ewa-radius-sm) !important;
+}
+
+.sapMInputBaseInner {
+    color: var(--ewa-text-primary) !important;
+    background: transparent !important;
+}
+
+/* DatePicker */
+.sapMDP .sapMInputBaseContentWrapper {
+    background: var(--ewa-bg-elevated) !important;
+}
+
+/* ═══════════════════════════════════════════════════════════════════════════
+   ANALYSIS VIEW — STAT CARDS (Glassmorphism)  
+   ═══════════════════════════════════════════════════════════════════════════ */
+
+.ewaStatCard {
+    background: var(--ewa-bg-glass) !important;
+    backdrop-filter: blur(12px) !important;
+    -webkit-backdrop-filter: blur(12px) !important;
+    border: 1px solid var(--ewa-border) !important;
+    border-radius: var(--ewa-radius-md) !important;
+    padding: 1rem 1.5rem !important;
+    min-width: 130px !important;
+    text-align: center;
+    transition: transform var(--ewa-transition-fast), box-shadow var(--ewa-transition-fast), border-color var(--ewa-transition-fast) !important;
+    cursor: default;
+}
+
+.ewaStatCard:hover {
+    transform: translateY(-2px) !important;
+    box-shadow: var(--ewa-shadow-md) !important;
+    border-color: var(--ewa-border-accent) !important;
+}
+
+.ewaStatValue .sapMObjSText {
+    font-size: 1.75rem !important;
+    font-weight: 700 !important;
+    font-family: 'DM Sans', -apple-system, sans-serif !important;
+    letter-spacing: -0.02em !important;
+}
+
+.ewaStatLabel {
+    font-size: 0.7rem !important;
+    font-weight: 600 !important;
+    color: var(--ewa-text-muted) !important;
+    text-transform: uppercase !important;
+    letter-spacing: 0.06em !important;
+    margin-top: 0.25rem !important;
+}
+
+/* ─── Stat card icon colors ─── */
+.ewaStatCard .sapMObjSError .sapMObjSText {
+    color: var(--ewa-accent-danger) !important;
+}
+
+.ewaStatCard .sapMObjSWarning .sapMObjSText {
+    color: var(--ewa-accent-warning) !important;
+}
+
+.ewaStatCard .sapMObjSNone .sapMObjSText {
+    color: var(--ewa-text-primary) !important;
+}
+
+.ewaStatCard .sapMObjSInformation .sapMObjSText {
+    color: var(--ewa-accent-primary) !important;
+}
+
+/* ═══════════════════════════════════════════════════════════════════════════
+   ANALYSIS VIEW — MARKDOWN HEADERS
+   ═══════════════════════════════════════════════════════════════════════════ */
+
+.markdown-header-1 {
+    font-size: 1.5rem !important;
+    font-weight: 700 !important;
+    color: var(--ewa-text-primary) !important;
+    margin-top: 1rem !important;
+    margin-bottom: 1rem !important;
+    border-bottom: none !important;
+    letter-spacing: -0.02em !important;
+    font-family: 'DM Sans', -apple-system, sans-serif !important;
+}
+
+.markdown-header-2 {
+    font-size: 1.2rem !important;
+    font-weight: 600 !important;
+    color: var(--ewa-accent-primary) !important;
+    margin-top: 1.75rem !important;
+    margin-bottom: 0.75rem !important;
+    letter-spacing: -0.01em !important;
+    font-family: 'DM Sans', -apple-system, sans-serif !important;
+}
+
+/* ─── Markdown body content ─── */
+.markdown-content h1 {
+    font-size: 1.5rem;
+    font-weight: 700;
+    color: var(--ewa-text-primary);
+    margin-top: 2rem;
+    margin-bottom: 1rem;
+    font-family: 'DM Sans', -apple-system, sans-serif;
+    letter-spacing: -0.02em;
+}
+
+.markdown-content h2 {
+    font-size: 1.2rem;
+    font-weight: 600;
+    color: var(--ewa-accent-primary);
+    margin-top: 1.5rem;
+    margin-bottom: 0.75rem;
+    font-family: 'DM Sans', -apple-system, sans-serif;
+}
+
+.markdown-content h3 {
+    font-size: 1.05rem;
+    font-weight: 600;
+    color: var(--ewa-text-primary);
+    margin-top: 1.25rem;
+    margin-bottom: 0.5rem;
+}
+
+.markdown-content p {
+    margin-bottom: 0.75rem;
+    line-height: 1.7;
+    font-size: 0.9rem;
+    font-weight: 400;
+    color: var(--ewa-text-secondary);
+}
+
+.markdown-content ul,
+.markdown-content ol {
+    margin-left: 1.25rem;
+    margin-bottom: 0.75rem;
+}
+
+.markdown-content li {
+    margin-bottom: 0.4rem;
+    color: var(--ewa-text-secondary);
+    line-height: 1.65;
+    font-size: 0.9rem;
+}
+
+/* ─── Paper Sheet Text ─── */
+.paperSheet .sapMTitle {
+    font-family: 'DM Sans', -apple-system, sans-serif !important;
+    color: var(--ewa-text-primary) !important;
+}
+
+.paperSheet .sapMText {
+    font-family: 'DM Sans', -apple-system, sans-serif !important;
+    color: var(--ewa-text-secondary) !important;
+    line-height: 1.65;
+    font-size: 0.9rem;
+}
+
+/* ═══════════════════════════════════════════════════════════════════════════
+   ANALYSIS TABLES (System Health, Positive Findings, Domain Table)
+   ═══════════════════════════════════════════════════════════════════════════ */
+
+.analysis-table .sapMText,
+.analysis-table .sapMLabel {
+    font-family: 'DM Sans', -apple-system, sans-serif !important;
+    font-size: 0.875rem !important;
     font-weight: 400 !important;
+    color: var(--ewa-text-secondary) !important;
 }
 
 .system-health-table .sapMListTblCell .sapMText,
 .system-health-table .sapMListTblCell .sapMLabel {
-    font-family: "72", "72full", Arial, Helvetica, sans-serif !important;
-    font-size: 0.9375rem !important;
+    font-size: 0.875rem !important;
     font-weight: 400 !important;
-    color: #454a50 !important;
-    line-height: 1.65 !important;
-    letter-spacing: 0.01em !important;
+    color: var(--ewa-text-secondary) !important;
 }
 
 .system-health-table .sapMListTblHeader .sapMText {
-    font-family: "72", "72full", Arial, Helvetica, sans-serif !important;
-    font-size: 0.9375rem !important;
-    font-weight: 400 !important;
-    color: #454a50 !important;
-    line-height: 1.65 !important;
-    letter-spacing: 0.01em !important;
     text-transform: none !important;
-}
-
-.system-health-table .sapMListTblCell .sapMText.status-good {
-    color: #27ae60 !important;
-}
-
-.system-health-table .sapMListTblCell .sapMText.status-fair {
-    color: #f39c12 !important;
-}
-
-.system-health-table .sapMListTblCell .sapMText.status-poor {
-    color: #c0392b !important;
+    font-weight: 600 !important;
+    color: var(--ewa-text-primary) !important;
+    font-size: 0.8125rem !important;
+    letter-spacing: 0 !important;
 }
 
 .positive-findings-table .sapMListTblCell .sapMText,
 .positive-findings-table .sapMListTblCell .sapMLabel {
-    font-family: "72", "72full", Arial, Helvetica, sans-serif !important;
-    font-size: 0.9375rem !important;
+    font-size: 0.875rem !important;
     font-weight: 400 !important;
-    color: #454a50 !important;
-    line-height: 1.65 !important;
-    letter-spacing: 0.01em !important;
+    color: var(--ewa-text-secondary) !important;
 }
 
 .positive-findings-table .sapMListTblHeader .sapMText {
-    font-family: "72", "72full", Arial, Helvetica, sans-serif !important;
-    font-size: 0.9375rem !important;
-    font-weight: 400 !important;
-    color: #454a50 !important;
-    line-height: 1.65 !important;
-    letter-spacing: 0.01em !important;
     text-transform: none !important;
+    font-weight: 600 !important;
+    color: var(--ewa-text-primary) !important;
+    font-size: 0.8125rem !important;
+    letter-spacing: 0 !important;
 }
 
-/* Area badge in finding panels */
+/* Status indicators for System Health */
+.status-good {
+    color: var(--ewa-accent-success) !important;
+    font-weight: 500 !important;
+}
+
+.status-fair {
+    color: var(--ewa-accent-warning) !important;
+    font-weight: 500 !important;
+}
+
+.status-poor {
+    color: var(--ewa-accent-danger) !important;
+    font-weight: 500 !important;
+}
+
+.system-health-table .sapMListTblCell .sapMText.status-good {
+    color: var(--ewa-accent-success) !important;
+}
+
+.system-health-table .sapMListTblCell .sapMText.status-fair {
+    color: var(--ewa-accent-warning) !important;
+}
+
+.system-health-table .sapMListTblCell .sapMText.status-poor {
+    color: var(--ewa-accent-danger) !important;
+}
+
+/* ═══════════════════════════════════════════════════════════════════════════
+   SEVERITY CHIPS & BADGES
+   ═══════════════════════════════════════════════════════════════════════════ */
+
+.severity-chip {
+    display: inline-flex;
+    align-items: center;
+    padding: 3px 10px;
+    border-radius: 999px;
+    font-family: 'DM Sans', -apple-system, sans-serif;
+    font-size: 0.7rem;
+    font-weight: 700;
+    letter-spacing: 0.04em;
+    text-transform: uppercase;
+    line-height: 1.4;
+    vertical-align: middle;
+    margin-left: 0.5rem;
+}
+
+.severity-chip-critical {
+    background: rgba(239, 68, 68, 0.15);
+    color: #f87171;
+    border: 1px solid rgba(239, 68, 68, 0.3);
+}
+
+.severity-chip-high {
+    background: rgba(249, 115, 22, 0.15);
+    color: #fb923c;
+    border: 1px solid rgba(249, 115, 22, 0.3);
+}
+
+.severity-chip-medium {
+    background: rgba(245, 158, 11, 0.15);
+    color: #fbbf24;
+    border: 1px solid rgba(245, 158, 11, 0.3);
+}
+
+.severity-chip-low {
+    background: rgba(16, 185, 129, 0.15);
+    color: #34d399;
+    border: 1px solid rgba(16, 185, 129, 0.3);
+}
+
+/* Area badge */
 .area-badge {
     display: inline-block;
-    background-color: #0064d9;
+    background: linear-gradient(135deg, var(--ewa-accent-primary), #2563eb);
     color: #ffffff;
     padding: 3px 10px;
-    border-radius: 4px;
-    font-size: 0.75rem;
-    font-weight: 500;
+    border-radius: 999px;
+    font-size: 0.65rem;
+    font-weight: 700;
     text-transform: uppercase;
-    letter-spacing: 0.02em;
+    letter-spacing: 0.04em;
 }
 
-/* Finding panel styling */
+/* Risk Badges (legacy) */
+.risk-high {
+    color: var(--ewa-accent-danger);
+    font-weight: 600;
+}
+
+.risk-medium {
+    color: var(--ewa-accent-warning);
+    font-weight: 600;
+}
+
+.risk-low {
+    color: var(--ewa-accent-success);
+    font-weight: 600;
+}
+
+/* ═══════════════════════════════════════════════════════════════════════════
+   FINDING PANELS
+   ═══════════════════════════════════════════════════════════════════════════ */
+
 .findingPanel {
-    border-left: 4px solid #0064d9 !important;
-    margin-bottom: 1rem;
+    border-left: 3px solid var(--ewa-accent-primary) !important;
+    margin-bottom: 0.75rem;
+    background: var(--ewa-bg-card) !important;
+    border-radius: var(--ewa-radius-sm) !important;
+    overflow: hidden;
 }
 
 .findingPanel .sapMPanelWrappingDivTb {
     padding-left: 0.5rem;
+    background: var(--ewa-bg-card) !important;
 }
 
 .findingPanel .sapMPanelHdr {
-    background-color: #f7f8fa;
+    background: var(--ewa-bg-card) !important;
+    color: var(--ewa-text-primary) !important;
 }
 
-/* Finding content styling */
+.findingPanel > .sapMPanelContent {
+    background: var(--ewa-bg-card) !important;
+}
+
+/* Finding content */
 .finding-content {
     padding: 0.5rem 0;
 }
 
 .field-group {
-    margin-bottom: 1rem;
-    padding-bottom: 0.75rem;
-    border-bottom: 1px solid #f0f0f0;
+    margin-bottom: 0.75rem;
+    padding-bottom: 0.5rem;
+    border-bottom: 1px solid var(--ewa-border);
 }
 
 .field-group:last-child {
@@ -907,28 +898,108 @@ body {
 
 .field-group strong {
     display: block;
-    color: #32363a;
+    color: var(--ewa-text-primary);
     font-weight: 600;
-    margin-bottom: 0.25rem;
-    font-size: 0.875rem;
+    margin-bottom: 0.2rem;
+    font-size: 0.8125rem;
 }
 
 .field-group div {
-    color: #555;
+    color: var(--ewa-text-secondary);
     line-height: 1.6;
+    font-size: 0.875rem;
 }
 
 .field-group ul {
-    margin: 0.5rem 0 0 1.25rem;
+    margin: 0.4rem 0 0 1.25rem;
     padding: 0;
 }
 
 .field-group li {
-    margin-bottom: 0.35rem;
-    color: #555;
+    margin-bottom: 0.3rem;
+    color: var(--ewa-text-secondary);
+    font-size: 0.875rem;
 }
 
-/* Executive Summary styling - clean, no frame */
+/* ═══════════════════════════════════════════════════════════════════════════
+   SEVERITY GROUP PANELS
+   ═══════════════════════════════════════════════════════════════════════════ */
+
+.severityGroupPanel {
+    border-radius: var(--ewa-radius-md) !important;
+    overflow: hidden;
+    margin-bottom: 1rem;
+    background: var(--ewa-bg-card) !important;
+    border: 1px solid var(--ewa-border) !important;
+}
+
+.severityGroupPanel .sapMPanelHdr,
+.severityGroupPanel .sapMPanelWrappingDivTb {
+    background: var(--ewa-bg-card) !important;
+    color: var(--ewa-text-primary) !important;
+}
+
+.severityGroupPanel > .sapMPanelContent {
+    padding: 0.5rem 1rem 1rem !important;
+    background: var(--ewa-bg-card) !important;
+}
+
+/* Severity border colors */
+.severityGroupPanel-critical {
+    border-left: 4px solid var(--ewa-accent-danger) !important;
+}
+
+.severityGroupPanel-high {
+    border-left: 4px solid #f97316 !important;
+}
+
+.severityGroupPanel-medium {
+    border-left: 4px solid var(--ewa-accent-warning) !important;
+}
+
+.severityGroupPanel-low {
+    border-left: 4px solid var(--ewa-accent-success) !important;
+}
+
+/* Severity icon colors */
+.severity-icon-critical {
+    color: var(--ewa-accent-danger) !important;
+}
+
+.severity-icon-high {
+    color: #f97316 !important;
+}
+
+.severity-icon-medium {
+    color: var(--ewa-accent-warning) !important;
+}
+
+.severity-icon-low {
+    color: var(--ewa-accent-success) !important;
+}
+
+/* Nested finding panels */
+.findingPanelNested {
+    border-left: 2px solid var(--ewa-accent-primary) !important;
+    margin-bottom: 0.5rem;
+    background: var(--ewa-bg-elevated) !important;
+    border-radius: var(--ewa-radius-sm) !important;
+}
+
+.findingPanelNested .sapMPanelHdr,
+.findingPanelNested .sapMPanelWrappingDivTb {
+    background: var(--ewa-bg-elevated) !important;
+    color: var(--ewa-text-primary) !important;
+}
+
+.findingPanelNested > .sapMPanelContent {
+    background: var(--ewa-bg-elevated) !important;
+}
+
+/* ═══════════════════════════════════════════════════════════════════════════
+   EXECUTIVE SUMMARY
+   ═══════════════════════════════════════════════════════════════════════════ */
+
 .executive-summary {
     margin-bottom: 1rem;
 }
@@ -941,7 +1012,9 @@ body {
 }
 
 .executive-summary p {
-    margin-bottom: 0.75rem;
+    margin-bottom: 0.6rem;
+    color: var(--ewa-text-secondary);
+    font-size: 0.9rem;
 }
 
 .executive-summary ul {
@@ -952,8 +1025,10 @@ body {
 
 .executive-summary li {
     position: relative;
-    padding: 0.6rem 0 0.6rem 0.75rem;
-    border-bottom: 1px solid #e6e6e6;
+    padding: 0.5rem 0 0.5rem 0.75rem;
+    border-bottom: 1px solid var(--ewa-border);
+    color: var(--ewa-text-secondary);
+    font-size: 0.9rem;
 }
 
 .executive-summary li:last-child {
@@ -961,16 +1036,16 @@ body {
 }
 
 .executive-summary li::before {
-    content: "•";
+    content: "›";
     position: absolute;
     left: -0.4rem;
-    top: 0.6rem;
-    color: #0064d9;
+    top: 0.5rem;
+    color: var(--ewa-accent-primary);
     font-size: 1rem;
     font-weight: 700;
 }
 
-/* Capacity Outlook styling */
+/* Capacity Outlook */
 .capacity-outlook ul {
     list-style: none;
     padding: 0;
@@ -978,8 +1053,9 @@ body {
 }
 
 .capacity-outlook li {
-    padding: 0.5rem 0;
-    border-bottom: 1px solid #f0f0f0;
+    padding: 0.4rem 0;
+    border-bottom: 1px solid var(--ewa-border);
+    color: var(--ewa-text-secondary);
 }
 
 .capacity-outlook li:last-child {
@@ -987,108 +1063,391 @@ body {
 }
 
 .capacity-outlook strong {
-    color: #32363a;
+    color: var(--ewa-text-primary);
+}
+
+/* ─── Content Container (legacy) ─── */
+.contentContainer {
+    max-width: 1100px;
+    width: 100%;
+    margin: 1.5rem auto;
+    padding: 1.5rem 2rem;
+    background: var(--ewa-bg-surface);
+    border-radius: var(--ewa-radius-md);
+    border: 1px solid var(--ewa-border);
+    box-shadow: var(--ewa-shadow-md);
+}
+
+.contentContainer .sapMPanel {
+    border-radius: var(--ewa-radius-sm);
+    overflow: hidden;
+    background: var(--ewa-bg-card) !important;
+}
+
+.contentContainer .sapMPanelHdr {
+    background: var(--ewa-bg-card) !important;
+    color: var(--ewa-text-primary) !important;
+}
+
+/* ─── Objective Card (legacy) ─── */
+.objectiveCard {
+    background: var(--ewa-bg-card);
+    border: 1px solid var(--ewa-border);
+    border-radius: var(--ewa-radius-md);
+    padding: 1.25rem;
+    box-shadow: var(--ewa-shadow-sm);
+}
+
+.objectiveTitle {
+    font-weight: 600;
+    color: var(--ewa-text-primary);
+    margin-bottom: 0.4rem;
+}
+
+.objectiveText {
+    color: var(--ewa-text-secondary);
+    line-height: 1.55;
 }
 
 /* ═══════════════════════════════════════════════════════════════════════════
-   SEVERITY GROUP PANELS
+   CHAT BUBBLES (inside SAPUI5 views)
    ═══════════════════════════════════════════════════════════════════════════ */
 
-/* Base severity group panel styling */
+.chatBubbleUser {
+    background: linear-gradient(135deg, var(--ewa-accent-primary) 0%, #2563eb 100%);
+    color: #ffffff;
+    border-radius: 16px;
+    border-top-right-radius: 4px;
+    padding: 0.65rem 0.85rem;
+    margin: 0.25rem 0;
+    max-width: 78%;
+    box-shadow: 0 4px 16px var(--ewa-accent-glow);
+    word-break: break-word;
+}
+
+.chatBubbleBot {
+    background: var(--ewa-bg-card);
+    color: var(--ewa-text-primary);
+    border: 1px solid var(--ewa-border);
+    border-radius: 16px;
+    border-top-left-radius: 4px;
+    padding: 0.65rem 0.85rem;
+    margin: 0.25rem 0;
+    max-width: 78%;
+    box-shadow: var(--ewa-shadow-sm);
+    word-break: break-word;
+}
+
+.chatBubbleSystem {
+    background: rgba(245, 158, 11, 0.1);
+    color: var(--ewa-accent-warm);
+    border: 1px solid rgba(245, 158, 11, 0.25);
+    border-radius: 14px;
+    padding: 0.6rem 0.85rem;
+    margin: 0.25rem 0;
+    max-width: 90%;
+    word-break: break-word;
+}
+
+.chatMessageRow {
+    margin: 0.25rem 0;
+}
+
+.chatList.sapMList {
+    padding: 0.75rem;
+    background: transparent !important;
+}
+
+.chatList .sapMLIB {
+    background: transparent !important;
+    border: none !important;
+}
+
+.chatList .sapMLIBContent {
+    padding: 0;
+}
+
+.chatFormattedText {
+    line-height: 1.55;
+    font-size: 0.9rem;
+}
+
+.chatFormattedText p {
+    margin: 0;
+}
+
+.chatFormattedText p + p {
+    margin-top: 0.4rem;
+}
+
+.chatFormattedText ul,
+.chatFormattedText ol {
+    margin: 0.3rem 0 0.3rem 1.25rem;
+    padding: 0;
+}
+
+.chatFormattedText li {
+    margin: 0.15rem 0;
+}
+
+.chatFormattedText a {
+    color: var(--ewa-accent-primary);
+    text-decoration: none;
+    font-weight: 600;
+}
+
+.chatFormattedText a:hover {
+    text-decoration: underline;
+}
+
+.chatFormattedText hr {
+    border: 0;
+    border-top: 1px solid var(--ewa-border);
+    margin: 0.6rem 0;
+}
+
+.chatFormattedText .chatHeading {
+    margin: 0.3rem 0 0.2rem;
+    letter-spacing: 0.01em;
+    color: var(--ewa-text-primary);
+}
+
+.chatFormattedText .chatHeading.h1 { font-size: 1.05rem; }
+.chatFormattedText .chatHeading.h2 { font-size: 1rem; }
+.chatFormattedText .chatHeading.h3 { font-size: 0.95rem; }
+.chatFormattedText .chatHeading.h4 { font-size: 0.9rem; }
+
+.chatFormattedText code {
+    font-family: 'JetBrains Mono', ui-monospace, monospace;
+    font-size: 0.85em;
+    padding: 0.08rem 0.35rem;
+    border-radius: 4px;
+    background: rgba(59, 130, 246, 0.1);
+    color: var(--ewa-accent-primary);
+}
+
+.chatBubbleUser .chatFormattedText code {
+    background: rgba(255, 255, 255, 0.2);
+    color: #ffffff;
+}
+
+.chatFormattedText pre {
+    margin: 0.4rem 0 0;
+    padding: 0.6rem 0.75rem;
+    border-radius: var(--ewa-radius-sm);
+    background: var(--ewa-bg-deep);
+    overflow: auto;
+    border: 1px solid var(--ewa-border);
+}
+
+.chatBubbleUser .chatFormattedText pre {
+    background: rgba(255, 255, 255, 0.12);
+    border-color: rgba(255,255,255,0.15);
+}
+
+.chatInputContainer {
+    align-items: flex-end;
+    gap: 0.5rem;
+    padding: 0.75rem;
+    border-top: 1px solid var(--ewa-border);
+    background: var(--ewa-bg-surface);
+}
+
+.chatInput textarea {
+    font-size: 0.9rem;
+    font-family: 'DM Sans', -apple-system, sans-serif;
+}
+
+.chatInput .sapMInputBaseContentWrapper {
+    border-radius: var(--ewa-radius-md);
+}
+
+.chatSendButton {
+    margin-bottom: 2px;
+}
+
+.chatBusyIndicator {
+    margin: 0.25rem 0.75rem;
+    opacity: 0.85;
+}
+
+/* ═══════════════════════════════════════════════════════════════════════════
+   ANIMATIONS (Staggered entrance)
+   ═══════════════════════════════════════════════════════════════════════════ */
+
+@keyframes ewaFadeSlideUp {
+    from {
+        opacity: 0;
+        transform: translateY(12px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+@keyframes ewaPulseGlow {
+    0%, 100% { box-shadow: 0 0 0 0 var(--ewa-accent-glow); }
+    50% { box-shadow: 0 0 16px 4px var(--ewa-accent-glow); }
+}
+
+.paperSheet {
+    animation: ewaFadeSlideUp 0.5s var(--ewa-ease) both;
+}
+
+.ewaStatCard:nth-child(1) { animation: ewaFadeSlideUp 0.4s var(--ewa-ease) 0.1s both; }
+.ewaStatCard:nth-child(2) { animation: ewaFadeSlideUp 0.4s var(--ewa-ease) 0.15s both; }
+.ewaStatCard:nth-child(3) { animation: ewaFadeSlideUp 0.4s var(--ewa-ease) 0.2s both; }
+.ewaStatCard:nth-child(4) { animation: ewaFadeSlideUp 0.4s var(--ewa-ease) 0.25s both; }
+.ewaStatCard:nth-child(5) { animation: ewaFadeSlideUp 0.4s var(--ewa-ease) 0.3s both; }
+
+.findingPanel,
 .severityGroupPanel {
-    border-radius: 8px !important;
-    overflow: hidden;
-    margin-bottom: 1rem;
+    animation: ewaFadeSlideUp 0.35s var(--ewa-ease) both;
 }
 
-.severityGroupPanel .sapMPanelHdr,
-.severityGroupPanel .sapMPanelWrappingDivTb {
-    background-color: #f7f8fa;
+/* Processing indicator pulse */
+.sapMObjSWarning .sapMObjSIcon {
+    animation: ewaPulseGlow 2s ease-in-out infinite;
+    border-radius: 50%;
 }
 
-/* Severity-specific border colors */
-.severityGroupPanel-critical {
-    border-left: 4px solid #c0392b !important;
+/* ═══════════════════════════════════════════════════════════════════════════
+   BREADCRUMBS
+   ═══════════════════════════════════════════════════════════════════════════ */
+
+.sapMBreadcrumbs {
+    padding-left: 0;
 }
 
-.severityGroupPanel-high {
-    border-left: 4px solid #e67e22 !important;
+.sapMBreadcrumbs .sapMText {
+    color: var(--ewa-text-muted) !important;
 }
 
-.severityGroupPanel-medium {
-    border-left: 4px solid #f39c12 !important;
+/* ═══════════════════════════════════════════════════════════════════════════
+   RESPONSIVE
+   ═══════════════════════════════════════════════════════════════════════════ */
+
+@media (max-width: 1200px) {
+    .contentContainer {
+        margin: 1rem;
+        max-width: calc(100% - 2rem);
+    }
 }
 
-.severityGroupPanel-low {
-    border-left: 4px solid #27ae60 !important;
+@media (max-width: 1700px) {
+    .fileListSheet {
+        margin: 1rem !important;
+        max-width: calc(100% - 2rem) !important;
+    }
 }
 
-/* Severity icon colors */
-.severity-icon-critical {
-    color: #c0392b !important;
+@media (max-width: 768px) {
+    .fileListSheet {
+        margin: 0.5rem !important;
+        padding: 0.75rem !important;
+        max-width: calc(100% - 1rem) !important;
+        border-radius: var(--ewa-radius-sm) !important;
+    }
+
+    .fileListSheet .sapMListTblCell .sapMText {
+        font-size: 0.8rem !important;
+    }
+
+    .paperSheet {
+        padding: 1.5rem !important;
+    }
+
+    .ewaStatCard {
+        min-width: 100px !important;
+        padding: 0.75rem 1rem !important;
+    }
 }
 
-.severity-icon-high {
-    color: #e67e22 !important;
+@media (max-width: 600px) {
+    .contentContainer {
+        margin: 0.5rem;
+        padding: 1rem;
+        max-width: calc(100% - 1rem);
+        border-radius: var(--ewa-radius-sm);
+    }
+
+    .paperSheet {
+        padding: 1rem !important;
+        margin: 0.5rem auto !important;
+    }
 }
 
-.severity-icon-medium {
-    color: #f39c12 !important;
-}
-
-.severity-icon-low {
-    color: #27ae60 !important;
-}
-
-/* Nested finding panels within severity groups */
-.findingPanelNested {
-    border-left: 3px solid #0064d9 !important;
-    margin-bottom: 0.5rem;
-    background-color: #ffffff;
-}
-
-.findingPanelNested .sapMPanelHdr,
-.findingPanelNested .sapMPanelWrappingDivTb {
-    background-color: #fafbfc;
-}
-
-/* Severity group content padding */
-.severityGroupPanel>.sapMPanelContent {
-    padding: 0.5rem 1rem 1rem 1rem;
-}
-
-/* =========================================
-   RESPONSIVE OVERRIDES FOR LARGE SCREENS
-   ========================================= */
-
-/* For Full HD Monitors (1920px wide) */
+/* ─── Large Screens ─── */
 @media (min-width: 1600px) {
     .paperSheet {
         max-width: 1500px;
-        /* Increase from 1200px */
     }
 
     .fileListSheet {
-        max-width: 1600px;
-        /* Increase from 1300px */
+        max-width: 1600px !important;
     }
 }
 
-/* For 2K/4K Monitors (2560px+) */
 @media (min-width: 2200px) {
     .paperSheet {
         max-width: 2000px;
-        /* Significant increase for 4K */
-        padding: 4rem;
-        /* Add more whitespace inside to balance */
+        padding: 3.5rem !important;
     }
 
     .fileListSheet {
-        max-width: 2200px;
+        max-width: 2200px !important;
     }
+}
 
-    /* Optional: Scale up font slightly on massive 4K screens */
-    html {
-        font-size: 18px;
-    }
+/* ═══════════════════════════════════════════════════════════════════════════
+   SAPUI5 OVERRIDES — Misc & dark theme fixes
+   ═══════════════════════════════════════════════════════════════════════════ */
+
+/* Toolbar spacer fix */
+.sapMTBSeparator {
+    background: var(--ewa-border) !important;
+}
+
+/* Dialog backdrop */
+.sapMDialogBlockLayer {
+    background: rgba(0, 0, 0, 0.6) !important;
+}
+
+/* BusyIndicator */
+.sapUiLocalBusyIndicator {
+    background: rgba(12, 18, 34, 0.7) !important;
+}
+
+/* Message Toast */
+.sapMMessageToast {
+    background: var(--ewa-bg-elevated) !important;
+    color: var(--ewa-text-primary) !important;
+    border: 1px solid var(--ewa-border) !important;
+    border-radius: var(--ewa-radius-md) !important;
+    box-shadow: var(--ewa-shadow-lg) !important;
+    font-family: 'DM Sans', -apple-system, sans-serif !important;
+}
+
+/* Panel expand/collapse icon */
+.sapMPanelExpandableIcon {
+    color: var(--ewa-text-muted) !important;
+}
+
+/* Sticky header fix */
+.sapMListHdrSticky,
+.sapMListTblHeaderSticky {
+    background: var(--ewa-bg-surface) !important;
+}
+
+/* Growing list "More" button */
+.sapMGrowingList .sapMGrowingListTrigger {
+    background: var(--ewa-bg-card) !important;
+    color: var(--ewa-accent-primary) !important;
+    border-top: 1px solid var(--ewa-border) !important;
+}
+
+/* Header content button (Download Workbook on Analysis page) */
+.sapMBarRight .sapMBtnEmphasized .sapMBtnContent {
+    color: #ffffff !important;
 }
