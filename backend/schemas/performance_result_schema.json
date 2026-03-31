@@ -1,0 +1,105 @@
+{
+  "title": "EWAPerformanceResult",
+  "description": "Structured output from the Performance specialist agent. Observation-first model: every assigned performance chapter produces at least one observation covering alerts, workload baselines, capacity KPIs, and SAP advisory actions. RAG status is captured when available from EWA flags; expert assessments are used otherwise.",
+  "type": "object",
+  "additionalProperties": false,
+  "properties": {
+    "domain": {
+      "type": "string",
+      "enum": ["performance"]
+    },
+    "findings": {
+      "type": "array",
+      "description": "Performance observations — one or more entries per assigned chapter/section. Covers alerts (RED/YELLOW), workload baselines, capacity KPIs, and response time assessments. Every assigned section must produce at least one observation, including healthy areas.",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "finding_id": {
+            "type": "string",
+            "description": "Domain-prefixed ID: PERF-01, PERF-02, etc."
+          },
+          "source_chapter": {
+            "type": "string",
+            "description": "Chapter and subsection where this observation originates."
+          },
+          "title": {
+            "type": "string",
+            "description": "Short descriptive title for this observation (e.g. 'CPU Utilization — Application Servers', 'Dialog Response Time Assessment')."
+          },
+          "rag_status": {
+            "type": ["string", "null"],
+            "enum": ["GREEN", "YELLOW", "RED", null],
+            "description": "RAG status: GREEN=healthy, YELLOW=warning/attention, RED=critical. Set to null only when the EWA provides no explicit flag and a narrative assessment is used instead."
+          },
+          "finding": {
+            "type": "string",
+            "description": "The observed state — what was measured or detected, whether healthy or problematic. For healthy areas, summarize the positive metrics. For alerts, describe the exact issue with data values."
+          },
+          "impact": {
+            "type": "string",
+            "description": "Significance of this observation. For healthy items, note what this means for system performance (e.g. 'Hardware resources are adequate for current workload.'). For flagged items, state the technical risk."
+          },
+          "recommendation": {
+            "type": ["string", "null"],
+            "description": "Required action, if any. Set to null for GREEN observations with no action needed. For YELLOW/RED, quote SAP's advisory if available, or provide expert-level SAP Basis guidance."
+          }
+        },
+        "required": ["finding_id", "source_chapter", "title", "rag_status", "finding", "impact", "recommendation"]
+      }
+    },
+    "parameters": {
+      "type": "array",
+      "description": "Configuration parameters with an explicit SAP-recommended value change.",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "param_name": {
+            "type": "string",
+            "description": "Name of the SAP parameter or configuration item."
+          },
+          "current_value": {
+            "type": "string",
+            "description": "Current value as reported in the EWA."
+          },
+          "recommended_value": {
+            "type": "string",
+            "description": "SAP-recommended value as stated in the report."
+          },
+          "action": {
+            "type": "string",
+            "enum": ["Change Required", "Verify"],
+            "description": "Required action for this parameter."
+          },
+          "source_chapter": {
+            "type": "string",
+            "description": "Chapter where this parameter appears."
+          }
+        },
+        "required": ["param_name", "current_value", "recommended_value", "action", "source_chapter"]
+      }
+    },
+    "abstentions": {
+      "type": "array",
+      "description": "Chapters or sections that could not be analyzed due to data quality issues.",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "chapter": {
+            "type": "string",
+            "description": "Chapter or subsection identifier."
+          },
+          "reason": {
+            "type": "string",
+            "enum": ["unreadable", "no_data", "table_empty", "sql_truncated"],
+            "description": "Reason the section could not be analyzed."
+          }
+        },
+        "required": ["chapter", "reason"]
+      }
+    }
+  },
+  "required": ["domain", "findings", "parameters", "abstentions"]
+}

@@ -25,6 +25,7 @@ _PROMPTS_DIR = _BASE_DIR / "prompts"
 _SCHEMAS_DIR = _BASE_DIR / "schemas"
 _DOMAIN_RESULT_SCHEMA_PATH = _SCHEMAS_DIR / "domain_result_schema.json"
 _BUSINESS_SCHEMA_PATH = _SCHEMAS_DIR / "business_result_schema.json"
+_PERFORMANCE_SCHEMA_PATH = _SCHEMAS_DIR / "performance_result_schema.json"
 
 # Finding ID prefixes per domain
 DOMAIN_PREFIXES: dict[str, str] = {
@@ -469,7 +470,7 @@ class DatabaseSpecialist(SpecialistAgent):
 
 class PerformanceSpecialist(SpecialistAgent):
     def __init__(self, client: Any, model: str, **kwargs):
-        super().__init__(client, model, domain="performance", **kwargs)
+        super().__init__(client, model, domain="performance", schema_path=_PERFORMANCE_SCHEMA_PATH, **kwargs)
 
 
 class BasisSpecialist(SpecialistAgent):

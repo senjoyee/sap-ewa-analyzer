@@ -117,6 +117,11 @@ def build_workbook(
             ws = wb.create_sheet(title=DOMAIN_DISPLAY_NAMES[domain])
             sups = supplements_by_domain.get(domain, [])
             _write_business_tab(ws, business_dr, sups, chapters_by_domain.get(domain, []))
+        elif domain == "performance":
+            ws = wb.create_sheet(title=DOMAIN_DISPLAY_NAMES[domain])
+            dr = results_by_domain.get(domain, DomainResult(domain=domain))
+            sups = supplements_by_domain.get(domain, [])
+            _write_performance_tab(ws, dr, sups, chapters_by_domain.get(domain, []))
         else:
             ws = wb.create_sheet(title=DOMAIN_DISPLAY_NAMES[domain])
             dr = results_by_domain.get(domain, DomainResult(domain=domain))
@@ -527,6 +532,125 @@ def _write_business_tab(
             row += 1
     else:
         ws[f"A{row}"] = "No chapters were routed to the business domain."
+        ws[f"A{row}"].font = Font(name="Calibri", size=11, italic=True, color="666666")
+        row += 1
+
+    _auto_fit(ws)
+
+
+# ---------------------------------------------------------------------------
+# Performance Status Report Tab (observation-first, with RAG status)
+# ---------------------------------------------------------------------------
+
+def _write_performance_tab(
+    ws: Worksheet,
+    dr: DomainResult,
+    supplements: list[dict[str, Any]],
+    chapters: list[ChapterData],
+):
+    row = 1
+
+    # Title
+    ws[f"A{row}"] = "Performance — System Status Report"
+    ws[f"A{row}"].font = Font(name="Calibri", size=18, bold=True, color=COLORS["sap_gold"])
+    ws.merge_cells(f"A{row}:F{row}")
+    ws.row_dimensions[row].height = 28
+    row += 2
+
+    # Section A: Performance Observations
+    row = _write_section_header(ws, row, "A — Performance Status")
+    if dr.findings:
+        headers = ["ID", "Status", "Topic Area", "Observation", "Significance", "Action Required"]
+        row = _write_table_headers(ws, row, headers)
+        for obs in dr.findings:
+            rag = obs.get("rag_status")
+            recommendation = obs.get("recommendation") or ""
+            row_vals = [
+                obs.get("finding_id", ""),
+                None,  # placeholder — written by _apply_rag_status_cell
+                obs.get("title", ""),
+                obs.get("finding", ""),
+                obs.get("impact", ""),
+                recommendation if recommendation and recommendation.lower() not in ("null", "none") else "No action required",
+            ]
+            for col_idx, val in enumerate(row_vals, start=1):
+                if col_idx == 2:
+                    cell = ws.cell(row=row, column=col_idx)
+                    _apply_rag_status_cell(cell, rag)
+                else:
+                    cell = ws.cell(row=row, column=col_idx, value=str(val) if val is not None else "")
+                    _apply_data(cell, row)
+            ws.row_dimensions[row].height = 60
+            row += 1
+    else:
+        ws[f"A{row}"] = "No performance observations available."
+        ws[f"A{row}"].font = Font(name="Calibri", size=11, italic=True, color="666666")
+        row += 1
+    row += 1
+
+    # Section B: Parameters
+    row = _write_section_header(ws, row, "B — Parameters")
+    if dr.parameters:
+        headers = ["Parameter", "Current Value", "Recommended", "Action", "Source Chapter", ""]
+        row = _write_table_headers(ws, row, headers)
+        for param in dr.parameters:
+            vals = [
+                param.get("param_name", ""),
+                param.get("current_value", ""),
+                param.get("recommended_value", ""),
+                param.get("action", ""),
+                param.get("source_chapter", ""),
+            ]
+            for col_idx, val in enumerate(vals, start=1):
+                cell = ws.cell(row=row, column=col_idx, value=val)
+                _apply_data(cell, row)
+            row += 1
+    else:
+        ws[f"A{row}"] = "No parameter changes recommended in the performance domain."
+        ws[f"A{row}"].font = Font(name="Calibri", size=11, italic=True, color="666666")
+        row += 1
+    row += 1
+
+    # Section C: Deep Thinker Supplements
+    row = _write_section_header(ws, row, "C — AI Deep Analysis (Derived Recommendations)")
+    if supplements:
+        headers = ["ID", "Title", "Finding", "Rationale", "Recommendation", ""]
+        row = _write_table_headers(ws, row, headers)
+        for sf in supplements:
+            vals = [
+                sf.get("finding_id", ""),
+                sf.get("title", ""),
+                sf.get("finding", ""),
+                sf.get("rationale", ""),
+                sf.get("recommendation", ""),
+            ]
+            for col_idx, val in enumerate(vals, start=1):
+                cell = ws.cell(row=row, column=col_idx, value=str(val) if val is not None else "")
+                _apply_data(cell, row)
+                if col_idx == 1:
+                    cell.font = Font(name="Calibri", size=11, color=COLORS["implicit"])
+            ws.row_dimensions[row].height = 60
+            row += 1
+    else:
+        ws[f"A{row}"] = "No derived recommendations for the performance domain."
+        ws[f"A{row}"].font = Font(name="Calibri", size=11, italic=True, color="666666")
+        row += 1
+
+    row += 1
+
+    # Section D: Chapters Considered
+    row = _write_section_header(ws, row, "D — Chapters Considered")
+    if chapters:
+        headers = ["Chapter", "Chapter Name", "", "", "", ""]
+        row = _write_table_headers(ws, row, headers)
+        for chapter in chapters:
+            vals = [chapter.number, chapter.title]
+            for col_idx, val in enumerate(vals, start=1):
+                cell = ws.cell(row=row, column=col_idx, value=val)
+                _apply_data(cell, row)
+            row += 1
+    else:
+        ws[f"A{row}"] = "No chapters were routed to the performance domain."
         ws[f"A{row}"].font = Font(name="Calibri", size=11, italic=True, color="666666")
         row += 1
 
