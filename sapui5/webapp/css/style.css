@@ -538,14 +538,40 @@ body,
     border-radius: var(--ewa-radius-sm) !important;
 }
 
-/* Dropdown popover */
+/* Dropdown popover — dark theme */
+.sapMSltPicker-CTX,
+.sapMSltPicker-CTX .sapMPopoverCont,
+.sapMSltPicker-CTX .sapMSelectList {
+    background: var(--ewa-bg-card) !important;
+    border-color: var(--ewa-border-accent) !important;
+}
+
 .sapMSltPicker-CTX .sapMSelectListItemText,
 .sapMSltPicker-CTX .sapMSelectListItemBase,
 .sapMSltPicker-CTX .sapMSLITitleOnly {
     font-family: 'DM Sans', -apple-system, BlinkMacSystemFont, sans-serif !important;
     font-size: 0.8125rem !important;
     font-weight: 500 !important;
-    color: var(--ewa-text-inverse) !important;
+    color: var(--ewa-text-primary) !important;
+    background: transparent !important;
+}
+
+/* Dropdown item hover */
+.sapMSltPicker-CTX .sapMSelectListItemBase:hover,
+.sapMSltPicker-CTX .sapMSelectListItemBase.sapMSelectListItemBaseHovering {
+    background: var(--ewa-bg-hover) !important;
+}
+
+/* Dropdown selected item */
+.sapMSltPicker-CTX .sapMSelectListItemBase.sapMSelectListItemBaseSelected,
+.sapMSltPicker-CTX .sapMSelectListItemBase[aria-selected="true"] {
+    background: var(--ewa-accent-primary) !important;
+    color: #ffffff !important;
+}
+
+.sapMSltPicker-CTX .sapMSelectListItemBase.sapMSelectListItemBaseSelected .sapMSelectListItemText,
+.sapMSltPicker-CTX .sapMSelectListItemBase[aria-selected="true"] .sapMSelectListItemText {
+    color: #ffffff !important;
 }
 
 /* ═══════════════════════════════════════════════════════════════════════════
