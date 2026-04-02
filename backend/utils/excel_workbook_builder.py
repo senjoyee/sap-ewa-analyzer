@@ -215,14 +215,42 @@ def _write_executive_summary(
     ws.merge_cells(f"A{row}:F{row}")
     row += 1
 
-    # Collect actionable findings across non-business domains
-    all_findings: list[tuple[str, dict]] = []
+    def _impact_score(impact: str) -> int:
+        val = (str(impact) or "").upper()
+        if "CRIT" in val or "HIGH" in val or "RED" in val:
+            return 3
+        if "MED" in val or "YELLOW" in val:
+            return 2
+        if "LOW" in val or "GREEN" in val:
+            return 1
+        return 0
+
+    all_findings_scored = []
+    domain_order_map = {d: i for i, d in enumerate(DOMAIN_TAB_ORDER)}
+    
     for domain in DOMAIN_TAB_ORDER:
         if domain == "business":
             continue
         dr = results_by_domain.get(domain, DomainResult(domain=domain))
-        for f in dr.findings:
-            all_findings.append((domain, f))
+        
+        # Sort within domain by impact first
+        domain_findings = sorted(dr.findings, key=lambda f: _impact_score(f.get("impact", "")), reverse=True)
+        
+        # Give each finding a rank relative to its severity level within this domain
+        severity_counters = {}
+        for finding in domain_findings:
+            score = _impact_score(finding.get("impact", ""))
+            severity_counters[score] = severity_counters.get(score, 0) + 1
+            rank = severity_counters[score]
+            all_findings_scored.append((score, rank, domain, finding))
+
+    # Sort globally by:
+    # 1. [-x[0]] Highest impact score first
+    # 2. [x[1]]  Lowest rank first (round-robin across domains within same severity)
+    # 3. [map]   Fallback to domain tab order
+    all_findings_scored.sort(key=lambda x: (-x[0], x[1], domain_order_map.get(x[2], 99)))
+    
+    top_findings = [(x[2], x[3]) for x in all_findings_scored[:5]]
 
     risk_headers = ["ID", "Domain", "Title", "Finding", "Impact", "Recommendation"]
     for col_idx, header in enumerate(risk_headers, start=1):
@@ -230,7 +258,7 @@ def _write_executive_summary(
         _apply_header(cell)
     row += 1
 
-    for domain, finding in all_findings[:5]:
+    for domain, finding in top_findings:
         vals = [
             finding.get("finding_id", ""),
             DOMAIN_DISPLAY_NAMES.get(domain, domain),
