@@ -59,21 +59,64 @@ _STATIC_FALLBACK: dict[int, str] = {
 }
 
 _AI_ROUTER_SYSTEM_PROMPT = """\
-You are a chapter classification specialist for SAP EarlyWatch Alert reports.
-Given a chapter title and a short content preview, classify it into exactly one domain.
+You are a strict chapter classifier for SAP EarlyWatch Alert reports.
 
-Respond with a JSON object:
-{"domain": "<one of: security, database, performance, basis, business, lifecycle>", "confidence": <float 0.0-1.0>}
+Task:
+- Classify each chapter into exactly one domain:
+    security | database | performance | basis | business | lifecycle
+- Use semantic evidence from title + content only.
+- Never route by chapter number.
 
-Domains:
-- security: Passwords, authorizations, SAP_ALL, RFC/ICF security, TLS, patch vulnerabilities
-- database: HANA config, SQL performance, disk/memory, backups, DB stability, SQL statements
-- performance: Response times, workload, hardware capacity, CPU/memory utilization, trends, RFC load
-- basis: System operations, transports, ABAP dumps, number ranges, availability, Gateway, Fiori ops, UI technologies
-- business: Financial data, DVM, key figures, business process analytics, reconciliation, data quality
-- lifecycle: Software versions, maintenance phases, kernel/OS/DB end-of-life, upgrades, landscape, AI scenarios
+Return JSON only:
+{"domain": "<one of the six domains>", "confidence": <float 0.0-1.0>}
 
-Return ONLY the JSON object, no other text."""
+Domain boundaries and signals:
+- security
+    - Include: users/roles, critical authorizations, SAP_ALL, profile parameters, RFC/ICF hardening,
+        encryption/TLS, security notes, vulnerabilities, patch risk from a security perspective.
+    - Exclude: generic technical patch currency without explicit security risk (route lifecycle).
+
+- database
+    - Include: HANA/DB configuration, expensive SQL, table/index growth, backups/recovery,
+        DB memory/disk, DB consistency/stability, DB alerts.
+    - Exclude: application response-time symptoms without DB root cause (route performance).
+
+- performance
+    - Include: response times, throughput/workload, CPU/memory utilization trends,
+        RFC/UI throughput, batch/runtime hotspots, capacity bottlenecks.
+    - Exclude: pure DB tuning/configuration details (route database).
+
+- basis
+    - Include: system administration/operations, dumps, job scheduling, transport management,
+        spool/update/enqueue/gateway/ICM operation, system availability, technical housekeeping.
+    - Exclude: upgrade/EoL roadmaps (route lifecycle).
+
+- business
+    - Include: business process KPIs, DVM/business object growth, invoice/order/finance process quality,
+        reconciliation anomalies, business data quality insights.
+    - Exclude: technical volume growth without business-process interpretation (route basis or database).
+
+- lifecycle
+    - Include: release strategy, maintenance windows, end-of-maintenance/end-of-life,
+        kernel/OS/DB/support package currency, upgrade or migration recommendations,
+        architecture modernization readiness.
+    - Exclude: active operational incidents without version/roadmap context (route basis/performance/security/database).
+
+Tie-breakers:
+- If mixed content, pick the domain of the primary actionable recommendations.
+- If evidence is balanced, use this priority for explicit version/EoL content: lifecycle first.
+- If no clear signal, choose basis with confidence <= 0.69.
+
+Confidence rubric:
+- >= 0.90: strong, explicit signals and no meaningful conflict.
+- 0.75-0.89: clear primary domain with minor overlap.
+- 0.50-0.74: ambiguous or sparse evidence.
+- < 0.50: weak evidence.
+
+Output constraints:
+- Output ONLY valid JSON.
+- No markdown, no commentary, no extra keys.
+"""
 
 
 @dataclass
@@ -199,7 +242,8 @@ async def _ai_route_chapter(
 
     Raises on failure so the caller can apply its own fallback logic.
     """
-    preview = chapter.raw_content[:500]
+    # Use a larger preview so routing relies on stronger evidence than title keywords alone.
+    preview = chapter.raw_content[:1200]
     user_msg = f"Chapter title: {chapter.title}\nContent preview: {preview}"
 
     if provider == "anthropic":
