@@ -138,6 +138,9 @@ class SpecialistAgent:
         # Normalize finding IDs
         raw_json = self._normalize_finding_ids(raw_json)
 
+        # Coverage guard: ensure every assigned chapter is accounted for
+        raw_json = self._fill_missing_abstentions(raw_json, chapters)
+
         return DomainResult(
             domain=raw_json.get("domain", self.domain),
             findings=raw_json.get("findings", []),
@@ -393,6 +396,56 @@ class SpecialistAgent:
             fid = finding.get("finding_id", "")
             if not fid or not fid.startswith(prefix):
                 finding["finding_id"] = f"{prefix}-{i:02d}"
+        return data
+
+    def _fill_missing_abstentions(
+        self, data: dict[str, Any], chapters: list[ChapterData]
+    ) -> dict[str, Any]:
+        """Safety net: if a chapter produced no findings/parameters and has no abstention
+        entry, inject one with reason 'no_recommendations'.
+
+        This makes a clean/all-green chapter distinguishable from a routing failure
+        where the chapter never reached the specialist.
+        """
+        # Collect chapter identifiers already covered by findings
+        covered: set[str] = set()
+        for f in data.get("findings", []):
+            src = f.get("source_chapter", "")
+            if src:
+                covered.add(src.lower())
+        for p in data.get("parameters", []):
+            src = p.get("source_chapter", "")
+            if src:
+                covered.add(src.lower())
+        for a in data.get("abstentions", []):
+            ch = a.get("chapter", "")
+            if ch:
+                covered.add(ch.lower())
+
+        injected = 0
+        abstentions: list[dict[str, Any]] = list(data.get("abstentions", []))
+        for ch in chapters:
+            ch_label = f"{ch.number} {ch.title}"
+            # Check if this chapter is referenced in any covered entry
+            ch_key = str(ch.number)
+            already_covered = any(
+                ch_key in c or ch.title.lower()[:20] in c for c in covered
+            )
+            if not already_covered:
+                abstentions.append({"chapter": ch_label, "reason": "no_recommendations"})
+                injected += 1
+                logger.debug(
+                    "%s specialist: injected missing abstention for ch %d (%s)",
+                    self.domain, ch.number, ch.title,
+                )
+
+        if injected:
+            logger.info(
+                "%s specialist: coverage guard injected %d abstention(s) for unaccounted chapters",
+                self.domain, injected,
+            )
+            data["abstentions"] = abstentions
+
         return data
 
     def _make_strict_schema(self, schema: dict[str, Any]) -> dict[str, Any]:

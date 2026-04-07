@@ -34,7 +34,7 @@ from agent.specialist_agents import run_all_specialists, DomainResult
 from agent.deep_thinker_agent import DeepThinkerAgent, SupplementalFinding
 from utils.markdown_utils import json_to_markdown
 from utils.ewa_slicer import slice_chapters
-from utils.ewa_dispatcher import dispatch_chapters
+from utils.ewa_dispatcher import dispatch_chapters, RoutingEntry
 from utils.excel_workbook_builder import build_workbook
 from services.storage_service import StorageService
 from core.runtime_config import (
@@ -146,6 +146,7 @@ class WorkflowState:
     supplemental_findings: list = None
     workbook_bytes: bytes = None
     v2_usage: dict = None
+    routing_map: dict = None   # int -> RoutingEntry, populated by dispatch stage
 
 
 MODEL_PRICING_USD_PER_1M = {
@@ -793,6 +794,21 @@ class EWAWorkflowOrchestrator:
                 )
                 logger.info("[SAVE] Uploaded workbook payload to %s", payload_blob)
 
+            # Save routing map for post-hoc dispatch visibility
+            if state.routing_map:
+                routing_map_payload = {
+                    str(num): entry.to_dict()
+                    for num, entry in sorted(state.routing_map.items())
+                }
+                routing_map_blob = f"{base_name}_routing_map.json"
+                await self.upload_to_blob(
+                    routing_map_blob,
+                    json.dumps(routing_map_payload, indent=2, ensure_ascii=False),
+                    "application/json",
+                    original_metadata,
+                )
+                logger.info("[SAVE] Uploaded routing map (%d chapters) to %s", len(routing_map_payload), routing_map_blob)
+
             # Save V2 usage report
             if state.v2_usage:
                 usage_blob = f"{base_name}_v2_usage.json"
@@ -841,12 +857,13 @@ class EWAWorkflowOrchestrator:
 
             # Stage 2: Dispatch chapters to domains
             logger.info("[V2-DISPATCH] Routing chapters to domains (router=%s)", router_model)
-            domain_chapters = await dispatch_chapters(
+            domain_chapters, routing_map = await dispatch_chapters(
                 chapters,
                 ai_client=v2_client,
                 router_model=router_model,
                 provider=PROVIDER,
             )
+            state.routing_map = routing_map
             for domain, chs in domain_chapters.items():
                 if chs:
                     logger.info("[V2-DISPATCH] %s: %d chapters", domain, len(chs))
