@@ -337,8 +337,8 @@ async def list_files():
             name_low = blob.name.lower()
             base_name, _ = os.path.splitext(blob.name)
             
-            # Skip AI analysis artifacts (V1 and V2)
-            if name_low.endswith(".json") or name_low.endswith("_ai.md"):
+            # Skip AI analysis artifacts
+            if name_low.endswith(".json"):
                 continue  # skip auxiliary files in main listing
             if (
                 name_low.endswith("_workbook.xlsx")
@@ -470,10 +470,8 @@ async def delete_analysis(request_data: DeleteAnalysisRequest):
         # Allowlist of derivative suffixes that may be deleted for this document
         _DERIVATIVE_SUFFIXES = (
             ".md", ".json", ".xlsx",
-            "_AI.json", "_AI.md",
             "_workbook.xlsx", "_workbook_payload.json",
-            "_v2_usage.json", "_parameters.json",
-            "_token_usage.json",
+            "_v2_usage.json",
         )
         allowed_blob_names = {file_name} | {f"{base_name}{s}" for s in _DERIVATIVE_SUFFIXES}
 

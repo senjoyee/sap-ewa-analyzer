@@ -21,18 +21,13 @@ import asyncio
 import re
 import traceback  # Added for exception logging
 import logging
-from datetime import datetime
 from typing import Dict, Any
 from dataclasses import dataclass
 from azure.storage.blob import BlobServiceClient
 from openai import AzureOpenAI
 from dotenv import load_dotenv
-from agent.openai_ewa_agent import OpenAIEWAAgent
-from agent.anthropic_ewa_agent import AnthropicEWAAgent
-from agent.parameter_extraction_agent import ParameterExtractionAgent
 from agent.specialist_agents import run_all_specialists, DomainResult
 from agent.deep_thinker_agent import DeepThinkerAgent, SupplementalFinding
-from utils.markdown_utils import json_to_markdown
 from utils.ewa_slicer import slice_chapters
 from utils.ewa_dispatcher import dispatch_chapters, RoutingEntry
 from utils.excel_workbook_builder import build_workbook
@@ -40,13 +35,6 @@ from services.storage_service import StorageService
 from core.runtime_config import (
     ANTHROPIC_TIMEOUT_SECONDS,
     ANTHROPIC_CONNECT_TIMEOUT_SECONDS,
-    SUMMARY_MAX_OUTPUT_TOKENS,
-    PARAM_MAX_OUTPUT_TOKENS,
-    PDF_METADATA_TEXT_LIMIT,
-    PDF_METADATA_MAX_TOKENS,
-    SUMMARY_REASONING_EFFORT,
-    PARAM_REASONING_EFFORT,
-    ANTHROPIC_THINKING_BUDGET_TOKENS,
     ANTHROPIC_TEMPERATURE,
     V2_ROUTER_MODEL,
     V2_SPECIALIST_MODEL,
@@ -72,74 +60,21 @@ AZURE_OPENAI_ENDPOINT = os.getenv("AZURE_OPENAI_ENDPOINT")
 AZURE_OPENAI_API_KEY = os.getenv("AZURE_OPENAI_API_KEY")
 AZURE_OPENAI_API_VERSION = os.getenv("AZURE_OPENAI_API_VERSION")
 
-# Model deployment names
-AZURE_OPENAI_SUMMARY_MODEL = os.getenv("AZURE_OPENAI_SUMMARY_MODEL", "gpt-4.1")
-AZURE_OPENAI_FAST_MODEL = (
-    os.getenv("AZURE_OPENAI_FAST_MODEL")
-    or AZURE_OPENAI_SUMMARY_MODEL
-    or "gpt-4.1-mini"
-)
-
 # Provider selection: "openai" (default) or "anthropic"
 PROVIDER = os.getenv("PROVIDER", "openai").lower()
 
 # Azure AI Foundry / Anthropic configuration (used when PROVIDER=anthropic)
-ANTHROPIC_SUMMARY_MODEL = os.getenv("ANTHROPIC_SUMMARY_MODEL", "claude-sonnet-4-5")
-ANTHROPIC_PARAM_MODEL = os.getenv("ANTHROPIC_PARAM_MODEL", ANTHROPIC_SUMMARY_MODEL)
 AZURE_ANTHROPIC_ENDPOINT = os.getenv("AZURE_ANTHROPIC_ENDPOINT")
 AZURE_ANTHROPIC_API_KEY = os.getenv("AZURE_ANTHROPIC_API_KEY")
 
 # Azure Storage configuration
 AZURE_STORAGE_CONNECTION_STRING = os.getenv("AZURE_STORAGE_CONNECTION_STRING")
 AZURE_STORAGE_CONTAINER_NAME = os.getenv("AZURE_STORAGE_CONTAINER_NAME")
-
-# System prompts for each workflow
-# System prompts for each workflow
-def load_summary_prompt() -> str | None:
-    """Return the first available summary prompt content, or None if none found."""
-    current_dir = os.path.dirname(os.path.abspath(__file__))
-    prompt_dir = os.path.join(current_dir, "prompts")
-
-    if PROVIDER == "anthropic":
-        candidate_files = [
-            "ewa_summary_prompt_anthropic.md",
-            "ewa_summary_prompt.md",
-        ]
-    else:
-        candidate_files = [
-            "ewa_summary_prompt_openai.md",
-            "ewa_summary_prompt.md",
-        ]
-
-    for filename in candidate_files:
-        path = os.path.join(prompt_dir, filename)
-        if os.path.exists(path):
-            try:
-                with open(path, "r", encoding="utf-8") as f:
-                    logger.info("Loaded summary prompt from %s", path)
-                    return f.read()
-            except Exception as e:
-                logger.warning("Could not read prompt file %s: %s", path, e)
-    # No prompt files found – return None so that downstream logic can fall back
-    logger.warning("No summary prompt files found; EWAAgent will use its internal default prompts.")
-    return None
-
-SUMMARY_PROMPT: str | None = load_summary_prompt()
-
-
-
-
 @dataclass
 class WorkflowState:
     """State object for workflow execution"""
     blob_name: str
     markdown_content: str = ""
-    summary_result: str = ""
-    summary_json: dict = None
-    parameters_json: dict = None
-    summary_usage: dict = None
-    parameter_usage: dict = None
-    usage_report: dict = None
     error: str = ""
     # V2 pipeline fields
     domain_results: list = None
@@ -147,24 +82,6 @@ class WorkflowState:
     workbook_bytes: bytes = None
     v2_usage: dict = None
     routing_map: dict = None   # int -> RoutingEntry, populated by dispatch stage
-
-
-MODEL_PRICING_USD_PER_1M = {
-    "gpt-5.4": {"input": 2.5, "cached_input": 0.625, "output": 20.0},
-    "gpt-5.2": {"input": 1.75, "cached_input": 0.175, "output": 14.0},
-    "gpt-5.1": {"input": 1.25, "cached_input": 0.125, "output": 10.0},
-    "gpt-5": {"input": 1.25, "cached_input": 0.125, "output": 10.0},
-    "gpt-5-mini": {"input": 0.25, "cached_input": 0.025, "output": 2.0},
-    "claude-haiku-4.5": {"input": 1.0, "cached_input": 0.1, "output": 5.0},
-    "claude-haiku-4-5": {"input": 1.0, "cached_input": 0.1, "output": 5.0},
-    "claude-sonnet-4.6": {"input": 3.0, "cached_input": 0.3, "output": 15.0},
-    "claude-sonnet-4-6": {"input": 3.0, "cached_input": 0.3, "output": 15.0},
-    "claude-opus-4.6": {"input": 15.0, "cached_input": 1.5, "output": 75.0},
-    "claude-opus-4-6": {"input": 15.0, "cached_input": 1.5, "output": 75.0},
-}
-
-OPENAI_PRICING_SOURCE_URL = "https://openai.com/api/pricing/"
-ANTHROPIC_PRICING_SOURCE_URL = "https://www.anthropic.com/pricing"
 
 class EWAWorkflowOrchestrator:
     """Custom orchestrator for EWA analysis workflows"""
@@ -174,7 +91,6 @@ class EWAWorkflowOrchestrator:
         self.blob_service_client = None
         self.openai_client = None
         self.anthropic_client = None
-        self.summary_model = ANTHROPIC_SUMMARY_MODEL if PROVIDER == "anthropic" else AZURE_OPENAI_SUMMARY_MODEL
         self.azure_openai_endpoint = AZURE_OPENAI_ENDPOINT
         self.azure_openai_api_key = AZURE_OPENAI_API_KEY
         self.azure_openai_api_version = AZURE_OPENAI_API_VERSION
@@ -211,15 +127,6 @@ class EWAWorkflowOrchestrator:
             logger.exception("Error initializing clients: %s", e)
             raise
 
-    def _normalize_model_key(self, model_name: str | None) -> str | None:
-        if not model_name:
-            return None
-        normalized = model_name.strip().lower()
-        for key in MODEL_PRICING_USD_PER_1M:
-            if normalized == key or normalized.startswith(f"{key}-"):
-                return key
-        return None
-
     def _extract_error_status_code(self, error_message: str | None) -> int:
         if not error_message:
             return 500
@@ -252,123 +159,6 @@ class EWAWorkflowOrchestrator:
             return text
         return text[: max_length - 3].rstrip() + "..."
 
-    def _calculate_usage_cost(self, usage: dict | None) -> dict | None:
-        if not usage:
-            return None
-        model_name = usage.get("model")
-        model_key = self._normalize_model_key(model_name)
-        pricing = MODEL_PRICING_USD_PER_1M.get(model_key)
-        input_tokens = int(usage.get("input_tokens") or 0)
-        cached_input_tokens = int(usage.get("cached_input_tokens") or 0)
-        output_tokens = int(usage.get("output_tokens") or 0)
-        reasoning_tokens = int(usage.get("reasoning_tokens") or 0)
-        total_tokens = int(usage.get("total_tokens") or (input_tokens + output_tokens))
-        non_cached_input_tokens = max(input_tokens - cached_input_tokens, 0)
-
-        cost_breakdown = {
-            "input_non_cached_usd": None,
-            "input_cached_usd": None,
-            "output_usd": None,
-            "total_usd": None,
-        }
-
-        if pricing:
-            cost_breakdown["input_non_cached_usd"] = round((non_cached_input_tokens / 1_000_000) * pricing["input"], 6)
-            cost_breakdown["input_cached_usd"] = round((cached_input_tokens / 1_000_000) * pricing["cached_input"], 6)
-            cost_breakdown["output_usd"] = round((output_tokens / 1_000_000) * pricing["output"], 6)
-            cost_breakdown["total_usd"] = round(
-                cost_breakdown["input_non_cached_usd"] + cost_breakdown["input_cached_usd"] + cost_breakdown["output_usd"],
-                6,
-            )
-
-        return {
-            "model": model_name,
-            "model_pricing_key": model_key,
-            "reasoning_effort": usage.get("reasoning_effort"),
-            "input_tokens": input_tokens,
-            "cached_input_tokens": cached_input_tokens,
-            "non_cached_input_tokens": non_cached_input_tokens,
-            "output_tokens": output_tokens,
-            "reasoning_tokens": reasoning_tokens,
-            "total_tokens": total_tokens,
-            "reasoning_tokens_billed_as_output_tokens": True,
-            "pricing_usd_per_1m_tokens": pricing,
-            "cost_usd": cost_breakdown,
-        }
-
-    def _sanitize_report_name_part(self, value: str | None, fallback: str) -> str:
-        raw = (value or "").strip()
-        if not raw:
-            raw = fallback
-        cleaned = "".join(ch if ch.isalnum() or ch in {"-", "_"} else "_" for ch in raw)
-        cleaned = cleaned.strip("_")
-        return cleaned or fallback
-
-    def _resolve_report_system_id(self, state: WorkflowState, metadata: dict | None) -> str:
-        metadata = metadata or {}
-        candidates = [
-            metadata.get("system_id"),
-            state.summary_json.get("system_id") if isinstance(state.summary_json, dict) else None,
-            (state.summary_json.get("system_metadata") or {}).get("system_id") if isinstance(state.summary_json, dict) and isinstance(state.summary_json.get("system_metadata"), dict) else None,
-        ]
-        for candidate in candidates:
-            if isinstance(candidate, str) and candidate.strip():
-                return candidate.strip().upper()
-        return "UNKNOWN"
-
-    def _build_usage_report(self, state: WorkflowState, original_metadata: dict | None) -> dict:
-        generated_at = datetime.utcnow().strftime("%Y-%m-%dT%H:%M:%SZ")
-        summary_usage = self._calculate_usage_cost(state.summary_usage)
-        parameter_usage = self._calculate_usage_cost(state.parameter_usage)
-        items = [item for item in [summary_usage, parameter_usage] if item]
-        aggregate = {
-            "input_tokens": sum(item.get("input_tokens", 0) for item in items),
-            "cached_input_tokens": sum(item.get("cached_input_tokens", 0) for item in items),
-            "non_cached_input_tokens": sum(item.get("non_cached_input_tokens", 0) for item in items),
-            "output_tokens": sum(item.get("output_tokens", 0) for item in items),
-            "reasoning_tokens": sum(item.get("reasoning_tokens", 0) for item in items),
-            "total_tokens": sum(item.get("total_tokens", 0) for item in items),
-            "total_cost_usd": round(sum((item.get("cost_usd") or {}).get("total_usd", 0) or 0 for item in items), 6),
-        }
-        return {
-            "generated_at_utc": generated_at,
-            "source_blob": state.blob_name,
-            "provider": PROVIDER,
-            "system_id": self._resolve_report_system_id(state, original_metadata),
-            "pricing_source": {
-                "url": ANTHROPIC_PRICING_SOURCE_URL if PROVIDER == "anthropic" else OPENAI_PRICING_SOURCE_URL,
-                "notes": [
-                    f"{'Anthropic' if PROVIDER == 'anthropic' else 'OpenAI'} pricing retrieved from official documentation.",
-                    "Cached inputs are billed at a significantly reduced rate.",
-                ],
-            },
-            "summary": summary_usage,
-            "parameter_extraction": parameter_usage,
-            "aggregate": aggregate,
-        }
-
-    def _build_usage_report_blob_name(self, state: WorkflowState, original_metadata: dict | None) -> str:
-        timestamp = datetime.utcnow().strftime("%Y%m%d_%H%M%S")
-        system_id = self._sanitize_report_name_part(self._resolve_report_system_id(state, original_metadata), "UNKNOWN")
-        base_name = self._sanitize_report_name_part(os.path.splitext(state.blob_name)[0], "analysis")
-        return f"{system_id}_{timestamp}_{base_name}_token_usage.json"
-    
-    def _create_agent(self, model: str | None = None, summary_prompt: str | None = None) -> OpenAIEWAAgent:
-        model_name = model or self.summary_model
-        logger.info("Creating OpenAIEWAAgent with model: %s", model_name)
-        if not self.azure_openai_endpoint:
-            raise ValueError("AZURE_OPENAI_ENDPOINT environment variable is required")
-        if not self.azure_openai_api_key:
-            raise ValueError("AZURE_OPENAI_API_KEY environment variable is required")
-        if not self.azure_openai_api_version:
-            raise ValueError("AZURE_OPENAI_API_VERSION environment variable is required")
-        client = AzureOpenAI(
-            api_version=self.azure_openai_api_version,
-            azure_endpoint=self.azure_openai_endpoint,
-            api_key=self.azure_openai_api_key,
-        )
-        return OpenAIEWAAgent(client=client, model=model_name, summary_prompt=summary_prompt, reasoning_effort=SUMMARY_REASONING_EFFORT)
-
     def _create_anthropic_client(self):
         if not AZURE_ANTHROPIC_ENDPOINT:
             raise ValueError("AZURE_ANTHROPIC_ENDPOINT environment variable is required for PROVIDER=anthropic")
@@ -386,89 +176,6 @@ class EWAWorkflowOrchestrator:
                 connect=float(ANTHROPIC_CONNECT_TIMEOUT_SECONDS),
             ),
         )
-    
-    def _create_anthropic_agent(self, model: str | None = None, summary_prompt: str | None = None) -> AnthropicEWAAgent:
-        """Create an AnthropicEWAAgent for Azure AI Foundry (Claude) models."""
-        model_name = model or ANTHROPIC_SUMMARY_MODEL
-        logger.info("Creating AnthropicEWAAgent with model: %s", model_name)
-
-        client = self._create_anthropic_client()
-        return AnthropicEWAAgent(
-            client=client,
-            model=model_name,
-            summary_prompt=summary_prompt,
-            reasoning_effort=SUMMARY_REASONING_EFFORT,
-            thinking_budget=ANTHROPIC_THINKING_BUDGET_TOKENS,
-            temperature=ANTHROPIC_TEMPERATURE,
-        )
-    
-    def _fix_report_date_if_invalid(self, summary_json: dict, blob_name: str) -> dict:
-        """Validate report_date; if obviously wrong, extract from filename pattern {SID}_{DD}_{Mon}_{YY}.pdf."""
-        import re
-        MONTH_MAP = {
-            "jan": "01", "feb": "02", "mar": "03", "apr": "04",
-            "may": "05", "jun": "06", "jul": "07", "aug": "08",
-            "sep": "09", "oct": "10", "nov": "11", "dec": "12",
-        }
-        
-        VALID_REPORT_YEAR_MIN = 2020
-        VALID_REPORT_YEAR_MAX = 2039
-
-        def is_valid_date(d: str) -> bool:
-            if not d:
-                return False
-            # Accept DD.MM.YYYY or YYYY-MM-DD in 2020-2039 range
-            m = re.match(r"^(\d{2})\.(\d{2})\.(\d{4})$", d)
-            if m:
-                year = int(m.group(3))
-                return VALID_REPORT_YEAR_MIN <= year <= VALID_REPORT_YEAR_MAX
-            m = re.match(r"^(\d{4})-(\d{2})-(\d{2})$", d)
-            if m:
-                year = int(m.group(1))
-                return VALID_REPORT_YEAR_MIN <= year <= VALID_REPORT_YEAR_MAX
-            return False
-        
-        def extract_date_from_filename(fname: str) -> str | None:
-            # Pattern: {SID}_{DD}_{Mon}_{YY}.pdf  e.g. ERP_09_Nov_25.pdf
-            m = re.match(r"^[A-Za-z0-9]+_(\d{2})_([A-Za-z]{3})_(\d{2})", fname)
-            if m:
-                day, mon, yy = m.group(1), m.group(2).lower(), m.group(3)
-                mm = MONTH_MAP.get(mon)
-                if mm:
-                    year = 2000 + int(yy)
-                    return f"{day}.{mm}.{year}"
-            return None
-        
-        # Locate report_date in JSON (could be top-level or nested under System Metadata)
-        meta = summary_json.get("System Metadata") or summary_json.get("system_metadata") or {}
-        report_date = meta.get("Report Date") or meta.get("report_date") or summary_json.get("Report Date") or summary_json.get("report_date")
-        
-        if is_valid_date(report_date):
-            return summary_json
-        
-        # Attempt extraction from filename
-        fallback = extract_date_from_filename(blob_name)
-        if fallback:
-            logger.warning(
-                "[_fix_report_date_if_invalid] Invalid date '%s'; using filename fallback '%s'",
-                report_date,
-                fallback,
-            )
-            # Update in-place
-            if "System Metadata" in summary_json and isinstance(summary_json["System Metadata"], dict):
-                summary_json["System Metadata"]["Report Date"] = fallback
-            elif "system_metadata" in summary_json and isinstance(summary_json["system_metadata"], dict):
-                summary_json["system_metadata"]["report_date"] = fallback
-            else:
-                # Create System Metadata if missing
-                summary_json["System Metadata"] = {"Report Date": fallback}
-        else:
-            logger.warning(
-                "[_fix_report_date_if_invalid] Invalid date '%s' and no filename fallback available",
-                report_date,
-            )
-        
-        return summary_json
     
     async def download_markdown_from_blob(self, blob_name: str) -> str:
         """Download markdown content from Azure Blob Storage"""
@@ -663,92 +370,6 @@ class EWAWorkflowOrchestrator:
             return state
     
 
-    async def run_analysis_step(self, state: WorkflowState) -> WorkflowState:
-        """Step 2: Generate comprehensive EWA analysis; then extract KPIs via image agent"""
-        try:
-            logger.info("[STEP 2] Running EWA analysis for %s", state.blob_name)
-            
-            # Get metadata from original blob for KPI management
-            original_metadata = await self.get_blob_metadata(state.blob_name)
-            customer_name = original_metadata.get('customer_name', '')
-            system_id = original_metadata.get('system_id', '')
-            report_date_str = original_metadata.get('report_date_str', '')
-            
-            logger.info(
-                "Analysis - Customer: %s, System: %s, Report Date: %s, Provider: %s",
-                customer_name,
-                system_id,
-                report_date_str,
-                PROVIDER
-            )
-            
-            # Run AI analysis using the full prompt
-            ai_prompt = SUMMARY_PROMPT
-            
-            # Branch based on PROVIDER environment variable
-            text_input = (state.markdown_content or "").strip()
-            if not text_input:
-                raise ValueError("Markdown content is empty; conversion must succeed before analysis.")
-
-            logger.info(
-                "[ANALYSIS] Using PROVIDER=%s, markdown input (%s chars)",
-                PROVIDER,
-                len(text_input),
-            )
-            
-            if PROVIDER == "anthropic":
-                # Use Claude via Azure AI Foundry
-                agent = self._create_anthropic_agent(ANTHROPIC_SUMMARY_MODEL, ai_prompt)
-            else:
-                # Default: Use OpenAI via Azure OpenAI
-                agent = self._create_agent(AZURE_OPENAI_SUMMARY_MODEL, ai_prompt)
-            
-            ai_result = await agent.run(text_input, pdf_data=None)
-            
-            state.summary_json = ai_result if ai_result else {}
-            state.summary_usage = getattr(agent, "last_usage", {}) or {}
-            
-            # Validate and fix report_date if obviously wrong (fallback to filename)
-            state.summary_json = self._fix_report_date_if_invalid(state.summary_json, state.blob_name)
-            
-            state.summary_result = json_to_markdown(state.summary_json)
-
-            # Step 2b: Extract parameters using fast model
-            try:
-                logger.info("[STEP 2b] Extracting parameters for %s", state.blob_name)
-                if PROVIDER == "anthropic":
-                    param_client = self._create_anthropic_client()
-                    param_agent = ParameterExtractionAgent(
-                        param_client,
-                        model=ANTHROPIC_PARAM_MODEL,
-                        provider="anthropic",
-                        reasoning_effort=PARAM_REASONING_EFFORT,
-                        thinking_budget=ANTHROPIC_THINKING_BUDGET_TOKENS,
-                    )
-                else:
-                    if not self.openai_client:
-                        raise RuntimeError("OpenAI client not initialized")
-                    param_agent = ParameterExtractionAgent(
-                        self.openai_client,
-                        model=os.getenv("AZURE_OPENAI_PARAM_MODEL", "gpt-5.1"),
-                        provider="openai",
-                    )
-                state.parameters_json = await param_agent.extract(text_input)
-                state.parameter_usage = getattr(param_agent, "last_usage", {}) or {}
-                param_count = len(state.parameters_json.get("parameters", []))
-                logger.info("[STEP 2b] Extracted %s parameters", param_count)
-            except Exception as param_e:
-                logger.warning("[STEP 2b] Parameter extraction failed (non-fatal): %s", param_e)
-                state.parameters_json = {"parameters": [], "extraction_notes": f"Extraction failed: {str(param_e)}"}
-                state.parameter_usage = getattr(locals().get("param_agent"), "last_usage", {}) or {}
-            
-            return state
-        except Exception as e:
-            state.error = str(e)
-            logger.exception("Error in run_analysis_step: %s", e)
-            return state
-
-    
     async def save_results_step(self, state: WorkflowState) -> WorkflowState:
         """Save V2 workbook and diagnostics to blob storage."""
         try:
