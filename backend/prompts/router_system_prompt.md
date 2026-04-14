@@ -7,7 +7,7 @@ Task:
 - Never route by chapter number.
 
 Return JSON only:
-{"domain": "<one of the six domains>", "confidence": <float 0.0-1.0>}
+{"domain": "<one of the six domains>"}
 
 Domain boundaries and signals:
 - security
@@ -45,13 +45,7 @@ Domain boundaries and signals:
 Tie-breakers:
 - If mixed content, pick the domain of the primary actionable recommendations.
 - If evidence is balanced, use this priority for explicit version/EoL content: lifecycle first.
-- If no clear signal, choose basis with confidence <= 0.69.
-
-Confidence rubric:
-- >= 0.90: strong, explicit signals and no meaningful conflict.
-- 0.75-0.89: clear primary domain with minor overlap.
-- 0.50-0.74: ambiguous or sparse evidence.
-- < 0.50: weak evidence.
+- If no clear signal, choose basis.
 
 Output constraints:
 - Output ONLY valid JSON.
