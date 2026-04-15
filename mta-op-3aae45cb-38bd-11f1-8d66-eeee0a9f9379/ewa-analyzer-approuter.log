@@ -1,0 +1,346 @@
+#2026 04 15 11:22:44.789#Z#DEBUG#3aae45cb-38bd-11f1-8d66-eeee0a9f9379.ewa-analyzer-approuter#flowable-async-job-executor-thread-29343#
+[PollStageAppStatusExecution] b7da07ba-caee-4680-92ce-3374c15dcc3f [2026-04-15T11:19:43.638219] Updated app with guid b7da07ba-caee-4680-92ce-3374c15dcc3f ({"lifecycle"=>{"data"=>{"buildpacks"=>[]}, "type"=>"buildpack"}}) (STDOUT, API)#
+#2026 04 15 11:22:44.789#Z#DEBUG#3aae45cb-38bd-11f1-8d66-eeee0a9f9379.ewa-analyzer-approuter#flowable-async-job-executor-thread-29343#
+[PollStageAppStatusExecution] b7da07ba-caee-4680-92ce-3374c15dcc3f [2026-04-15T11:19:43.774191] Updating process: "web" (STDOUT, API)#
+#2026 04 15 11:22:44.789#Z#DEBUG#3aae45cb-38bd-11f1-8d66-eeee0a9f9379.ewa-analyzer-approuter#flowable-async-job-executor-thread-29343#
+[PollStageAppStatusExecution] b7da07ba-caee-4680-92ce-3374c15dcc3f [2026-04-15T11:20:15.106066] Uploading app package for app with guid b7da07ba-caee-4680-92ce-3374c15dcc3f (STDOUT, API)#
+#2026 04 15 11:22:44.789#Z#DEBUG#3aae45cb-38bd-11f1-8d66-eeee0a9f9379.ewa-analyzer-approuter#flowable-async-job-executor-thread-29343#
+[PollStageAppStatusExecution] b7da07ba-caee-4680-92ce-3374c15dcc3f [2026-04-15T11:20:15.354653] Updated app with guid b7da07ba-caee-4680-92ce-3374c15dcc3f ({"environment_variables"=>"[PRIVATE DATA HIDDEN]"}) (STDOUT, API)#
+#2026 04 15 11:22:44.789#Z#DEBUG#3aae45cb-38bd-11f1-8d66-eeee0a9f9379.ewa-analyzer-approuter#flowable-async-job-executor-thread-29343#
+[PollStageAppStatusExecution] b7da07ba-caee-4680-92ce-3374c15dcc3f [2026-04-15T11:20:25.194499] Stopping app with guid b7da07ba-caee-4680-92ce-3374c15dcc3f (STDOUT, API)#
+#2026 04 15 11:22:44.789#Z#DEBUG#3aae45cb-38bd-11f1-8d66-eeee0a9f9379.ewa-analyzer-approuter#flowable-async-job-executor-thread-29343#
+[PollStageAppStatusExecution] b7da07ba-caee-4680-92ce-3374c15dcc3f [2026-04-15T11:20:25.568174] Cell 629d6e72-2a15-487b-aa6e-ce39d1810c5b stopping instance 157befe7-fc4e-4de3-5c9b-17fb (STDOUT, CELL)#
+#2026 04 15 11:22:44.789#Z#DEBUG#3aae45cb-38bd-11f1-8d66-eeee0a9f9379.ewa-analyzer-approuter#flowable-async-job-executor-thread-29343#
+[PollStageAppStatusExecution] b7da07ba-caee-4680-92ce-3374c15dcc3f [2026-04-15T11:20:25.795868] Creating build for app with guid b7da07ba-caee-4680-92ce-3374c15dcc3f (STDOUT, API)#
+#2026 04 15 11:22:44.789#Z#DEBUG#3aae45cb-38bd-11f1-8d66-eeee0a9f9379.ewa-analyzer-approuter#flowable-async-job-executor-thread-29343#
+[PollStageAppStatusExecution] b7da07ba-caee-4680-92ce-3374c15dcc3f [2026-04-15T11:20:26.904150] Downloading binary_buildpack... (STDOUT, STG)#
+#2026 04 15 11:22:44.789#Z#DEBUG#3aae45cb-38bd-11f1-8d66-eeee0a9f9379.ewa-analyzer-approuter#flowable-async-job-executor-thread-29343#
+[PollStageAppStatusExecution] b7da07ba-caee-4680-92ce-3374c15dcc3f [2026-04-15T11:20:26.904156] Downloading staticfile_buildpack... (STDOUT, STG)#
+#2026 04 15 11:22:44.789#Z#DEBUG#3aae45cb-38bd-11f1-8d66-eeee0a9f9379.ewa-analyzer-approuter#flowable-async-job-executor-thread-29343#
+[PollStageAppStatusExecution] b7da07ba-caee-4680-92ce-3374c15dcc3f [2026-04-15T11:20:26.904163] Downloading zero_trust_sidecar_buildpack_1_15... (STDOUT, STG)#
+#2026 04 15 11:22:44.789#Z#DEBUG#3aae45cb-38bd-11f1-8d66-eeee0a9f9379.ewa-analyzer-approuter#flowable-async-job-executor-thread-29343#
+[PollStageAppStatusExecution] b7da07ba-caee-4680-92ce-3374c15dcc3f [2026-04-15T11:20:26.904252] Downloading go_buildpack... (STDOUT, STG)#
+#2026 04 15 11:22:44.789#Z#DEBUG#3aae45cb-38bd-11f1-8d66-eeee0a9f9379.ewa-analyzer-approuter#flowable-async-job-executor-thread-29343#
+[PollStageAppStatusExecution] b7da07ba-caee-4680-92ce-3374c15dcc3f [2026-04-15T11:20:26.924076] Downloading sap_java_buildpack_jakarta... (STDOUT, STG)#
+#2026 04 15 11:22:44.789#Z#DEBUG#3aae45cb-38bd-11f1-8d66-eeee0a9f9379.ewa-analyzer-approuter#flowable-async-job-executor-thread-29343#
+[PollStageAppStatusExecution] b7da07ba-caee-4680-92ce-3374c15dcc3f [2026-04-15T11:20:26.944121] Downloaded go_buildpack (STDOUT, STG)#
+#2026 04 15 11:22:44.789#Z#DEBUG#3aae45cb-38bd-11f1-8d66-eeee0a9f9379.ewa-analyzer-approuter#flowable-async-job-executor-thread-29343#
+[PollStageAppStatusExecution] b7da07ba-caee-4680-92ce-3374c15dcc3f [2026-04-15T11:20:26.944147] Downloading sap_java_buildpack_jakarta_2_55... (STDOUT, STG)#
+#2026 04 15 11:22:44.789#Z#DEBUG#3aae45cb-38bd-11f1-8d66-eeee0a9f9379.ewa-analyzer-approuter#flowable-async-job-executor-thread-29343#
+[PollStageAppStatusExecution] b7da07ba-caee-4680-92ce-3374c15dcc3f [2026-04-15T11:20:26.953702] Downloaded binary_buildpack (STDOUT, STG)#
+#2026 04 15 11:22:44.789#Z#DEBUG#3aae45cb-38bd-11f1-8d66-eeee0a9f9379.ewa-analyzer-approuter#flowable-async-job-executor-thread-29343#
+[PollStageAppStatusExecution] b7da07ba-caee-4680-92ce-3374c15dcc3f [2026-04-15T11:20:26.953734] Downloading sap_java_buildpack_jakarta_2_53... (STDOUT, STG)#
+#2026 04 15 11:22:44.789#Z#DEBUG#3aae45cb-38bd-11f1-8d66-eeee0a9f9379.ewa-analyzer-approuter#flowable-async-job-executor-thread-29343#
+[PollStageAppStatusExecution] b7da07ba-caee-4680-92ce-3374c15dcc3f [2026-04-15T11:20:26.956592] Downloaded zero_trust_sidecar_buildpack_1_15 (STDOUT, STG)#
+#2026 04 15 11:22:44.789#Z#DEBUG#3aae45cb-38bd-11f1-8d66-eeee0a9f9379.ewa-analyzer-approuter#flowable-async-job-executor-thread-29343#
+[PollStageAppStatusExecution] b7da07ba-caee-4680-92ce-3374c15dcc3f [2026-04-15T11:20:26.956619] Downloading sap_java_buildpack_jakarta_2_51... (STDOUT, STG)#
+#2026 04 15 11:22:44.789#Z#DEBUG#3aae45cb-38bd-11f1-8d66-eeee0a9f9379.ewa-analyzer-approuter#flowable-async-job-executor-thread-29343#
+[PollStageAppStatusExecution] b7da07ba-caee-4680-92ce-3374c15dcc3f [2026-04-15T11:20:26.965771] Downloaded sap_java_buildpack_jakarta (STDOUT, STG)#
+#2026 04 15 11:22:44.789#Z#DEBUG#3aae45cb-38bd-11f1-8d66-eeee0a9f9379.ewa-analyzer-approuter#flowable-async-job-executor-thread-29343#
+[PollStageAppStatusExecution] b7da07ba-caee-4680-92ce-3374c15dcc3f [2026-04-15T11:20:26.965801] Downloading zero_trust_sidecar_buildpack_1_14... (STDOUT, STG)#
+#2026 04 15 11:22:44.789#Z#DEBUG#3aae45cb-38bd-11f1-8d66-eeee0a9f9379.ewa-analyzer-approuter#flowable-async-job-executor-thread-29343#
+[PollStageAppStatusExecution] b7da07ba-caee-4680-92ce-3374c15dcc3f [2026-04-15T11:20:26.967023] Downloaded staticfile_buildpack (STDOUT, STG)#
+#2026 04 15 11:22:44.789#Z#DEBUG#3aae45cb-38bd-11f1-8d66-eeee0a9f9379.ewa-analyzer-approuter#flowable-async-job-executor-thread-29343#
+[PollStageAppStatusExecution] b7da07ba-caee-4680-92ce-3374c15dcc3f [2026-04-15T11:20:26.967051] Downloading zero_trust_sidecar_buildpack... (STDOUT, STG)#
+#2026 04 15 11:22:44.789#Z#DEBUG#3aae45cb-38bd-11f1-8d66-eeee0a9f9379.ewa-analyzer-approuter#flowable-async-job-executor-thread-29343#
+[PollStageAppStatusExecution] b7da07ba-caee-4680-92ce-3374c15dcc3f [2026-04-15T11:20:26.974358] Downloaded sap_java_buildpack_jakarta_2_53 (STDOUT, STG)#
+#2026 04 15 11:22:44.789#Z#DEBUG#3aae45cb-38bd-11f1-8d66-eeee0a9f9379.ewa-analyzer-approuter#flowable-async-job-executor-thread-29343#
+[PollStageAppStatusExecution] b7da07ba-caee-4680-92ce-3374c15dcc3f [2026-04-15T11:20:26.974386] Downloading java_buildpack... (STDOUT, STG)#
+#2026 04 15 11:22:44.789#Z#DEBUG#3aae45cb-38bd-11f1-8d66-eeee0a9f9379.ewa-analyzer-approuter#flowable-async-job-executor-thread-29343#
+[PollStageAppStatusExecution] b7da07ba-caee-4680-92ce-3374c15dcc3f [2026-04-15T11:20:26.976338] Downloaded sap_java_buildpack_jakarta_2_51 (STDOUT, STG)#
+#2026 04 15 11:22:44.789#Z#DEBUG#3aae45cb-38bd-11f1-8d66-eeee0a9f9379.ewa-analyzer-approuter#flowable-async-job-executor-thread-29343#
+[PollStageAppStatusExecution] b7da07ba-caee-4680-92ce-3374c15dcc3f [2026-04-15T11:20:26.976362] Downloading php_buildpack... (STDOUT, STG)#
+#2026 04 15 11:22:44.789#Z#DEBUG#3aae45cb-38bd-11f1-8d66-eeee0a9f9379.ewa-analyzer-approuter#flowable-async-job-executor-thread-29343#
+[PollStageAppStatusExecution] b7da07ba-caee-4680-92ce-3374c15dcc3f [2026-04-15T11:20:26.985405] Downloaded zero_trust_sidecar_buildpack (STDOUT, STG)#
+#2026 04 15 11:22:44.789#Z#DEBUG#3aae45cb-38bd-11f1-8d66-eeee0a9f9379.ewa-analyzer-approuter#flowable-async-job-executor-thread-29343#
+[PollStageAppStatusExecution] b7da07ba-caee-4680-92ce-3374c15dcc3f [2026-04-15T11:20:26.985428] Downloading python_buildpack... (STDOUT, STG)#
+#2026 04 15 11:22:44.789#Z#DEBUG#3aae45cb-38bd-11f1-8d66-eeee0a9f9379.ewa-analyzer-approuter#flowable-async-job-executor-thread-29343#
+[PollStageAppStatusExecution] b7da07ba-caee-4680-92ce-3374c15dcc3f [2026-04-15T11:20:26.987803] Downloaded sap_java_buildpack_jakarta_2_55 (STDOUT, STG)#
+#2026 04 15 11:22:44.789#Z#DEBUG#3aae45cb-38bd-11f1-8d66-eeee0a9f9379.ewa-analyzer-approuter#flowable-async-job-executor-thread-29343#
+[PollStageAppStatusExecution] b7da07ba-caee-4680-92ce-3374c15dcc3f [2026-04-15T11:20:26.987823] Downloading nodejs_buildpack... (STDOUT, STG)#
+#2026 04 15 11:22:44.789#Z#DEBUG#3aae45cb-38bd-11f1-8d66-eeee0a9f9379.ewa-analyzer-approuter#flowable-async-job-executor-thread-29343#
+[PollStageAppStatusExecution] b7da07ba-caee-4680-92ce-3374c15dcc3f [2026-04-15T11:20:26.995309] Downloaded java_buildpack (STDOUT, STG)#
+#2026 04 15 11:22:44.789#Z#DEBUG#3aae45cb-38bd-11f1-8d66-eeee0a9f9379.ewa-analyzer-approuter#flowable-async-job-executor-thread-29343#
+[PollStageAppStatusExecution] b7da07ba-caee-4680-92ce-3374c15dcc3f [2026-04-15T11:20:26.995337] Downloading nginx_buildpack... (STDOUT, STG)#
+#2026 04 15 11:22:44.789#Z#DEBUG#3aae45cb-38bd-11f1-8d66-eeee0a9f9379.ewa-analyzer-approuter#flowable-async-job-executor-thread-29343#
+[PollStageAppStatusExecution] b7da07ba-caee-4680-92ce-3374c15dcc3f [2026-04-15T11:20:27.006677] Downloaded zero_trust_sidecar_buildpack_1_14 (STDOUT, STG)#
+#2026 04 15 11:22:44.789#Z#DEBUG#3aae45cb-38bd-11f1-8d66-eeee0a9f9379.ewa-analyzer-approuter#flowable-async-job-executor-thread-29343#
+[PollStageAppStatusExecution] b7da07ba-caee-4680-92ce-3374c15dcc3f [2026-04-15T11:20:27.006709] Downloading zero_trust_sidecar_buildpack_1_13... (STDOUT, STG)#
+#2026 04 15 11:22:44.789#Z#DEBUG#3aae45cb-38bd-11f1-8d66-eeee0a9f9379.ewa-analyzer-approuter#flowable-async-job-executor-thread-29343#
+[PollStageAppStatusExecution] b7da07ba-caee-4680-92ce-3374c15dcc3f [2026-04-15T11:20:27.007392] Downloaded python_buildpack (STDOUT, STG)#
+#2026 04 15 11:22:44.789#Z#DEBUG#3aae45cb-38bd-11f1-8d66-eeee0a9f9379.ewa-analyzer-approuter#flowable-async-job-executor-thread-29343#
+[PollStageAppStatusExecution] b7da07ba-caee-4680-92ce-3374c15dcc3f [2026-04-15T11:20:27.011037] Downloaded php_buildpack (STDOUT, STG)#
+#2026 04 15 11:22:44.789#Z#DEBUG#3aae45cb-38bd-11f1-8d66-eeee0a9f9379.ewa-analyzer-approuter#flowable-async-job-executor-thread-29343#
+[PollStageAppStatusExecution] b7da07ba-caee-4680-92ce-3374c15dcc3f [2026-04-15T11:20:27.017559] Downloaded nginx_buildpack (STDOUT, STG)#
+#2026 04 15 11:22:44.789#Z#DEBUG#3aae45cb-38bd-11f1-8d66-eeee0a9f9379.ewa-analyzer-approuter#flowable-async-job-executor-thread-29343#
+[PollStageAppStatusExecution] b7da07ba-caee-4680-92ce-3374c15dcc3f [2026-04-15T11:20:27.026970] Downloaded zero_trust_sidecar_buildpack_1_13 (STDOUT, STG)#
+#2026 04 15 11:22:44.789#Z#DEBUG#3aae45cb-38bd-11f1-8d66-eeee0a9f9379.ewa-analyzer-approuter#flowable-async-job-executor-thread-29343#
+[PollStageAppStatusExecution] b7da07ba-caee-4680-92ce-3374c15dcc3f [2026-04-15T11:20:27.028269] Downloaded nodejs_buildpack (STDOUT, STG)#
+#2026 04 15 11:22:44.789#Z#DEBUG#3aae45cb-38bd-11f1-8d66-eeee0a9f9379.ewa-analyzer-approuter#flowable-async-job-executor-thread-29343#
+[PollStageAppStatusExecution] b7da07ba-caee-4680-92ce-3374c15dcc3f [2026-04-15T11:20:27.028338] Cell d1f84205-4f20-4766-9fd9-3432520cc888 creating container for instance 037ecd61-c065-4549-a286-eb4474a4f140 (STDOUT, STG)#
+#2026 04 15 11:22:44.789#Z#DEBUG#3aae45cb-38bd-11f1-8d66-eeee0a9f9379.ewa-analyzer-approuter#flowable-async-job-executor-thread-29343#
+[PollStageAppStatusExecution] b7da07ba-caee-4680-92ce-3374c15dcc3f [2026-04-15T11:20:27.743286] Security group rules were updated (STDOUT, STG)#
+#2026 04 15 11:22:44.789#Z#DEBUG#3aae45cb-38bd-11f1-8d66-eeee0a9f9379.ewa-analyzer-approuter#flowable-async-job-executor-thread-29343#
+[PollStageAppStatusExecution] b7da07ba-caee-4680-92ce-3374c15dcc3f [2026-04-15T11:20:27.822318] Cell d1f84205-4f20-4766-9fd9-3432520cc888 successfully created container for instance 037ecd61-c065-4549-a286-eb4474a4f140 (STDOUT, STG)#
+#2026 04 15 11:22:44.789#Z#DEBUG#3aae45cb-38bd-11f1-8d66-eeee0a9f9379.ewa-analyzer-approuter#flowable-async-job-executor-thread-29343#
+[PollStageAppStatusExecution] b7da07ba-caee-4680-92ce-3374c15dcc3f [2026-04-15T11:20:28.098952] Downloading app package... (STDOUT, STG)#
+#2026 04 15 11:22:44.789#Z#DEBUG#3aae45cb-38bd-11f1-8d66-eeee0a9f9379.ewa-analyzer-approuter#flowable-async-job-executor-thread-29343#
+[PollStageAppStatusExecution] b7da07ba-caee-4680-92ce-3374c15dcc3f [2026-04-15T11:20:28.099064] Downloading build artifacts cache... (STDOUT, STG)#
+#2026 04 15 11:22:44.789#Z#DEBUG#3aae45cb-38bd-11f1-8d66-eeee0a9f9379.ewa-analyzer-approuter#flowable-async-job-executor-thread-29343#
+[PollStageAppStatusExecution] b7da07ba-caee-4680-92ce-3374c15dcc3f [2026-04-15T11:20:28.193114] Downloaded build artifacts cache (227B) (STDOUT, STG)#
+#2026 04 15 11:22:44.789#Z#DEBUG#3aae45cb-38bd-11f1-8d66-eeee0a9f9379.ewa-analyzer-approuter#flowable-async-job-executor-thread-29343#
+[PollStageAppStatusExecution] b7da07ba-caee-4680-92ce-3374c15dcc3f [2026-04-15T11:20:29.116336] Downloaded app package (7.4M) (STDOUT, STG)#
+#2026 04 15 11:22:44.789#Z#DEBUG#3aae45cb-38bd-11f1-8d66-eeee0a9f9379.ewa-analyzer-approuter#flowable-async-job-executor-thread-29343#
+[PollStageAppStatusExecution] b7da07ba-caee-4680-92ce-3374c15dcc3f [2026-04-15T11:20:29.733119] -----> Nodejs Buildpack version 1.8.44 (STDOUT, STG)#
+#2026 04 15 11:22:44.789#Z#DEBUG#3aae45cb-38bd-11f1-8d66-eeee0a9f9379.ewa-analyzer-approuter#flowable-async-job-executor-thread-29343#
+[PollStageAppStatusExecution] b7da07ba-caee-4680-92ce-3374c15dcc3f [2026-04-15T11:20:30.070136] -----> Bootstrapping python (STDOUT, STG)#
+#2026 04 15 11:22:44.789#Z#DEBUG#3aae45cb-38bd-11f1-8d66-eeee0a9f9379.ewa-analyzer-approuter#flowable-async-job-executor-thread-29343#
+[PollStageAppStatusExecution] b7da07ba-caee-4680-92ce-3374c15dcc3f [2026-04-15T11:20:30.070150] -----> Installing python 3.11.14 (STDOUT, STG)#
+#2026 04 15 11:22:44.789#Z#DEBUG#3aae45cb-38bd-11f1-8d66-eeee0a9f9379.ewa-analyzer-approuter#flowable-async-job-executor-thread-29343#
+[PollStageAppStatusExecution] b7da07ba-caee-4680-92ce-3374c15dcc3f [2026-04-15T11:20:30.070271] Copy [/tmp/buildpacks/706587f3688b8e6f/dependencies/b5e0345ae0ae1932e7d56fffaa49a487/python_3.11.14_linux_x64_cflinuxfs4_66f53248.tgz] (STDOUT, STG)#
+#2026 04 15 11:22:44.789#Z#DEBUG#3aae45cb-38bd-11f1-8d66-eeee0a9f9379.ewa-analyzer-approuter#flowable-async-job-executor-thread-29343#
+[PollStageAppStatusExecution] b7da07ba-caee-4680-92ce-3374c15dcc3f [2026-04-15T11:20:33.566126] -----> Installing binaries (STDOUT, STG)#
+#2026 04 15 11:22:44.789#Z#DEBUG#3aae45cb-38bd-11f1-8d66-eeee0a9f9379.ewa-analyzer-approuter#flowable-async-job-executor-thread-29343#
+[PollStageAppStatusExecution] b7da07ba-caee-4680-92ce-3374c15dcc3f [2026-04-15T11:20:33.566188] engines.node (package.json): unspecified (STDOUT, STG)#
+#2026 04 15 11:22:44.789#Z#DEBUG#3aae45cb-38bd-11f1-8d66-eeee0a9f9379.ewa-analyzer-approuter#flowable-async-job-executor-thread-29343#
+[PollStageAppStatusExecution] b7da07ba-caee-4680-92ce-3374c15dcc3f [2026-04-15T11:20:33.566215] engines.npm (package.json): unspecified (use default) (STDOUT, STG)#
+#2026 04 15 11:22:44.789#Z#DEBUG#3aae45cb-38bd-11f1-8d66-eeee0a9f9379.ewa-analyzer-approuter#flowable-async-job-executor-thread-29343#
+[PollStageAppStatusExecution] b7da07ba-caee-4680-92ce-3374c15dcc3f [2026-04-15T11:20:33.566219] [31;1m**WARNING**[0m Node version not specified in package.json or .nvmrc. See: http://docs.cloudfoundry.org/buildpacks/node/node-tips.html (STDOUT, STG)#
+#2026 04 15 11:22:44.789#Z#DEBUG#3aae45cb-38bd-11f1-8d66-eeee0a9f9379.ewa-analyzer-approuter#flowable-async-job-executor-thread-29343#
+[PollStageAppStatusExecution] b7da07ba-caee-4680-92ce-3374c15dcc3f [2026-04-15T11:20:33.566228] -----> Installing node 22.22.0 (STDOUT, STG)#
+#2026 04 15 11:22:44.789#Z#DEBUG#3aae45cb-38bd-11f1-8d66-eeee0a9f9379.ewa-analyzer-approuter#flowable-async-job-executor-thread-29343#
+[PollStageAppStatusExecution] b7da07ba-caee-4680-92ce-3374c15dcc3f [2026-04-15T11:20:33.566499] Copy [/tmp/buildpacks/706587f3688b8e6f/dependencies/65c50d3a8311e7796847437aebc5aebd/node_22.22.0_linux_x64_cflinuxfs4_a73ffe6d.tgz] (STDOUT, STG)#
+#2026 04 15 11:22:44.789#Z#DEBUG#3aae45cb-38bd-11f1-8d66-eeee0a9f9379.ewa-analyzer-approuter#flowable-async-job-executor-thread-29343#
+[PollStageAppStatusExecution] b7da07ba-caee-4680-92ce-3374c15dcc3f [2026-04-15T11:20:35.731705] Using default npm version: 10.9.4 (STDOUT, STG)#
+#2026 04 15 11:22:44.789#Z#DEBUG#3aae45cb-38bd-11f1-8d66-eeee0a9f9379.ewa-analyzer-approuter#flowable-async-job-executor-thread-29343#
+[PollStageAppStatusExecution] b7da07ba-caee-4680-92ce-3374c15dcc3f [2026-04-15T11:20:35.731729] -----> Installing yarn 1.22.22 (STDOUT, STG)#
+#2026 04 15 11:22:44.789#Z#DEBUG#3aae45cb-38bd-11f1-8d66-eeee0a9f9379.ewa-analyzer-approuter#flowable-async-job-executor-thread-29343#
+[PollStageAppStatusExecution] b7da07ba-caee-4680-92ce-3374c15dcc3f [2026-04-15T11:20:35.731828] Copy [/tmp/buildpacks/706587f3688b8e6f/dependencies/e3a39aedd1236924d69cc2d0637a8ed2/yarn_1.22.22_linux_noarch_any-stack_4911d0a6.tgz] (STDOUT, STG)#
+#2026 04 15 11:22:44.789#Z#DEBUG#3aae45cb-38bd-11f1-8d66-eeee0a9f9379.ewa-analyzer-approuter#flowable-async-job-executor-thread-29343#
+[PollStageAppStatusExecution] b7da07ba-caee-4680-92ce-3374c15dcc3f [2026-04-15T11:20:36.015013] Installed yarn 1.22.22 (STDOUT, STG)#
+#2026 04 15 11:22:44.789#Z#DEBUG#3aae45cb-38bd-11f1-8d66-eeee0a9f9379.ewa-analyzer-approuter#flowable-async-job-executor-thread-29343#
+[PollStageAppStatusExecution] b7da07ba-caee-4680-92ce-3374c15dcc3f [2026-04-15T11:20:36.015040] -----> Creating runtime environment (STDOUT, STG)#
+#2026 04 15 11:22:44.789#Z#DEBUG#3aae45cb-38bd-11f1-8d66-eeee0a9f9379.ewa-analyzer-approuter#flowable-async-job-executor-thread-29343#
+[PollStageAppStatusExecution] b7da07ba-caee-4680-92ce-3374c15dcc3f [2026-04-15T11:20:36.016702] NODE_ENV=production (STDOUT, STG)#
+#2026 04 15 11:22:44.789#Z#DEBUG#3aae45cb-38bd-11f1-8d66-eeee0a9f9379.ewa-analyzer-approuter#flowable-async-job-executor-thread-29343#
+[PollStageAppStatusExecution] b7da07ba-caee-4680-92ce-3374c15dcc3f [2026-04-15T11:20:36.016723] NODE_HOME=/tmp/contents1863837530/deps/0/node (STDOUT, STG)#
+#2026 04 15 11:22:44.789#Z#DEBUG#3aae45cb-38bd-11f1-8d66-eeee0a9f9379.ewa-analyzer-approuter#flowable-async-job-executor-thread-29343#
+[PollStageAppStatusExecution] b7da07ba-caee-4680-92ce-3374c15dcc3f [2026-04-15T11:20:36.016726] NODE_MODULES_CACHE=true (STDOUT, STG)#
+#2026 04 15 11:22:44.789#Z#DEBUG#3aae45cb-38bd-11f1-8d66-eeee0a9f9379.ewa-analyzer-approuter#flowable-async-job-executor-thread-29343#
+[PollStageAppStatusExecution] b7da07ba-caee-4680-92ce-3374c15dcc3f [2026-04-15T11:20:36.016729] NODE_VERBOSE=false (STDOUT, STG)#
+#2026 04 15 11:22:44.789#Z#DEBUG#3aae45cb-38bd-11f1-8d66-eeee0a9f9379.ewa-analyzer-approuter#flowable-async-job-executor-thread-29343#
+[PollStageAppStatusExecution] b7da07ba-caee-4680-92ce-3374c15dcc3f [2026-04-15T11:20:36.016731] NPM_CONFIG_LOGLEVEL=error (STDOUT, STG)#
+#2026 04 15 11:22:44.789#Z#DEBUG#3aae45cb-38bd-11f1-8d66-eeee0a9f9379.ewa-analyzer-approuter#flowable-async-job-executor-thread-29343#
+[PollStageAppStatusExecution] b7da07ba-caee-4680-92ce-3374c15dcc3f [2026-04-15T11:20:36.016738] NPM_CONFIG_PRODUCTION=true (STDOUT, STG)#
+#2026 04 15 11:22:44.789#Z#DEBUG#3aae45cb-38bd-11f1-8d66-eeee0a9f9379.ewa-analyzer-approuter#flowable-async-job-executor-thread-29343#
+[PollStageAppStatusExecution] b7da07ba-caee-4680-92ce-3374c15dcc3f [2026-04-15T11:20:36.016750] -----> Building dependencies (STDOUT, STG)#
+#2026 04 15 11:22:44.789#Z#DEBUG#3aae45cb-38bd-11f1-8d66-eeee0a9f9379.ewa-analyzer-approuter#flowable-async-job-executor-thread-29343#
+[PollStageAppStatusExecution] b7da07ba-caee-4680-92ce-3374c15dcc3f [2026-04-15T11:20:36.016753] Prebuild detected (node_modules already exists) (STDOUT, STG)#
+#2026 04 15 11:22:44.789#Z#DEBUG#3aae45cb-38bd-11f1-8d66-eeee0a9f9379.ewa-analyzer-approuter#flowable-async-job-executor-thread-29343#
+[PollStageAppStatusExecution] b7da07ba-caee-4680-92ce-3374c15dcc3f [2026-04-15T11:20:36.016815] Rebuilding any native modules (STDOUT, STG)#
+#2026 04 15 11:22:44.789#Z#DEBUG#3aae45cb-38bd-11f1-8d66-eeee0a9f9379.ewa-analyzer-approuter#flowable-async-job-executor-thread-29343#
+[PollStageAppStatusExecution] b7da07ba-caee-4680-92ce-3374c15dcc3f [2026-04-15T11:20:36.764684] rebuilt dependencies successfully (STDOUT, STG)#
+#2026 04 15 11:22:44.789#Z#DEBUG#3aae45cb-38bd-11f1-8d66-eeee0a9f9379.ewa-analyzer-approuter#flowable-async-job-executor-thread-29343#
+[PollStageAppStatusExecution] b7da07ba-caee-4680-92ce-3374c15dcc3f [2026-04-15T11:20:36.766193] npm notice (STDOUT, STG)#
+#2026 04 15 11:22:44.789#Z#DEBUG#3aae45cb-38bd-11f1-8d66-eeee0a9f9379.ewa-analyzer-approuter#flowable-async-job-executor-thread-29343#
+[PollStageAppStatusExecution] b7da07ba-caee-4680-92ce-3374c15dcc3f [2026-04-15T11:20:36.766205] npm notice New major version of npm available! 10.9.4 -> 11.12.1 (STDOUT, STG)#
+#2026 04 15 11:22:44.789#Z#DEBUG#3aae45cb-38bd-11f1-8d66-eeee0a9f9379.ewa-analyzer-approuter#flowable-async-job-executor-thread-29343#
+[PollStageAppStatusExecution] b7da07ba-caee-4680-92ce-3374c15dcc3f [2026-04-15T11:20:36.766208] npm notice Changelog: https://github.com/npm/cli/releases/tag/v11.12.1 (STDOUT, STG)#
+#2026 04 15 11:22:44.789#Z#DEBUG#3aae45cb-38bd-11f1-8d66-eeee0a9f9379.ewa-analyzer-approuter#flowable-async-job-executor-thread-29343#
+[PollStageAppStatusExecution] b7da07ba-caee-4680-92ce-3374c15dcc3f [2026-04-15T11:20:36.766210] npm notice To update run: npm install -g npm@11.12.1 (STDOUT, STG)#
+#2026 04 15 11:22:44.789#Z#DEBUG#3aae45cb-38bd-11f1-8d66-eeee0a9f9379.ewa-analyzer-approuter#flowable-async-job-executor-thread-29343#
+[PollStageAppStatusExecution] b7da07ba-caee-4680-92ce-3374c15dcc3f [2026-04-15T11:20:36.766212] npm notice (STDOUT, STG)#
+#2026 04 15 11:22:44.789#Z#DEBUG#3aae45cb-38bd-11f1-8d66-eeee0a9f9379.ewa-analyzer-approuter#flowable-async-job-executor-thread-29343#
+[PollStageAppStatusExecution] b7da07ba-caee-4680-92ce-3374c15dcc3f [2026-04-15T11:20:36.833977] Installing any new modules (package.json + package-lock.json) (STDOUT, STG)#
+#2026 04 15 11:22:44.789#Z#DEBUG#3aae45cb-38bd-11f1-8d66-eeee0a9f9379.ewa-analyzer-approuter#flowable-async-job-executor-thread-29343#
+[PollStageAppStatusExecution] b7da07ba-caee-4680-92ce-3374c15dcc3f [2026-04-15T11:20:37.600452] up to date in 700ms (STDOUT, STG)#
+#2026 04 15 11:22:44.789#Z#DEBUG#3aae45cb-38bd-11f1-8d66-eeee0a9f9379.ewa-analyzer-approuter#flowable-async-job-executor-thread-29343#
+[PollStageAppStatusExecution] b7da07ba-caee-4680-92ce-3374c15dcc3f [2026-04-15T11:20:37.600584] 17 packages are looking for funding (STDOUT, STG)#
+#2026 04 15 11:22:44.789#Z#DEBUG#3aae45cb-38bd-11f1-8d66-eeee0a9f9379.ewa-analyzer-approuter#flowable-async-job-executor-thread-29343#
+[PollStageAppStatusExecution] b7da07ba-caee-4680-92ce-3374c15dcc3f [2026-04-15T11:20:37.600597] run `npm fund` for details (STDOUT, STG)#
+#2026 04 15 11:22:44.789#Z#DEBUG#3aae45cb-38bd-11f1-8d66-eeee0a9f9379.ewa-analyzer-approuter#flowable-async-job-executor-thread-29343#
+[PollStageAppStatusExecution] b7da07ba-caee-4680-92ce-3374c15dcc3f [2026-04-15T11:20:38.463322] Contrast Security no credentials found. Will not write environment files. (STDOUT, STG)#
+#2026 04 15 11:22:44.789#Z#DEBUG#3aae45cb-38bd-11f1-8d66-eeee0a9f9379.ewa-analyzer-approuter#flowable-async-job-executor-thread-29343#
+[PollStageAppStatusExecution] b7da07ba-caee-4680-92ce-3374c15dcc3f [2026-04-15T11:20:47.904530] Exit status 0 (STDOUT, STG)#
+#2026 04 15 11:22:44.789#Z#DEBUG#3aae45cb-38bd-11f1-8d66-eeee0a9f9379.ewa-analyzer-approuter#flowable-async-job-executor-thread-29343#
+[PollStageAppStatusExecution] b7da07ba-caee-4680-92ce-3374c15dcc3f [2026-04-15T11:20:47.904592] Uploading droplet, build artifacts cache... (STDOUT, STG)#
+#2026 04 15 11:22:44.789#Z#DEBUG#3aae45cb-38bd-11f1-8d66-eeee0a9f9379.ewa-analyzer-approuter#flowable-async-job-executor-thread-29343#
+[PollStageAppStatusExecution] b7da07ba-caee-4680-92ce-3374c15dcc3f [2026-04-15T11:20:47.904622] Uploading droplet... (STDOUT, STG)#
+#2026 04 15 11:22:44.789#Z#DEBUG#3aae45cb-38bd-11f1-8d66-eeee0a9f9379.ewa-analyzer-approuter#flowable-async-job-executor-thread-29343#
+[PollStageAppStatusExecution] b7da07ba-caee-4680-92ce-3374c15dcc3f [2026-04-15T11:20:47.904683] Uploading build artifacts cache... (STDOUT, STG)#
+#2026 04 15 11:22:44.789#Z#DEBUG#3aae45cb-38bd-11f1-8d66-eeee0a9f9379.ewa-analyzer-approuter#flowable-async-job-executor-thread-29343#
+[PollStageAppStatusExecution] b7da07ba-caee-4680-92ce-3374c15dcc3f [2026-04-15T11:20:47.929221] Uploaded build artifacts cache (226B) (STDOUT, STG)#
+#2026 04 15 11:22:44.789#Z#DEBUG#3aae45cb-38bd-11f1-8d66-eeee0a9f9379.ewa-analyzer-approuter#flowable-async-job-executor-thread-29343#
+[PollStageAppStatusExecution] b7da07ba-caee-4680-92ce-3374c15dcc3f [2026-04-15T11:20:48.716156] Creating droplet for app with guid b7da07ba-caee-4680-92ce-3374c15dcc3f (STDOUT, API)#
+#2026 04 15 11:22:44.789#Z#DEBUG#3aae45cb-38bd-11f1-8d66-eeee0a9f9379.ewa-analyzer-approuter#flowable-async-job-executor-thread-29343#
+[PollStageAppStatusExecution] b7da07ba-caee-4680-92ce-3374c15dcc3f [2026-04-15T11:20:54.800626] Uploaded droplet (62.4M) (STDOUT, STG)#
+#2026 04 15 11:22:44.789#Z#DEBUG#3aae45cb-38bd-11f1-8d66-eeee0a9f9379.ewa-analyzer-approuter#flowable-async-job-executor-thread-29343#
+[PollStageAppStatusExecution] b7da07ba-caee-4680-92ce-3374c15dcc3f [2026-04-15T11:20:54.820218] Uploading complete (STDOUT, STG)#
+#2026 04 15 11:22:44.789#Z#DEBUG#3aae45cb-38bd-11f1-8d66-eeee0a9f9379.ewa-analyzer-approuter#flowable-async-job-executor-thread-29343#
+[PollStageAppStatusExecution] b7da07ba-caee-4680-92ce-3374c15dcc3f [2026-04-15T11:20:55.398094] Cell d1f84205-4f20-4766-9fd9-3432520cc888 stopping instance 037ecd61-c065-4549-a286-eb4474a4f140 (STDOUT, STG)#
+#2026 04 15 11:22:44.789#Z#DEBUG#3aae45cb-38bd-11f1-8d66-eeee0a9f9379.ewa-analyzer-approuter#flowable-async-job-executor-thread-29343#
+[PollStageAppStatusExecution] b7da07ba-caee-4680-92ce-3374c15dcc3f [2026-04-15T11:20:55.398127] Cell d1f84205-4f20-4766-9fd9-3432520cc888 destroying container for instance 037ecd61-c065-4549-a286-eb4474a4f140 (STDOUT, STG)#
+#2026 04 15 11:22:44.789#Z#DEBUG#3aae45cb-38bd-11f1-8d66-eeee0a9f9379.ewa-analyzer-approuter#flowable-async-job-executor-thread-29343#
+[PollStageAppStatusExecution] b7da07ba-caee-4680-92ce-3374c15dcc3f [2026-04-15T11:20:55.444993] Staging complete for build 037ecd61-c065-4549-a286-eb4474a4f140 (STDOUT, API)#
+#2026 04 15 11:22:44.789#Z#DEBUG#3aae45cb-38bd-11f1-8d66-eeee0a9f9379.ewa-analyzer-approuter#flowable-async-job-executor-thread-29343#
+[PollStageAppStatusExecution] b7da07ba-caee-4680-92ce-3374c15dcc3f [2026-04-15T11:20:56.157567] Updated app with guid b7da07ba-caee-4680-92ce-3374c15dcc3f ({:droplet_guid=>"b95a0a93-6215-474f-bd3a-122ef03e89d5"}) (STDOUT, API)#
+#2026 04 15 11:22:44.789#Z#DEBUG#3aae45cb-38bd-11f1-8d66-eeee0a9f9379.ewa-analyzer-approuter#flowable-async-job-executor-thread-29343#
+[PollStageAppStatusExecution] b7da07ba-caee-4680-92ce-3374c15dcc3f [2026-04-15T11:20:56.800337] Creating revision for app with guid b7da07ba-caee-4680-92ce-3374c15dcc3f (STDOUT, API)#
+#2026 04 15 11:22:44.789#Z#DEBUG#3aae45cb-38bd-11f1-8d66-eeee0a9f9379.ewa-analyzer-approuter#flowable-async-job-executor-thread-29343#
+[PollStageAppStatusExecution] b7da07ba-caee-4680-92ce-3374c15dcc3f [2026-04-15T11:20:56.844820] Starting app with guid b7da07ba-caee-4680-92ce-3374c15dcc3f (STDOUT, API)#
+#2026 04 15 11:22:44.789#Z#DEBUG#3aae45cb-38bd-11f1-8d66-eeee0a9f9379.ewa-analyzer-approuter#flowable-async-job-executor-thread-29343#
+[PollStageAppStatusExecution] b7da07ba-caee-4680-92ce-3374c15dcc3f [2026-04-15T11:20:57.328366] Cell 99977fdf-260b-4d2c-bfad-1ddd4fe599e5 creating container for instance 6feeef05-9a69-4a6f-4be1-b778 (STDOUT, CELL)#
+#2026 04 15 11:22:44.789#Z#DEBUG#3aae45cb-38bd-11f1-8d66-eeee0a9f9379.ewa-analyzer-approuter#flowable-async-job-executor-thread-29343#
+[PollStageAppStatusExecution] b7da07ba-caee-4680-92ce-3374c15dcc3f [2026-04-15T11:20:57.794970] Cell d1f84205-4f20-4766-9fd9-3432520cc888 successfully destroyed container for instance 037ecd61-c065-4549-a286-eb4474a4f140 (STDOUT, STG)#
+#2026 04 15 11:22:44.789#Z#DEBUG#3aae45cb-38bd-11f1-8d66-eeee0a9f9379.ewa-analyzer-approuter#flowable-async-job-executor-thread-29343#
+[PollStageAppStatusExecution] b7da07ba-caee-4680-92ce-3374c15dcc3f [2026-04-15T11:20:58.052898] Security group rules were updated (STDOUT, CELL)#
+#2026 04 15 11:22:44.789#Z#DEBUG#3aae45cb-38bd-11f1-8d66-eeee0a9f9379.ewa-analyzer-approuter#flowable-async-job-executor-thread-29343#
+[PollStageAppStatusExecution] b7da07ba-caee-4680-92ce-3374c15dcc3f [2026-04-15T11:20:58.133684] Cell 99977fdf-260b-4d2c-bfad-1ddd4fe599e5 successfully created container for instance 6feeef05-9a69-4a6f-4be1-b778 (STDOUT, CELL)#
+#2026 04 15 11:22:44.789#Z#DEBUG#3aae45cb-38bd-11f1-8d66-eeee0a9f9379.ewa-analyzer-approuter#flowable-async-job-executor-thread-29343#
+[PollStageAppStatusExecution] b7da07ba-caee-4680-92ce-3374c15dcc3f [2026-04-15T11:20:58.549054] Downloading droplet... (STDOUT, CELL)#
+#2026 04 15 11:22:44.789#Z#DEBUG#3aae45cb-38bd-11f1-8d66-eeee0a9f9379.ewa-analyzer-approuter#flowable-async-job-executor-thread-29343#
+[PollStageAppStatusExecution] b7da07ba-caee-4680-92ce-3374c15dcc3f [2026-04-15T11:21:02.301282] Downloaded droplet (62.4M) (STDOUT, CELL)#
+#2026 04 15 11:22:44.789#Z#DEBUG#3aae45cb-38bd-11f1-8d66-eeee0a9f9379.ewa-analyzer-approuter#flowable-async-job-executor-thread-29343#
+[PollStageAppStatusExecution] b7da07ba-caee-4680-92ce-3374c15dcc3f [2026-04-15T11:21:02.301447] Starting health monitoring of container (STDOUT, CELL)#
+#2026 04 15 11:22:44.789#Z#DEBUG#3aae45cb-38bd-11f1-8d66-eeee0a9f9379.ewa-analyzer-approuter#flowable-async-job-executor-thread-29343#
+[PollStageAppStatusExecution] b7da07ba-caee-4680-92ce-3374c15dcc3f [2026-04-15T11:21:02.404576] Invoking pre-start scripts. (STDOUT, APP/PROC/WEB)#
+#2026 04 15 11:22:44.789#Z#DEBUG#3aae45cb-38bd-11f1-8d66-eeee0a9f9379.ewa-analyzer-approuter#flowable-async-job-executor-thread-29343#
+[PollStageAppStatusExecution] b7da07ba-caee-4680-92ce-3374c15dcc3f [2026-04-15T11:21:02.604163] Invoking start command. (STDOUT, APP/PROC/WEB)#
+#2026 04 15 11:22:44.789#Z#DEBUG#3aae45cb-38bd-11f1-8d66-eeee0a9f9379.ewa-analyzer-approuter#flowable-async-job-executor-thread-29343#
+[PollStageAppStatusExecution] b7da07ba-caee-4680-92ce-3374c15dcc3f [2026-04-15T11:21:02.983732] > ewa-analyzer-approuter@1.0.0 start (STDOUT, APP/PROC/WEB)#
+#2026 04 15 11:22:44.789#Z#DEBUG#3aae45cb-38bd-11f1-8d66-eeee0a9f9379.ewa-analyzer-approuter#flowable-async-job-executor-thread-29343#
+[PollStageAppStatusExecution] b7da07ba-caee-4680-92ce-3374c15dcc3f [2026-04-15T11:21:02.983753] > node node_modules/@sap/approuter/approuter.js (STDOUT, APP/PROC/WEB)#
+#2026 04 15 11:22:44.789#Z#DEBUG#3aae45cb-38bd-11f1-8d66-eeee0a9f9379.ewa-analyzer-approuter#flowable-async-job-executor-thread-29343#
+[PollStageAppStatusExecution] b7da07ba-caee-4680-92ce-3374c15dcc3f [2026-04-15T11:21:03.234283] {"written_at":"2026-04-15T11:21:03.232Z","written_ts":1776252063232000000,"csn_component":"-","correlation_id":"-","type":"log","logger":"nodejs-logger","layer":"/LoggingLibrary","level":"warning","container_id":"10.0.137.24","component_type":"application","component_id":"b7da07ba-caee-4680-92ce-3374c15dcc3f","component_name":"ewa-analyzer-approuter","component_instance":-1,"source_instance":-1,"organization_id":"2bf2fd00-8b3e-42ef-9ca0-e7ead8adfd32","organization_name":"SoftwareONE Pte Ltd_ewa-analyzer-v9oz29ji","space_id":"179144a5-12bf-4692-a041-0f63e9fd1f3e","space_name":"dev","context_id":"","msg":"Dynamic log level switching not available"} (STDOUT, APP/PROC/WEB)#
+#2026 04 15 11:22:44.789#Z#DEBUG#3aae45cb-38bd-11f1-8d66-eeee0a9f9379.ewa-analyzer-approuter#flowable-async-job-executor-thread-29343#
+[PollStageAppStatusExecution] b7da07ba-caee-4680-92ce-3374c15dcc3f [2026-04-15T11:21:03.528794] {"written_at":"2026-04-15T11:21:03.528Z","written_ts":1776252063528000000,"csn_component":"-","correlation_id":"mnzym7u0","type":"log","logger":"nodejs-logger","layer":"/approuter","level":"info","container_id":"10.0.137.24","component_type":"application","component_id":"b7da07ba-caee-4680-92ce-3374c15dcc3f","component_name":"ewa-analyzer-approuter","component_instance":-1,"source_instance":-1,"organization_id":"2bf2fd00-8b3e-42ef-9ca0-e7ead8adfd32","organization_name":"SoftwareONE Pte Ltd_ewa-analyzer-v9oz29ji","space_id":"179144a5-12bf-4692-a041-0f63e9fd1f3e","space_name":"dev","context_id":"mnzym7u0","msg":"Application router version 14.4.3"} (STDOUT, APP/PROC/WEB)#
+#2026 04 15 11:22:44.789#Z#DEBUG#3aae45cb-38bd-11f1-8d66-eeee0a9f9379.ewa-analyzer-approuter#flowable-async-job-executor-thread-29343#
+[PollStageAppStatusExecution] b7da07ba-caee-4680-92ce-3374c15dcc3f [2026-04-15T11:21:03.531865] {"written_at":"2026-04-15T11:21:03.531Z","written_ts":1776252063531000000,"csn_component":"-","correlation_id":"mnzym7u3","type":"log","logger":"nodejs-logger","layer":"/Configuration","level":"info","container_id":"10.0.137.24","component_type":"application","component_id":"b7da07ba-caee-4680-92ce-3374c15dcc3f","component_name":"ewa-analyzer-approuter","component_instance":-1,"source_instance":-1,"organization_id":"2bf2fd00-8b3e-42ef-9ca0-e7ead8adfd32","organization_name":"SoftwareONE Pte Ltd_ewa-analyzer-v9oz29ji","space_id":"179144a5-12bf-4692-a041-0f63e9fd1f3e","space_name":"dev","context_id":"mnzym7u3","msg":"No COOKIES environment variable"} (STDOUT, APP/PROC/WEB)#
+#2026 04 15 11:22:44.789#Z#DEBUG#3aae45cb-38bd-11f1-8d66-eeee0a9f9379.ewa-analyzer-approuter#flowable-async-job-executor-thread-29343#
+[PollStageAppStatusExecution] b7da07ba-caee-4680-92ce-3374c15dcc3f [2026-04-15T11:21:03.555745] (node:226) [DEP0060] DeprecationWarning: The `util._extend` API is deprecated. Please use Object.assign() instead. (STDERR, APP/PROC/WEB)#
+#2026 04 15 11:22:44.789#Z#DEBUG#3aae45cb-38bd-11f1-8d66-eeee0a9f9379.ewa-analyzer-approuter#flowable-async-job-executor-thread-29343#
+[PollStageAppStatusExecution] b7da07ba-caee-4680-92ce-3374c15dcc3f [2026-04-15T11:21:03.555765] (Use `node --trace-deprecation ...` to show where the warning was created) (STDERR, APP/PROC/WEB)#
+#2026 04 15 11:22:44.789#Z#DEBUG#3aae45cb-38bd-11f1-8d66-eeee0a9f9379.ewa-analyzer-approuter#flowable-async-job-executor-thread-29343#
+[PollStageAppStatusExecution] b7da07ba-caee-4680-92ce-3374c15dcc3f [2026-04-15T11:21:03.588541] {"written_at":"2026-04-15T11:21:03.588Z","written_ts":1776252063588000000,"csn_component":"-","correlation_id":"mnzym7u0","type":"log","logger":"nodejs-logger","layer":"/approuter","level":"info","container_id":"10.0.137.24","component_type":"application","component_id":"b7da07ba-caee-4680-92ce-3374c15dcc3f","component_name":"ewa-analyzer-approuter","component_instance":-1,"source_instance":-1,"organization_id":"2bf2fd00-8b3e-42ef-9ca0-e7ead8adfd32","organization_name":"SoftwareONE Pte Ltd_ewa-analyzer-v9oz29ji","space_id":"179144a5-12bf-4692-a041-0f63e9fd1f3e","space_name":"dev","context_id":"mnzym7u0","msg":"Application router is listening on port: 8080"} (STDOUT, APP/PROC/WEB)#
+#2026 04 15 11:22:44.789#Z#DEBUG#3aae45cb-38bd-11f1-8d66-eeee0a9f9379.ewa-analyzer-approuter#flowable-async-job-executor-thread-29343#
+[PollStageAppStatusExecution] b7da07ba-caee-4680-92ce-3374c15dcc3f [2026-04-15T11:21:05.576769] Container became healthy (STDOUT, CELL)#
+#2026 04 15 11:22:44.789#Z#DEBUG#3aae45cb-38bd-11f1-8d66-eeee0a9f9379.ewa-analyzer-approuter#flowable-async-job-executor-thread-29343#
+[PollStageAppStatusExecution] b7da07ba-caee-4680-92ce-3374c15dcc3f [2026-04-15T11:21:05.604095] Process became ready with guid b7da07ba-caee-4680-92ce-3374c15dcc3f payload: {"instance"=>"6feeef05-9a69-4a6f-4be1-b778", "index"=>0, "cell_id"=>"99977fdf-260b-4d2c-bfad-1ddd4fe599e5", "ready"=>true, "version"=>"5fec3008-d45c-4f64-855f-43c8efffea8d"} (STDOUT, API)#
+#2026 04 15 11:22:44.789#Z#DEBUG#3aae45cb-38bd-11f1-8d66-eeee0a9f9379.ewa-analyzer-approuter#flowable-async-job-executor-thread-29343#
+[PollStageAppStatusExecution] b7da07ba-caee-4680-92ce-3374c15dcc3f [2026-04-15T11:21:32.221075] Cell 629d6e72-2a15-487b-aa6e-ce39d1810c5b destroying container for instance 157befe7-fc4e-4de3-5c9b-17fb (STDOUT, CELL)#
+#2026 04 15 11:22:44.789#Z#DEBUG#3aae45cb-38bd-11f1-8d66-eeee0a9f9379.ewa-analyzer-approuter#flowable-async-job-executor-thread-29343#
+[PollStageAppStatusExecution] b7da07ba-caee-4680-92ce-3374c15dcc3f [2026-04-15T11:21:32.594634] Exit status 137 (STDOUT, PROXY)#
+#2026 04 15 11:22:44.789#Z#DEBUG#3aae45cb-38bd-11f1-8d66-eeee0a9f9379.ewa-analyzer-approuter#flowable-async-job-executor-thread-29343#
+[PollStageAppStatusExecution] b7da07ba-caee-4680-92ce-3374c15dcc3f [2026-04-15T11:21:34.555109] Cell 629d6e72-2a15-487b-aa6e-ce39d1810c5b successfully destroyed container for instance 157befe7-fc4e-4de3-5c9b-17fb (STDOUT, CELL)#
+#2026 04 15 11:22:44.789#Z#DEBUG#3aae45cb-38bd-11f1-8d66-eeee0a9f9379.ewa-analyzer-approuter#flowable-async-job-executor-thread-29343#
+[PollStageAppStatusExecution] b7da07ba-caee-4680-92ce-3374c15dcc3f [2026-04-15T11:21:42.927138] Updated app with guid b7da07ba-caee-4680-92ce-3374c15dcc3f ({"lifecycle"=>{"data"=>{"buildpacks"=>[]}, "type"=>"buildpack"}}) (STDOUT, API)#
+#2026 04 15 11:22:44.789#Z#DEBUG#3aae45cb-38bd-11f1-8d66-eeee0a9f9379.ewa-analyzer-approuter#flowable-async-job-executor-thread-29343#
+[PollStageAppStatusExecution] b7da07ba-caee-4680-92ce-3374c15dcc3f [2026-04-15T11:21:43.126290] Updating process: "web" (STDOUT, API)#
+#2026 04 15 11:22:44.789#Z#DEBUG#3aae45cb-38bd-11f1-8d66-eeee0a9f9379.ewa-analyzer-approuter#flowable-async-job-executor-thread-29343#
+[PollStageAppStatusExecution] b7da07ba-caee-4680-92ce-3374c15dcc3f [2026-04-15T11:22:23.971655] Uploading app package for app with guid b7da07ba-caee-4680-92ce-3374c15dcc3f (STDOUT, API)#
+#2026 04 15 11:22:44.789#Z#DEBUG#3aae45cb-38bd-11f1-8d66-eeee0a9f9379.ewa-analyzer-approuter#flowable-async-job-executor-thread-29343#
+[PollStageAppStatusExecution] b7da07ba-caee-4680-92ce-3374c15dcc3f [2026-04-15T11:22:24.306024] Updated app with guid b7da07ba-caee-4680-92ce-3374c15dcc3f ({"environment_variables"=>"[PRIVATE DATA HIDDEN]"}) (STDOUT, API)#
+#2026 04 15 11:22:44.789#Z#DEBUG#3aae45cb-38bd-11f1-8d66-eeee0a9f9379.ewa-analyzer-approuter#flowable-async-job-executor-thread-29343#
+[PollStageAppStatusExecution] b7da07ba-caee-4680-92ce-3374c15dcc3f [2026-04-15T11:22:34.337022] Stopping app with guid b7da07ba-caee-4680-92ce-3374c15dcc3f (STDOUT, API)#
+#2026 04 15 11:22:44.789#Z#DEBUG#3aae45cb-38bd-11f1-8d66-eeee0a9f9379.ewa-analyzer-approuter#flowable-async-job-executor-thread-29343#
+[PollStageAppStatusExecution] b7da07ba-caee-4680-92ce-3374c15dcc3f [2026-04-15T11:22:34.538950] Cell 99977fdf-260b-4d2c-bfad-1ddd4fe599e5 stopping instance 6feeef05-9a69-4a6f-4be1-b778 (STDOUT, CELL)#
+#2026 04 15 11:22:44.789#Z#DEBUG#3aae45cb-38bd-11f1-8d66-eeee0a9f9379.ewa-analyzer-approuter#flowable-async-job-executor-thread-29343#
+[PollStageAppStatusExecution] b7da07ba-caee-4680-92ce-3374c15dcc3f [2026-04-15T11:22:34.866668] Creating build for app with guid b7da07ba-caee-4680-92ce-3374c15dcc3f (STDOUT, API)#
+#2026 04 15 11:22:44.789#Z#DEBUG#3aae45cb-38bd-11f1-8d66-eeee0a9f9379.ewa-analyzer-approuter#flowable-async-job-executor-thread-29343#
+[PollStageAppStatusExecution] b7da07ba-caee-4680-92ce-3374c15dcc3f [2026-04-15T11:22:35.933261] Downloading zero_trust_sidecar_buildpack_1_15... (STDOUT, STG)#
+#2026 04 15 11:22:44.789#Z#DEBUG#3aae45cb-38bd-11f1-8d66-eeee0a9f9379.ewa-analyzer-approuter#flowable-async-job-executor-thread-29343#
+[PollStageAppStatusExecution] b7da07ba-caee-4680-92ce-3374c15dcc3f [2026-04-15T11:22:35.933275] Downloading go_buildpack... (STDOUT, STG)#
+#2026 04 15 11:22:44.789#Z#DEBUG#3aae45cb-38bd-11f1-8d66-eeee0a9f9379.ewa-analyzer-approuter#flowable-async-job-executor-thread-29343#
+[PollStageAppStatusExecution] b7da07ba-caee-4680-92ce-3374c15dcc3f [2026-04-15T11:22:35.933316] Downloading sap_java_buildpack_jakarta_2_55... (STDOUT, STG)#
+#2026 04 15 11:22:44.789#Z#DEBUG#3aae45cb-38bd-11f1-8d66-eeee0a9f9379.ewa-analyzer-approuter#flowable-async-job-executor-thread-29343#
+[PollStageAppStatusExecution] b7da07ba-caee-4680-92ce-3374c15dcc3f [2026-04-15T11:22:35.933366] Downloading zero_trust_sidecar_buildpack_1_14... (STDOUT, STG)#
+#2026 04 15 11:22:44.789#Z#DEBUG#3aae45cb-38bd-11f1-8d66-eeee0a9f9379.ewa-analyzer-approuter#flowable-async-job-executor-thread-29343#
+[PollStageAppStatusExecution] b7da07ba-caee-4680-92ce-3374c15dcc3f [2026-04-15T11:22:35.949524] Downloading zero_trust_sidecar_buildpack_1_13... (STDOUT, STG)#
+#2026 04 15 11:22:44.789#Z#DEBUG#3aae45cb-38bd-11f1-8d66-eeee0a9f9379.ewa-analyzer-approuter#flowable-async-job-executor-thread-29343#
+[PollStageAppStatusExecution] b7da07ba-caee-4680-92ce-3374c15dcc3f [2026-04-15T11:22:35.956881] Downloaded zero_trust_sidecar_buildpack_1_14 (STDOUT, STG)#
+#2026 04 15 11:22:44.789#Z#DEBUG#3aae45cb-38bd-11f1-8d66-eeee0a9f9379.ewa-analyzer-approuter#flowable-async-job-executor-thread-29343#
+[PollStageAppStatusExecution] b7da07ba-caee-4680-92ce-3374c15dcc3f [2026-04-15T11:22:35.956910] Downloading sap_java_buildpack_jakarta_2_53... (STDOUT, STG)#
+#2026 04 15 11:22:44.789#Z#DEBUG#3aae45cb-38bd-11f1-8d66-eeee0a9f9379.ewa-analyzer-approuter#flowable-async-job-executor-thread-29343#
+[PollStageAppStatusExecution] b7da07ba-caee-4680-92ce-3374c15dcc3f [2026-04-15T11:22:35.970213] Downloaded go_buildpack (STDOUT, STG)#
+#2026 04 15 11:22:44.789#Z#DEBUG#3aae45cb-38bd-11f1-8d66-eeee0a9f9379.ewa-analyzer-approuter#flowable-async-job-executor-thread-29343#
+[PollStageAppStatusExecution] b7da07ba-caee-4680-92ce-3374c15dcc3f [2026-04-15T11:22:35.970234] Downloaded zero_trust_sidecar_buildpack_1_15 (STDOUT, STG)#
+#2026 04 15 11:22:44.789#Z#DEBUG#3aae45cb-38bd-11f1-8d66-eeee0a9f9379.ewa-analyzer-approuter#flowable-async-job-executor-thread-29343#
+[PollStageAppStatusExecution] b7da07ba-caee-4680-92ce-3374c15dcc3f [2026-04-15T11:22:35.970254] Downloading sap_java_buildpack_jakarta_2_51... (STDOUT, STG)#
+#2026 04 15 11:22:44.789#Z#DEBUG#3aae45cb-38bd-11f1-8d66-eeee0a9f9379.ewa-analyzer-approuter#flowable-async-job-executor-thread-29343#
+[PollStageAppStatusExecution] b7da07ba-caee-4680-92ce-3374c15dcc3f [2026-04-15T11:22:35.970264] Downloading java_buildpack... (STDOUT, STG)#
+#2026 04 15 11:22:44.789#Z#DEBUG#3aae45cb-38bd-11f1-8d66-eeee0a9f9379.ewa-analyzer-approuter#flowable-async-job-executor-thread-29343#
+[PollStageAppStatusExecution] b7da07ba-caee-4680-92ce-3374c15dcc3f [2026-04-15T11:22:35.973485] Downloaded sap_java_buildpack_jakarta_2_55 (STDOUT, STG)#
+#2026 04 15 11:22:44.789#Z#DEBUG#3aae45cb-38bd-11f1-8d66-eeee0a9f9379.ewa-analyzer-approuter#flowable-async-job-executor-thread-29343#
+[PollStageAppStatusExecution] b7da07ba-caee-4680-92ce-3374c15dcc3f [2026-04-15T11:22:35.973507] Downloading staticfile_buildpack... (STDOUT, STG)#
+#2026 04 15 11:22:44.789#Z#DEBUG#3aae45cb-38bd-11f1-8d66-eeee0a9f9379.ewa-analyzer-approuter#flowable-async-job-executor-thread-29343#
+[PollStageAppStatusExecution] b7da07ba-caee-4680-92ce-3374c15dcc3f [2026-04-15T11:22:35.985898] Downloaded zero_trust_sidecar_buildpack_1_13 (STDOUT, STG)#
+#2026 04 15 11:22:44.789#Z#DEBUG#3aae45cb-38bd-11f1-8d66-eeee0a9f9379.ewa-analyzer-approuter#flowable-async-job-executor-thread-29343#
+[PollStageAppStatusExecution] b7da07ba-caee-4680-92ce-3374c15dcc3f [2026-04-15T11:22:35.985923] Downloading zero_trust_sidecar_buildpack... (STDOUT, STG)#
+#2026 04 15 11:22:44.789#Z#DEBUG#3aae45cb-38bd-11f1-8d66-eeee0a9f9379.ewa-analyzer-approuter#flowable-async-job-executor-thread-29343#
+[PollStageAppStatusExecution] b7da07ba-caee-4680-92ce-3374c15dcc3f [2026-04-15T11:22:35.991244] Downloaded sap_java_buildpack_jakarta_2_53 (STDOUT, STG)#
+#2026 04 15 11:22:44.789#Z#DEBUG#3aae45cb-38bd-11f1-8d66-eeee0a9f9379.ewa-analyzer-approuter#flowable-async-job-executor-thread-29343#
+[PollStageAppStatusExecution] b7da07ba-caee-4680-92ce-3374c15dcc3f [2026-04-15T11:22:35.991270] Downloading nginx_buildpack... (STDOUT, STG)#
+#2026 04 15 11:22:44.789#Z#DEBUG#3aae45cb-38bd-11f1-8d66-eeee0a9f9379.ewa-analyzer-approuter#flowable-async-job-executor-thread-29343#
+[PollStageAppStatusExecution] b7da07ba-caee-4680-92ce-3374c15dcc3f [2026-04-15T11:22:36.003416] Downloaded sap_java_buildpack_jakarta_2_51 (STDOUT, STG)#
+#2026 04 15 11:22:44.789#Z#DEBUG#3aae45cb-38bd-11f1-8d66-eeee0a9f9379.ewa-analyzer-approuter#flowable-async-job-executor-thread-29343#
+[PollStageAppStatusExecution] b7da07ba-caee-4680-92ce-3374c15dcc3f [2026-04-15T11:22:36.003443] Downloading python_buildpack... (STDOUT, STG)#
+#2026 04 15 11:22:44.789#Z#DEBUG#3aae45cb-38bd-11f1-8d66-eeee0a9f9379.ewa-analyzer-approuter#flowable-async-job-executor-thread-29343#
+[PollStageAppStatusExecution] b7da07ba-caee-4680-92ce-3374c15dcc3f [2026-04-15T11:22:36.006520] Downloaded zero_trust_sidecar_buildpack (STDOUT, STG)#
+#2026 04 15 11:22:44.789#Z#DEBUG#3aae45cb-38bd-11f1-8d66-eeee0a9f9379.ewa-analyzer-approuter#flowable-async-job-executor-thread-29343#
+[PollStageAppStatusExecution] b7da07ba-caee-4680-92ce-3374c15dcc3f [2026-04-15T11:22:36.006562] Downloading php_buildpack... (STDOUT, STG)#
+#2026 04 15 11:22:44.789#Z#DEBUG#3aae45cb-38bd-11f1-8d66-eeee0a9f9379.ewa-analyzer-approuter#flowable-async-job-executor-thread-29343#
+[PollStageAppStatusExecution] b7da07ba-caee-4680-92ce-3374c15dcc3f [2026-04-15T11:22:36.011035] Downloaded staticfile_buildpack (STDOUT, STG)#
+#2026 04 15 11:22:44.789#Z#DEBUG#3aae45cb-38bd-11f1-8d66-eeee0a9f9379.ewa-analyzer-approuter#flowable-async-job-executor-thread-29343#
+[PollStageAppStatusExecution] b7da07ba-caee-4680-92ce-3374c15dcc3f [2026-04-15T11:22:36.011062] Downloading sap_java_buildpack_jakarta... (STDOUT, STG)#
+#2026 04 15 11:22:44.789#Z#DEBUG#3aae45cb-38bd-11f1-8d66-eeee0a9f9379.ewa-analyzer-approuter#flowable-async-job-executor-thread-29343#
+[PollStageAppStatusExecution] b7da07ba-caee-4680-92ce-3374c15dcc3f [2026-04-15T11:22:36.011851] Downloaded nginx_buildpack (STDOUT, STG)#
+#2026 04 15 11:22:44.789#Z#DEBUG#3aae45cb-38bd-11f1-8d66-eeee0a9f9379.ewa-analyzer-approuter#flowable-async-job-executor-thread-29343#
+[PollStageAppStatusExecution] b7da07ba-caee-4680-92ce-3374c15dcc3f [2026-04-15T11:22:36.011867] Downloading nodejs_buildpack... (STDOUT, STG)#
+#2026 04 15 11:22:44.789#Z#DEBUG#3aae45cb-38bd-11f1-8d66-eeee0a9f9379.ewa-analyzer-approuter#flowable-async-job-executor-thread-29343#
+[PollStageAppStatusExecution] b7da07ba-caee-4680-92ce-3374c15dcc3f [2026-04-15T11:22:36.014797] Downloaded java_buildpack (STDOUT, STG)#
+#2026 04 15 11:22:44.789#Z#DEBUG#3aae45cb-38bd-11f1-8d66-eeee0a9f9379.ewa-analyzer-approuter#flowable-async-job-executor-thread-29343#
+[PollStageAppStatusExecution] b7da07ba-caee-4680-92ce-3374c15dcc3f [2026-04-15T11:22:36.014828] Downloading binary_buildpack... (STDOUT, STG)#
+#2026 04 15 11:22:44.789#Z#DEBUG#3aae45cb-38bd-11f1-8d66-eeee0a9f9379.ewa-analyzer-approuter#flowable-async-job-executor-thread-29343#
+[PollStageAppStatusExecution] b7da07ba-caee-4680-92ce-3374c15dcc3f [2026-04-15T11:22:36.032567] Downloaded binary_buildpack (STDOUT, STG)#
+#2026 04 15 11:22:44.789#Z#DEBUG#3aae45cb-38bd-11f1-8d66-eeee0a9f9379.ewa-analyzer-approuter#flowable-async-job-executor-thread-29343#
+[PollStageAppStatusExecution] b7da07ba-caee-4680-92ce-3374c15dcc3f [2026-04-15T11:22:36.038140] Downloaded python_buildpack (STDOUT, STG)#
+#2026 04 15 11:22:44.789#Z#DEBUG#3aae45cb-38bd-11f1-8d66-eeee0a9f9379.ewa-analyzer-approuter#flowable-async-job-executor-thread-29343#
+[PollStageAppStatusExecution] b7da07ba-caee-4680-92ce-3374c15dcc3f [2026-04-15T11:22:36.043280] Downloaded php_buildpack (STDOUT, STG)#
+#2026 04 15 11:22:44.789#Z#DEBUG#3aae45cb-38bd-11f1-8d66-eeee0a9f9379.ewa-analyzer-approuter#flowable-async-job-executor-thread-29343#
+[PollStageAppStatusExecution] b7da07ba-caee-4680-92ce-3374c15dcc3f [2026-04-15T11:22:36.048849] Downloaded sap_java_buildpack_jakarta (STDOUT, STG)#
+#2026 04 15 11:22:44.789#Z#DEBUG#3aae45cb-38bd-11f1-8d66-eeee0a9f9379.ewa-analyzer-approuter#flowable-async-job-executor-thread-29343#
+[PollStageAppStatusExecution] b7da07ba-caee-4680-92ce-3374c15dcc3f [2026-04-15T11:22:36.053800] Downloaded nodejs_buildpack (STDOUT, STG)#
+#2026 04 15 11:22:44.789#Z#DEBUG#3aae45cb-38bd-11f1-8d66-eeee0a9f9379.ewa-analyzer-approuter#flowable-async-job-executor-thread-29343#
+[PollStageAppStatusExecution] b7da07ba-caee-4680-92ce-3374c15dcc3f [2026-04-15T11:22:36.053894] Cell 5455b94c-19a3-4596-b3ac-dcc186f9d21b creating container for instance 70006bfa-f7f1-4184-8048-0b95ac264045 (STDOUT, STG)#
+#2026 04 15 11:22:44.789#Z#DEBUG#3aae45cb-38bd-11f1-8d66-eeee0a9f9379.ewa-analyzer-approuter#flowable-async-job-executor-thread-29343#
+[PollStageAppStatusExecution] b7da07ba-caee-4680-92ce-3374c15dcc3f [2026-04-15T11:22:36.753059] Security group rules were updated (STDOUT, STG)#
+#2026 04 15 11:22:44.789#Z#DEBUG#3aae45cb-38bd-11f1-8d66-eeee0a9f9379.ewa-analyzer-approuter#flowable-async-job-executor-thread-29343#
+[PollStageAppStatusExecution] b7da07ba-caee-4680-92ce-3374c15dcc3f [2026-04-15T11:22:36.844850] Cell 5455b94c-19a3-4596-b3ac-dcc186f9d21b successfully created container for instance 70006bfa-f7f1-4184-8048-0b95ac264045 (STDOUT, STG)#
+#2026 04 15 11:22:44.789#Z#DEBUG#3aae45cb-38bd-11f1-8d66-eeee0a9f9379.ewa-analyzer-approuter#flowable-async-job-executor-thread-29343#
+[PollStageAppStatusExecution] b7da07ba-caee-4680-92ce-3374c15dcc3f [2026-04-15T11:22:37.241685] Downloading app package... (STDOUT, STG)#
+#2026 04 15 11:22:44.789#Z#DEBUG#3aae45cb-38bd-11f1-8d66-eeee0a9f9379.ewa-analyzer-approuter#flowable-async-job-executor-thread-29343#
+[PollStageAppStatusExecution] b7da07ba-caee-4680-92ce-3374c15dcc3f [2026-04-15T11:22:37.241695] Downloading build artifacts cache... (STDOUT, STG)#
+#2026 04 15 11:22:44.789#Z#DEBUG#3aae45cb-38bd-11f1-8d66-eeee0a9f9379.ewa-analyzer-approuter#flowable-async-job-executor-thread-29343#
+[PollStageAppStatusExecution] b7da07ba-caee-4680-92ce-3374c15dcc3f [2026-04-15T11:22:37.338936] Downloaded build artifacts cache (226B) (STDOUT, STG)#
+#2026 04 15 11:22:44.789#Z#DEBUG#3aae45cb-38bd-11f1-8d66-eeee0a9f9379.ewa-analyzer-approuter#flowable-async-job-executor-thread-29343#
+[PollStageAppStatusExecution] b7da07ba-caee-4680-92ce-3374c15dcc3f [2026-04-15T11:22:38.276788] Downloaded app package (7.4M) (STDOUT, STG)#
+#2026 04 15 11:22:44.789#Z#DEBUG#3aae45cb-38bd-11f1-8d66-eeee0a9f9379.ewa-analyzer-approuter#flowable-async-job-executor-thread-29343#
+[PollStageAppStatusExecution] b7da07ba-caee-4680-92ce-3374c15dcc3f [2026-04-15T11:22:38.928818] -----> Nodejs Buildpack version 1.8.44 (STDOUT, STG)#
+#2026 04 15 11:22:44.789#Z#DEBUG#3aae45cb-38bd-11f1-8d66-eeee0a9f9379.ewa-analyzer-approuter#flowable-async-job-executor-thread-29343#
+[PollStageAppStatusExecution] b7da07ba-caee-4680-92ce-3374c15dcc3f [2026-04-15T11:22:39.264389] -----> Bootstrapping python (STDOUT, STG)#
+#2026 04 15 11:22:44.789#Z#DEBUG#3aae45cb-38bd-11f1-8d66-eeee0a9f9379.ewa-analyzer-approuter#flowable-async-job-executor-thread-29343#
+[PollStageAppStatusExecution] b7da07ba-caee-4680-92ce-3374c15dcc3f [2026-04-15T11:22:39.264415] -----> Installing python 3.11.14 (STDOUT, STG)#
+#2026 04 15 11:22:44.789#Z#DEBUG#3aae45cb-38bd-11f1-8d66-eeee0a9f9379.ewa-analyzer-approuter#flowable-async-job-executor-thread-29343#
+[PollStageAppStatusExecution] b7da07ba-caee-4680-92ce-3374c15dcc3f [2026-04-15T11:22:39.264482] Copy [/tmp/buildpacks/706587f3688b8e6f/dependencies/b5e0345ae0ae1932e7d56fffaa49a487/python_3.11.14_linux_x64_cflinuxfs4_66f53248.tgz] (STDOUT, STG)#
+#2026 04 15 11:22:44.789#Z#DEBUG#3aae45cb-38bd-11f1-8d66-eeee0a9f9379.ewa-analyzer-approuter#flowable-async-job-executor-thread-29343#
+[PollStageAppStatusExecution] b7da07ba-caee-4680-92ce-3374c15dcc3f [2026-04-15T11:22:42.712601] -----> Installing binaries (STDOUT, STG)#
+#2026 04 15 11:22:44.789#Z#DEBUG#3aae45cb-38bd-11f1-8d66-eeee0a9f9379.ewa-analyzer-approuter#flowable-async-job-executor-thread-29343#
+[PollStageAppStatusExecution] b7da07ba-caee-4680-92ce-3374c15dcc3f [2026-04-15T11:22:42.712710] engines.node (package.json): unspecified (STDOUT, STG)#
+#2026 04 15 11:22:44.789#Z#DEBUG#3aae45cb-38bd-11f1-8d66-eeee0a9f9379.ewa-analyzer-approuter#flowable-async-job-executor-thread-29343#
+[PollStageAppStatusExecution] b7da07ba-caee-4680-92ce-3374c15dcc3f [2026-04-15T11:22:42.712726] engines.npm (package.json): unspecified (use default) (STDOUT, STG)#
+#2026 04 15 11:22:44.789#Z#DEBUG#3aae45cb-38bd-11f1-8d66-eeee0a9f9379.ewa-analyzer-approuter#flowable-async-job-executor-thread-29343#
+[PollStageAppStatusExecution] b7da07ba-caee-4680-92ce-3374c15dcc3f [2026-04-15T11:22:42.712736] [31;1m**WARNING**[0m Node version not specified in package.json or .nvmrc. See: http://docs.cloudfoundry.org/buildpacks/node/node-tips.html (STDOUT, STG)#
+#2026 04 15 11:22:44.789#Z#DEBUG#3aae45cb-38bd-11f1-8d66-eeee0a9f9379.ewa-analyzer-approuter#flowable-async-job-executor-thread-29343#
+[PollStageAppStatusExecution] b7da07ba-caee-4680-92ce-3374c15dcc3f [2026-04-15T11:22:42.712815] -----> Installing node 22.22.0 (STDOUT, STG)#
+#2026 04 15 11:22:44.789#Z#DEBUG#3aae45cb-38bd-11f1-8d66-eeee0a9f9379.ewa-analyzer-approuter#flowable-async-job-executor-thread-29343#
+[PollStageAppStatusExecution] b7da07ba-caee-4680-92ce-3374c15dcc3f [2026-04-15T11:22:42.712971] Copy [/tmp/buildpacks/706587f3688b8e6f/dependencies/65c50d3a8311e7796847437aebc5aebd/node_22.22.0_linux_x64_cflinuxfs4_a73ffe6d.tgz] (STDOUT, STG)#

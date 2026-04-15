@@ -1,0 +1,15 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(powershell -File scripts/deploy-local.ps1)",
+      "Bash(cf dmol:*)",
+      "Bash(git show:*)",
+      "Read(//tmp/**)",
+      "Bash(python3 -c \"from agent.specialist_agents import SpecialistAgent; from agent.deep_thinker_agent import DeepThinkerAgent; print\\('✅ All imports successful'\\)\")",
+      "Bash(git add:*)",
+      "Bash(git commit -m 'fix\\(backend\\): restore json_repair.py deleted in V1 pipeline removal:*)",
+      "Bash(git push:*)",
+      "Bash(git commit -m 'chore: remove obsolete windsurf and docs artifacts:*)"
+    ]
+  }
+}
