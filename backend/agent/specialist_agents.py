@@ -15,7 +15,6 @@ from typing import Any, Dict
 from dataclasses import dataclass, field
 
 from jsonschema import validate, ValidationError
-from utils.json_repair import JSONRepair
 from utils.ewa_slicer import ChapterData
 
 logger = logging.getLogger(__name__)
