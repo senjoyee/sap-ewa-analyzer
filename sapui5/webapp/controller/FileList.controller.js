@@ -107,6 +107,9 @@ sap.ui.define([
                 ]
             }), "months");
             this.getView().setModel(new JSONModel({ expanded: false }), "uploadPanel");
+            this._pendingProcessing = {};
+            this._filesLoadInFlight = false;
+            this._filesLoadQueued = false;
             this._loadFiles();
 
             // Poll for updates every 10 seconds
@@ -145,6 +148,12 @@ sap.ui.define([
         },
 
         _loadFiles: function () {
+            if (this._filesLoadInFlight) {
+                this._filesLoadQueued = true;
+                return;
+            }
+
+            this._filesLoadInFlight = true;
             fetch(Config.getEndpoint("listFiles"))
                 .then(response => response.json())
                 .then(data => {
@@ -185,7 +194,22 @@ sap.ui.define([
                             reportYear: oFile.report_date ? new Date(oFile.report_date).getFullYear() : null,
                             reportMonth: oFile.report_date ? new Date(oFile.report_date).getMonth() : null
                         };
-                    });
+                    }).map(function (oUiFile) {
+                        var bPending = !!this._pendingProcessing[oUiFile.name];
+                        if (!bPending) {
+                            return oUiFile;
+                        }
+
+                        var bTerminal = (oUiFile.status === "Analyzed" || oUiFile.status === "Failed");
+                        if (bTerminal) {
+                            delete this._pendingProcessing[oUiFile.name];
+                            return oUiFile;
+                        }
+
+                        oUiFile.status = "Processing";
+                        oUiFile.statusText = "Processing";
+                        return oUiFile;
+                    }.bind(this));
                     // Sort by customer then upload date desc for stable display
                     aFiles.sort(function (a, b) {
                         var custA = (a.customer || "").toLowerCase();
@@ -212,7 +236,14 @@ sap.ui.define([
                     });
                     this.getView().getModel("years").setData({ years: aYearItems });
                 })
-                .catch(err => console.error("Failed to load files", err));
+                .catch(err => console.error("Failed to load files", err))
+                .finally(function () {
+                    this._filesLoadInFlight = false;
+                    if (this._filesLoadQueued) {
+                        this._filesLoadQueued = false;
+                        this._loadFiles();
+                    }
+                }.bind(this));
         },
 
         onRefreshFiles: function () {
@@ -450,6 +481,7 @@ sap.ui.define([
 
         _processFile: function (oFile) {
             MessageToast.show("Processing started for " + oFile.name);
+            this._pendingProcessing[oFile.name] = true;
 
             // Optimistic update
             var oModel = this.getView().getModel("files");
@@ -457,6 +489,7 @@ sap.ui.define([
             var oFileInModel = aFiles.find(f => f.name === oFile.name);
             if (oFileInModel) {
                 oFileInModel.status = "Processing";
+                oFileInModel.statusText = "Processing";
                 oModel.refresh();
             }
 
@@ -477,15 +510,16 @@ sap.ui.define([
                 })
                 .then(data => {
                     console.log("Process response:", data);
-                    if (data.success) {
-                        MessageToast.show("Re-analysis completed successfully for " + oFile.name);
+                    if (data.success && data.queued) {
+                        MessageToast.show("Re-analysis queued for " + oFile.name);
                     } else {
                         throw new Error(data.message || "Processing failed");
                     }
-                    this._loadFiles(); // Refresh to get real status
+                    this._loadFiles(); // Refresh to get backend processing status
                 })
                 .catch(err => {
                     console.error("Processing error:", err);
+                    delete this._pendingProcessing[oFile.name];
                     // "Failed to fetch" usually means timeout - refresh to check actual status
                     if (err.message === "Failed to fetch") {
                         MessageToast.show("Request timed out. Checking status...");

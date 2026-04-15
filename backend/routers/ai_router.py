@@ -13,7 +13,7 @@ import os
 import logging
 from typing import Dict, Any
 
-from fastapi import APIRouter, HTTPException
+from fastapi import APIRouter, HTTPException, BackgroundTasks
 from models import BlobNameRequest
 from models.request_models import ProcessAnalyzeRequest
 
@@ -26,6 +26,29 @@ from workflow_orchestrator import ewa_orchestrator
 logger = logging.getLogger(__name__)
 
 router = APIRouter(prefix="/api", tags=["ai-workflow"])
+
+
+async def _run_processing_flow_background(original_blob_name: str) -> None:
+    """Run processing flow in the background and log failures.
+
+    The underlying workflow already updates blob metadata for success/failure.
+    """
+    try:
+        result = await _run_processing_flow(original_blob_name)
+        if not result.get("success", False):
+            logger.warning("[BACKGROUND] Processing failed for %s: %s", original_blob_name, result)
+    except Exception as exc:
+        logger.exception("[BACKGROUND] Unhandled processing error for %s: %s", original_blob_name, exc)
+
+
+async def _run_analyze_flow_background(blob_name: str) -> None:
+    """Run analyze-only flow in the background and log failures."""
+    try:
+        result = await ewa_orchestrator.execute_workflow(blob_name)
+        if not result.get("success", False):
+            logger.warning("[BACKGROUND] Analyze-only failed for %s: %s", blob_name, result)
+    except Exception as exc:
+        logger.exception("[BACKGROUND] Unhandled analyze-only error for %s: %s", blob_name, exc)
 
 
 async def _run_processing_flow(original_blob_name: str) -> Dict[str, Any]:
@@ -101,18 +124,21 @@ async def _run_processing_flow(original_blob_name: str) -> Dict[str, Any]:
 # Combined process + analyze
 # ---------------------------------------------------------------------------
 
-@router.post("/process-and-analyze")
-async def process_and_analyze_document_endpoint(request: ProcessAnalyzeRequest):
+@router.post("/process-and-analyze", status_code=202)
+async def process_and_analyze_document_endpoint(request: ProcessAnalyzeRequest, background_tasks: BackgroundTasks):
     if not blob_service_client:
         raise HTTPException(status_code=500, detail="Azure Blob Service client not initialized.")
     try:
-        result = await _run_processing_flow(request.blob_name)
-        if not result.get("success", False):
-            raise HTTPException(
-                status_code=result.get("status_code", 500),
-                detail=result.get("error_hint") or result.get("message", "Workflow failed"),
-            )
-        return result
+        await ewa_orchestrator.set_processing_flag(request.blob_name, True)
+        await ewa_orchestrator._set_workflow_status_metadata(request.blob_name, "processing")
+        background_tasks.add_task(_run_processing_flow_background, request.blob_name)
+        return {
+            "success": True,
+            "queued": True,
+            "status": "accepted",
+            "message": "Processing queued",
+            "original_file": request.blob_name,
+        }
     except HTTPException:
         raise
     except Exception as e:
@@ -123,8 +149,8 @@ async def process_and_analyze_document_endpoint(request: ProcessAnalyzeRequest):
 # Analyze markdown only
 # ---------------------------------------------------------------------------
 
-@router.post("/analyze-ai")
-async def analyze_document_with_ai_endpoint(request: BlobNameRequest):
+@router.post("/analyze-ai", status_code=202)
+async def analyze_document_with_ai_endpoint(request: BlobNameRequest, background_tasks: BackgroundTasks):
     if not blob_service_client:
         raise HTTPException(status_code=500, detail="Azure Blob Service client not initialized.")
 
@@ -140,22 +166,16 @@ async def analyze_document_with_ai_endpoint(request: BlobNameRequest):
         raise HTTPException(status_code=404, detail=f"Markdown file {markdown_file} not found. Please process the document first.")
 
     try:
-        result = await ewa_orchestrator.execute_workflow(markdown_file)
-        if not result.get("success", False):
-            raise HTTPException(
-                status_code=result.get("status_code", 500),
-                detail=result.get("error_hint") or result.get("message", "Analysis failed"),
-            )
+        await ewa_orchestrator.set_processing_flag(markdown_file, True)
+        await ewa_orchestrator._set_workflow_status_metadata(markdown_file, "processing")
+        background_tasks.add_task(_run_analyze_flow_background, markdown_file)
         return {
             "success": True,
-            "message": "Agentic analysis completed successfully",
+            "queued": True,
+            "status": "accepted",
+            "message": "Agentic analysis queued",
             "original_file": blob_name,
-            "workbook_file": result.get("workbook_file"),
-            "workbook_payload_file": result.get("workbook_payload_file"),
-            "usage_file": result.get("usage_file"),
-            "total_findings": result.get("total_findings", 0),
-            "total_parameters": result.get("total_parameters", 0),
-            "supplemental_findings": result.get("supplemental_findings", 0),
+            "target_file": markdown_file,
         }
     except HTTPException:
         raise
@@ -167,8 +187,8 @@ async def analyze_document_with_ai_endpoint(request: BlobNameRequest):
 # Re-process AI
 # ---------------------------------------------------------------------------
 
-@router.post("/reprocess-ai")
-async def reprocess_document_with_ai(request: BlobNameRequest):
+@router.post("/reprocess-ai", status_code=202)
+async def reprocess_document_with_ai(request: BlobNameRequest, background_tasks: BackgroundTasks):
     if not blob_service_client:
         raise HTTPException(status_code=500, detail="Azure Blob Service client not initialized.")
 
@@ -176,22 +196,16 @@ async def reprocess_document_with_ai(request: BlobNameRequest):
     logger.info("[REPROCESS] Starting reprocess for %s", original_blob_name)
 
     try:
-        result = await _run_processing_flow(original_blob_name)
-        if not result.get("success", False):
-            error_msg = result.get("error_hint") or result.get("message", "Unknown error")
-            logger.warning("[REPROCESS] Workflow failed: %s", error_msg)
-            raise HTTPException(status_code=result.get("status_code", 500), detail=error_msg)
-
-        logger.info("[REPROCESS] Re-analysis completed successfully for %s", original_blob_name)
+        await ewa_orchestrator.set_processing_flag(original_blob_name, True)
+        await ewa_orchestrator._set_workflow_status_metadata(original_blob_name, "processing")
+        background_tasks.add_task(_run_processing_flow_background, original_blob_name)
+        logger.info("[REPROCESS] Re-analysis queued for %s", original_blob_name)
         return {
             "success": True,
-            "message": "Agentic re-analysis completed successfully.",
-            "workbook_file": result.get("workbook_file"),
-            "workbook_payload_file": result.get("workbook_payload_file"),
-            "usage_file": result.get("usage_file"),
-            "total_findings": result.get("total_findings", 0),
-            "total_parameters": result.get("total_parameters", 0),
-            "supplemental_findings": result.get("supplemental_findings", 0),
+            "queued": True,
+            "status": "accepted",
+            "message": "Agentic re-analysis queued.",
+            "original_file": original_blob_name,
         }
     except HTTPException:
         raise
