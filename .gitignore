@@ -55,6 +55,7 @@ ENV/
 
 # Environment variables
 .env
+config.yaml
 
 # IDE specific files
 .idea/

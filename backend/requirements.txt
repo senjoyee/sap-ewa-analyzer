@@ -17,3 +17,13 @@ requests>=2.31.0
 openpyxl>=3.1.2
 beautifulsoup4>=4.12.0
 Pillow>=10.0.0
+langchain-openai>=0.3
+langchain-core>=0.3
+langgraph>=0.2
+litellm
+pymupdf4llm
+PyPDF2
+rich
+pydantic>=2
+pyyaml
+click>=8
